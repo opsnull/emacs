@@ -10,7 +10,7 @@
 (require 'package)
 (setq package-archives '(("gnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
                          ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-						 ("melpa-stable" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")))
+                         ("melpa-stable" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")))
 (package-initialize)
 (setq package-archive-enable-alist '(("melpa" deft magit)))
 
@@ -28,22 +28,22 @@
     use-package
     smartparens
     projectile
-	yaml-mode
-	avy
-	ace-window
-	goto-chg
-	deadgrep
-	restclient
+    yaml-mode
+    avy
+    ace-window
+    goto-chg
+    deadgrep
+    restclient
 
-	treemacs
-	treemacs-projectile
-	treemacs-magit
-	treemacs-icons-dired
+    treemacs
+    treemacs-projectile
+    treemacs-magit
+    treemacs-icons-dired
 
-	js2-mode
-	tide
-	web-mode
-	json-mode
+    js2-mode
+    tide
+    web-mode
+    json-mode
 
     doom-modeline
     all-the-icons
