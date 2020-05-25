@@ -53,7 +53,7 @@
 
     helm
     helm-ag
-	helm-rg
+    helm-rg
     helm-descbinds
     helm-projectile
     wgrep
@@ -70,18 +70,18 @@
     lsp-mode
     lsp-ui
     go-mode
-	yasnippet
+    yasnippet
     company-lsp
 
-	lsp-java
-	dap-mode
-	hydra
+    lsp-java
+    dap-mode
+    hydra
 
-	lsp-treemacs
-	helm-lsp
+    lsp-treemacs
+    helm-lsp
 
-	vterm
-	multi-vterm
+    vterm
+    multi-vterm
     vterm-toggle
     )
   "Default packages")
