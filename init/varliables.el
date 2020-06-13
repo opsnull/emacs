@@ -45,8 +45,8 @@
 (setq default-line-spacing 1)
 
 ;;页宽
-(setq default-fill-column 150)
-(setq fill-column 150)
+(setq default-fill-column 100)
+(setq-default fill-column 100)
 
 ;;语法加亮
 (global-font-lock-mode t)
