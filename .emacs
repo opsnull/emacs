@@ -1,6 +1,11 @@
 (setq user-full-name "zhangjun")
 (setq user-mail-address "zhangjun@4paradigm.com")
 
+; 安装部署变量必须在 lsp 启动前设置，故放到这里。
+(setq
+   lsp-java-server-install-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/server/")
+   lsp-java-workspace-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/workspace/"))
+
 (setenv "GOPATH" (expand-file-name "~/go"))
 (setenv "PATH" (concat "~/go/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin" (getenv "PATH")))
 (setenv "JAVA_HOME" "/Library/Java/JavaVirtualMachines/jdk1.8.0_221.jdk/Contents/Home")

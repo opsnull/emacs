@@ -1,9 +1,9 @@
-(set-language-environment 'Chinese-GB)
-(setq current-language-environment "Chinese-GBK")
+;(set-language-environment 'Chinese-GB)
+;(setq current-language-environment "Chinese-GBK")
 (set-keyboard-coding-system 'utf-8)
 
 ; 中文网页常用编码格式是 GB2312, 剪贴板复制到 emacs 时需要转换为 UTF-8 编码。
-(set-clipboard-coding-system 'euc-cn) ;;euc-cn 是 GB2312 的编码格式
+;(set-clipboard-coding-system 'euc-cn) ;;euc-cn 是 GB2312 的编码格式
 (set-terminal-coding-system 'utf-8)
 (set-buffer-file-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)

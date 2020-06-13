@@ -5,6 +5,11 @@
 (use-package hydra :ensure t)
 (use-package lsp-ui :ensure t)
 (use-package lsp-java :ensure t :after lsp
+  :init
+  ; cd lsp-java; bash install.sh 来手动安装 jdtls.
+  (setq
+   lsp-java-server-install-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/server/")
+   lsp-java-workspace-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/workspace/"))
   :config (add-hook 'java-mode-hook 'lsp))
 
 (use-package yasnippet
@@ -20,12 +25,7 @@
 
 (use-package dap-java :after (lsp-java))
 
-;先删除 ~/eclipse.git.ls 目录，然后更新 server: M-x lsp-install-server，选择 jdtls
-(setq
- lsp-java-server-install-dir (expand-file-name "~/eclipse.jdt.ls/server/")
- lsp-java-workspace-dir (expand-file-name "~/eclipse.jdt.ls/workspace/"))
-
-;; Support Lombok in our projects, among other things
+;Support Lombok in our projects, among other things
 (setq lsp-java-vmargs
 	  (list "-noverify"
 			"-Xmx2G"
