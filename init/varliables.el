@@ -1,6 +1,6 @@
 ;;重新映射 apple 键盘的 keymap
-;(setq mac-command-modifier 'control)
-;(setq mac-right-command-modifier 'meta)
+(setq mac-command-modifier 'control)
+(setq mac-right-command-modifier 'meta)
 
 ;; recentf
 (setq recentf-max-menu-items 50)
