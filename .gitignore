@@ -20,3 +20,5 @@ workspace
 .dap-breakpoints
 bak/
 bookmarks
+network-security.data
+tramp

@@ -6,5 +6,5 @@
 (use-package doom-modeline
       :ensure t
       :hook (after-init . doom-modeline-mode))
-
+; 需要额外执行 M-x all-the-icons-install-fonts 命令安装字体
 (use-package all-the-icons)
