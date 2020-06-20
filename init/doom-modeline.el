@@ -6,5 +6,6 @@
 (use-package doom-modeline
       :ensure t
       :hook (after-init . doom-modeline-mode))
-; 需要额外执行 M-x all-the-icons-install-fonts 命令安装字体
+; 需要额外执行 M-x all-the-icons-install-fonts 命令安装字体，
+; 然后刷新字体缓存 fc-cache -f -v， 对于 mac 需要重启电脑。
 (use-package all-the-icons)
