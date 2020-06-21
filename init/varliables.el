@@ -96,7 +96,6 @@
 (winner-mode t)
 
 ;;删除最后的空格
-;;from: http://pedrokroger.com/2010/07/configuring-emacs-as-a-python-ide-2/
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 ;;关闭文件选择窗口
@@ -128,10 +127,6 @@
 (setq-default indicate-empty-lines t)
 (when (not indicate-empty-lines)
   (toggle-indicate-empty-lines))
-
-;;设置字体
-;(set-frame-font "Source Code Pro-14" nil t)
-(set-frame-font "Menlo-14" nil t)
 
 ;; 关闭 bell 声音
 (setq ring-bell-function 'ignore)

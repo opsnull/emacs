@@ -22,9 +22,7 @@
    gc-cons-threshold 100000000
    read-process-output-max (* 1024 1024) ;; 1mb
    lsp-keep-workspace-alive nil
-   lsp-file-watch-ignored
-   '(
-     ".class$"
+   lsp-file-watch-ignored '(
      "[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\)$"
      ; SCM tools
      "[/\\\\]\\.git$"

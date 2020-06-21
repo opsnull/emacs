@@ -71,6 +71,7 @@
     solarized-theme
     spacemacs-theme
     zenburn-theme
+    doom-themes
 
     lsp-mode
     lsp-ui
