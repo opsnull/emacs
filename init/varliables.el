@@ -1,10 +1,10 @@
 ;;重新映射 apple 键盘的 keymap
-(setq mac-command-modifier 'control)
-(setq mac-right-command-modifier 'meta)
+;(setq mac-command-modifier 'control)
+;(setq mac-right-command-modifier 'meta)
 
 ;; recentf
-(setq recentf-max-menu-items 50)
-(setq recentf-max-saved-items 50)
+(setq recentf-max-menu-items 100)
+(setq recentf-max-saved-items 100)
 
 ;;缺省模式
 (setq-default default-major-mode 'text-mode)
