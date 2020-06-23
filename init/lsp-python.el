@@ -1,4 +1,8 @@
-; 使用 pyenv 管理 python 版本和虚拟环境
+; 使用 pyenv 管理 python 版本和虚拟环境;
+; https://github.com/pyenv/pyenv
+; 为了便于升级和管理，使用 brew 安装：
+(shell-command "pyenv --version || brew install pyenv")
+(shell-command "which pyenv-virtualenv || brew install pyenv-virtualenv")
 (shell-command "pip -q install ipython")
 (shell-command "pip -q install 'python-language-server[all]'")
 
