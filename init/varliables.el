@@ -16,11 +16,14 @@
 ;;eliminate long "yes" or "no" prompts
 (fset 'yes-or-no-p 'y-or-n-p)
 
+;; confirm kill emacs
+(setq confirm-kill-emacs #'y-or-n-p)
+
 ;;在状态栏显示列号
 (column-number-mode t)
 
 ;;在状态栏显示时间
-;(display-time-mode t)
+(display-time-mode t)
 
 ;;在左侧显示行号
 ;(global-linum-mode 1)
