@@ -2,6 +2,10 @@
 (setq vterm-max-scrollback 100000)
 ; automatically close vterm buffers when hte process is terminated.
 (setq vterm-kill-buffer-on-exit t)
+; 不使用 vterm 的 Prompt tracking  特性(远程 ssh 不准)
+; 而是使用 emacs 的 term-prompt-regexp 变量来匹配提示符。
+(setq vterm-use-vterm-prompt nil)
+(setq term-prompt-regexp "^[^#$%>\n]*[#$%>] +")
 
 ; 需要在 shell 的初始化文件（如 ~/.bashrc） 中一些 vterm_* 函数，具体参考：
 ; https://github.com/akermu/emacs-libvterm
