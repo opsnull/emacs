@@ -41,7 +41,7 @@
     goto-chg
     deadgrep
     restclient
-    which-key
+    ;which-key
     diff-hl
 
     org
@@ -85,7 +85,7 @@
     lsp-ui
     go-mode
     yasnippet
-    company-lsp
+    ;company-lsp
 
     lsp-java
     dap-mode

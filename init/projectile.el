@@ -1,7 +1,5 @@
 ;; projectile-ripgrep depends on `ripgrep' package.
-(use-package ripgrep
-  :defer t
-  :ensure t)
+(use-package ripgrep :defer t :ensure t)
 
 (require 'projectile)
 (projectile-global-mode)

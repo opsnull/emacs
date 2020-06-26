@@ -137,3 +137,6 @@
 ;; eshell 支持高亮模式
 (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
+
+;(define-key global-map (kbd "C-h") 'delete-backward-char)
+;(define-key global-map (kbd "M-h") 'backward-kill-word)

@@ -1,7 +1,13 @@
+;; org-mode
+(require 'org)
+;(require 'org-plus-contrib)
+(global-set-key (kbd "C-c l") 'org-store-link)
+(global-set-key (kbd "C-c a") 'org-agenda)
+(global-set-key (kbd "C-c c") 'org-capture)
+
+;; org-download
 (shell-command "pngpaste -v || brew install pngpaste")
-
 (require 'posframe)
-
 (use-package org-download
   :ensure t
   :bind ("<f2>" . org-download-screenshot)
