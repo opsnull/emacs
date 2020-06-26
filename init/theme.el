@@ -2,4 +2,4 @@
 ;(load-theme 'solarized-dark t)
 ;(load-theme 'zenburn t)
 ;(load-theme 'spacemacs-dark t)
-(load-theme 'sanityinc-tomorrow-bright t)
+(load-theme 'sanityinc-tomorrow-day t)

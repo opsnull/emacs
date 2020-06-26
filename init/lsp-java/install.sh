@@ -1,4 +1,4 @@
-brew install maven
+#brew install maven
 mvn \
   -Djdt.js.server.root=$HOME/.emacs.d/eclipse.jdt.ls/server \
   -Djunit.runner.root=$HOME/.emacs.d/eclipse.jdt.ls/test-runner \

@@ -1,12 +1,20 @@
-(require 'cc-mode)
-
+;(require 'cc-mode)
 (use-package projectile :ensure t)
-(use-package lsp-mode :ensure t)
-(use-package hydra :ensure t)
-(use-package lsp-ui :ensure t)
+(use-package flycheck)
+(use-package lsp-mode
+  :config (setq lsp-completion-enable-additional-text-edit nil))
+(use-package hydra)
+(use-package company)
+(use-package lsp-ui)
+(use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
+(use-package dap-java :ensure nil)
+(use-package helm-lsp)
+(use-package helm
+  :config (helm-mode))
+(use-package lsp-treemacs)
+
 (use-package lsp-java :ensure t :after lsp
   :init
-  ; cd lsp-java; bash install.sh 来手动安装 jdtls.
   (setq
    lsp-java-server-install-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/server/")
    lsp-java-workspace-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/workspace/"))
@@ -16,14 +24,6 @@
  :ensure t
  :commands yas-minor-mode
  :hook (java-mode . yas-minor-mode))
-
-(use-package dap-mode
-  :ensure t :after lsp-mode
-  :config
-  (dap-mode t)
-  (dap-ui-mode t))
-
-(use-package dap-java :after (lsp-java))
 
 ;Support Lombok in our projects, among other things
 (setq lsp-java-vmargs

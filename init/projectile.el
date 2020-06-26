@@ -1,3 +1,9 @@
+;; projectile-ripgrep depends on `ripgrep' package.
+(use-package ripgrep
+  :defer t
+  :ensure t)
+
+(require 'projectile)
 (projectile-global-mode)
 (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
 (projectile-mode +1)
@@ -6,7 +12,6 @@
 (require 'helm-projectile)
 (helm-projectile-on)
 
-(require 'projectile)
 (setq projectile-enable-caching t)
 (setq projectile-indexing-method 'hybrid)
 
@@ -44,7 +49,11 @@
                 "__init__.py"))
   (add-to-list 'projectile-globally-ignored-files item))
 
-(dolist (list '("\\.out$"
+(dolist (list '(
+                "\\.elc$"
+                "\\.o$"
+                "\\.class$"
+                "\\.out$"
                 "\\.pdf$"
                 "\\.pyc$"
                 "\\.rel$"
