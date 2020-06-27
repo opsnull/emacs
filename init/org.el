@@ -1,15 +1,19 @@
-;; org-mode
-(require 'org)
-;(require 'org-plus-contrib)
-(global-set-key (kbd "C-c l") 'org-store-link)
-(global-set-key (kbd "C-c a") 'org-agenda)
-(global-set-key (kbd "C-c c") 'org-capture)
+; 通过 use-package 来安装 org 和 org-plus-contrib 可能会报错，所以在
+; .emacs  文件中通过 package-install 命令来直接安装。
+(use-package org
+  :ensure org-plus-contrib
+  :config
+  (global-set-key (kbd "C-c l") 'org-store-link)
+  (global-set-key (kbd "C-c a") 'org-agenda)
+  (global-set-key (kbd "C-c c") 'org-capture)
+)
 
-;; org-download
-(shell-command "pngpaste -v || brew install pngpaste")
-(require 'posframe)
 (use-package org-download
   :ensure t
+  :after (posframe)
+  :init
+  (shell-command "pngpaste -v || brew install pngpaste")
+  (use-package posframe :ensure t)
   :bind ("<f2>" . org-download-screenshot)
   :config
   (setq org-download-method 'directory)
@@ -17,8 +21,7 @@
   (setq org-download-display-inline-images 'posframe)
   ;; org-download-screenshot-method "screencapture -i %s"
   (setq org-download-screenshot-method "pngpaste %s")
-  (setq org-download-image-attr-list
-        '("#+ATTR_HTML: :width 80% :align center"))
+  (setq org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable)
-  )
+)

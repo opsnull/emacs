@@ -1,18 +1,18 @@
 (use-package company
   :ensure t
   :bind (:map company-mode-map
-         ([remap completion-at-point] . company-complete)
-         :map company-active-map
-         ([escape] . company-abort)
-         ("C-p"     . company-select-previous)
-         ("C-n"     . company-select-next)
-         ("C-s"     . company-filter-candidates)
-         ([tab]     . company-complete-common-or-cycle)
-         ([backtab] . company-select-previous-or-abort)
-         :map company-search-map
-         ([escape] . company-search-abort)
-         ("C-p"    . company-select-previous)
-         ("C-n"    . company-select-next))
+              ([remap completion-at-point] . company-complete)
+              :map company-active-map
+              ([escape] . company-abort)
+              ("C-p"     . company-select-previous)
+              ("C-n"     . company-select-next)
+              ("C-s"     . company-filter-candidates)
+              ([tab]     . company-complete-common-or-cycle)
+              ([backtab] . company-select-previous-or-abort)
+              :map company-search-map
+              ([escape] . company-search-abort)
+              ("C-p"    . company-select-previous)
+              ("C-n"    . company-select-next))
   :custom
   (company-idle-delay 0)
   (company-echo-delay 0)
@@ -38,5 +38,11 @@
   (company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
   :config
   (global-company-mode +1)
+  )
+
+(use-package company-quickhelp
+  :ensure t
+  :after (company)
+  :config
   (company-quickhelp-mode 1)
 )

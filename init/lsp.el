@@ -13,16 +13,16 @@
   (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 
-(use-package helm-lsp :commands helm-lsp-workspace-symbol)
-(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
-
 (use-package lsp-mode
+  :ensure t
+  :after (flycheck)
   :hook
   (java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
   ;(lsp-mode . lsp-enable-which-key-integration)
   :custom
+  (lsp-modeline-code-actions-enable nil) ;; 不在 modeline 上显示 code-actions 信息
   (lsp-keymap-prefix "C-c l")
   (lsp-auto-guess-root t)
   (lsp-prefer-flymake nil)
@@ -66,8 +66,8 @@
     "[/\\\\]\\.reference$"))
   :config
   (require 'lsp-clients)
-  (lsp-treemacs-sync-mode 1)
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
+  (setq lsp-completion-enable-additional-text-edit nil)
   :bind (:map lsp-mode-map
               ("C-c f" . lsp-format-region)
               ("C-c d" . lsp-describe-thing-at-point)
@@ -75,23 +75,23 @@
               ("C-c r" . lsp-rename))
   )
 
-(with-eval-after-load 'lsp-mode
+; display code-actions on modeline
+;(with-eval-after-load 'lsp-mode
   ;; :project/:workspace/:file
-  (setq lsp-diagnostics-modeline-scope :project)
-  (add-hook 'lsp-managed-mode-hook 'lsp-diagnostics-modeline-mode))
-
+;  (setq lsp-diagnostics-modeline-scope :project)
+;  (add-hook 'lsp-managed-mode-hook 'lsp-diagnostics-modeline-mode))
 
 ;; lsp-python
-; 使用 pyenv 管理 python 版本和虚拟环境;
-; https://github.com/pyenv/pyenv
-; 为了便于升级和管理，使用 brew 安装：
+; 使用 pyenv 管理 python 版本和虚拟环境：https://github.com/pyenv/pyenv。
+; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
 (shell-command "pyenv --version || brew install pyenv")
 (shell-command "which pyenv-virtualenv || brew install pyenv-virtualenv")
 (shell-command "pip -q install ipython")
 (shell-command "pip -q install 'python-language-server[all]'")
 
 (setq
- lsp-pyls-plugins-jedi-use-pyenv-environment t ;识别项目目录中的 .python-version 文件，然后切换到该环境的 pyls
+ ;识别项目目录中的 .python-version 文件，然后切换到该环境的 pyls
+ lsp-pyls-plugins-jedi-use-pyenv-environment t
  python-shell-interpreter "ipython"
  python-shell-interpreter-args ""
  python-shell-prompt-regexp "In \\[[0-9]+\\]: "
@@ -109,64 +109,50 @@
              (setq python-indent-offset 4)))
 
 ;; lsp-java
-(use-package projectile :ensure t)
-(use-package flycheck)
-(use-package lsp-mode :config (setq lsp-completion-enable-additional-text-edit nil))
-(use-package hydra)
-(use-package company)
-(use-package lsp-ui)
-(use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
-(use-package dap-java :ensure nil)
-(use-package helm-lsp)
-(use-package helm :config (helm-mode))
-(use-package lsp-treemacs)
-
+; raw.githubuserconten.com 被墙，需要添加 hosts：199.232.68.133 raw.githubusercontent.com
+; 默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
 (use-package lsp-java
   :ensure t
-  :after lsp
-  :init
-  (setq
-   lsp-java-server-install-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/server/")
-   lsp-java-workspace-dir (expand-file-name "~/.emacs.d/eclipse.jdt.ls/workspace/"))
-  :config (add-hook 'java-mode-hook 'lsp))
+  :after (lsp-mode company)
+  :hook
+  (java-mode . lsp)
+)
 
-(use-package yasnippet
- :ensure t
- :commands yas-minor-mode
- :hook (java-mode . yas-minor-mode))
-
-;Support Lombok in our projects, among other things
+; Support Lombok in our projects, among other things
+; 这个变量定义必须放到 use-package 外面定义才能生效，why？
 (setq lsp-java-vmargs
-	  (list "-noverify"
-			"-Xmx2G"
-			"-XX:+UseG1GC"
-			"-XX:+UseStringDeduplication"
-			(concat "-javaagent:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar"))))
+      (list "-noverify"
+            "-Xmx2G"
+            "-XX:+UseG1GC"
+            "-XX:+UseStringDeduplication"
+            (concat "-javaagent:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar"))
+            (concat "-Xbootclasspath/a:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar"))
+            ))
+
+(use-package dap-mode :ensure t :after (lsp-java) :config (dap-auto-configure-mode))
+(use-package dap-java :ensure nil)
 
 ;; lsp-go
-;; https://github.com/golang/tools/blob/master/gopls/doc/emacs.md
-
-;; gopls is built in now as a client, so no special config is necessary
-;; install gopls: go get golang.org/x/tools/gopls@latest
-(use-package lsp-mode
-  :ensure t
-  :commands (lsp lsp-deferred)
-  :hook (go-mode . lsp-deferred))
-
 (defun lsp-go-install-save-hooks ()
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
   (add-hook 'before-save-hook #'lsp-organize-imports t t))
-(add-hook 'go-mode-hook #'lsp-go-install-save-hooks)
 
-(setq lsp-gopls-staticcheck t)
-;(setq lsp-eldoc-render-all t)
-(setq lsp-gopls-complete-unimported t)
+(use-package go-mode
+  :ensure t
+  :after (lsp-mode)
+  :custom
+  (lsp-gopls-staticcheck t)
+  ;(lsp-eldoc-render-all t)
+  (lsp-gopls-complete-unimported t)
+  :hook
+  (go-mode . lsp-go-install-save-hooks)
+)
 
-;Optional - provides snippet support.
-(use-package yasnippet
- :ensure t
- :commands yas-minor-mode
- :hook (go-mode . yas-minor-mode))
-
-;; flycheck
-;(add-hook 'after-init-hook #'global-flycheck-mode)
+(use-package lsp-treemacs
+  :ensure t
+  :after (lsp-mode treemacs)
+  :config
+  (lsp-treemacs-sync-mode 1)
+  :commands
+  lsp-treemacs-errors-list
+)
