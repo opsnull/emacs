@@ -1,4 +1,20 @@
-# 显示字体
+# 添加 raw.githubusercontent.com IP 映射
+
+raw.githubuserconten.com 被墙，需要添加 hosts：199.232.68.133 raw.githubusercontent.com
+
+这样后续安装 lsp java server 以及 all-the-icons 才会成功。
+
+# lombok 支持
+
+需要事先下载 lombok 1.18.6 jar 到本地的 maven 缓存目录
+`（~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar）`：
+
+``` bash
+mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
+    -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
+```
+
+# 编程字体
 
 在 macOS High Sierra 中，默认字体从 Menlo 更改为 San Francisco Mono。Emacs 默认也使用该字体，如果系
 统没有，则可以从 https://developer.apple.com/fonts/ 下载，然后安装。
@@ -7,7 +23,7 @@
 
 默认中文字体为文泉驿，可以从 https://www.freechinesefont.com/wenquanyi-micro-hei-download/ 下载安装。
 
-# all-the-icons 字体
+# all-the-icons 图标
 
 需要从 https://github.com/domtronn/all-the-icons.el/tree/master/fonts 下载字体并安装。
 
