@@ -26,3 +26,15 @@
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable)
 )
+
+(use-package ob-go
+  :after (org)
+  :config
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((go . t)))
+)
+
+(use-package ox-reveal
+  :after (org)
+)
