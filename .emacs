@@ -1,10 +1,6 @@
 (setq user-full-name "zhangjun")
 (setq user-mail-address "zhangjun@4paradigm.com")
-
-(setenv "GOPATH" (expand-file-name "~/go"))
-(setenv "PATH" (concat "~/go/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin" (getenv "PATH")))
-; JAVA_HOME 的值可以通过 /usr/libexec/java_home -v1.8 命令来获取。
-(setenv "JAVA_HOME" "/Library/Java/JavaVirtualMachines/jdk1.8.0_172.jdk/Contents/Home")
+(setq shell-command-switch "-ic")
 
 (shell-command "mkdir -p ~/.emacs.d/{init,vendor,.cache,backup,autosave}")
 
@@ -20,8 +16,8 @@
 (unless package-archive-contents
   (package-refresh-contents))
 
-;; 安装三个前置依赖包
-(dolist (package '(use-package org org-plus-contrib))
+;; 安装前置依赖包
+(dolist (package '(use-package org org-plus-contrib ob-go ox-reveal))
    (unless (package-installed-p package)
        (package-install package)))
 

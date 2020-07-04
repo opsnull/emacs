@@ -16,12 +16,12 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
 
 # 编程字体
 
-在 macOS High Sierra 中，默认字体从 Menlo 更改为 San Francisco Mono。Emacs 默认也使用该字体，如果系
-统没有，则可以从 https://developer.apple.com/fonts/ 下载，然后安装。
+从 macOS High Sierra 开始， xcode 的默认字体从 Menlo 更改为 San Francisco Mono。如果没有安装 xcode
+则需要从 https://developer.apple.com/fonts/ 下载安装。
 
-默认 Unicode 字体为 Symbola，可以从 https://fontlibrary.org/en/font/symbola 下载，然后安装。
+Unicode 字体选用的是 Symbola，可以从 https://fontlibrary.org/en/font/symbola 下载安装。
 
-默认中文字体为文泉驿，可以从 https://www.freechinesefont.com/wenquanyi-micro-hei-download/ 下载安装。
+中文字体选用的是文泉驿 微黑，可以从 https://www.freechinesefont.com/wenquanyi-micro-hei-download/ 下载安装。
 
 # all-the-icons 图标
 

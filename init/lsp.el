@@ -120,7 +120,8 @@
 
 ; Support Lombok in our projects, among other things
 ; 这个变量定义必须放到 use-package 外面定义才能生效，why？
-; 需要先下载 lombok 1.18.6 jar 到本地的 maven 缓存目录（~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar）
+; mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
+;    -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
 (setq lsp-java-vmargs
       (list "-noverify"
             "-Xmx2G"

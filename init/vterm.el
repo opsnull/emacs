@@ -1,3 +1,7 @@
+; 编译 libvterm 时依赖的两个包
+(shell-command "cmake --version &>/dev/null || brew install cmake")
+(shell-command "glibtool --version &>/dev/null || brew install libtool")
+
 (use-package vterm
   :ensure t
   :config

@@ -1,5 +1,5 @@
 ; 通过 use-package 来安装 org 和 org-plus-contrib 可能会报错，所以在
-; .emacs  文件中通过 package-install 命令来直接安装。
+; .emacs 中通过 package-install 命令来直接安装。
 (use-package org
   :ensure org-plus-contrib
   :config
@@ -9,12 +9,11 @@
   (global-set-key (kbd "C-c b") 'org-switchb)
 )
 
+(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
+(use-package posframe :ensure t)
 (use-package org-download
   :ensure t
   :after (posframe)
-  :init
-  (shell-command "pngpaste -v || brew install pngpaste")
-  (use-package posframe :ensure t)
   :bind ("<f2>" . org-download-screenshot)
   :config
   (setq org-download-method 'directory)
