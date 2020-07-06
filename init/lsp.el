@@ -20,6 +20,7 @@
   (java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
+  (emacs-list-mode . lsp)
   ;(lsp-mode . lsp-enable-which-key-integration)
   :custom
   (lsp-modeline-code-actions-enable nil) ;; 不在 modeline 上显示 code-actions 信息
@@ -75,12 +76,6 @@
               ("C-c r" . lsp-rename))
   )
 
-; display code-actions on modeline
-;(with-eval-after-load 'lsp-mode
-  ;; :project/:workspace/:file
-;  (setq lsp-diagnostics-modeline-scope :project)
-;  (add-hook 'lsp-managed-mode-hook 'lsp-diagnostics-modeline-mode))
-
 ;; lsp-python
 ; 使用 pyenv 管理 python 版本和虚拟环境：https://github.com/pyenv/pyenv。
 ; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
@@ -135,6 +130,7 @@
 (use-package dap-java :ensure nil)
 
 ;; lsp-go
+(shell-command "gopls --version &>/dev/null || go get golang.org/x/tools/gopls@latest")
 (defun lsp-go-install-save-hooks ()
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
   (add-hook 'before-save-hook #'lsp-organize-imports t t))

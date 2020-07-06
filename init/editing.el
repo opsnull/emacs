@@ -71,12 +71,24 @@
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
 )
 
-(use-package exec-path-from-shell
-  :ensure t
-  :config
-  (exec-path-from-shell-initialize)
-)
-
 (use-package restclient
   :ensure t
 )
+
+;; (use-package smart-input-source
+;;   :load-path "site-lisp"
+;;   :init
+;;   (setq smart-input-source-external-ism "/usr/local/bin/im-select")
+;;   (setq smart-input-source-english "com.apple.keylayout.ABC")
+;;   (setq-default smart-input-source-other "com.sogou.inputmethod.sogou.pinyin")
+;;   (setq-default smart-input-source-inline-with-other t)
+;;   :config
+;;   ;; enable the /cursor color/ mode
+;;   (smart-input-source-global-cursor-color-mode t)
+;;   ;; enable the /respect/ mode
+;;   (smart-input-source-global-respect-mode t)
+;;   ;; enable the /follow context/ mode for all buffers
+;;   (smart-input-source-global-follow-context-mode t)
+;;   ;; enable the /inline english/ mode for all buffers
+;;   (smart-input-source-global-inline-mode t)
+;;   )

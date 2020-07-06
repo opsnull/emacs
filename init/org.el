@@ -1,5 +1,5 @@
-; 通过 use-package 来安装 org 和 org-plus-contrib 可能会报错，所以在
-; .emacs 中通过 package-install 命令来直接安装。
+; 通过 use-package 来安装 org 和 org-plus-contrib 可能会报错，所以在.emacs 中通过 package-install 命
+; 令来直接安装。
 (use-package org
   :ensure org-plus-contrib
   :config

@@ -1,6 +1,5 @@
 (setq user-full-name "zhangjun")
 (setq user-mail-address "zhangjun@4paradigm.com")
-(setq shell-command-switch "-ic")
 
 (shell-command "mkdir -p ~/.emacs.d/{init,vendor,.cache,backup,autosave}")
 
@@ -12,14 +11,19 @@
 (package-initialize)
 (setq package-archive-enable-alist '(("melpa" deft magit)))
 
-;; 如果是全新安装则更新包列表
 (unless package-archive-contents
   (package-refresh-contents))
 
-;; 安装前置依赖包
 (dolist (package '(use-package org org-plus-contrib ob-go ox-reveal))
    (unless (package-installed-p package)
        (package-install package)))
+
+; init 目录下的部分 package 依赖系统环境，故先执行这个 package。
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (exec-path-from-shell-initialize)
+)
 
 (defvar vendor-dir (expand-file-name "vendor" user-emacs-directory))
 (add-to-list 'load-path vendor-dir)
@@ -28,7 +32,6 @@
   (when (file-directory-p project)
     (add-to-list 'load-path project)))
 
-; 加载 init 目录下的所有 el 文件
 (defvar init-dir (expand-file-name "init" user-emacs-directory))
 (mapc 'load (directory-files init-dir t ".*el$"))
 

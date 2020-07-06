@@ -70,7 +70,7 @@
    (quote
     (ox-reveal ob-go ob-ipython ob-restclient yaml-mode json-mode js2-mode web-mode tide vterm-toggle multi-vterm vterm treemacs-magit treemacs-icons-dired treemacs-projectile org-download go-mode dap-mode lsp-java lsp-ui helm-themes helm-projectile helm-lsp wgrep-helm helm-rg helm-ag helm-descbinds helm diff-hl magit htmlize doom-modeline color-theme-sanityinc-tomorrow restclient exec-path-from-shell dockerfile-mode flycheck yasnippet ace-window deadgrep avy expand-region smartparens goto-chg iedit company-quickhelp company org-plus-contrib use-package)))
  '(read-process-output-max 1048576 t)
- '(scroll-bar-mode nil))
+ '(scroll-bar-mode nil t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
