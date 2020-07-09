@@ -185,3 +185,15 @@
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 
 (toggle-frame-fullscreen)
+
+; xwidget
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+(defvar xwidget-webkit-bookmark-jump-new-session) ;; xwidget.el
+(defvar xwidget-webkit-last-session-buffer) ;; xwidget.el
+(add-hook 'pre-command-hook
+          (lambda ()
+            (if (eq this-command #'bookmark-bmenu-list)
+                (if (not (eq major-mode 'xwidget-webkit-mode))
+                    (setq xwidget-webkit-bookmark-jump-new-session t)
+                  (setq xwidget-webkit-bookmark-jump-new-session nil)
+                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
