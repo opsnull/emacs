@@ -130,7 +130,7 @@
 (use-package dap-java :ensure nil)
 
 ;; lsp-go
-(shell-command "gopls --version &>/dev/null || go get golang.org/x/tools/gopls@latest")
+(shell-command "gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@latest")
 (defun lsp-go-install-save-hooks ()
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
   (add-hook 'before-save-hook #'lsp-organize-imports t t))

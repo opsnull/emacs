@@ -44,7 +44,7 @@
   :ensure t
   :config
   (global-set-key (kbd "M-o") 'ace-window)
-)
+  )
 
 
 (use-package yasnippet
@@ -57,7 +57,7 @@
   (yas-global-mode 1)
   :commands yas-minor-mode
   :hook (java-mode . yas-minor-mode)
-)
+  )
 
 (use-package flycheck
   :ensure t
@@ -69,11 +69,11 @@
   :ensure t
   :config
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
-)
+  )
 
 (use-package restclient
   :ensure t
-)
+  )
 
 ;; (use-package smart-input-source
 ;;   :load-path "site-lisp"
@@ -81,14 +81,8 @@
 ;;   (setq smart-input-source-external-ism "/usr/local/bin/im-select")
 ;;   (setq smart-input-source-english "com.apple.keylayout.ABC")
 ;;   (setq-default smart-input-source-other "com.sogou.inputmethod.sogou.pinyin")
-;;   (setq-default smart-input-source-inline-with-other t)
+;;   (setq smart-input-source-respect-start 'other)
 ;;   :config
-;;   ;; enable the /cursor color/ mode
 ;;   (smart-input-source-global-cursor-color-mode t)
-;;   ;; enable the /respect/ mode
 ;;   (smart-input-source-global-respect-mode t)
-;;   ;; enable the /follow context/ mode for all buffers
-;;   (smart-input-source-global-follow-context-mode t)
-;;   ;; enable the /inline english/ mode for all buffers
-;;   (smart-input-source-global-inline-mode t)
 ;;   )
