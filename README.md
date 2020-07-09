@@ -1,3 +1,24 @@
+# 添加 raw.githubusercontent.com 域名映射
+
+raw.githubuserconten.com 被墙，需要绑定 hosts:
+
+``` txt
+199.232.68.133 raw.githubusercontent.com
+199.232.68.133 user-images.githubusercontent.com
+199.232.68.133 avatars2.githubusercontent.com
+199.232.68.133 avatars1.githubusercontent.com
+```
+
+这样后续才能正常安装 emacs27、lsp java server 和 all-the-icons。
+
+# 编译安装 emacs 27
+
+``` bash
+brew tap d12frosted/emacs-plus
+brew install emacs-plus@27 --with-jansson --with-mailutils --with-xwidgets  --with-modern-papirus-icon --HEAD
+ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications/Emacs.app
+```
+
 # 中文字符集
 
 先用 locale 命令查看当前系统字符集是否是 zh_CN.UTF-8，如果不是的话，终端显示中文时会乱码，解决办法是
@@ -6,12 +27,6 @@
 ``` bash
 echo 'export LANG="zh_CN.UTF-8"' >> ~/.zshrc
 ```
-
-# 添加 raw.githubusercontent.com 域名映射
-
-raw.githubuserconten.com 被墙，需要添加 hosts：199.232.68.133 raw.githubusercontent.com
-
-这样后续安装 lsp java server 以及 all-the-icons 才会成功。
 
 # 支持 lombok
 
