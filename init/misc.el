@@ -19,6 +19,8 @@
 (column-number-mode t)
 
 ;; 在状态栏显示时间
+(setq display-time-24hr-format t)
+(setq display-time-day-and-date t)
 (display-time-mode t)
 
 ;; 在左侧显示行号

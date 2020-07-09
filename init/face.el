@@ -16,7 +16,9 @@
 (use-package doom-modeline
   :ensure t
   :custom
-  (doom-modeline-enable-word-count t)
+  ;; 不显示 buffer 编码。
+  (doom-modeline-buffer-encoding nil)
+  (doom-modeline-number-limit 69)
   ; 简化显示的文件路径，默认全路径，在 modeline 上占用太多空间。
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
   :init
