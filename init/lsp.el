@@ -85,16 +85,15 @@
               ("C-c r" . lsp-rename))
   )
 
-;; lsp-python
-; 使用 pyenv 管理 python 版本和虚拟环境：https://github.com/pyenv/pyenv。
-; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
-(shell-command "pyenv --version || brew install pyenv")
+; lsp-python
+;； 使用 pyenv 管理 python 版本和虚拟环境：https://github.com/pyenv/pyenv。
+;; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
+(shell-command "which pyenv || brew install pyenv")
 (shell-command "which pyenv-virtualenv || brew install pyenv-virtualenv")
-(shell-command "pip -q install ipython")
-(shell-command "pip -q install 'python-language-server[all]'")
+(shell-command "pip -q install ipython 'python-language-server[all]'")
 
 (setq
- ;识别项目目录中的 .python-version 文件，然后切换到该环境的 pyls
+ ;识别项目目录中的 .python-version 文件，然后切换到该环境的 pyls。
  lsp-pyls-plugins-jedi-use-pyenv-environment t
  python-shell-interpreter "ipython"
  python-shell-interpreter-args ""
@@ -112,9 +111,9 @@
              (setq python-indent 4)
              (setq python-indent-offset 4)))
 
-;; lsp-java
-; raw.githubuserconten.com 被墙，需要添加 hosts：199.232.68.133 raw.githubusercontent.com
-; 默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
+; lsp-java
+;；raw.githubuserconten.com 被墙，需要添加 hosts：199.232.68.133 raw.githubusercontent.com
+;；默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
 (use-package lsp-java
   :ensure t
   :after (lsp-mode company)
@@ -122,10 +121,9 @@
   (java-mode . lsp)
 )
 
-; Support Lombok in our projects, among other things
-; 这个变量定义必须放到 use-package 外面定义才能生效，why？
-; mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
-;    -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
+; 支持 Lmobok
+;; 这个变量定义必须放到 use-package 外面定义才能生效，why？
+;; mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
 (setq lsp-java-vmargs
       (list "-noverify"
             "-Xmx2G"

@@ -1,7 +1,8 @@
+; helm 命令补全
 (use-package helm
   :ensure t
   :custom
-  (helm-split-window-inside-p t) ; for treemacs happy
+  (helm-split-window-inside-p t) ;; for treemacs happy
   (helm-M-x-fuzzy-match t)
   (helm-buffers-fuzzy-matching t)
   (helm-recentf-fuzzy-match t)
@@ -18,9 +19,9 @@
   (global-set-key (kbd "C-h a") 'helm-apropos)
   (global-set-key (kbd "C-x C-b") 'helm-buffers-list)
   (global-set-key (kbd "C-c h o") 'helm-occur)
-  ; isearch 时使用 helm-occur
+  ;; isearch 时使用 helm-occur
   (define-key isearch-mode-map (kbd "M-s o") 'helm-occur-from-isearch)
-  ; 使用光标处的符号作为 occur 的搜索内容
+  ;; 使用光标处的符号作为 occur 的搜索内容
   (add-to-list 'helm-sources-using-default-as-input 'helm-source-occur)
   (add-to-list 'helm-sources-using-default-as-input 'helm-source-moccur)
   )

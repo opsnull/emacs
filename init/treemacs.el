@@ -1,3 +1,5 @@
+; treemacs sidebar
+(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
   :ensure t
   :init
@@ -37,7 +39,6 @@
           treemacs-tag-follow-cleanup            t
           treemacs-tag-follow-delay              1.5
           treemacs-width                         35)
-
     ;; The default width and height of the icons is 22 pixels. If you are
     ;; using a Hi-DPI display, uncomment this to double the icon size.
     ;;(treemacs-resize-icons 44)

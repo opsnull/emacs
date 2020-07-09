@@ -1,3 +1,4 @@
+; 自动补全框架
 (use-package company
   :ensure t
   :bind (:map company-mode-map

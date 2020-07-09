@@ -1,3 +1,4 @@
+; projedtile 项目管理。
 (use-package projectile
   :ensure t
   :after (treemacs helm)
@@ -13,9 +14,7 @@
               (unless (bound-and-true-p treemacs-mode)
                 (treemacs)
                 (other-window 1))))
-  ; Do not consider the home dir as a project
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/"))
-
   (dolist (dirs '(".cache"
                   ".dropbox"
                   ".git"

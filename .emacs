@@ -1,8 +1,6 @@
 (setq user-full-name "zhangjun")
 (setq user-mail-address "zhangjun@4paradigm.com")
 
-(shell-command "mkdir -p ~/.emacs.d/{init,vendor,.cache,backup,autosave}")
-
 (require 'package)
 (setq package-archives '(("gnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
                          ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
@@ -10,31 +8,31 @@
                          ("org" . "https://orgmode.org/elpa/")))
 (package-initialize)
 (setq package-archive-enable-alist '(("melpa" deft magit)))
-
 (unless package-archive-contents
   (package-refresh-contents))
 
-(dolist (package '(use-package org org-plus-contrib ob-go ox-reveal))
+; 先安装前置依赖包 use-package。
+(dolist (package '(use-package))
    (unless (package-installed-p package)
        (package-install package)))
 
-; init 目录下的部分 package 依赖系统环境，故先执行这个 package。
+; 获取 shell 环境变量（如 PATH），init 目录下的部分 package 依赖这些环境变量。
 (use-package exec-path-from-shell
   :ensure t
+  :init
+  ; 不检查 shell 启动文件的使用方式是否符合预期（如 .zshrc 不应该 export 环境变量）。
+  (setq exec-path-from-shell-check-startup-files nil)
   :config
   (exec-path-from-shell-initialize)
 )
 
-(defvar vendor-dir (expand-file-name "vendor" user-emacs-directory))
-(add-to-list 'load-path vendor-dir)
-
-(dolist (project (directory-files vendor-dir t "\\w+"))
-  (when (file-directory-p project)
-    (add-to-list 'load-path project)))
-
+; 加载 init 目录下所有以 el 结尾的文件。
+(setq use-package-verbose t) ; 统计 use-package 包加载的耗时
 (defvar init-dir (expand-file-name "init" user-emacs-directory))
 (mapc 'load (directory-files init-dir t ".*el$"))
 
-(shell-command "touch ~/.emacs.d/custom.el")
+; 将 custome 配置放到单独的文件，避免污染本文件。
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
+
+(toggle-frame-fullscreen)
