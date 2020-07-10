@@ -48,3 +48,65 @@
   (dolist (charset '(kana han symbol cjk-misc bopomofo))
     (set-fontset-font t charset "WenQuanYi Micro Hei-14"))
   (setq face-font-rescale-alist '(("WenQuanYi Micro Hei-14" . 1.1))))
+
+
+; 在状态栏显示列号
+(column-number-mode t)
+
+; 在状态栏显示时间
+(setq display-time-24hr-format t)
+;; 时间后面不显示系统负载
+(setq display-time-default-load-average nil)
+;; 不显示日期
+(setq display-time-day-and-date nil)
+(display-time-mode t)
+
+; 在左侧显示行号
+;;(global-linum-mode 1)
+(setq indicate-buffer-boundaries (quote left))
+
+; 在状态栏显示文件大小
+(size-indication-mode t)
+
+; 禁用启动画面
+(setq inhibit-startup-message t)
+
+; 去掉工具栏
+(tool-bar-mode -1)
+
+; 去掉滚动条
+(menu-bar-no-scroll-bar)
+
+; 去掉菜单栏
+(menu-bar-mode nil)
+
+; 语法加亮
+(global-font-lock-mode t)
+
+; 高亮显示区域选择
+(transient-mark-mode t)
+
+; 高亮显示成对括号，但不来回弹跳
+(show-paren-mode t)
+(setq show-paren-style 'parentheses)
+
+; 鼠标指针规避光标
+(mouse-avoidance-mode 'animate)
+
+; 光标显示为一竖线
+;;(setq-default cursor-type 'bar)
+
+; 透明
+;;(set-frame-parameter (selected-frame) 'alpha '(80 70))
+;;(add-to-list 'default-frame-alist '(alpha 95 85))
+
+; 在标题栏提示目前我的位置
+(setq frame-title-format "zym@%b")
+
+; 标题栏显示%f缓冲区完整路径%p页面百分数%l行号
+(setq frame-title-format "%f")
+
+; 窗口左侧显示进度提示标识
+(setq-default indicate-empty-lines t)
+(when (not indicate-empty-lines)
+  (toggle-indicate-empty-lines))
