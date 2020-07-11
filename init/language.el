@@ -61,7 +61,6 @@
   :after (lsp-mode)
   :custom
   (lsp-gopls-staticcheck t)
-  ;(lsp-eldoc-render-all t)
   (lsp-gopls-complete-unimported t)
   :hook
   (go-mode . lsp-go-install-save-hooks)
