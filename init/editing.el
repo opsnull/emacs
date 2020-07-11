@@ -94,3 +94,7 @@
   ; 切换系统输入法快捷键
   (global-set-key (kbd "C-\\") 'smart-input-source-switch)
   )
+
+(use-package ox-hugo
+  :ensure t
+)
