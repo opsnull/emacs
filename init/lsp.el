@@ -23,11 +23,11 @@
   (lsp-auto-guess-root t)
   (lsp-prefer-flymake nil)
   (lsp-diagnostic-package :flycheck)   ;; prefer flycheck
-  (lsp-prefer-capf t)                  ;; using `company-capf' by default
+  (lsp-prefer-capf t)
   (lsp-print-io t)
   (lsp-enable-snippet nil)             ;; handle yasnippet by myself
-  ;(lsp-eldoc-render-all nil)
-  (lsp-eldoc-enable-hover nil)         ;;使用 lsp-describ-things-at-point(绑定到 C-c d) 显示详情
+  ;(lsp-eldoc-render-all nil)          ;; 开启后，会用 minibuffer 显示文档，占用太多屏幕空间
+  (lsp-eldoc-enable-hover nil)         ;; 使用 lsp-describ-things-at-point(绑定到 C-c d) 显示详情
   (lsp-signature-auto-activate t)      ;; 显示函数签名
   (lsp-signature-doc-lines 2)
   (lsp-pyls-plugins-pycodestyle-max-line-length 200)
@@ -74,9 +74,9 @@
   (setq lsp-completion-enable-additional-text-edit nil)
   :bind (:map lsp-mode-map
               ("C-c f" . lsp-format-region)
-              ("C-c d" . lsp-describe-thing-at-point)
-              ("C-c a" . lsp-execute-code-action)
-              ("C-c r" . lsp-rename))
+              ("C-c d" . lsp-describe-thing-at-point) ;; 显示签名
+              ("C-c a" . lsp-execute-code-action)  ;; 执行 code action
+              ("C-c r" . lsp-rename))  ;; 重构
   )
 
 (use-package lsp-treemacs
