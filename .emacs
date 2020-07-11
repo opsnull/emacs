@@ -35,5 +35,3 @@
 (shell-command "touch ~/.emacs.d/custom.el")
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
-
-(toggle-frame-fullscreen)
