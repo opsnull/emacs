@@ -9,6 +9,8 @@
   (setq projectile-enable-caching t)
   (setq projectile-indexing-method 'hybrid)
   (setq projectile-completion-system 'helm)
+  (setq projectile-sort-order 'recently-active)
+  (setq projectile-switch-project-action #'projectile-dired) ;; 切换 project 后显示目录。
   (add-hook 'projectile-after-switch-project-hook
             (lambda ()
               (unless (bound-and-true-p treemacs-mode)
