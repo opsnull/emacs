@@ -37,8 +37,9 @@
           treemacs-sorting                       'alphabetic-desc
           treemacs-space-between-root-nodes      t
           treemacs-tag-follow-cleanup            t
-          treemacs-tag-follow-delay              1.5
-          treemacs-width                         35)
+          treemacs-tag-follow-delay              1
+          treemacs-width                         35
+          imenu-auto-rescan                      t)
     ;; The default width and height of the icons is 22 pixels. If you are
     ;; using a Hi-DPI display, uncomment this to double the icon size.
     ;;(treemacs-resize-icons 44)
