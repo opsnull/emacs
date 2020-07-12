@@ -1,6 +1,7 @@
-; projedtile 项目管理。
+; projectile 项目管理。
 (use-package projectile
   :ensure t
+  :demand t
   :after (treemacs helm)
   :config
   (projectile-global-mode)
@@ -11,11 +12,8 @@
   (setq projectile-completion-system 'helm)
   (setq projectile-sort-order 'recently-active)
   (setq projectile-switch-project-action #'projectile-dired) ;; 切换 project 后显示目录。
-  (add-hook 'projectile-after-switch-project-hook
-            (lambda ()
-              (unless (bound-and-true-p treemacs-mode)
-                (treemacs)
-                (other-window 1))))
+  (add-hook 'projectile-after-switch-project-hook ;; 切换 project 后显示 treemacs。
+            (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/"))
   (dolist (dirs '(".cache"
                   ".dropbox"
@@ -37,7 +35,6 @@
                   ".gradle"
                   ".vscode"))
     (add-to-list 'projectile-globally-ignored-directories dirs))
-
   (dolist (item '("GPATH"
                   "GRTAGS"
                   "GTAGS"
@@ -48,7 +45,6 @@
                   ".project"
                   "__init__.py"))
     (add-to-list 'projectile-globally-ignored-files item))
-
   (dolist (list '("\\.elc$"
                   "\\.o$"
                   "\\.class$"
@@ -62,5 +58,4 @@
                   "\\.bak$"
                   "\\.log$"
                   "~$"))
-    (add-to-list 'projectile-globally-ignored-file-suffixes list))
-  )
+    (add-to-list 'projectile-globally-ignored-file-suffixes list)))

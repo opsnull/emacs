@@ -2,19 +2,20 @@
 (use-package company
   :ensure t
   :demand t
-  :bind (:map company-mode-map
-              ([remap completion-at-point] . company-complete)
-              :map company-active-map
-              ([escape] . company-abort)
-              ("C-p"     . company-select-previous)
-              ("C-n"     . company-select-next)
-              ("C-s"     . company-filter-candidates)
-              ([tab]     . company-complete-common-or-cycle)
-              ([backtab] . company-select-previous-or-abort)
-              :map company-search-map
-              ([escape] . company-search-abort)
-              ("C-p"    . company-select-previous)
-              ("C-n"    . company-select-next))
+  :bind
+  (:map company-mode-map
+        ([remap completion-at-point] . company-complete)
+        :map company-active-map
+        ([escape] . company-abort)
+        ("C-p"     . company-select-previous)
+        ("C-n"     . company-select-next)
+        ("C-s"     . company-filter-candidates)
+        ([tab]     . company-complete-common-or-cycle)
+        ([backtab] . company-select-previous-or-abort)
+        :map company-search-map
+        ([escape] . company-search-abort)
+        ("C-p"    . company-select-previous)
+        ("C-n"    . company-select-next))
   :custom
   (company-idle-delay 0)
   (company-echo-delay 0)
@@ -30,13 +31,11 @@
   ;;                      (company-dabbrev-code company-gtags company-etags company-keywords)
   ;;                      company-oddmuse company-dabbrev))
   :config
-  (global-company-mode t)
-  )
+  (global-company-mode t))
 
 
 (use-package company-quickhelp
   :ensure t
   :after (company)
   :config
-  (company-quickhelp-mode 1)
-)
+  (company-quickhelp-mode 1))

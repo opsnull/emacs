@@ -11,6 +11,7 @@
 
 (use-package lsp-mode
   :ensure t
+  :demand t
   :after (flycheck)
   :hook
   (java-mode . lsp)
@@ -85,5 +86,4 @@
   :config
   (lsp-treemacs-sync-mode 1)
   :commands
-  lsp-treemacs-errors-list
-)
+  lsp-treemacs-errors-list)

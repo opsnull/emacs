@@ -2,10 +2,12 @@
 (setq user-mail-address "zhangjun@4paradigm.com")
 
 (require 'package)
-(setq package-archives '(("gnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-                         ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-                         ("melpa-stable" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")
-                         ("org" . "https://orgmode.org/elpa/")))
+(setq package-archives
+      '(("gnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+        ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+        ("melpa-stable" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")
+        ("org" . "https://orgmode.org/elpa/")))
+
 (package-initialize)
 (setq package-archive-enable-alist '(("melpa" deft magit)))
 (unless package-archive-contents
@@ -20,14 +22,14 @@
 (use-package exec-path-from-shell
   :ensure t
   :init
-  ; 不检查 shell 启动文件的使用方式是否符合预期（如 .zshrc 不应该 export 环境变量）。
+  ;; 不检查 shell 启动文件的使用方式是否符合预期（如 .zshrc 不应该 export 环境变量）。
   (setq exec-path-from-shell-check-startup-files nil)
   :config
   (exec-path-from-shell-initialize)
 )
 
 ; 加载 init 目录下所有以 el 结尾的文件。
-(setq use-package-verbose t) ; 统计 use-package 包加载的耗时
+(setq use-package-verbose t) ;; 统计 use-package 包加载的耗时
 (defvar init-dir (expand-file-name "init" user-emacs-directory))
 (mapc 'load (directory-files init-dir t ".*el$"))
 

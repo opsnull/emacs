@@ -39,10 +39,10 @@
 (auto-fill-mode t)
 
 ; tab 空格数
-(setq-default tab-width 4) ; emacs 23.1, 24.2, default to 8
+(setq-default tab-width 4)
 
 ; 缩进时使用空格
-(setq-default indent-tabs-mode nil) ; emacs 23.1, 24.2, default to t
+(setq-default indent-tabs-mode nil)
 
 ; winner mode
 (winner-mode t)

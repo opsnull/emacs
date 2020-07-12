@@ -23,15 +23,13 @@
   (define-key isearch-mode-map (kbd "M-s o") 'helm-occur-from-isearch)
   ;; 使用光标处的符号作为 occur 的搜索内容
   (add-to-list 'helm-sources-using-default-as-input 'helm-source-occur)
-  (add-to-list 'helm-sources-using-default-as-input 'helm-source-moccur)
-  )
+  (add-to-list 'helm-sources-using-default-as-input 'helm-source-moccur))
 
 (use-package helm-descbinds
   :ensure t
   :after (helm)
   :config
-  (helm-descbinds-mode)
-  )
+  (helm-descbinds-mode))
 
 (use-package helm-ag
   :ensure t
@@ -55,23 +53,20 @@
   (helm-ag-use-agignore t)
   ;(helm-follow-mode-persistent t)
   ;(helm-ag-insert-at-point 'symbol)
-  (helm-ag-ignore-buffer-patterns '("\\.txt\\'" "\\.mkd\\'"))
-  )
+  (helm-ag-ignore-buffer-patterns '("\\.txt\\'" "\\.mkd\\'")))
 
 (use-package helm-rg
   :ensure t
   :after (helm)
-  :config
-  (shell-command "rg --version || brew install ripgrep")
-  )
+  :init
+  (shell-command "rg --version || brew install ripgrep"))
 
 ; wgrep provides a mode for editing files directly from grep buffers.
 (use-package wgrep-helm
   :ensure t
   :init
   (use-package wgrep :ensure t)
-  :after (helm wgrep)
-  )
+  :after (helm wgrep))
 
 (use-package helm-lsp
   :ensure t
@@ -79,14 +74,12 @@
   :config
   (define-key lsp-mode-map [remap xref-find-apropos] #'helm-lsp-workspace-symbol)
   :commands
-  helm-lsp-workspace-symbol
-  )
+  helm-lsp-workspace-symbol)
 
 (use-package helm-projectile
   :ensure t
   :after (projectile helm)
   :config
-  (helm-projectile-on)
-  )
+  (helm-projectile-on))
 
 (use-package helm-themes :ensure t)

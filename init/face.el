@@ -8,9 +8,7 @@
 (use-package zenburn-theme :ensure t :disabled t)
 (use-package color-theme-sanityinc-tomorrow
   :ensure t
-  :config
-  (load-theme 'sanityinc-tomorrow-eighties t)
-)
+  :config (load-theme 'sanityinc-tomorrow-eighties t))
 
 ; modeline
 (use-package doom-modeline
@@ -103,7 +101,7 @@
 ; 在标题栏提示目前我的位置
 (setq frame-title-format "zym@%b")
 
-; 标题栏显示%f缓冲区完整路径%p页面百分数%l行号
+; 标题栏显示 %f 缓冲区完整路径 %p 页面百分数 %l 行号
 (setq frame-title-format "%f")
 
 ; 窗口左侧显示进度提示标识
