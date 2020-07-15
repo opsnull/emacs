@@ -35,9 +35,6 @@
 ; 图片显示
 (auto-image-file-mode t)
 
-; 自动缩进模式
-(auto-fill-mode t)
-
 ; tab 空格数
 (setq-default tab-width 4)
 
