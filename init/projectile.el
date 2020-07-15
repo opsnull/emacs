@@ -11,7 +11,6 @@
   (setq projectile-indexing-method 'hybrid)
   (setq projectile-completion-system 'helm)
   (setq projectile-sort-order 'recently-active)
-  (setq projectile-switch-project-action #'projectile-dired) ;; 切换 project 后显示目录。
   (add-hook 'projectile-after-switch-project-hook ;; 切换 project 后显示 treemacs。
             (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/"))
