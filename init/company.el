@@ -24,12 +24,17 @@
   (company-tooltip-limit 14)
   (company-tooltip-align-annotations t) ;; 对齐
   (company-dabbrev-code-everywhere t)
-  ;;(company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
-  ;; 重新定义 backends，将 cafp 放在最前面，防止无用的提示。
-  ;; (company-backends  '(company-capf company-files company-bbdb
-  ;;                      company-eclim company-semantic company-clang company-xcode company-cmake
-  ;;                      (company-dabbrev-code company-gtags company-etags company-keywords)
-  ;;                      company-oddmuse company-dabbrev))
+  (company-dabbrev-other-buffers nil)
+  (company-dabbrev-ignore-case nil)
+  (company-dabbrev-downcase nil)
+  (company-dabbrev-code-ignore-case nil)
+  (company-dabbrev-code-everywhere t)
+  (company-backends '(company-capf
+                      company-files
+                      (company-dabbrev-code company-keywords)
+                      company-dabbrev))
+  (company-global-modes '(not erc-mode message-mode help-mode gud-mode eshell-mode shell-mode))
+  (company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
   :config
   (global-company-mode t))
 
