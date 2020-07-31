@@ -28,6 +28,15 @@ ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications/Emacs.app
 echo 'export LANG="zh_CN.UTF-8"' >> ~/.zshrc
 ```
 
+# python
+
+使用 pyenv 管理 python 环境和版本。如果项目位于虚拟环境中，则需要使用如下命令为该环境安装 pyls，否则
+打开该项目的 python 文件后提示 pyls 启动失败：
+
+``` bash
+pip -q install ipython 'python-language-server[all]
+```
+
 # java
 
 ## 安装 jdk
