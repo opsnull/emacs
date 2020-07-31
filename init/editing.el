@@ -67,21 +67,18 @@
 
 ; smart-input-source 实现输入 prefix 按键时自动切换到英文，执行结束后恢复系统输入法的功能，
 ; 这样可以省去了手动切换输入法，然后再保存 buffer 的烦恼！
-(use-package smart-input-source
+(use-package sis
   :load-path "site-lisp"
   :init
-  ;; 安装 im-select 工具命令。
   (shell-command
    (concat
     "im-select &>/dev/null || curl -Ls "
     "https://raw.githubusercontent.com/daipeihust/im-select/master/install_mac.sh | sh"))
-  (setq smart-input-source-external-ism "/usr/local/bin/im-select")
-  (setq smart-input-source-english "com.apple.keylayout.ABC")
-  (setq-default smart-input-source-other "com.sogou.inputmethod.sogou.pinyin")
-  (setq smart-input-source-respect-start nil)
+  (setq sis-external-ism "/usr/local/bin/im-select")
   :config
-  (smart-input-source-global-respect-mode t)
+  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+  (sis-global-respect-mode t)
   ;; 切换系统输入法快捷键
-  (global-set-key (kbd "C-\\") 'smart-input-source-switch))
+  (global-set-key (kbd "C-\\") 'sis-switch))
 
 (use-package ox-hugo :ensure t)
