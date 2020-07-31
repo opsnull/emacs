@@ -28,14 +28,38 @@ ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications/Emacs.app
 echo 'export LANG="zh_CN.UTF-8"' >> ~/.zshrc
 ```
 
-# 支持 lombok
+# java
 
-需要事先下载 lombok 1.18.6 jar 到本地的 maven 缓存目录
+## 安装 jdk
+
+日常开发使用 jdk 1.8，但 lsp-java jdtls 依赖 jdk 11 及以上版本。这里需要安装三个 jdk 版本：
+
+从 https://www.oracle.com/java/technologies/javase-downloads.html 页面下载和安装 jdk 1.8、11 和 14
+三个版本。
+
+## 安装 lombok
+
+下载 lombok 1.18.6 jar 并安装到本地目录
 `（~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar）`：
 
 ``` bash
 mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
     -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
+```
+
+## 调试 jdtls
+
+如果 jdtls 启动失败，可以手动启动，查看日志：
+
+``` bash
+➜  .emacs.d git:(master) ✗ /Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home/bin/java -Declipse.application=org.eclipse.jdt.ls.core.id1 -Dosgi.bundles.defaultStartLevel=4 -Declipse.product=org.eclipse.jdt.ls.core.product -Dlog.protocol=true -Dlog.level=ALL -Xmx2G -XX:+UseG1GC -XX:+UseStringDeduplication -javaagent:/Users/zhangjun/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar -jar /Users/zhangjun/.emacs.d/.cache/lsp/eclipse.jdt.ls/plugins/org.eclipse.equinox.launcher_1.5.700.v20200207-2156.jar -configuration /Users/zhangjun/.emacs.d/.cache/lsp/eclipse.jdt.ls/config_mac -data /Users/zhangjun/.emacs.d/workspace/ --add-modules=ALL-SYSTEM --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED
+```
+
+已知的问题是当前 workspace 中的部分 project 不存在导致启动失败，解决办法是清空 jdtls 的 -data 目录，然后
+重启 jdtls（M-x lsp-workspace-restart）：
+
+```bash
+rm -rf ~/.emacs.d/workspace
 ```
 
 # 编程字体
