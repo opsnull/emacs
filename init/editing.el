@@ -40,6 +40,9 @@
 (use-package ace-window
   :ensure t
   :config
+  ;; 默认是 global，会在所有 frame 间跳转，在启用 treemacs 的情况下，每次都要输入窗口
+  ;; 编号（即使只有两个窗口），不方便。
+  (setq aw-scope 'frame)
   (global-set-key (kbd "M-o") 'ace-window))
 
 ; 文本片段
