@@ -111,8 +111,8 @@
   (add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.mustache\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.djhtml\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.tmpl\\'" . web-mode))   ; jinjia2
-  (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)) ; go template
+  (add-to-list 'auto-mode-alist '("\\.tmpl\\'" . web-mode))   ;jinjia2
+  (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)) ;go template
   (add-to-list 'auto-mode-alist '("\\.ftl\\'" . web-mode)) ;freemarker
   (add-to-list 'auto-mode-alist '("\\.tpl\\'" . web-mode)) ;smarty
   (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode)) ;tsx

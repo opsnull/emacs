@@ -2,12 +2,10 @@
 (setq user-mail-address "zhangjun@4paradigm.com")
 
 (require 'package)
-(setq package-archives
-      '(("gnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-        ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-        ("melpa-stable" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")
-        ("org" . "https://orgmode.org/elpa/")))
-
+(setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+                         ("melpa" . "https://mirrors.ustc.edu.cn/elpa/melpa/")
+                         ("melpa-stable" . "https://mirrors.ustc.edu.cn/elpa/melpa-stable/")
+                         ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
 (package-initialize)
 (setq package-archive-enable-alist '(("melpa" deft magit)))
 (unless package-archive-contents
@@ -37,3 +35,5 @@
 (shell-command "touch ~/.emacs.d/custom.el")
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
+
+(add-hook 'emacs-startup-hook (lambda () (kill-matching-buffers "^\\*Shell" nil t)))

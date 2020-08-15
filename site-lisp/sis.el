@@ -81,18 +81,22 @@ nil means obtained from the envrionment.")
 (defvar sis-respect-prefix-and-buffer t
   "Preserve buffer input source when the /respect mode/ is enabled.")
 
-(defvar sis-preserve-go-english-triggers nil
+(defvar sis-respect-go-english-triggers nil
   "Triggers to save input source to buffer and then go to english.")
 
-(defvar sis-preserve-restore-triggers nil
+(defvar sis-respect-restore-triggers nil
   "Triggers to restore the input source from buffer.")
+
+(defvar sis-respect-dispatches
+  (list 'magit-file-dispatch 'magit-dispatch)
+  "Triggers for dispatchers.")
 
 (defvar sis-prefix-override-keys
   (list "C-c" "C-x" "C-h")
   "Prefix keys to be overrided.")
 
 (defvar sis-prefix-override-recap-triggers
-  (list 'evil-local-mode 'yas-minor-mode 'eaf-mode)
+  (list 'evil-local-mode 'yas-minor-mode)
   "Commands trigger the recap of the prefix override.
 
 Some functions take precedence of the override, need to recap after.")
@@ -185,6 +189,8 @@ Possible values:
 (declare-function mac-select-input-source "ext:macfns.c"
                   (SOURCE &optional SET-KEYBOARD-LAYOUT-OVERRIDE-P) t)
 
+(defun sis--do-nothing-advice (&rest _)
+    "Advice to make existing function do nothing.")
 ;;
 ;; Following codes are mainly about input source manager
 ;;
@@ -248,6 +254,11 @@ Possible values:
      (when sis--ism
        ,@body)))
 
+(defmacro sis--ensure-dir (&rest body)
+  "Ensure BODY runs in home directory."
+  `(let ((default-directory "~"))
+     ,@body))
+
 (defsubst sis--normalize-to-lang (lang)
   "Normalize LANG in the form of source id or lang to lang."
   (cond
@@ -271,15 +282,8 @@ Possible values:
 (defun sis--mk-get-fn-by-cmd (cmd)
   "Make a function to be bound to `sis-do-get' from CMD."
   (lambda ()
-    (condition-case err
-        (string-trim (shell-command-to-string cmd))
-      ((file-missing file-error)
-       (when (equal (car (cdr err))
-                    "Setting current directory")
-         (message
-          "Default directory for buffer <%s> is missing, now set to '~'"
-          (current-buffer))
-         (setq default-directory "~"))))))
+    (sis--ensure-dir
+     (string-trim (shell-command-to-string cmd)))))
 
 (defun sis--mk-get-fn ()
   "Make a function to be bound to `sis-do-get'."
@@ -300,7 +304,8 @@ Possible values:
    (; external ism
     sis--ism
     (lambda (source)
-      (start-process "set-input-source" nil sis--ism source)))))
+      (sis--ensure-dir
+       (start-process "set-input-source" nil sis--ism source))))))
 
 (defun sis--update-state (source)
   "Update input source state.
@@ -324,7 +329,10 @@ SOURCE should be 'english or 'other."
   (sis--ensure-ism
    (sis--update-state (sis--normalize-to-lang source))
    (funcall sis-do-set (sis--normalize-to-source source))
-   (when sis-log-mode (message "Do set input source: [%s]" source))))
+   (when sis-log-mode
+     (message "Do set input source: [%s]@%s, for-buffer: %s, locked: %s"
+              source (current-buffer)
+              sis--for-buffer sis--for-buffer-locked))))
 
 ;;;###autoload
 (defun sis-get ()
@@ -333,30 +341,42 @@ SOURCE should be 'english or 'other."
   (sis--get)
   sis--current)
 
-;;;###autoload
-(defun sis-set-english ()
-  "Set input source to `english'."
-  (interactive)
+(defun sis--set-english ()
+  "Function to set input source to `english'."
   (sis--set 'english))
 
 ;;;###autoload
-(defun sis-set-other ()
-  "Set input source to `other'."
+(defun sis-set-english ()
+  "Command to set input source to `english'."
   (interactive)
+  (setq sis--for-buffer-locked nil)
+  (sis--set-english))
+
+(defun sis--set-other ()
+  "Function to set input source to `other'."
+  (setq sis--for-buffer-locked nil)
   (sis--set 'other))
+
+;;;###autoload
+(defun sis-set-other ()
+  "Command to set input source to `other'."
+  (interactive)
+  (setq sis--for-buffer-locked nil)
+  (sis--set-other))
 
 ;;;###autoload
 (defun sis-switch ()
   "Switch input source between english and other."
   (interactive)
+  (setq sis--for-buffer-locked nil)
   (sis--ensure-ism
    (cond
     (; current is english
      (eq sis--current 'english)
-     (sis--set 'other))
+     (sis--set-other))
     (; current is other
      (eq sis--current 'other)
-     (sis--set 'english)))))
+     (sis--set-english)))))
 
 ;;;###autoload
 (defun sis-ism-lazyman-config (english-source other-source &optional ism-type)
@@ -375,8 +395,8 @@ TYPE: TYPE can be 'native, 'emp, 'macism, 'im-select, 'fcitx, 'fcitx5, 'ibus.
     (setq sis-other-source other-source))
   (when ism-type
     (setq sis-external-ism (pcase ism-type
-                             ('native nil)
-                             ('emp nil)
+                             ('native 'native)
+                             ('emp 'emp)
                              ('macism "macism")
                              ('im-select "im-select.exe")
                              ('fcitx "fcitx-remote")
@@ -388,6 +408,10 @@ TYPE: TYPE can be 'native, 'emp, 'macism, 'im-select, 'fcitx, 'fcitx5, 'ibus.
     (eq ism-type 'native)
     (setq default-input-method other-source)
     (setq sis-english-source nil)
+    (add-hook 'input-method-activate-hook
+              (lambda () (sis--update-state sis-other-source)))
+    (add-hook 'input-method-deactivate-hook
+              (lambda () (sis--update-state sis-english-source)))
     (setq sis-do-get (lambda() current-input-method))
     (setq sis-do-set (lambda(source)
                        (unless (equal source current-input-method)
@@ -400,17 +424,19 @@ TYPE: TYPE can be 'native, 'emp, 'macism, 'im-select, 'fcitx, 'fcitx5, 'ibus.
     (setq sis-english-source "1")
     (setq sis-other-source "2")
     (setq sis-do-set (lambda(source)
-                       (pcase source
-                         ("1" (start-process "set-input-source"
-                                             nil sis--ism "-c"))
-                         ("2" (start-process "set-input-source"
-                                             nil sis--ism "-o"))))))
+                       (sis--ensure-dir
+                        (pcase source
+                          ("1" (start-process "set-input-source"
+                                              nil sis--ism "-c"))
+                          ("2" (start-process "set-input-source"
+                                              nil sis--ism "-o")))))))
    (; ibus, set do-get and do-set
     (eq ism-type 'ibus)
     (setq sis-do-get (sis--mk-get-fn-by-cmd (format "%s engine" sis--ism)))
     (setq sis-do-set (lambda(source)
-                       (start-process "set-input-source"
-                                      nil sis--ism "engine" source))))))
+                       (sis--ensure-dir
+                        (start-process "set-input-source"
+                                       nil sis--ism "engine" source)))))))
 
 ;;
 ;; Following codes are mainly about auto update mode
@@ -427,7 +453,12 @@ TYPE: TYPE can be 'native, 'emp, 'macism, 'im-select, 'fcitx, 'fcitx5, 'ibus.
   (when sis--auto-refresh-timer
     (cancel-timer sis--auto-refresh-timer))
 
-  (sis--save-to-buffer)
+  (if (and sis--respect-to-restore-after-minibuffer
+           (not sis--respect-in-dispatcher))
+      (progn
+        (sis--restore-from-buffer)
+        (setq sis--respect-to-restore-after-minibuffer nil))
+  (sis--save-to-buffer))
 
   (when (and sis-auto-refresh-seconds sis-auto-refresh-mode)
     (setq sis--auto-refresh-timer
@@ -540,16 +571,70 @@ way."
 ;; Following codes are mainly about respect mode
 ;;
 
-(defsubst sis--save-to-buffer (&optional lock-after)
-  "Save buffer input source, optional LOCK-AFTER save."
-  (sis--get)
-  (when lock-after
-    (setq sis--for-buffer-locked t)))
+(defvar sis--prefix-override-map-alist nil
+  "Map alist for override.")
+
+(defvar sis--prefix-handle-stage 'normal
+  "Processing state of the prefix key.
+
+Possible values: 'normal, 'prefix, 'sequence.")
+
+(defvar sis--buffer-before-prefix nil
+  "Current buffer before prefix.")
+
+(defvar sis--buffer-before-command nil
+  "Current buffer before prefix.")
+
+(defvar sis--real-this-command nil
+  "Real this command. Some commands overwrite it.")
+
+(defvar sis--respect-to-restore-after-minibuffer nil
+  "Already restored input source after minibuffer exit.")
+
+(defvar sis--prefix-override-order -1000
+  "Order of the prefix override in `emulation-mode-map-alists'.")
+
+
+(defsubst sis--save-to-buffer ()
+  "Save buffer input source."
+  (sis--get))
 
 (defsubst sis--restore-from-buffer ()
   "Restore buffer input source."
   (setq sis--for-buffer-locked nil)
   (sis--set (or sis--for-buffer 'english)))
+
+(defvar sis--respect-in-dispatcher nil
+  "In processing a dispatcher.")
+(make-variable-buffer-local 'sis--respect-in-dispatcher)
+
+(defsubst sis--respect-dispatch-advice ()
+  "Advice for `sis-respect-dispatches'."
+  (when sis-log-mode
+    (message "dispatcher-advice: %s@%s, %s@locked"
+             sis--for-buffer (current-buffer)
+             sis--for-buffer-locked))
+  (setq sis--for-buffer-locked t)
+  (sis--set-english)
+  (setq sis--respect-in-dispatcher t))
+
+(defsubst sis--respect-go-english-advice ()
+  "Advice for `sis-respect-go-english-triggers'."
+  (sis--save-to-buffer)
+  (when sis-log-mode
+    (message "go-english-advice: %s@%s, %s@locked"
+             sis--for-buffer (current-buffer)
+             sis--for-buffer-locked))
+  (setq sis--for-buffer-locked t)
+  (sis--set-english))
+
+(defsubst sis--respect-restore-advice ()
+  "Restore buffer input source."
+  (when sis-log-mode
+    (message "restore-advice: %s@%s, %s@locked"
+             sis--for-buffer (current-buffer)
+             sis--for-buffer-locked))
+  (sis--restore-from-buffer))
 
 (defvar sis--prefix-override-map-enable nil
   "Enabe the override keymap.")
@@ -569,29 +654,6 @@ way."
   (when (local-variable-p 'sis--prefix-override-map-enable)
     (kill-local-variable 'sis--prefix-override-map-enable)))
 
-(defvar sis--prefix-override-map-alist nil
-  "Map alist for override.")
-
-(defvar sis--prefix-handle-stage 'normal
-  "Processing state of the prefix key.
-
-Possible values: 'normal, 'prefix, 'sequence.")
-
-(defvar sis--buffer-before-prefix nil
-  "Current buffer before prefix.")
-
-(defvar sis--buffer-before-minibuffer nil
-  "Current buffer before enter minibuffer.")
-
-(defvar sis--buffer-before-command nil
-  "Current buffer before prefix.")
-
-(defvar sis--real-this-command nil
-  "Real this command. Some commands overwrite it.")
-
-(defvar sis--prefix-override-order -1000
-  "Order of the prefix override in `emulation-mode-map-alists'.")
-
 (defun sis--prefix-override-recap-advice (&rest res)
   "Advice for `prefix-override-recap-triggers' with RES."
   (add-to-ordered-list
@@ -608,11 +670,11 @@ Possible values: 'normal, 'prefix, 'sequence.")
   (prefix-command-preserve-state)
   ;; Push the key back on the event queue
   (setq unread-command-events
-        (append (mapcar (lambda (e) `(t . ,e))
+        (append (mapcar (lambda (e) (cons t e))
                         (listify-key-sequence (this-command-keys)))
                 unread-command-events)))
 
-(defun sis--preserve-focus-out-handler ()
+(defun sis--respect-focus-out-handler ()
   "Handler for `focus-out-hook'."
 
   ;; `mouse-drag-region' causes lots of noise.
@@ -622,23 +684,24 @@ Possible values: 'normal, 'prefix, 'sequence.")
     ;; when other windows get focus.
     ;; so, don't get the current OS input source
     (setq sis--for-buffer-locked t)
-    (sis-set-english))
+    (sis--set-english))
 
   (when sis-log-mode
     (message "Handle save hook, save [%s] to [%s]."
              sis--for-buffer (current-buffer))))
 
-(defun sis--preserve-focus-in-handler ()
+(defun sis--respect-focus-in-handler ()
   "Handler for `focus-in-hook'."
   (when sis-log-mode
     (message "Handle restore hook, restore [%s] from [%s] ."
              sis--for-buffer (current-buffer)))
   (sis--restore-from-buffer))
 
-(defun sis--preserve-pre-command-handler ()
+(defun sis--respect-pre-command-handler ()
   "Handler for `pre-command-hook' to preserve input source."
   (setq sis--buffer-before-command (current-buffer))
   (setq sis--real-this-command this-command)
+  (setq sis--respect-in-dispatcher nil)
 
   (when sis-log-mode
     (message "pre@[%s]: [%s]@key [%s]@cmd [%s]@buf [%s]@override."
@@ -652,10 +715,6 @@ Possible values: 'normal, 'prefix, 'sequence.")
     (; current is normal stage
      'normal
      (cond
-      (; enter english era
-       (memq sis--real-this-command sis-preserve-go-english-triggers)
-       (sis--save-to-buffer t)
-       (sis-set-english))
       (; not prefix key
        (not (eq sis--real-this-command #'sis--prefix-override-handler))
        t)
@@ -669,13 +728,14 @@ Possible values: 'normal, 'prefix, 'sequence.")
           "[%s] is a prefix key, short circuit to prefix phase."
           (this-command-keys)))
        (setq sis--prefix-handle-stage 'prefix)
-       (sis--preserve-pre-command-handler))))
+       (sis--respect-pre-command-handler))))
     (; current is prefix stage
      'prefix
      (setq sis--prefix-override-map-enable nil)
      (setq sis--buffer-before-prefix (current-buffer))
-     (sis--save-to-buffer t)
-     (sis-set-english)
+     (sis--save-to-buffer)
+     (setq sis--for-buffer-locked t)
+     (sis--set-english)
      (when sis-log-mode
        (message "Input source: [%s] (saved) => [%s]."
                 sis--for-buffer sis-english-source)))
@@ -690,8 +750,10 @@ Possible values: 'normal, 'prefix, 'sequence.")
         (;; special buffer
          lambda (buffer)
          (and (sis--string-match-p "^\*" (buffer-name buffer))
-              (not (sis--string-match-p "^\*New" (buffer-name buffer)))
-              (not (sis--string-match-p "^\*Scratch" (buffer-name buffer))))))
+              (not (sis--string-match-p "^\*new\*"
+                                        (downcase (buffer-name buffer))))
+              (not (sis--string-match-p "^\*scratch\*"
+                                        (downcase (buffer-name buffer)))))))
   "Predicates on buffers to disable prefix overriding.")
 
 (defsubst sis--prefix-override-buffer-disable-p (buffer)
@@ -704,13 +766,15 @@ Possible values: 'normal, 'prefix, 'sequence.")
 (defsubst sis--to-normal-stage (restore)
   "Transite to normal stage and restore input source if RESTORE is t."
   (when restore
-    ;; minibuffer are handled separately.
+    ;; entering minibuffer is handled separately.
     ;; some functions like `exit-minibuffer' won't trigger post-command-hook
-    (unless (or (minibufferp)
-                (minibufferp sis--buffer-before-command))
+    (unless (or (minibufferp) sis--respect-in-dispatcher)
       (when sis-log-mode
-        (message "restore: [%s]@[%s]." sis--for-buffer (current-buffer)))
-      (sis--restore-from-buffer))
+        (message "restore: [%s]@[%s]" sis--for-buffer (current-buffer)))
+      (sis--restore-from-buffer)
+      ;; indicate that input source is already restored after minibuffer.
+      ;; no harm if not the case of just exiting minibuffer.
+      (setq sis--respect-to-restore-after-minibuffer nil))
 
     (when (and (not (local-variable-p
                      'sis--prefix-override-map-enable))
@@ -722,7 +786,7 @@ Possible values: 'normal, 'prefix, 'sequence.")
 
   (setq sis--prefix-handle-stage 'normal))
 
-(defun sis--preserve-post-command-handler ()
+(defun sis--respect-post-command-handler ()
   "Handler for `post-command-hook' to preserve input source."
   ;; (setq this-command sis--real-this-command)
   (when sis-log-mode
@@ -754,9 +818,7 @@ Possible values: 'normal, 'prefix, 'sequence.")
        (sis--to-normal-stage t))))
     (; current is normal stage
      'normal
-     (let ((restore (or (not (eq sis--buffer-before-command (current-buffer)))
-                        (memq sis--real-this-command
-                              sis-preserve-restore-triggers))))
+     (let ((restore (not (eq sis--buffer-before-command (current-buffer)))))
        (sis--to-normal-stage restore)))))
 
 (defun sis--minibuffer-setup-handler ()
@@ -766,18 +828,13 @@ Possible values: 'normal, 'prefix, 'sequence.")
              (current-buffer)
              sis--buffer-before-command
              this-command))
-  (setq sis--buffer-before-minibuffer sis--buffer-before-command)
-  (sis-set-english))
+  (setq sis--respect-to-restore-after-minibuffer nil)
+  (sis--set-english))
 
 (defun sis--minibuffer-exit-handler ()
   "Handler for `minibuffer-exit-hook'."
-  (when sis-log-mode
-    (message "exit minibuffer: [%s]@before [%s]@command"
-             sis--buffer-before-minibuffer
-             this-command))
-  (with-current-buffer sis--buffer-before-minibuffer
-    (unless (minibufferp)
-      (sis--restore-from-buffer))))
+  (when sis-log-mode (message "exit minibuffer: [%s]@command" this-command))
+  (setq sis--respect-to-restore-after-minibuffer t))
 
 ;;;###autoload
 (define-minor-mode sis-global-respect-mode
@@ -786,7 +843,7 @@ Possible values: 'normal, 'prefix, 'sequence.")
 - Respect start: start this mode with specific input source.
 - Respect ~evil~: switch to English when leaving ~evil~ ~insert~ mode.
 - Respect prefix key: switch to English for ~C-c~/ ~C-x~/ ~C-h~.
-- Respect buffer: recover buffer input source when it regain focus."
+- Respect buffer: restore buffer input source when it regain focus."
   :global t
   :init-value nil
   (cond
@@ -801,14 +858,19 @@ Possible values: 'normal, 'prefix, 'sequence.")
      ;; set english when exit evil insert state
      (when (featurep 'evil)
        (add-hook 'evil-insert-state-exit-hook #'sis-set-english)
+       ;; let sis to manage input method
+       (advice-add 'evil-activate-input-method :around
+                   #'sis--do-nothing-advice)
+       (advice-add 'evil-deactivate-input-method :around
+                   #'sis--do-nothing-advice)
        (when sis-respect-evil-normal-escape
          (define-key evil-normal-state-map
            (kbd "<escape>") #'sis-set-english)))
 
      (when sis-respect-prefix-and-buffer
        ;; preserve buffer input source
-       (add-hook 'pre-command-hook #'sis--preserve-pre-command-handler)
-       (add-hook 'post-command-hook #'sis--preserve-post-command-handler)
+       (add-hook 'pre-command-hook #'sis--respect-pre-command-handler)
+       (add-hook 'post-command-hook #'sis--respect-post-command-handler)
        (add-hook 'minibuffer-setup-hook #'sis--minibuffer-setup-handler)
        (add-hook 'minibuffer-exit-hook #'sis--minibuffer-exit-handler)
 
@@ -817,8 +879,17 @@ Possible values: 'normal, 'prefix, 'sequence.")
          (require 'terminal-focus-reporting)
          (terminal-focus-reporting-mode t))
 
-       (add-hook 'focus-out-hook #'sis--preserve-focus-out-handler)
-       (add-hook 'focus-in-hook #'sis--preserve-focus-in-handler)
+       (add-hook 'focus-out-hook #'sis--respect-focus-out-handler)
+       (add-hook 'focus-in-hook #'sis--respect-focus-in-handler)
+
+       (dolist (trigger sis-respect-go-english-triggers)
+         (advice-add trigger :after #'sis--respect-go-english-advice))
+
+       (dolist (trigger sis-respect-restore-triggers)
+         (advice-add trigger :after #'sis--respect-restore-advice))
+
+       (dolist (trigger sis-respect-dispatches)
+         (advice-add trigger :after #'sis--respect-dispatch-advice))
 
        ;; set english when prefix key pressed
        (setq sis--prefix-override-map-alist
@@ -839,14 +910,16 @@ Possible values: 'normal, 'prefix, 'sequence.")
     (sis--try-disable-auto-refresh-mode)
     ;; for evil
     (when (featurep 'evil)
+      (advice-remove 'evil-activate-input-method #'sis--do-nothing-advice)
+      (advice-remove 'evil-deactivate-input-method #'sis--do-nothing-advice)
       (remove-hook 'evil-insert-state-exit-hook #'sis-set-english)
       (when sis-respect-evil-normal-escape
         (define-key evil-normal-state-map (kbd "<escape>") nil)))
 
     (when sis-respect-prefix-and-buffer
       ;; for preserving buffer input source
-      (remove-hook 'focus-out-hook #'sis--preserve-focus-out-handler)
-      (remove-hook 'focus-in-hook #'sis--preserve-focus-in-handler)
+      (remove-hook 'focus-out-hook #'sis--respect-focus-out-handler)
+      (remove-hook 'focus-in-hook #'sis--respect-focus-in-handler)
 
       ;; for prefix key
       (setq emulation-mode-map-alists
