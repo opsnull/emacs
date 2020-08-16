@@ -1,5 +1,5 @@
 ; treemacs sidebar
-(shell-command "mkdir -p ~/.emacs.d/.cache")
+
 (use-package treemacs
   :ensure t
   :demand t
@@ -38,14 +38,12 @@
      treemacs-silent-filewatch              nil
      treemacs-silent-refresh                nil
      treemacs-sorting                       'alphabetic-desc
-     treemacs-space-between-root-nodes      t
+     treemacs-space-between-root-nodes      nil
      treemacs-tag-follow-cleanup            t
      treemacs-tag-follow-delay              1
      treemacs-width                         35
      imenu-auto-rescan                      t)
-    ;; The default width and height of the icons is 22 pixels. If you are
-    ;; using a Hi-DPI display, uncomment this to double the icon size.
-    ;;(treemacs-resize-icons 44)
+    (treemacs-resize-icons 11)
     (treemacs-follow-mode t)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode t)
@@ -65,3 +63,8 @@
 (use-package treemacs-projectile :after (treemacs projectile) :ensure t)
 (use-package treemacs-icons-dired :after (treemacs dired) :ensure t :config (treemacs-icons-dired-mode))
 (use-package treemacs-magit :after (treemacs magit) :ensure t)
+(use-package treemacs-all-the-icons
+  :after (treemacs all-the-icons)
+  :ensure t
+  :config
+  (treemacs-load-theme "all-the-icons"))
