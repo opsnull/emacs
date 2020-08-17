@@ -1,15 +1,33 @@
 ; python
-(use-package python
+;; pyenv-mode 提供 pyenv-mode-set 和 pyenv-mode-unset 两个命令，来管理 PYENV_VERSION 环境变量。
+(use-package pyenv-mode
   :ensure t
-  :demand t
+  :after (projectile)
   :init
   ;; 使用 pyenv 管理 python 版本和虚拟环境：https://github.com/pyenv/pyenv。
   ;; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
   (shell-command "which pyenv || brew install pyenv")
   (shell-command "which pyenv-virtualenv || brew install pyenv-virtualenv")
-  (shell-command "pip -q install ipython 'python-language-server[all]'")
+  (add-to-list 'exec-path "~/.pyenv/shims")
+  (setenv "WORKON_HOME" "~/.pyenv/versions/")
+  :config
+  (pyenv-mode)
+  ;; 切换 projectile 项目时，查看项目名称是否位于 pyenv versions 列表中，如果是，则设置正确的
+  ;; PYENV_VERSION 环境变量。
+  (defun projectile-pyenv-mode-set ()
+    "Set pyenv version matching project name."
+    (let ((project (projectile-project-name)))
+      (if (member project (pyenv-mode-versions))
+          (pyenv-mode-set project)
+        (pyenv-mode-unset))))
+  (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set))
+
+(use-package python
+  :ensure t
+  :demand t
+  :after (pyenv-mode)
   :custom
-  ;; 识别项目目录中的 .python-version 文件，然后切换到该环境的 pyls。
+  ;; 识别 PYENV_VERSION 环境变量，并传递给 jedi；
   (lsp-pyls-plugins-jedi-use-pyenv-environment t)
   (python-shell-interpreter "ipython")
   (python-shell-interpreter-args "")
@@ -20,6 +38,7 @@
   (python-shell-completion-string-code "';'.join(get_ipython().Completer.all_completions('''%s'''))\n")
   :hook
   (python-mode . (lambda ()
+                   (shell-command "pip -q install ipython 'python-language-server[all]'")
                    (setq indent-tabs-mode nil)
                    (setq tab-width 4)
                    (setq python-indent 4)
