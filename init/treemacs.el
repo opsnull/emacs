@@ -1,5 +1,4 @@
 ; treemacs sidebar
-
 (use-package treemacs
   :ensure t
   :demand t
@@ -68,3 +67,15 @@
   :ensure t
   :config
   (treemacs-load-theme "all-the-icons"))
+
+(use-package persp-mode
+  :ensure t
+  :custom
+  (persp-keymap-prefix (kbd "C-x p"))
+  :config
+  (persp-mode))
+
+(use-package treemacs-persp
+  :after treemacs persp-mode
+  :ensure t
+  :config (treemacs-set-scope-type 'Perspectives))
