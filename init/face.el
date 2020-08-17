@@ -113,3 +113,5 @@
 ;; 对于 macos，不能使用 toggle-frame-fullscreen，否则有些情况下会黑屏。
 ;; https://github.com/tumashu/posframe/issues/30#issuecomment-586370312
 (add-hook 'after-init-hook #'toggle-frame-maximized)
+
+(setq initial-scratch-message nil)
