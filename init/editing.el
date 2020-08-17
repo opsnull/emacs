@@ -90,3 +90,8 @@
   (global-set-key (kbd "C-\\") 'sis-switch))
 
 (use-package ox-hugo :ensure t)
+
+(prefer-coding-system 'utf-8)
+(setenv "LANG" "zh_CN.UTF-8")
+(setenv "LC_ALL" "zh_CN.UTF-8")
+(setenv "LC_CTYPE" "zh_CN.UTF-8")
