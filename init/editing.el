@@ -95,3 +95,9 @@
 (setenv "LANG" "zh_CN.UTF-8")
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
+
+; 当外界程序修改了文件时，自动 reload。
+(use-package autorevert
+  :ensure t
+  :diminish
+  :hook (after-init . global-auto-revert-mode))

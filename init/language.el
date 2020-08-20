@@ -8,6 +8,7 @@
   ;; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
   (shell-command "which pyenv || brew install pyenv")
   (shell-command "which pyenv-virtualenv || brew install pyenv-virtualenv")
+  (shell-command "pip -q install ipython 'python-language-server[all]'")
   (add-to-list 'exec-path "~/.pyenv/shims")
   (setenv "WORKON_HOME" "~/.pyenv/versions/")
   :config
@@ -38,7 +39,6 @@
   (python-shell-completion-string-code "';'.join(get_ipython().Completer.all_completions('''%s'''))\n")
   :hook
   (python-mode . (lambda ()
-                   (shell-command "pip -q install ipython 'python-language-server[all]'")
                    (setq indent-tabs-mode nil)
                    (setq tab-width 4)
                    (setq python-indent 4)

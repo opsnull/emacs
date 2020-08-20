@@ -66,9 +66,6 @@
 ; 在状态栏显示文件大小
 (size-indication-mode t)
 
-; 禁用启动画面
-(setq inhibit-startup-message t)
-
 ; 去掉工具栏
 (tool-bar-mode -1)
 
@@ -109,9 +106,13 @@
 (when (not indicate-empty-lines)
   (toggle-indicate-empty-lines))
 
-; 全屏。
+; 全屏
 ;; 对于 macos，不能使用 toggle-frame-fullscreen，否则有些情况下会黑屏。
 ;; https://github.com/tumashu/posframe/issues/30#issuecomment-586370312
 (add-hook 'after-init-hook #'toggle-frame-maximized)
 
+; 静默启动
+(setq inhibit-startup-screen t)
+(setq inhibit-startup-message t)
+(setq inhibit-startup-echo-area-message t)
 (setq initial-scratch-message nil)
