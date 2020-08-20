@@ -58,9 +58,20 @@
 (setq auto-mode-alist (append '(("/tmp/mutt.*" . mail-mode)) auto-mode-alist))
 
 ; tramp
-(require 'tramp)
-(setq tramp-default-method "ssh")
-(setq tramp-verbose 10)
+;; 默认 ControlPersist 是关闭的，在打开远程文件时可能会 hang。
+(setq
+ tramp-ssh-controlmaster-options (concat
+                                  "-o ControlMaster=auto "
+                                  "-o ControlPath='tramp.%%C' "
+                                  "-o ControlPersist=600 "
+                                  "-o ServerAliveCountMax=30 "
+                                  "-o ServerAliveInterval=5 ")
+ vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
+ tramp-copy-size-limit nil
+ tramp-default-method "ssh"
+ tramp-verbose 4
+ tramp-completion-reread-directory-timeout t)
+
 
 ; dired
 (setq dired-recursive-deletes t) ; 可以递归的删除目录
