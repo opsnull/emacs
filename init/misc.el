@@ -69,9 +69,11 @@
  vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
  tramp-copy-size-limit nil
  tramp-default-method "ssh"
+ ;; 在登录远程终端时设置 TERM 环境变量为 tramp。这样可以在远程 shell 的初始化文件中对 tramp 登录情况做特殊处理
+ ;; 例如，对于 zsh，可以设置 PS1。
+ tramp-terminal-type "tramp"
  tramp-verbose 4
  tramp-completion-reread-directory-timeout t)
-
 
 ; dired
 (setq dired-recursive-deletes t) ; 可以递归的删除目录
