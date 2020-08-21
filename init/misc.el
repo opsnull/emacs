@@ -124,15 +124,15 @@
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 
-;; ; xwidget-webkit
-;; (setq browse-url-browser-function 'xwidget-webkit-browse-url)
-;; (defvar xwidget-webkit-bookmark-jump-new-session)
-;; (defvar xwidget-webkit-last-session-buffer)
-;; (add-hook 'pre-command-hook
-;;           (lambda ()
-;;             ;; 使用 xwidget 打开 URL 类型书签。
-;;             (if (eq this-command #'bookmark-bmenu-list)
-;;                 (if (not (eq major-mode 'xwidget-webkit-mode))
-;;                     (setq xwidget-webkit-bookmark-jump-new-session t)
-;;                   (setq xwidget-webkit-bookmark-jump-new-session nil)
-;;                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+; xwidget-webkit
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+(defvar xwidget-webkit-bookmark-jump-new-session)
+(defvar xwidget-webkit-last-session-buffer)
+(add-hook 'pre-command-hook
+          (lambda ()
+            ;; 使用 xwidget 打开 URL 类型书签。
+            (if (eq this-command #'bookmark-bmenu-list)
+                (if (not (eq major-mode 'xwidget-webkit-mode))
+                    (setq xwidget-webkit-bookmark-jump-new-session t)
+                  (setq xwidget-webkit-bookmark-jump-new-session nil)
+                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
