@@ -1,4 +1,3 @@
-; treemacs sidebar
 (use-package treemacs
   :ensure t
   :demand t
@@ -21,22 +20,22 @@
      treemacs-indentation-string            " "
      treemacs-is-never-other-window         nil
      treemacs-max-git-entries               5000
-     Treemacs-missing-project-action        'ask
+     treemacs-missing-project-action        'remove
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
-     treemacs-project-follow-cleanup        nil
+     treemacs-project-follow-cleanup        t ;; 切换 project 后关闭其他 project 目录。
      treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
      treemacs-position                      'left
      treemacs-recenter-distance             0.1
-     treemacs-recenter-after-file-follow    nil
-     treemacs-recenter-after-tag-follow     nil
+     treemacs-recenter-after-file-follow    t
+     treemacs-recenter-after-tag-follow     t
      treemacs-recenter-after-project-jump   'always
      treemacs-recenter-after-project-expand 'on-distance
-     treemacs-show-cursor                   nil
+     treemacs-shownn-cursor                 t
      treemacs-show-hidden-files             t
      treemacs-silent-filewatch              nil
      treemacs-silent-refresh                nil
-     treemacs-sorting                       'alphabetic-desc
+     treemacs-sorting                       'mod-time-desc
      treemacs-space-between-root-nodes      nil
      treemacs-tag-follow-cleanup            t
      treemacs-tag-follow-delay              1
@@ -60,13 +59,15 @@
    ("C-x t M-t" . treemacs-find-tag)))
 
 (use-package treemacs-projectile :after (treemacs projectile) :ensure t)
-;(use-package treemacs-icons-dired :after (treemacs dired) :ensure t :config (treemacs-icons-dired-mode))
 (use-package treemacs-magit :after (treemacs magit) :ensure t)
-(use-package treemacs-all-the-icons
-  :after (treemacs all-the-icons)
-  :ensure t
-  :config
-  (treemacs-load-theme "all-the-icons"))
+;; treemacs-icons-dired 显示的图标和文件名间空格过大。
+;(use-package treemacs-icons-dired :after (treemacs dired) :ensure t :config (treemacs-icons-dired-mode))
+;; 使用 doom-theme 自带的 treemacs theme。
+;; (use-package treemacs-all-the-icons
+;;   :after (treemacs all-the-icons)
+;;   :ensure t
+;;   :config
+;;   (treemacs-load-theme "all-the-icons"))
 
 (use-package persp-mode
   :ensure t

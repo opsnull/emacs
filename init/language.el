@@ -21,7 +21,12 @@
       (if (member project (pyenv-mode-versions))
           (pyenv-mode-set project)
         (pyenv-mode-unset))))
-  (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set))
+  (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
+  :bind
+  ;; 防止和 org-mode 快捷键冲突
+  (:map pyenv-mode-map ("C-c C-u") . nil)
+  (:map pyenv-mode-map ("C-c C-s") . nil))
+
 
 (use-package python
   :ensure t

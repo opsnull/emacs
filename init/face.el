@@ -1,6 +1,4 @@
-; 主题
-;; 只能启用一个主题，未使用的需要 disable。
-;; M-x helm-themes 快速切换主题。
+; M-x helm-themes 快速切换主题。
 (use-package leuven-theme :ensure t :disabled t)
 (use-package monokai-theme :ensure t :disabled t)
 (use-package solarized-theme :ensure t :disabled t)
@@ -8,9 +6,21 @@
 (use-package zenburn-theme :ensure t :disabled t)
 (use-package color-theme-sanityinc-tomorrow
   :ensure t
+  :disabled t
   :config (load-theme 'sanityinc-tomorrow-eighties t))
 
-; modeline
+(use-package doom-themes
+  :ensure t
+  :demand t
+  :config
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t
+        doom-themes-treemacs-theme "doom-colors")
+  (load-theme 'doom-vibrant t)
+  (doom-themes-visual-bell-config)
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
+
 (use-package doom-modeline
   :ensure t
   :custom
@@ -202,3 +212,10 @@
   ("C-c t s" . centaur-tabs-counsel-switch-group)
   ("C-c t p" . centaur-tabs-group-by-projectile-project)
   ("C-c t g" . centaur-tabs-group-buffer-groups))
+
+; 在 dired mode 下，显示的目录和文件更易认。
+(use-package diredfl
+  :ensure
+  :demand
+  :config
+  (diredfl-global-mode))

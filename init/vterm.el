@@ -12,8 +12,7 @@
   ;; 不清理屏幕（会屏幕内容丢失）
   (:map vterm-mode-map ("C-l" . nil))
   ;; C-\ 被映射到 vterm-send-ctrl-slash，需要解绑后才能恢复以前的绑定（切换输入法）。
-  (:map vterm-mode-map ("C-\\" . nil))
-)
+  (:map vterm-mode-map ("C-\\" . nil)))
 
 ; 支持多终端。
 (use-package multi-vterm

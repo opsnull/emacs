@@ -136,3 +136,35 @@
                     (setq xwidget-webkit-bookmark-jump-new-session t)
                   (setq xwidget-webkit-bookmark-jump-new-session nil)
                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+
+; 将 emacs 删除的文件移到 mac osx 回收站。
+(use-package osx-trash
+  :ensure
+  :demand
+  :init
+  (shell-command "which trash || brew install trash")
+  :config
+  (when (eq system-type 'darwin)
+    (osx-trash-setup))
+  (setq delete-by-moving-to-trash t))
+
+; 正确的设置 emacs titlebar 背景颜色和主题一致（默认一直 light）。
+(use-package ns-auto-titlebar
+  :ensure
+  :demand
+  :config
+  (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+
+; 在 dired mode 下，使用 rsync 来拷贝文件，这个拷贝是 background，不会 block emacs。
+(use-package dired-rsync
+  :ensure
+  :demand
+  :config
+  (bind-key "C-c C-r" 'dired-rsync dired-mode-map))
+
+; 提供类似于 ranger 的目录浏览体验。
+(use-package ranger
+  :ensure
+  :demand
+  :config
+  (ranger-override-dired-mode t))

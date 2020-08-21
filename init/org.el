@@ -6,10 +6,28 @@
 (use-package org
   :ensure org-plus-contrib
   :config
+  (setq org-goto-auto-isearch nil)
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb))
+
+; 美化 org-mode 的 heading 和 list。
+(use-package org-superstar
+  :ensure
+  :demand
+  :after (org)
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+
+; 美化 TODO 和 printing。
+(use-package org-fancy-priorities
+  :ensure t
+  :after (org)
+  :hook
+  (org-mode . org-fancy-priorities-mode)
+  :config
+  (setq org-fancy-priorities-list '("⚡" "⬆" "⬇" "☕")))
 
 (use-package posframe :ensure t)
 (use-package org-download

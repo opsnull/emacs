@@ -91,6 +91,7 @@
 
 (use-package ox-hugo :ensure t)
 
+; 中文 UTF-8 环境。
 (prefer-coding-system 'utf-8)
 (setenv "LANG" "zh_CN.UTF-8")
 (setenv "LC_ALL" "zh_CN.UTF-8")
