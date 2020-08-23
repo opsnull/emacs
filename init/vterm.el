@@ -20,8 +20,8 @@
   :after (vterm)
   :config
   (global-set-key [(control return)] 'multi-vterm)
-  (define-key vterm-mode-map (kbd "s-n")   'vterm-toggle-forward)
-  (define-key vterm-mode-map (kbd "s-p")   'vterm-toggle-backward))
+  (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
+  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 ; buffer 专属终端。
 (use-package vterm-toggle
@@ -33,7 +33,7 @@
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
-  (define-key vterm-mode-map [(control return)]   #'vterm-toggle-insert-cd)
+  (define-key vterm-mode-map [(control return)] #'vterm-toggle-insert-cd)
   ; 在 frame 底部显示 term 窗口，https://github.com/jixiuf/vterm-toggle
   (setq vterm-toggle-fullscreen-p nil)
   (add-to-list
