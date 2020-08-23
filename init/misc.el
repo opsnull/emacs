@@ -1,13 +1,6 @@
 ; 最近打开的文件数量
-(setq recentf-max-menu-items 100)
-(setq recentf-max-saved-items 100)
-
-; 缺省模式
-(setq-default default-major-mode 'text-mode)
-(add-hook 'text-mode-hook 'turn-on-auto-fill)
-
-; 句号后跟两个空格
-(setq colon-double-space t)
+(setq recentf-max-menu-items 100
+      recentf-max-saved-items 100)
 
 ; 消除长的 yes or no 提示符
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -15,75 +8,54 @@
 ; 退出 emacs 时提示确认
 (setq confirm-kill-emacs #'y-or-n-p)
 
-; 行距
-(setq default-line-spacing 1)
+(setq-default line-spacing 1
+              fill-column 100
+              comment-fill-column 0)
 
-; 页宽
-(setq default-fill-column 100)
-(setq-default fill-column 100)
-
-; 注释
-(setq comment-fill-column 0)
-(setq comment-fill-column 0)
+(setq tab-width 4
+      ; 缩进时使用空格
+      indent-tabs-mode nil)
 
 ; 平滑滚动
-(setq scroll-margin 3 scroll-conservatively 10000)
+(setq scroll-margin 3
+      scroll-conservatively 10000)
 
 ; 使用 X 剪贴板
 (setq x-select-enable-clipboard t)
 
-; 图片显示
+; 显示图片
 (auto-image-file-mode t)
-
-; tab 空格数
-(setq-default tab-width 4)
-
-; 缩进时使用空格
-(setq-default indent-tabs-mode nil)
 
 ; winner mode
 (winner-mode t)
 
-; 删除最后的空格
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-
 ; 关闭文件选择窗口
-(setq use-file-dialog nil)
-(setq use-dialog-box nil)
+(setq use-file-dialog nil
+      use-dialog-box nil)
 
-; 出错时显示 backtrace 信息
-(setq debug-on-error t)
+(setq-default debug-on-error         t
+              message-log-max        t
+              load-prefer-newer      t
+              ad-redefinition-action 'accept
+              gc-cons-threshold      most-positive-fixnum)
 
-; 当从 mutt 中调用 emacs 时，进入 mail mode
-(setq auto-mode-alist (append '(("/tmp/mutt.*" . mail-mode)) auto-mode-alist))
-
-; tramp
-;; 默认 ControlPersist 是关闭的，在打开远程文件时可能会 hang。
-(setq
- tramp-ssh-controlmaster-options (concat
-                                  "-o ControlMaster=auto "
-                                  "-o ControlPath='tramp.%%C' "
-                                  "-o ControlPersist=600 "
-                                  "-o ServerAliveCountMax=30 "
-                                  "-o ServerAliveInterval=5 ")
- vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
- tramp-copy-size-limit nil
- tramp-default-method "ssh"
- ;; 在登录远程终端时设置 TERM 环境变量为 tramp。这样可以在远程 shell 的初始化文件中对 tramp 登录情况做特殊处理
- ;; 例如，对于 zsh，可以设置 PS1。
- tramp-terminal-type "tramp"
- tramp-verbose 4
- tramp-completion-reread-directory-timeout t)
-
-; dired
-(setq dired-recursive-deletes t) ; 可以递归的删除目录
-(setq dired-recursive-copies t) ; 可以递归的进行拷贝
-
-; thumbs
-(autoload 'thumbs "thumbs" "Preview images in a directory." t)
-
-; 允许在 dired 中直接使用 a 命令进入目录
-(put 'dired-find-alternate-file 'disabled nil)
+; 默认 ControlPersist 是关闭的，在打开远程文件时可能会 hang。
+(setq  tramp-ssh-controlmaster-options
+       (concat "-o ControlMaster=auto "
+               "-o ControlPath='tramp.%%C' "
+               "-o ControlPersist=600 "
+               "-o ServerAliveCountMax=30 "
+               "-o ServerAliveInterval=5 ")
+       vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
+       ;; 增加压缩传承的文件起始大小（默认 4KB），否则容易出现出错： “gzip: (stdin): unexpected end of file”
+       tramp-inline-compress-start-size (* 1024 1024 1)
+       tramp-copy-size-limit nil
+       tramp-default-method "ssh"
+       ;; 在登录远程终端时设置 TERM 环境变量为 tramp。这样可以在远程 shell 的初始化文件中对 tramp 登录情况做特殊处理
+       ;; 例如，对于 zsh，可以设置 PS1。
+       tramp-terminal-type "tramp"
+       tramp-verbose 4
+       tramp-completion-reread-directory-timeout t)
 
 ; 关闭 bell 声音
 (setq ring-bell-function 'ignore)
@@ -99,8 +71,7 @@
   (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
   (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
   (defun track-mouse (e))
-  (setq mouse-sel-mode t)
-  )
+  (setq mouse-sel-mode t))
 
 ; 调整窗口大小
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
@@ -142,7 +113,7 @@
   :ensure
   :demand
   :init
-  (shell-command "which trash || brew install trash")
+  (shell-command "trash -v || brew install trash")
   :config
   (when (eq system-type 'darwin)
     (osx-trash-setup))
@@ -155,6 +126,13 @@
   :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
+; dired
+(setq dired-recursive-deletes t) ; 可以递归的删除目录
+(setq dired-recursive-copies t) ; 可以递归的进行拷贝
+
+; 允许在 dired 中直接使用 a 命令进入目录
+(put 'dired-find-alternate-file 'disabled nil)
+
 ; 在 dired mode 下，使用 rsync 来拷贝文件，这个拷贝是 background，不会 block emacs。
 (use-package dired-rsync
   :ensure
@@ -162,9 +140,24 @@
   :config
   (bind-key "C-c C-r" 'dired-rsync dired-mode-map))
 
-; 提供类似于 ranger 的目录浏览体验。
+; 提供类似于 ranger 的目录浏览体验。C-h 显示或隐藏 dotfiles。
 (use-package ranger
   :ensure
   :demand
   :config
   (ranger-override-dired-mode t))
+
+; 消除 Package cl is deprecated 警告。
+(setq byte-compile-warnings '(cl-functions))
+
+; 显示缩进情况。
+(use-package highlight-indent-guides
+  :ensure
+  :demand
+  :after (python)
+  :custom
+  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-responsive 'stack)
+  (highlight-indent-guides-delay 0.1)
+  :config
+  (add-hook 'python-mode-hook 'highlight-indent-guides-mode))
