@@ -72,7 +72,6 @@
     "[/\\\\]autom4te.cache$"
     "[/\\\\]\\.reference$"))
   :config
-  (require 'lsp-clients)
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (setq lsp-completion-enable-additional-text-edit nil)
   :bind (:map lsp-mode-map
