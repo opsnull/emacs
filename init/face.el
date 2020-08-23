@@ -4,6 +4,7 @@
 (use-package solarized-theme :ensure t :disabled t)
 (use-package spacemacs-theme :ensure t :disabled t)
 (use-package zenburn-theme :ensure t :disabled t)
+(use-package spacemacs-theme :ensure t :disabled t)
 (use-package color-theme-sanityinc-tomorrow
   :ensure t
   :disabled t
@@ -30,8 +31,7 @@
   ; 简化显示的文件路径，默认全路径，在 modeline 上占用太多空间。
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
   :init
-  (doom-modeline-mode 1)
-)
+  (doom-modeline-mode 1))
 
 ; 需要额外执行 M-x all-the-icons-install-fonts 命令安装字体。
 (use-package all-the-icons :ensure t :after (doom-modeline))
@@ -56,7 +56,6 @@
   (dolist (charset '(kana han symbol cjk-misc bopomofo))
     (set-fontset-font t charset "WenQuanYi Micro Hei-14"))
   (setq face-font-rescale-alist '(("WenQuanYi Micro Hei-14" . 1.1))))
-
 
 ; 在状态栏显示列号
 (column-number-mode t)
@@ -149,7 +148,7 @@
   (setq uniquify-separator "/")
   (setq uniquify-buffer-name-style 'forward)
   (defun centaur-tabs-hide-tab (x)
-    "Do no to show buffer X in tabs."
+    "Do not to show buffer x in tabs."
     (let ((name (format "%s" x)))
       (or
        ;; Current window is not dedicated window.
@@ -172,8 +171,7 @@
 
        ;; Is not magit buffer.
        (and (string-prefix-p "magit" name)
-	        (not (file-name-extension name)))
-       )))
+	        (not (file-name-extension name))))))
   (defun centaur-tabs-buffer-groups ()
     (list
      (cond
@@ -219,3 +217,19 @@
   :demand
   :config
   (diredfl-global-mode))
+
+; emacs dashboard。
+(use-package dashboard
+  :ensure
+  :demand
+  :config
+  (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
+  (setq dashboard-center-content t)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-items '((recents  . 5)
+                          (projects . 5)
+                          (bookmarks . 3)
+                          (agenda . 3)))
+  (dashboard-setup-startup-hook))
