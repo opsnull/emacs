@@ -11,8 +11,8 @@
      treemacs-deferred-git-apply-delay      0.5
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              5000
-     treemacs-file-follow-delay             0.2
+     treemacs-file-event-delay              3000
+     treemacs-file-follow-delay             0.1
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
      treemacs-goto-tag-strategy             'refetch-index
@@ -35,10 +35,10 @@
      treemacs-show-hidden-files             t
      treemacs-silent-filewatch              nil
      treemacs-silent-refresh                nil
-     treemacs-sorting                       'mod-time-desc
+     treemacs-sorting                       'alphabetic-asc
      treemacs-space-between-root-nodes      nil
      treemacs-tag-follow-cleanup            t
-     treemacs-tag-follow-delay              1
+     treemacs-tag-follow-delay              0.5
      treemacs-width                         35
      imenu-auto-rescan                      t)
     (treemacs-resize-icons 11)
@@ -69,14 +69,14 @@
 ;;   :config
 ;;   (treemacs-load-theme "all-the-icons"))
 
-(use-package persp-mode
-  :ensure t
-  :custom
-  (persp-keymap-prefix (kbd "C-x p"))
-  :config
-  (persp-mode))
+;; (use-package persp-mode
+;;   :ensure t
+;;   :custom
+;;   (persp-keymap-prefix (kbd "C-x p"))
+;;   :config
+;;   (persp-mode))
 
-(use-package treemacs-persp
-  :after treemacs persp-mode
-  :ensure t
-  :config (treemacs-set-scope-type 'Perspectives))
+;; (use-package treemacs-persp
+;;   :after treemacs persp-mode
+;;   :ensure t
+;;   :config (treemacs-set-scope-type 'Perspectives))
