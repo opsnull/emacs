@@ -160,4 +160,9 @@
   (highlight-indent-guides-responsive 'stack)
   (highlight-indent-guides-delay 0.1)
   :config
-  (add-hook 'python-mode-hook 'highlight-indent-guides-mode))
+  (require 'yaml-mode)
+  (require 'json-mode)
+  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
+
