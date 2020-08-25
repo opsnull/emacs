@@ -54,7 +54,7 @@
   (shell-command "mkdir -p ~/.emacs.d/snippets")
   :config
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
-  (yas-global-mode 1)
+  ;(yas-global-mode 1) ;; yas-global-mode 与 sis package 不兼容。
   :commands yas-minor-mode
   :hook (java-mode . yas-minor-mode))
 
@@ -71,8 +71,8 @@
 ; smart-input-source 实现输入 prefix 按键时自动切换到英文，执行结束后恢复系统输入法的功能，
 ; 这样可以省去了手动切换输入法，然后再保存 buffer 的烦恼！
 (use-package sis
+  :ensure t
   :demand t
-  :load-path "site-lisp"
   :init
   (shell-command
    (concat

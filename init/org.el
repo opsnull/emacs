@@ -6,7 +6,27 @@
 (use-package org
   :ensure org-plus-contrib
   :config
+  ;; 隐藏 #+TITLE:
+  (setq org-hidden-keywords '(title))
+  ;; 隐藏语法标记，例如 *bold* 会显示加粗效果，但不显示标记 *。
+  (setq org-hide-emphasis-markers t)
   (setq org-goto-auto-isearch nil)
+  ;; 设置基本字体
+  (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
+  ;; Low levels are unimportant => no scaling
+  (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
+  (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
+  (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
+  (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
+  ;; Top ones get scaled the same as in LaTeX (\large, \Large, \LARGE)
+  (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2) ;\large
+  (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44) ;\Large
+  (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728) ;\LARGE
+  ;; Document Title, (\huge)
+  (set-face-attribute 'org-document-title nil
+                      :height 2.074
+  ;                    :foreground 'unspecified
+                      :inherit 'org-level-8)
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
   (global-set-key (kbd "C-c c") 'org-capture)

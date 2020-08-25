@@ -19,15 +19,6 @@ brew install emacs-plus@27 --with-jansson --with-mailutils --with-xwidgets  --wi
 ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications/Emacs.app
 ```
 
-# 中文字符集
-
-先用 locale 命令查看当前系统字符集是否是 zh_CN.UTF-8，如果不是的话，终端显示中文时会乱码，解决办法是
-在 shell 启动文件中添加正确的 LANG 环境变量，例如：
-
-``` bash
-echo 'export LANG="zh_CN.UTF-8"' >> ~/.zshrc
-```
-
 # python
 
 使用 pyenv 管理 python 环境和版本。如果项目位于虚拟环境中，则需要使用如下命令为该环境安装 pyls，否则
@@ -71,14 +62,9 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
 rm -rf ~/.emacs.d/workspace
 ```
 
-# 编程字体
+# 字体
 
-从 macOS High Sierra 开始， xcode 的默认字体从 Menlo 更改为 San Francisco Mono。如果没有安装 xcode
-则需要从 https://developer.apple.com/fonts/ 下载安装。
-
-Unicode 字体选用的是 Symbola，可以从 https://fontlibrary.org/en/font/symbola 下载安装。
-
-中文字体选用的是文泉驿微黑，可以从 https://www.freechinesefont.com/wenquanyi-micro-hei-download/ 下载安装。
+选用的是 Adobe 和 Google 联合推出的 思源字体，从 https://github.com/adobe-fonts/source-han-mono 下载安装。
 
 # all-the-icons 图标
 
