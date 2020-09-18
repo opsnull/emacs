@@ -25,6 +25,7 @@
 (use-package avy
   :ensure t
   :config
+  (global-set-key (kbd "C-:") 'avy-goto-char)
   (global-set-key (kbd "C-'") 'avy-goto-char-2)
   (global-set-key (kbd "M-g l") 'avy-goto-line))
 
@@ -102,3 +103,28 @@
   :ensure t
   :diminish
   :hook (after-init . global-auto-revert-mode))
+
+; 显示缩进
+(use-package highlight-indent-guides
+  :ensure
+  :demand
+  :after (python yaml-mode json-mode)
+  :custom
+  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-responsive 'stack)
+  (highlight-indent-guides-delay 0.1)
+  :config
+  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
+
+; 折叠
+(use-package origami
+  :ensure
+  :demand
+  :after (lsp-mode)
+  :config
+  (global-origami-mode)
+  (define-key lsp-mode-map (kbd "C-c f") nil)
+  (define-key origami-mode-map (kbd "C-c f") 'origami-recursively-toggle-node)
+  (define-key origami-mode-map (kbd "C-c F") 'origami-toggle-all-nodes))
