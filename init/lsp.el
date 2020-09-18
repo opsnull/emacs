@@ -17,6 +17,9 @@
   (java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
+  (yaml-mode . lsp)
+  (json-mode . lsp)
+  (dockerfile-mode . lsp)
   ;(lsp-mode . lsp-enable-which-key-integration)
   :custom
   (lsp-modeline-code-actions-enable nil) ;; 不在 modeline 上显示 code-actions 信息

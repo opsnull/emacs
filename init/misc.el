@@ -47,7 +47,7 @@
                "-o ServerAliveCountMax=30 "
                "-o ServerAliveInterval=5 ")
        vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
-       ;; 增加压缩传承的文件起始大小（默认 4KB），否则容易出现出错： “gzip: (stdin): unexpected end of file”
+       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出现出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 1024 1)
        tramp-copy-size-limit nil
        tramp-default-method "ssh"
@@ -140,29 +140,21 @@
   :config
   (bind-key "C-c C-r" 'dired-rsync dired-mode-map))
 
-; 提供类似于 ranger 的目录浏览体验。C-h 显示或隐藏 dotfiles。
+; 提供类似于 ranger 的目录浏览体验。
+;; C-h 显示或隐藏 dotfiles。
+;; zP 切换到 range mode。
 (use-package ranger
   :ensure
   :demand
   :config
+  (setq ranger-preview-file t)
+  (setq ranger-width-preview 0.50)
+  (setq ranger-width-parents 0.22)
+  (setq ranger-footer-delay 0.2)
+  (setq ranger-preview-delay 0.05)
+  (setq ranger-cleanup-eagerly t)
+  (setq ranger-show-hidden t)
   (ranger-override-dired-mode t))
 
 ; 消除 Package cl is deprecated 警告。
 (setq byte-compile-warnings '(cl-functions))
-
-; 显示缩进情况。
-(use-package highlight-indent-guides
-  :ensure
-  :demand
-  :after (python)
-  :custom
-  (highlight-indent-guides-method 'character)
-  (highlight-indent-guides-responsive 'stack)
-  (highlight-indent-guides-delay 0.1)
-  :config
-  (require 'yaml-mode)
-  (require 'json-mode)
-  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
-

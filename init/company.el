@@ -19,7 +19,7 @@
   :custom
   (company-idle-delay 0)
   (company-echo-delay 0)
-  (company-show-numbers t) ;; M-<n> 直接选择
+  (company-show-numbers t) ;; 显示候选序号，使用 M-<n> 选择
   (company-minimum-prefix-length 1)
   (company-tooltip-limit 14)
   (company-tooltip-align-annotations t) ;; 对齐
@@ -37,7 +37,6 @@
   (company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
   :config
   (global-company-mode t))
-
 
 (use-package company-quickhelp
   :ensure t

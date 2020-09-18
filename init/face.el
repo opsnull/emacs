@@ -229,7 +229,7 @@
 ;;   ;; 缩放
 ;;   (setq face-font-rescale-alist '(("Source Han Mono SC" . 1.1))))
 
-; 设置等宽字,中文使用思源字体.
+; 设置等宽字体, 中文使用思源字体。
 (use-package cnfonts
   :ensure
   :demand

@@ -1,10 +1,12 @@
-; 通过 use-package 直接安装 org 和 org-plus-contrib 会报错，故这里直接安装。
 (dolist (package '(org org-plus-contrib ob-go ox-reveal))
    (unless (package-installed-p package)
        (package-install package)))
 
 (use-package org
   :ensure org-plus-contrib
+  :bind
+  ;; 与 avy 的快捷键冲突。
+  (:map org-mode-map ("C-'" . nil))
   :config
   ;; 隐藏 #+TITLE:
   (setq org-hidden-keywords '(title))
