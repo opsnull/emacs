@@ -28,8 +28,10 @@
   ;; 不显示 buffer 编码。
   (doom-modeline-buffer-encoding nil)
   (doom-modeline-number-limit 69)
-  ; 简化显示的文件路径，默认全路径，在 modeline 上占用太多空间。
+  ;; 简化显示的文件路径，默认全路径，在 modeline 上占用太多空间。
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
+  ;; 显示 python 版本。
+  (doom-modeline-env-enable-python t)
   :init
   (doom-modeline-mode 1))
 

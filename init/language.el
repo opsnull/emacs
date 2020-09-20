@@ -1,13 +1,15 @@
 ; python
-;; pyenv-mode 提供 pyenv-mode-set 和 pyenv-mode-unset 两个命令，来管理 PYENV_VERSION 环境变量。
+;; pyenv-mode 提供 pyenv-mode-set 和 pyenv-mode-unset 两个命令，用来管理 PYENV_VERSION 环境变量。
 (use-package pyenv-mode
-  :ensure t
+  :ensure
+  :demand
   :after (projectile)
   :init
   ;; 使用 pyenv 管理 python 版本和虚拟环境：https://github.com/pyenv/pyenv。
   ;; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
   (shell-command "which pyenv &>/dev/null || brew install pyenv")
   (shell-command "which pyenv-virtualenv &>/dev/null || brew install pyenv-virtualenv")
+  ;; 在 pyenv 环境中安装 ipython 和 pls，如果切换了 pyenv 环境需要重新安装这两个包。
   (shell-command "pip -q install ipython 'python-language-server[all]'")
   (add-to-list 'exec-path "~/.pyenv/shims")
   (setenv "WORKON_HOME" "~/.pyenv/versions/")
@@ -28,11 +30,11 @@
   (:map pyenv-mode-map ("C-c C-s") . nil))
 
 (use-package python
-  :ensure t
-  :demand t
+  :ensure
+  :demand
   :after (pyenv-mode)
   :custom
-  ;; 识别 PYENV_VERSION 环境变量，并传递给 jedi；
+  ;; 识别项目的 pyenv python 版本，设置并传递环境变量 PYENV_VERSION 给 jedi。
   (lsp-pyls-plugins-jedi-use-pyenv-environment t)
   (python-shell-interpreter "ipython")
   (python-shell-interpreter-args "")
