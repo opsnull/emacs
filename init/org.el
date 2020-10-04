@@ -8,6 +8,9 @@
   ;; 与 avy 的快捷键冲突。
   (:map org-mode-map ("C-'" . nil))
   :config
+  (setq org-default-notes-file "~/docs/inbox.org")
+  (setq org-log-into-drawer t)
+  (setq org-log-done 'note)
   ;; 隐藏 #+TITLE:
   (setq org-hidden-keywords '(title))
   ;; 隐藏语法标记，例如 *bold* 会显示加粗效果，但不显示标记 *。
