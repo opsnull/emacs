@@ -10,7 +10,7 @@
 ; 在 buffer fringle 位置用不同色块显示当前变更。
 (use-package diff-hl
   :ensure
-  :disabled
+  :disabled t
   :demand
   :after (magit)
   :hook
