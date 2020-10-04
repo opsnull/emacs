@@ -10,11 +10,16 @@
 
 (setq-default line-spacing 1
               fill-column 100
-              comment-fill-column 0)
+              comment-fill-column 0
+	          tab-width 4
+              ; 缩进时使用空格
+	          indent-tabs-mode nil)
 
-(setq tab-width 4
-      ; 缩进时使用空格
-      indent-tabs-mode nil)
+(setq-default debug-on-error         t
+              message-log-max        t
+              load-prefer-newer      t
+              ad-redefinition-action 'accept
+              gc-cons-threshold      most-positive-fixnum)
 
 ; 平滑滚动
 (setq scroll-margin 3
@@ -32,12 +37,6 @@
 ; 关闭文件选择窗口
 (setq use-file-dialog nil
       use-dialog-box nil)
-
-(setq-default debug-on-error         t
-              message-log-max        t
-              load-prefer-newer      t
-              ad-redefinition-action 'accept
-              gc-cons-threshold      most-positive-fixnum)
 
 ; 默认 ControlPersist 是关闭的，在打开远程文件时可能会 hang。
 (setq  tramp-ssh-controlmaster-options
@@ -73,7 +72,7 @@
   (defun track-mouse (e))
   (setq mouse-sel-mode t))
 
-; 调整窗口大小
+; 调整窗口大小(S 表示 Shift)
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
