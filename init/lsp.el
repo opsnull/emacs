@@ -37,7 +37,7 @@
   (lsp-pyls-plugins-pycodestyle-max-line-length 200)
   ;; 增大垃圾回收的阈值，提高整体性能（内存换效率）
   (gc-cons-threshold (* 8192 8192))
-  ;; 增大同LSP服务器交互时的读取文件的大小
+  ;; 增大同 LSP 服务器交互时的读取文件的大小
   (read-process-output-max (* 1024 1024 128))
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)

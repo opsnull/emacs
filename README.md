@@ -15,7 +15,7 @@ raw.githubuserconten.com 被墙，需要绑定 hosts:
 
 ``` bash
 brew tap d12frosted/emacs-plus
-brew install emacs-plus@27 --with-jansson --with-mailutils --with-xwidgets  --with-modern-papirus-icon --HEAD
+brew install emacs-plus@27 --with-mailutils --with-xwidgets  --with-modern-papirus-icon --HEAD
 ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications/Emacs.app
 ```
 
@@ -45,21 +45,6 @@ pip -q install ipython 'python-language-server[all]
 ``` bash
 mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
     -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
-```
-
-## 调试 jdtls
-
-如果 jdtls 启动失败，可以手动启动，查看日志：
-
-``` bash
-➜  .emacs.d git:(master) ✗ /Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home/bin/java -Declipse.application=org.eclipse.jdt.ls.core.id1 -Dosgi.bundles.defaultStartLevel=4 -Declipse.product=org.eclipse.jdt.ls.core.product -Dlog.protocol=true -Dlog.level=ALL -Xmx2G -XX:+UseG1GC -XX:+UseStringDeduplication -javaagent:/Users/zhangjun/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar -jar /Users/zhangjun/.emacs.d/.cache/lsp/eclipse.jdt.ls/plugins/org.eclipse.equinox.launcher_1.5.700.v20200207-2156.jar -configuration /Users/zhangjun/.emacs.d/.cache/lsp/eclipse.jdt.ls/config_mac -data /Users/zhangjun/.emacs.d/workspace/ --add-modules=ALL-SYSTEM --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED
-```
-
-已知的问题是当前 workspace 中的部分 project 不存在导致启动失败，解决办法是清空 jdtls 的 -data 目录，然后
-重启 jdtls（M-x lsp-workspace-restart）：
-
-```bash
-rm -rf ~/.emacs.d/workspace
 ```
 
 # 字体
