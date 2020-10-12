@@ -22,6 +22,10 @@
   (dockerfile-mode . lsp)
   ;(lsp-mode . lsp-enable-which-key-integration)
   :custom
+  ;; lsp 显示的 links 不准确，而且会导致 treemacs 目录显示异常，故关闭。
+  ;; https://github.com/hlissner/doom-emacs/issues/2911
+  ;; https://github.com/Alexander-Miller/treemacs/issues/626
+  (lsp-enable-links nil)
   (lsp-modeline-code-actions-enable nil) ;; 不在 modeline 上显示 code-actions 信息
   (lsp-keymap-prefix "C-c l")
   (lsp-auto-guess-root t)

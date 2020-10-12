@@ -4,8 +4,8 @@
   :demand t
   :init
   ;; 编译 libvterm 时依赖 cmake 和 libtool 包。
-  (shell-command "which cmake || brew install cmake")
-  (shell-command "which glibtool || brew install libtool")
+  (shell-command "which cmake &>/dev/null || brew install cmake")
+  (shell-command "which glibtool &>/dev/null || brew install libtool")
   :config
   (setq vterm-max-scrollback 100000)
   :bind

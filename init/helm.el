@@ -35,7 +35,7 @@
   :ensure t
   :after (helm)
   :init
-  (shell-command "ag --version || brew install the_silver_searcher")
+  (shell-command "ag --version &>/dev/null|| brew install the_silver_searcher")
   (require 'grep)
   (add-to-list 'grep-find-ignored-files "*.bak*")
   (add-to-list 'grep-find-ignored-files "*.log")
@@ -59,7 +59,7 @@
   :ensure t
   :after (helm)
   :init
-  (shell-command "rg --version || brew install ripgrep"))
+  (shell-command "rg --version &>/dev/null || brew install ripgrep"))
 
 ; wgrep provides a mode for editing files directly from grep buffers.
 (use-package wgrep-helm

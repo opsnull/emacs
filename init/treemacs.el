@@ -19,7 +19,7 @@
      treemacs-indentation                   1
      treemacs-indentation-string            " "
      treemacs-is-never-other-window         nil
-     treemacs-max-git-entries               50000
+     treemacs-max-git-entries               5000
      treemacs-missing-project-action        'remove
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t

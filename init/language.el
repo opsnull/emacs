@@ -10,7 +10,7 @@
   (shell-command "which pyenv &>/dev/null || brew install pyenv")
   (shell-command "which pyenv-virtualenv &>/dev/null || brew install pyenv-virtualenv")
   ;; 在 pyenv 环境中安装 ipython 和 pls，如果切换了 pyenv 环境需要重新安装这两个包。
-  (shell-command "pip -q install ipython 'python-language-server[all]'")
+  (shell-command "which ipython &>/dev/null || pip -q install ipython 'python-language-server[all]'")
   (add-to-list 'exec-path "~/.pyenv/shims")
   (setenv "WORKON_HOME" "~/.pyenv/versions/")
   :config
