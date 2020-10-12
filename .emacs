@@ -22,7 +22,7 @@
   :custom
   ;; 不检查 shell 启动文件的使用方式是否符合预期（如 .zshrc 不应该 export 环境变量）。
   (exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-variables '("PATH" "GOPATH"))
+  (exec-path-from-shell-variables '("PATH" "GOPATH" "GO111MODULE" "GOPROXY" "GOPRIVATE"))
   :config
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
