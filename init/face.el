@@ -113,6 +113,7 @@
 ; tabs
 (use-package centaur-tabs
   :ensure
+  :disabled
   :demand
   :config
   (setq centaur-tabs-style "bar"
