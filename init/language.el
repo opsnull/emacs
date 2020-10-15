@@ -101,9 +101,11 @@
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
-  :init (setq markdown-command "multimarkdown"))
-  ;; 需要单独安装 pandoc 程序
-  ;; (set 'markdown-command "pandoc -f markdown -t html")
+  :init
+  ;; multimarkdown 实现将 markdown 转换为 html 进行 preview，
+  ;; 结合 xwidget webkit 可以自动打开预览页面。
+  (shell-command "multimarkdown --version &>/dev/null || brew install multimarkdown")
+  (setq markdown-command "multimarkdown"))
 
 ; typescribe-mode using tide
 (use-package tide

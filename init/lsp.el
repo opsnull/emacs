@@ -62,6 +62,7 @@
     "[/\\\\]\\.idea$"
     "[/\\\\]\\.ensime_cache$"
     "[/\\\\]\\.eunit$"
+    ; Others
     "[/\\\\]node_modules$"
     "[/\\\\]vendor$"
     "[/\\\\]\\.fslckout$"
