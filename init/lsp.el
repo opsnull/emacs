@@ -40,45 +40,45 @@
   (lsp-signature-doc-lines 2)
   (lsp-pyls-plugins-pycodestyle-max-line-length 200)
   ;; 增大垃圾回收的阈值，提高整体性能（内存换效率）
-  (gc-cons-threshold (* 8192 8192))
+  ;;(gc-cons-threshold (* 8192 8192))
   ;; 增大同 LSP 服务器交互时的读取文件的大小
   (read-process-output-max (* 1024 1024 128))
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
   (lsp-file-watch-ignored '(
-    "[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)$"
+    "[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
     ; java
-    "[/\\\\]resources/META-INF$"
-    "[/\\\\]src/test$"
+    "[/\\\\]resources/META-INF\\'"
+    "[/\\\\]src/test\\'"
     ; SCM tools
-    "[/\\\\]\\.git$"
-    "[/\\\\]\\.github$"
-    "[/\\\\]\\.hg$"
-    "[/\\\\]\\.bzr$"
-    "[/\\\\]_darcs$"
-    "[/\\\\]\\.svn$"
-    "[/\\\\]_FOSSIL_$"
+    "[/\\\\]\\.git\\'"
+    "[/\\\\]\\.github\\'"
+    "[/\\\\]\\.hg\\'"
+    "[/\\\\]\\.bzr\\'"
+    "[/\\\\]_darcs\\'"
+    "[/\\\\]\\.svn\\'"
+    "[/\\\\]_FOSSIL_\\'"
     ; IDE tools
-    "[/\\\\]\\.idea$"
-    "[/\\\\]\\.ensime_cache$"
-    "[/\\\\]\\.eunit$"
+    "[/\\\\]\\.idea\\'"
+    "[/\\\\]\\.ensime_cache\\'"
+    "[/\\\\]\\.eunit\\'"
     ; Others
-    "[/\\\\]node_modules$"
-    "[/\\\\]vendor$"
-    "[/\\\\]\\.fslckout$"
-    "[/\\\\]\\.tox$"
-    "[/\\\\]\\.stack-work$"
-    "[/\\\\]\\.bloop$"
-    "[/\\\\]\\.metals$"
-    "[/\\\\]target$"
-    "[/\\\\]\\.settings$"
-    "[/\\\\]\\.project$"
+    "[/\\\\]node_modules\\'"
+    "[/\\\\]vendor\\'"
+    "[/\\\\]\\.fslckout\\'"
+    "[/\\\\]\\.tox\\'"
+    "[/\\\\]\\.stack-work\\'"
+    "[/\\\\]\\.bloop\\'"
+    "[/\\\\]\\.metals\\'"
+    "[/\\\\]target\\'"
+    "[/\\\\]\\.settings\\'"
+    "[/\\\\]\\.project\\'"
     ; Autotools output
-    "[/\\\\]\\.travis$"
-    "[/\\\\]\\.deps$"
-    "[/\\\\]build-aux$"
-    "[/\\\\]autom4te.cache$"
-    "[/\\\\]\\.reference$"))
+    "[/\\\\]\\.travis\\'"
+    "[/\\\\]\\.deps\\'"
+    "[/\\\\]build-aux\\'"
+    "[/\\\\]autom4te.cache\\'"
+    "[/\\\\]\\.reference\\'"))
   :config
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (setq lsp-completion-enable-additional-text-edit nil)
