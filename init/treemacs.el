@@ -12,7 +12,7 @@
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
      treemacs-file-event-delay              3000
-     treemacs-file-follow-delay             0.1
+     treemacs-file-follow-delay             0.3
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
      treemacs-goto-tag-strategy             'refetch-index
@@ -23,7 +23,8 @@
      treemacs-missing-project-action        'remove
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
-     treemacs-project-follow-cleanup        t ;; 切换 project 后关闭其他 project 目录。
+     ;; 切换 project 后关闭其他 project 目录。
+     treemacs-project-follow-cleanup        t
      treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
      treemacs-position                      'left
      treemacs-recenter-distance             0.1

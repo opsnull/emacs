@@ -11,7 +11,8 @@
   (setq projectile-indexing-method 'hybrid)
   (setq projectile-completion-system 'helm)
   (setq projectile-sort-order 'recently-active)
-  (add-hook 'projectile-after-switch-project-hook ;; 切换 project 后显示 treemacs。
+  ;; 切换 project 后显示 treemacs。
+  (add-hook 'projectile-after-switch-project-hook 
             (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/"))
   (dolist (dirs '(".cache"
@@ -44,17 +45,17 @@
                   ".project"
                   "__init__.py"))
     (add-to-list 'projectile-globally-ignored-files item))
-  (dolist (list '("\\.elc$"
-                  "\\.o$"
-                  "\\.class$"
-                  "\\.out$"
-                  "\\.pdf$"
-                  "\\.pyc$"
-                  "\\.rel$"
-                  "\\.rip$"
-                  "\\.swp$"
-                  "\\.iml$"
-                  "\\.bak$"
-                  "\\.log$"
-                  "~$"))
+  (dolist (list '("\\.elc\\'"
+                  "\\.o\\'"
+                  "\\.class\\'"
+                  "\\.out\\'"
+                  "\\.pdf\\'"
+                  "\\.pyc\\'"
+                  "\\.rel\\'"
+                  "\\.rip\\'"
+                  "\\.swp\\'"
+                  "\\.iml\\'"
+                  "\\.bak\\'"
+                  "\\.log\\'"
+                  "~\\'"))
     (add-to-list 'projectile-globally-ignored-file-suffixes list)))
