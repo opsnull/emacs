@@ -75,8 +75,8 @@
   :hook
   (java-mode . lsp)
   :config
-  (use-package dap-mode :ensure t :after (lsp-java) :config (dap-auto-configure-mode))
-  (use-package dap-java :ensure nil))
+  (use-package dap-mode :ensure t :disabled t :after (lsp-java) :config (dap-auto-configure-mode))
+  (use-package dap-java :ensure nil :disabled t))
 
 ; go
 (use-package go-mode
