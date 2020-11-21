@@ -3,10 +3,10 @@
 raw.githubuserconten.com 被墙，需要绑定 hosts:
 
 ``` txt
-199.232.68.133 raw.githubusercontent.com
-199.232.68.133 user-images.githubusercontent.com
-199.232.68.133 avatars2.githubusercontent.com
-199.232.68.133 avatars1.githubusercontent.com
+151.101.76.133 raw.githubusercontent.com
+151.101.76.133 user-images.githubusercontent.com
+151.101.76.133 avatars2.githubusercontent.com
+151.101.76.133 avatars1.githubusercontent.com
 ```
 
 这样后续才能正常安装 emacs27、lsp java server 和 all-the-icons。
