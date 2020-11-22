@@ -34,7 +34,7 @@ pip -q install ipython 'python-language-server[all]
 
 日常开发使用 jdk 1.8，但 lsp-java jdtls 依赖 jdk 11 及以上版本。这里需要安装三个 jdk 版本：
 
-从 https://www.oracle.com/java/technologies/javase-downloads.html 页面下载和安装 jdk 1.8、11 和 14
+从 https://www.oracle.com/java/technologies/javase-downloads.html 页面下载和安装 jdk 1.8、11 和 15
 三个版本。
 
 ## 安装 lombok
@@ -49,7 +49,7 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
 
 # 字体
 
-选用的是 Adobe 和 Google 联合推出的 思源字体，从 https://github.com/adobe-fonts/source-han-mono 下载安装。
+选用的是 Adobe 和 Google 联合推出的思源字体，从 https://github.com/adobe-fonts/source-han-mono 下载安装。
 
 # all-the-icons 图标
 
