@@ -85,7 +85,7 @@
   :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
   (sis-global-respect-mode t)
-  (sis-global-follow-context-mode t)
+  (sis-global-context-mode t)
   (push "M-g" sis-prefix-override-keys)
   ;; 切换系统输入法快捷键
   (global-set-key (kbd "C-\\") 'sis-switch))
