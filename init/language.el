@@ -55,6 +55,7 @@
 ;；默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
 ;; 需要手动下载 1.18.6 版本的 lombok：
 ;; mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
+;; 下载 jdk：https://www.oracle.com/java/technologies/javase-downloads.html
 (use-package lsp-java
   :ensure t
   :demand t
@@ -64,6 +65,7 @@
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home/bin/java")
   ;; 指定 jdtls 编译源码使用的 jdk 版本（默认是启动 jdtls 的 java 版本）。
   ;; https://marketplace.visualstudio.com/items?itemName=redhat.java
+  ;; 查看所有 java 版本：/usr/libexec/java_home -verbose
   (setq lsp-java-configuration-runtimes
         '[(:name "JavaSE-1.8" :path "/Library/Java/JavaVirtualMachines/jdk1.8.0_251.jdk/Contents/Home" :default t)
           (:name "JavaSE-11" :path "/Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home")
