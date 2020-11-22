@@ -7,8 +7,8 @@
   :init
   ;; 使用 pyenv 管理 python 版本和虚拟环境：https://github.com/pyenv/pyenv。
   ;; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
-  (shell-command "which pyenv &>/dev/null || brew install pyenv")
-  (shell-command "which pyenv-virtualenv &>/dev/null || brew install pyenv-virtualenv")
+  ;;(shell-command "which pyenv &>/dev/null || brew install --HEAD pyenv")
+  ;;(shell-command "which pyenv-virtualenv &>/dev/null || brew install --HEAD pyenv-virtualenv")
   ;; 在 pyenv 环境中安装 ipython 和 pls，如果切换了 pyenv 环境需要重新安装这两个包。
   (shell-command "which ipython &>/dev/null || pip -q install ipython 'python-language-server[all]'")
   (add-to-list 'exec-path "~/.pyenv/shims")
