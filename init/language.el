@@ -62,14 +62,14 @@
   :after (lsp-mode company)
   :init
   ;; 指定运行 jdtls 的 java 程序
-  (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home/bin/java")
+  (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
   ;; 指定 jdtls 编译源码使用的 jdk 版本（默认是启动 jdtls 的 java 版本）。
   ;; https://marketplace.visualstudio.com/items?itemName=redhat.java
   ;; 查看所有 java 版本：/usr/libexec/java_home -verbose
   (setq lsp-java-configuration-runtimes
-        '[(:name "JavaSE-1.8" :path "/Library/Java/JavaVirtualMachines/jdk1.8.0_251.jdk/Contents/Home" :default t)
-          (:name "JavaSE-11" :path "/Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home")
-          (:name "JavaSE-14" :path "/Library/Java/JavaVirtualMachines/jdk-14.0.1.jdk/Contents/Home")])
+        '[(:name "Java SE 8" :path "/Library/Java/JavaVirtualMachines/jdk1.8.0_271.jdk/Contents/Home" :default t)
+          (:name "Java SE 11.0.9" :path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
+          (:name "Java SE 15.0.1" :path "/Library/Java/JavaVirtualMachines/jdk-15.0.1.jdk/Contents/Home")])
   ; jdk11 不支持 -Xbootclasspath/a: 参数。
   (setq lsp-java-vmargs
         (list "-noverify" "-Xmx2G" "-XX:+UseG1GC" "-XX:+UseStringDeduplication"
