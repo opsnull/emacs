@@ -15,7 +15,7 @@
               ; 缩进时使用空格
 	          indent-tabs-mode nil)
 
-(setq-default debug-on-error         t
+(setq-default debug-on-error         nil
               message-log-max        t
               load-prefer-newer      t
               ad-redefinition-action 'accept
@@ -79,7 +79,7 @@
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
 ; 备份
-(shell-command "mkdir -p ~/.emacs.d/backup")
+;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (setq backup-by-copying t
       backup-directory-alist (list (cons ".*" backup-dir))
@@ -89,7 +89,7 @@
       version-control t)
 
 ; 自动保存
-(shell-command "mkdir -p ~/.emacs.d/autosave")
+;(shell-command "mkdir -p ~/.emacs.d/autosave")
 (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
@@ -112,7 +112,7 @@
   :ensure
   :demand
   :init
-  (shell-command "trash -v || brew install trash")
+  ;;(shell-command "trash -v || brew install trash")
   :config
   (when (eq system-type 'darwin)
     (osx-trash-setup))

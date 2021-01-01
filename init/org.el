@@ -61,7 +61,7 @@
   :after (posframe)
   :init
   ;; org 模式下，支持图片拖拽保存或 F2 保存剪贴板中的图片。
-  (shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
+  ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
   :bind ("<f2>" . org-download-screenshot)
   :config
   (setq org-download-method 'directory)

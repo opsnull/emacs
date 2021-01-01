@@ -33,7 +33,7 @@
 (use-package deadgrep
   :ensure t
   :init
-  (shell-command "rg --version || brew install ripgrep")
+  ;(shell-command "rg --version || brew install ripgrep")
   :config
   (global-set-key (kbd "<f5>") #'deadgrep))
 
@@ -52,7 +52,7 @@
   :demand t
   :after (lsp-mode company)
   :init
-  (shell-command "mkdir -p ~/.emacs.d/snippets")
+  ;(shell-command "mkdir -p ~/.emacs.d/snippets")
   :config
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   ;(yas-global-mode 1) ;; yas-global-mode 与 sis package 不兼容。
@@ -75,10 +75,10 @@
   :ensure t
   :demand t
   :init
-  (shell-command
-   (concat
-    "im-select &>/dev/null || curl -Ls "
-    "https://raw.githubusercontent.com/daipeihust/im-select/master/install_mac.sh | sh"))
+  ;; (shell-command
+  ;;  (concat
+  ;;   "im-select &>/dev/null || curl -Ls "
+  ;;   "https://raw.githubusercontent.com/daipeihust/im-select/master/install_mac.sh | sh"))
   (setq sis-external-ism "/usr/local/bin/im-select")
   (setq sis-follow-context-fixed 'other)
   (setq sis-respect-start 'other)

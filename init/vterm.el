@@ -4,8 +4,8 @@
   :demand t
   :init
   ;; 编译 libvterm 时依赖 cmake 和 libtool 包。
-  (shell-command "which cmake &>/dev/null || brew install cmake")
-  (shell-command "which glibtool &>/dev/null || brew install libtool")
+  ;;(shell-command "which cmake &>/dev/null || brew install cmake")
+  ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
   :config
   (setq vterm-max-scrollback 100000)
   :bind
@@ -31,7 +31,7 @@
   :custom
   ;; 设置为 projectile scope 后，vterm-toggle 打开终端时自动切换到项目根目录。
   ;; 如果要切换到 buffer 对应的目录，可以使用 vterm-toggle-cd 命令。
-  (vterm-toggle-scope 'projectile)
+  (vterm-toggle-scope 'project)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)

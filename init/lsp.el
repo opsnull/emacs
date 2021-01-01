@@ -42,7 +42,7 @@
   ;; 显示函数签名
   (lsp-signature-auto-activate t)
   (lsp-signature-doc-lines 2)
-  (lsp-pyls-plugins-pycodestyle-max-line-length 200)
+  ;;(lsp-pyls-plugins-pycodestyle-max-line-length 200)
   ;; 增大垃圾回收的阈值，提高整体性能（内存换效率）
   ;;(gc-cons-threshold (* 8192 8192))
   ;; 增大同 LSP 服务器交互时的读取文件的大小
