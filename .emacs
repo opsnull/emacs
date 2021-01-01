@@ -22,13 +22,12 @@
   :custom
   ;; 不检查 shell 启动文件的使用方式是否符合预期（如 .zshrc 不应该 export 环境变量）。
   (exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-variables '("PATH" "GOPATH" "GO111MODULE" "GOPROXY" "GOPRIVATE"))
+  (exec-path-from-shell-variables '("PATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
   :config
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
 ; 加载 init 目录下所有以 el 结尾的文件。
-(setq use-package-verbose t) ;; 统计 use-package 包加载的耗时
 (defvar init-dir (expand-file-name "init" user-emacs-directory))
 (mapc 'load (directory-files init-dir t ".*el$"))
 
@@ -36,5 +35,3 @@
 (shell-command "touch ~/.emacs.d/custom.el")
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
-
-;(add-hook 'emacs-startup-hook (lambda () (kill-matching-buffers "^\\*Shell" nil t)))

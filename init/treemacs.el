@@ -2,7 +2,7 @@
   :ensure t
   :demand t
   :init
-  (shell-command "mkdir -p ~/.emacs.d/.cache")
+  ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
   (progn
