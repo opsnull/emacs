@@ -9,8 +9,6 @@
   ;; 为了便于升级和管理，使用 brew 安装 pyenv 和 pyenv-virtualenv 命令。
   ;;(shell-command "which pyenv &>/dev/null || brew install --HEAD pyenv")
   ;;(shell-command "which pyenv-virtualenv &>/dev/null || brew install --HEAD pyenv-virtualenv")
-  ;; 在 pyenv 环境中安装 ipython 和 pls，如果切换了 pyenv 环境需要重新安装这两个包。
-  (shell-command "which ipython &>/dev/null || pip install -q -i https://pypi.douban.com/simple/ ipython 'python-language-server[all]'")
   (add-to-list 'exec-path "~/.pyenv/shims")
   (setenv "WORKON_HOME" "~/.pyenv/versions/")
   :config
@@ -50,6 +48,15 @@
                    (setq python-indent 4)
                    (setq python-indent-offset 4))))
 
+(use-package lsp-pyright
+  :ensure t
+  :demand t
+  :init
+  ;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
+  :after (python)
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-pyright)
+                          (lsp))))  ; or lsp-deferred
 ; java
 ;；先绑定 host：199.232.68.133 raw.githubusercontent.com
 ;；默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
@@ -86,7 +93,7 @@
   :demand t
   :after (lsp-mode)
   :init
-  (shell-command "gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@latest")
+  ;;(shell-command "gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@latest")
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
@@ -106,7 +113,7 @@
   :init
   ;; multimarkdown 实现将 markdown 转换为 html 进行 preview，
   ;; 结合 xwidget webkit 可以自动打开预览页面。
-  (shell-command "multimarkdown --version &>/dev/null || brew install multimarkdown")
+  ;;(shell-command "multimarkdown --version &>/dev/null || brew install multimarkdown")
   (setq markdown-command "multimarkdown"))
 
 ; typescribe-mode using tide
@@ -155,7 +162,7 @@
 (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode)) ;tsx
 (add-to-list 'auto-mode-alist '("\\.jsx\\'" . web-mode)) ;jsx
 
-(shell-command "which npm &>/dev/null || brew install npm &>/dev/null")
+;(shell-command "which npm &>/dev/null || brew install npm &>/dev/null")
 
 ; javascript
 (use-package js2-mode
@@ -177,7 +184,8 @@
   :ensure t
   :demand
   :config
-  (shell-command "which vscode-json-languageserver &>/dev/null || npm i -g vscode-json-languageserver &>/dev/null"))
+  ;; (shell-command "which vscode-json-languageserver &>/dev/null || npm i -g vscode-json-languageserver &>/dev/null")
+  )
 
 ; yaml
 (use-package yaml-mode
@@ -185,7 +193,7 @@
   :demand
   :init
   ;; 安装 yaml 语言服务器；
-  (shell-command "which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>/dev/null")
+  ;; (shell-command "which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>/dev/null")
   :hook
   (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent))))
 
@@ -203,6 +211,6 @@
   :ensure t
   :demand
   :init
-  (shell-command "which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile-language-server-nodejs &>/dev/null")
+  ;; (shell-command "which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile-language-server-nodejs &>/dev/null")
   :config
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
