@@ -10,6 +10,7 @@
   (setq projectile-enable-caching t)
   (setq projectile-indexing-method 'hybrid)
   (setq projectile-completion-system 'helm)
+  ;(setq projectile-completion-system 'ivy)
   (setq projectile-sort-order 'recently-active)
   ;; 切换 project 后显示 treemacs。
   (add-hook 'projectile-after-switch-project-hook 

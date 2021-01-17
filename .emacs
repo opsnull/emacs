@@ -1,5 +1,5 @@
-(setq user-full-name "zhangjun")
-(setq user-mail-address "geekard@qq.com")
+(setq user-full-name "mingduo.zj")
+(setq user-mail-address "mingduo.zj@alibaba-inc.com")
 
 (require 'package)
 (setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
