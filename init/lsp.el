@@ -32,8 +32,7 @@
   (lsp-auto-guess-root t)
   (lsp-prefer-flymake nil)
   (lsp-diagnostic-package :flycheck)
-  (lsp-prefer-capf t)
-  (lsp-print-io t)
+  (lsp-completion-provider :capf)
   (lsp-enable-snippet nil)
   ;; 开启后，会用 minibuffer 显示文档，占用太多屏幕空间
   ;(lsp-eldoc-render-all nil)
@@ -42,11 +41,13 @@
   ;; 显示函数签名
   (lsp-signature-auto-activate t)
   (lsp-signature-doc-lines 2)
-  ;;(lsp-pyls-plugins-pycodestyle-max-line-length 200)
   ;; 增大垃圾回收的阈值，提高整体性能（内存换效率）
-  ;;(gc-cons-threshold (* 8192 8192))
+  (gc-cons-threshold (* 1024 1024 100))
   ;; 增大同 LSP 服务器交互时的读取文件的大小
-  (read-process-output-max (* 1024 1024 128))
+  (read-process-output-max (* 1024 1024 2))
+  (lsp-idle-delay 0.500)
+  ;; 开启 log 会极大影响性能
+  (lsp-log-io nil)
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
   (lsp-file-watch-ignored '(
