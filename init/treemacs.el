@@ -70,14 +70,15 @@
 ;;   :config
 ;;   (treemacs-load-theme "all-the-icons"))
 
-;; (use-package persp-mode
-;;   :ensure t
-;;   :custom
-;;   (persp-keymap-prefix (kbd "C-x p"))
-;;   :config
-;;   (persp-mode))
+(use-package persp-mode
+ :ensure t
+ :custom
+ (persp-keymap-prefix (kbd "C-x p"))
+ :config
+ (persp-mode))
 
-;; (use-package treemacs-persp
-;;   :after treemacs persp-mode
-;;   :ensure t
-;;   :config (treemacs-set-scope-type 'Perspectives))
+(use-package treemacs-persp
+ :ensure t
+ :demand t
+ :after (treemacs persp-mode)
+ :config (treemacs-set-scope-type 'Perspectives))
