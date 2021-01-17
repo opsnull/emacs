@@ -19,7 +19,7 @@
               message-log-max        t
               load-prefer-newer      t
               ad-redefinition-action 'accept
-              gc-cons-threshold      most-positive-fixnum)
+              gc-cons-threshold      100000000)
 
 ; 平滑滚动
 (setq scroll-margin 3

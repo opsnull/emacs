@@ -19,6 +19,24 @@ brew install emacs-plus@27 --with-mailutils --with-xwidgets  --with-modern-papir
 ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications/Emacs.app
 ```
 
+# 编译安装 emacs 28
+
+查看 emacs feature/native-comp 分支的最新 comit：
+https://github.com/emacs-mirror/emacs/commits/feature/native-comp
+
+``` bash
+brew update # 更新 brew，使用最新的 gcc 和 libgccjit formula
+
+git clone git@github.com:jimeh/build-emacs-for-macos.git
+cd build-emacs-for-macos
+brew bundle  # 安装编译依赖
+./build-emacs-for-macos --git-sha f1efac1f9efbfa15b6434ebef507c00c1277633f feature/native-comp
+```
+
+编译完毕后，生成的 Emacs.app 位于
+/Users/zhangjun/codes/github/build-emacs-for-macos/sources/emacs-mirror-emacs-f1efac1/nextstep 目录
+下，可以移动到 /Applications 目录下。
+
 # python
 
 使用 pyenv 管理 python 环境和版本。如果项目位于虚拟环境中，则需要使用如下命令为该环境安装 pyls，否则
@@ -49,7 +67,12 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
 
 # 字体
 
-选用的是 Adobe 和 Google 联合推出的思源字体，从 https://github.com/adobe-fonts/source-han-mono 下载安装。
++ 英文字体：Iosevka SS14 — Monospace, JetBrains Mono Styl：https://github.com/be5invis/Iosevka
++ 中文字体：Sarasa Gothic / 更纱黑体：https://github.com/be5invis/Sarasa-Gothic
+
+其它字体：
++ 选用的是 Adobe 和 Google 联合推出的思源字体，从 https://github.com/adobe-fonts/source-han-mono 下载安装。
++ 其它可选字体：文泉驿正黑和微米黑：http://wenq.org/wqy2/index.cgi?%E9%A6%96%E9%A1%B5
 
 # all-the-icons 图标
 

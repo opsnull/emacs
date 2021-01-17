@@ -102,7 +102,8 @@
 ; 全屏
 ;; 对于 macos，不能使用 toggle-frame-fullscreen，否则有些情况下会黑屏。
 ;; https://github.com/tumashu/posframe/issues/30#issuecomment-586370312
-(add-hook 'after-init-hook #'toggle-frame-maximized)
+;;(add-hook 'after-init-hook #'toggle-frame-maximized)
+(add-hook 'after-init-hook #'toggle-frame-fullscreen)
 
 ; 静默启动
 (setq inhibit-startup-screen t)
@@ -203,7 +204,6 @@
   :config
   (diredfl-global-mode))
 
-; emacs dashboard。
 (use-package dashboard
   :ensure
   :demand
@@ -219,23 +219,29 @@
                           (agenda . 3)))
   (dashboard-setup-startup-hook))
 
-;; ; font
-;; ;; 可以使用 M-x describe-char 查看光标位置的字符使用的字体。
-;; (when (display-graphic-p)
-;;   ;; 缺省字体。
-;;   ;; 从 https://github.com/adobe-fonts/source-han-mono 下载安装。
-;;   ;; 英文字体
-;;   (set-face-attribute 'default nil :font "Source Han Mono SC")
-;;   ;; 中文字体
-;;   (dolist (charset '(kana han symbol cjk-misc bopomofo))
-;;     (set-fontset-font t charset "Source Han Mono SC"))
-;;   ;; 缩放
-;;   (setq face-font-rescale-alist '(("Source Han Mono SC" . 1.1))))
-
-; 设置等宽字体, 中文使用思源字体。
+; 设置字体;
+;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
+;; 英文：Iosevka SS14: https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
   :ensure
   :demand
+  :init
+  ;; 添加自定义字体，后续可以在 cnfonts-ui 上选中；
+  (setq cnfonts-personal-fontnames 
+        '(("Iosevka SS14" "Fira Code")
+          ("Sarasa Gothic SC" "Source Han Mono SC")
+          ("HanaMinB")))
   :config
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
+
+; 第一次安装完毕后，需要执行 M-x fira-code-mode-install-fonts  安装 Fira Code Symbol font；
+;; Fira Code Symbol 是和 Fira Code 不一样的字体，需要通过上面的命令来安装。
+(use-package fira-code-mode
+  :ensure
+  :demand
+  ;:config (global-fira-code-mode) ; 全局启用
+  :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x")) ;; List of ligatures to turn off
+  :hook prog-mode
+)
+

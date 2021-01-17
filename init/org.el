@@ -79,3 +79,11 @@
   (org-babel-do-load-languages 'org-babel-load-languages '((go . t))))
 
 (use-package ox-reveal :after (org))
+
+; org-mode 表格对齐
+(use-package valign
+  :ensure
+  :demand
+  :disabled
+  :config
+  (add-hook 'org-mode-hook #'valign-mode))

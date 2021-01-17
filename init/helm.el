@@ -19,6 +19,7 @@
   (global-set-key (kbd "C-h a") 'helm-apropos)
   (global-set-key (kbd "C-x C-b") 'helm-buffers-list)
   (global-set-key (kbd "C-c h o") 'helm-occur)
+  (global-set-key (kbd "C-x C-d") 'helm-browse-project)
   ;; isearch 时使用 helm-occur
   (define-key isearch-mode-map (kbd "M-s o") 'helm-occur-from-isearch)
   ;; 使用光标处的符号作为 occur 的搜索内容
@@ -84,3 +85,8 @@
   (helm-projectile-on))
 
 (use-package helm-themes :ensure t)
+
+(use-package helm-ls-git
+  :ensure t
+  :demand t
+)
