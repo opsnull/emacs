@@ -1,14 +1,10 @@
-; M-x helm-themes 快速切换主题。
 (use-package leuven-theme :ensure t :disabled t)
 (use-package monokai-theme :ensure t :disabled t)
 (use-package solarized-theme :ensure t :disabled t)
 (use-package spacemacs-theme :ensure t :disabled t)
 (use-package zenburn-theme :ensure t :disabled t)
 (use-package spacemacs-theme :ensure t :disabled t)
-(use-package color-theme-sanityinc-tomorrow
-  :ensure t
-  :disabled t
-  :config (load-theme 'sanityinc-tomorrow-eighties t))
+(use-package color-theme-sanityinc-tomorrow :ensure t :disabled t :config (load-theme 'sanityinc-tomorrow-eighties t))
 
 (use-package doom-themes
   :ensure t
@@ -30,7 +26,6 @@
   (doom-modeline-number-limit 69)
   ;; 简化显示的文件路径，默认全路径，在 modeline 上占用太多空间。
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
-  ;; 显示 python 版本。
   (doom-modeline-env-enable-python t)
   :init
   (doom-modeline-mode 1))
@@ -38,19 +33,18 @@
 ; 需要额外执行 M-x all-the-icons-install-fonts 命令安装字体。
 (use-package all-the-icons :ensure t :after (doom-modeline))
 
-; org-mode export html 时使用该 package 进行格式化输出。
-(use-package htmlize :ensure t)
-
 ; 在状态栏显示列号
 (column-number-mode t)
 
 ; 在状态栏显示时间
-(setq display-time-24hr-format t)
-;; 时间后面不显示系统负载
-(setq display-time-default-load-average nil)
-;; 不显示日期
-(setq display-time-day-and-date nil)
 (display-time-mode t)
+(setq display-time-24hr-format t)
+
+; 时间后面不显示系统负载
+(setq display-time-default-load-average nil)
+
+; 不显示日期
+(setq display-time-day-and-date nil)
 
 ; 在左侧显示行号
 ;;(global-linum-mode 1)
@@ -81,16 +75,6 @@
 ; 鼠标指针规避光标
 (mouse-avoidance-mode 'animate)
 
-; 光标显示为一竖线
-;;(setq-default cursor-type 'bar)
-
-; 透明
-;;(set-frame-parameter (selected-frame) 'alpha '(80 70))
-;;(add-to-list 'default-frame-alist '(alpha 95 85))
-
-; 在标题栏提示目前我的位置
-(setq frame-title-format "zym@%b")
-
 ; 标题栏显示 %f 缓冲区完整路径 %p 页面百分数 %l 行号
 (setq frame-title-format "%f")
 
@@ -99,10 +83,7 @@
 (when (not indicate-empty-lines)
   (toggle-indicate-empty-lines))
 
-; 全屏
-;; 对于 macos，不能使用 toggle-frame-fullscreen，否则有些情况下会黑屏。
-;; https://github.com/tumashu/posframe/issues/30#issuecomment-586370312
-;;(add-hook 'after-init-hook #'toggle-frame-maximized)
+;(add-hook 'after-init-hook #'toggle-frame-maximized)
 (add-hook 'after-init-hook #'toggle-frame-fullscreen)
 
 ; 静默启动
@@ -110,92 +91,6 @@
 (setq inhibit-startup-message t)
 (setq inhibit-startup-echo-area-message t)
 (setq initial-scratch-message nil)
-
-; tabs
-(use-package centaur-tabs
-  :ensure
-  :disabled
-  :demand
-  :config
-  (setq centaur-tabs-style "bar"
-	    centaur-tabs-height 23
-	    centaur-tabs-set-icons t
-	    centaur-tabs-set-modified-marker t
-	    centaur-tabs-show-navigation-buttons t
-	    centaur-tabs-set-bar 'under
-        centaur-tabs-set-modified-marker t
-	    x-underline-at-descent-line t)
-  (centaur-tabs-headline-match)
-  (centaur-tabs-group-by-projectile-project)
-  (setq centaur-tabs-gray-out-icons 'buffer)
-  (centaur-tabs-enable-buffer-reordering)
-  (setq centaur-tabs-adjust-buffer-order t)
-  (centaur-tabs-mode t)
-  (setq uniquify-separator "/")
-  (setq uniquify-buffer-name-style 'forward)
-  (defun centaur-tabs-hide-tab (x)
-    "Do not to show buffer x in tabs."
-    (let ((name (format "%s" x)))
-      (or
-       ;; Current window is not dedicated window.
-       (window-dedicated-p (selected-window))
-       ;; Buffer name not match below blacklist.
-       (string-prefix-p "*epc" name)
-       (string-prefix-p "*helm" name)
-       (string-prefix-p "*Helm" name)
-       (string-prefix-p "*Compile-Log*" name)
-       (string-prefix-p "*lsp" name)
-       (string-prefix-p "*company" name)
-       (string-prefix-p "*Flycheck" name)
-       (string-prefix-p "*tramp" name)
-       (string-prefix-p " *Mini" name)
-       (string-prefix-p "*help" name)
-       (string-prefix-p "*straight" name)
-       (string-prefix-p " *temp" name)
-       (string-prefix-p "*Help" name)
-       (string-prefix-p "*mybuf" name)
-
-       ;; Is not magit buffer.
-       (and (string-prefix-p "magit" name)
-	        (not (file-name-extension name))))))
-  (defun centaur-tabs-buffer-groups ()
-    (list
-     (cond
-	  ((or (string-equal "*" (substring (buffer-name) 0 1))
-	       (memq major-mode '(magit-process-mode
-				              magit-status-mode
-				              magit-diff-mode
-				              magit-log-mode
-				              magit-file-mode
-				              magit-blob-mode
-				              magit-blame-mode
-				              ))) "Emacs")
-	  ((derived-mode-p 'prog-mode) "Editing")
-	  ((derived-mode-p 'dired-mode) "Dired")
-	  ((memq major-mode '(helpful-mode help-mode)) "Help")
-	  ((memq major-mode '(org-mode
-			              org-agenda-clockreport-mode
-			              org-src-mode
-			              org-agenda-mode
-			              org-beamer-mode
-			              org-indent-mode
-			              org-bullets-mode
-			              org-cdlatex-mode
-			              org-agenda-log-mode
-			              diary-mode)) "OrgMode")
-	  (t (centaur-tabs-get-group-name (current-buffer))))))
-  :hook
-  (dashboard-mode . centaur-tabs-local-mode)
-  (term-mode . centaur-tabs-local-mode)
-  (calendar-mode . centaur-tabs-local-mode)
-  (org-agenda-mode . centaur-tabs-local-mode)
-  (helpful-mode . centaur-tabs-local-mode)
-  :bind
-  ("C-<left>" . centaur-tabs-backward)
-  ("C-<right>" . centaur-tabs-forward)
-  ("C-c t s" . centaur-tabs-counsel-switch-group)
-  ("C-c t p" . centaur-tabs-group-by-projectile-project)
-  ("C-c t g" . centaur-tabs-group-buffer-groups))
 
 ; 在 dired mode 下，显示的目录和文件更易认。
 (use-package diredfl
@@ -219,7 +114,7 @@
                           (agenda . 3)))
   (dashboard-setup-startup-hook))
 
-; 设置字体;
+; 字体
 ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14: https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
@@ -236,12 +131,11 @@
   (cnfonts-enable))
 
 ; 第一次安装完毕后，需要执行 M-x fira-code-mode-install-fonts  安装 Fira Code Symbol font；
-;; Fira Code Symbol 是和 Fira Code 不一样的字体，需要通过上面的命令来安装。
+;; Fira Code Symbol 是和 Firaa Code 不一样的字体，需要通过上面的命令来安装。
 (use-package fira-code-mode
   :ensure
   :demand
-  ;:config (global-fira-code-mode) ; 全局启用
-  :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x")) ;; List of ligatures to turn off
+  :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode
 )
 

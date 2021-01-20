@@ -1,4 +1,3 @@
-; helm 命令补全
 (use-package helm
   :ensure t
   :custom
@@ -86,7 +85,4 @@
 
 (use-package helm-themes :ensure t)
 
-(use-package helm-ls-git
-  :ensure t
-  :demand t
-)
+(use-package helm-ls-git :ensure t :demand t)

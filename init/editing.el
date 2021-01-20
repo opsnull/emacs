@@ -77,12 +77,6 @@
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
 
-; 当外界程序修改了文件时，自动 reload。
-(use-package autorevert
-  :ensure t
-  :diminish
-  :hook (after-init . global-auto-revert-mode))
-
 ; 显示缩进
 (use-package highlight-indent-guides
   :ensure
@@ -108,16 +102,14 @@
   (define-key origami-mode-map (kbd "C-c f") 'origami-recursively-toggle-node)
   (define-key origami-mode-map (kbd "C-c F") 'origami-toggle-all-nodes))
 
-;切换 window 时高亮光标位置
+; 切换 window 时高亮光标位置
 (use-package beacon
   :ensure t
   :demand t
   :config
   (beacon-mode 1))
 
-
-; smart-input-source 实现输入 prefix 按键时自动切换到英文，执行结束后恢复系统输入法的功能，
-; 这样可以省去了手动切换输入法，然后再保存 buffer 的烦恼！
+; 自动切换到英文
 (use-package sis
   :ensure t
   :demand t
@@ -134,5 +126,4 @@
   (sis-global-respect-mode t)
   (sis-global-context-mode t)
   (push "M-g" sis-prefix-override-keys)
-  ;; 切换系统输入法快捷键
   (global-set-key (kbd "C-\\") 'sis-switch))
