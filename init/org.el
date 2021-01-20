@@ -87,3 +87,6 @@
   :disabled
   :config
   (add-hook 'org-mode-hook #'valign-mode))
+
+; org-mode export html 时使用该 package 进行格式化输出。
+(use-package htmlize :ensure t)

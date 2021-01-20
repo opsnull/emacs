@@ -13,7 +13,6 @@
   ;; C-\ 被映射到 vterm-send-ctrl-slash，需要解绑后才能恢复以前的绑定（切换输入法）。
   (:map vterm-mode-map ("C-\\" . nil)))
 
-; 多终端。
 (use-package multi-vterm
   :ensure t
   :after (vterm)
@@ -23,7 +22,6 @@
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
-; buffer 专属终端。
 (use-package vterm-toggle
   :ensure t
   :after (vterm)

@@ -61,17 +61,9 @@
 
 (use-package treemacs-projectile :after (treemacs projectile) :ensure t)
 (use-package treemacs-magit :after (treemacs magit) :ensure t)
-;; treemacs-icons-dired 显示的图标和文件名间空格过大。
-;(use-package treemacs-icons-dired :after (treemacs dired) :ensure t :config (treemacs-icons-dired-mode))
-;; 使用 doom-theme 自带的 treemacs theme。
-;; (use-package treemacs-all-the-icons
-;;   :after (treemacs all-the-icons)
-;;   :ensure t
-;;   :config
-;;   (treemacs-load-theme "all-the-icons"))
-
 (use-package persp-mode
  :ensure t
+ :demand t
  :custom
  (persp-keymap-prefix (kbd "C-x p"))
  :config

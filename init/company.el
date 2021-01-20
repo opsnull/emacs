@@ -18,11 +18,9 @@
   :custom
   (company-idle-delay 0.3)
   (company-echo-delay 0.3)
-  ;; 显示候选序号，使用 M-<n> 选择
   (company-show-numbers t) 
   (company-minimum-prefix-length 1)
   (company-tooltip-limit 14)
-  ;; 对齐
   (company-tooltip-align-annotations t) 
   (company-dabbrev-code-everywhere t)
   (company-dabbrev-other-buffers nil)

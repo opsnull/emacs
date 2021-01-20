@@ -1,5 +1,4 @@
-; python
-;; pyenv-mode 提供 pyenv-mode-set 和 pyenv-mode-unset 两个命令，用来管理 PYENV_VERSION 环境变量。
+; pyenv-mode 提供 pyenv-mode-set 和 pyenv-mode-unset 两个命令，用来管理 PYENV_VERSION 环境变量。
 (use-package pyenv-mode
   :ensure
   :demand
@@ -164,7 +163,6 @@
 
 ;(shell-command "which npm &>/dev/null || brew install npm &>/dev/null")
 
-; javascript
 (use-package js2-mode
   :ensure
   :demand
@@ -206,7 +204,6 @@
   :config
   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
 
-; dockerfile
 (use-package dockerfile-mode
   :ensure t
   :demand

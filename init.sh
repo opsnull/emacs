@@ -18,8 +18,6 @@ pip install -q -i https://pypi.douban.com/simple/ ipython
 # 微软逐渐不再维护 python-language-server，转向 pyright 和 pyglance
 # 所以，不再使用 lsp-python-ms，同时也不再使用开源社区的 pyls；
 # 选择 lsp-pyright
-#pip2 install -q -i https://pypi.douban.com/simple/ 'python-language-server'
-#pip3 install -q -i https://pypi.douban.com/simple/ 'python-language-server[all]'
 
 go get golang.org/x/tools/gopls@latest
 

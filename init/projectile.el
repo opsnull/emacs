@@ -1,4 +1,3 @@
-; projectile 项目管理。
 (use-package projectile
   :ensure t
   :demand t
