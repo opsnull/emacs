@@ -21,10 +21,8 @@
 (use-package doom-modeline
   :ensure t
   :custom
-  ;; 不显示 buffer 编码。
   (doom-modeline-buffer-encoding nil)
   (doom-modeline-number-limit 69)
-  ;; 简化显示的文件路径，默认全路径，在 modeline 上占用太多空间。
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
   (doom-modeline-env-enable-python t)
   :init
@@ -35,23 +33,18 @@
 
 ; 在状态栏显示列号
 (column-number-mode t)
-
-; 在状态栏显示时间
+; 显示时间
 (display-time-mode t)
 (setq display-time-24hr-format t)
-
 ; 时间后面不显示系统负载
 (setq display-time-default-load-average nil)
-
 ; 不显示日期
 (setq display-time-day-and-date nil)
+; 显示文件大小
+(size-indication-mode t)
 
-; 在左侧显示行号
 ;;(global-linum-mode 1)
 (setq indicate-buffer-boundaries (quote left))
-
-; 在状态栏显示文件大小
-(size-indication-mode t)
 
 ; 去掉工具栏
 (tool-bar-mode -1)
@@ -75,16 +68,13 @@
 ; 鼠标指针规避光标
 (mouse-avoidance-mode 'animate)
 
-; 标题栏显示 %f 缓冲区完整路径 %p 页面百分数 %l 行号
-(setq frame-title-format "%f")
-
 ; 窗口左侧显示进度提示标识
 (setq-default indicate-empty-lines t)
 (when (not indicate-empty-lines)
   (toggle-indicate-empty-lines))
 
-;(add-hook 'after-init-hook #'toggle-frame-maximized)
-(add-hook 'after-init-hook #'toggle-frame-fullscreen)
+(add-hook 'after-init-hook #'toggle-frame-maximized)
+;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
 
 ; 静默启动
 (setq inhibit-startup-screen t)
@@ -92,7 +82,7 @@
 (setq inhibit-startup-echo-area-message t)
 (setq initial-scratch-message nil)
 
-; 在 dired mode 下，显示的目录和文件更易认。
+; 高亮 dired mode 下的文件和目录，更易辨认
 (use-package diredfl
   :ensure
   :demand
@@ -130,12 +120,9 @@
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
-; 第一次安装完毕后，需要执行 M-x fira-code-mode-install-fonts  安装 Fira Code Symbol font；
-;; Fira Code Symbol 是和 Firaa Code 不一样的字体，需要通过上面的命令来安装。
+; 执行 M-x fira-code-mode-install-fonts 安装 Fira Code Symbol font。
 (use-package fira-code-mode
   :ensure
   :demand
   :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-  :hook prog-mode
-)
-
+  :hook prog-mode)

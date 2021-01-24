@@ -1,23 +1,31 @@
+; 默认使用 bash
+;; https://www.masteringemacs.org/article/running-shells-in-emacs-overview
+(setq explicit-shell-file-name "/bin/bash")
+(setq shell-file-name "bash")
+(setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
+(setenv "SHELL" shell-file-name)
+(add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
+(global-set-key [f1] 'shell)
+
 (use-package vterm
   :ensure t
   :demand t
   :init
-  ;; 编译 libvterm 时依赖 cmake 和 libtool 包。
   ;;(shell-command "which cmake &>/dev/null || brew install cmake")
   ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
   :config
   (setq vterm-max-scrollback 100000)
+  ;; 需要 shell-side 配置，如设置环境变量 PROMPT_COMMAND。
+  (setq vterm-buffer-name-string "vterm %s")
   :bind
-  ;; 不清理屏幕（屏幕内容会丢失）。
   (:map vterm-mode-map ("C-l" . nil))
-  ;; C-\ 被映射到 vterm-send-ctrl-slash，需要解绑后才能恢复以前的绑定（切换输入法）。
+  ;; 防止和 sis 切换输入法冲突。
   (:map vterm-mode-map ("C-\\" . nil)))
 
 (use-package multi-vterm
   :ensure t
   :after (vterm)
   :config
-  ;; 重复执行，可以创建多个 vterm buffer。
   (global-set-key [(control return)] 'multi-vterm)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))

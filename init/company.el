@@ -16,8 +16,8 @@
         ("C-p"    . company-select-previous)
         ("C-n"    . company-select-next))
   :custom
-  (company-idle-delay 0.3)
-  (company-echo-delay 0.3)
+  (company-idle-delay 0.1)
+  (company-echo-delay 0.1)
   (company-show-numbers t) 
   (company-minimum-prefix-length 1)
   (company-tooltip-limit 14)
@@ -39,6 +39,7 @@
 
 (use-package company-quickhelp
   :ensure t
+  :demand t
   :after (company)
   :config
   (company-quickhelp-mode 1))

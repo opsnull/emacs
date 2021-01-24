@@ -8,14 +8,12 @@
   (global-set-key (kbd "C->") 'goto-last-change)
   (global-set-key (kbd "C-<") 'goto-last-change-reverse))
 
-; 智能括号
 (use-package smartparens
   :ensure t
   :config
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
-; 智能扩展选择区域
 (use-package expand-region
   :ensure t
   :config
@@ -46,7 +44,6 @@
   (setq aw-scope 'frame)
   (global-set-key (kbd "M-o") 'ace-window))
 
-; 文本片段
 (use-package yasnippet
   :ensure t
   :demand t
@@ -59,23 +56,11 @@
   :commands yas-minor-mode
   :hook (java-mode . yas-minor-mode))
 
-; 语法检查
 (use-package flycheck
   :ensure t
   ;:hook
   ;(after-init . global-flycheck-mode)
   )
-
-; resetclient
-(use-package restclient :ensure t)
-
-(use-package ox-hugo :ensure t)
-
-; 中文 UTF-8 环境。
-(prefer-coding-system 'utf-8)
-(setenv "LANG" "zh_CN.UTF-8")
-(setenv "LC_ALL" "zh_CN.UTF-8")
-(setenv "LC_CTYPE" "zh_CN.UTF-8")
 
 ; 显示缩进
 (use-package highlight-indent-guides
@@ -90,17 +75,6 @@
   (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
-
-; 折叠
-(use-package origami
-  :ensure
-  :demand
-  :after (lsp-mode)
-  :config
-  (global-origami-mode)
-  (define-key lsp-mode-map (kbd "C-c f") nil)
-  (define-key origami-mode-map (kbd "C-c f") 'origami-recursively-toggle-node)
-  (define-key origami-mode-map (kbd "C-c F") 'origami-toggle-all-nodes))
 
 ; 切换 window 时高亮光标位置
 (use-package beacon

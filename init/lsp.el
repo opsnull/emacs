@@ -2,7 +2,7 @@
   :ensure t
   :custom
   (lsp-ui-doc-enable nil)
-  (lsp-ui-doc-delay 5.0)
+  (lsp-ui-doc-delay 0.3)
   (lsp-ui-flycheck-enable t)
   (lsp-ui-sideline-enable nil)
   :config
@@ -45,7 +45,7 @@
   (gc-cons-threshold (* 1024 1024 100))
   ;; 增大同 LSP 服务器交互时的读取文件的大小
   (read-process-output-max (* 1024 1024 2))
-  (lsp-idle-delay 0.500)
+  (lsp-idle-delay 0.1)
   ;; 开启 log 会极大影响性能
   (lsp-log-io nil)
   (lsp-keep-workspace-alive nil)
@@ -91,8 +91,7 @@
               ("C-c f" . lsp-format-region)
               ("C-c d" . lsp-describe-thing-at-point) 
               ("C-c a" . lsp-execute-code-action)
-              ("C-c r" . lsp-rename))
-  )
+              ("C-c r" . lsp-rename)))
 
 (use-package lsp-treemacs
   :ensure t
