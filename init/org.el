@@ -37,7 +37,6 @@
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb))
 
-; 美化 org-mode 的 heading 和 list。
 (use-package org-superstar
   :ensure
   :demand
@@ -45,7 +44,6 @@
   :config
   (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
 
-; 美化 TODO 和 printing。
 (use-package org-fancy-priorities
   :ensure t
   :after (org)
@@ -54,7 +52,6 @@
   :config
   (setq org-fancy-priorities-list '("⚡" "⬆" "⬇" "☕")))
 
-(use-package posframe :ensure t)
 (use-package org-download
   :ensure t
   :demand t
@@ -72,7 +69,6 @@
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
-; org babel 中执行 go 代码片段。
 (use-package ob-go
   :after (org)
   :config
@@ -80,13 +76,4 @@
 
 (use-package ox-reveal :after (org))
 
-; org-mode 表格对齐
-(use-package valign
-  :ensure
-  :demand
-  :disabled
-  :config
-  (add-hook 'org-mode-hook #'valign-mode))
-
-; org-mode export html 时使用该 package 进行格式化输出。
 (use-package htmlize :ensure t)

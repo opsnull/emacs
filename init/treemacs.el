@@ -8,22 +8,21 @@
   (progn
     (setq
      treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
-     treemacs-deferred-git-apply-delay      0.5
+     treemacs-deferred-git-apply-delay      0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              3000
-     treemacs-file-follow-delay             0.3
+     treemacs-file-event-delay              500
+     treemacs-file-follow-delay             0.1
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
      treemacs-goto-tag-strategy             'refetch-index
      treemacs-indentation                   1
      treemacs-indentation-string            " "
      treemacs-is-never-other-window         nil
-     treemacs-max-git-entries               5000
+     treemacs-max-git-entries               3000
      treemacs-missing-project-action        'remove
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
-     ;; 切换 project 后关闭其他 project 目录。
      treemacs-project-follow-cleanup        t
      treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
      treemacs-position                      'left
@@ -39,7 +38,7 @@
      treemacs-sorting                       'alphabetic-asc
      treemacs-space-between-root-nodes      nil
      treemacs-tag-follow-cleanup            t
-     treemacs-tag-follow-delay              0.5
+     treemacs-tag-follow-delay              1
      treemacs-width                         35
      imenu-auto-rescan                      t)
     (treemacs-resize-icons 11)
@@ -64,6 +63,7 @@
 (use-package persp-mode
  :ensure t
  :demand t
+ :disabled
  :custom
  (persp-keymap-prefix (kbd "C-x p"))
  :config
@@ -72,5 +72,7 @@
 (use-package treemacs-persp
  :ensure t
  :demand t
+ :disabled
  :after (treemacs persp-mode)
- :config (treemacs-set-scope-type 'Perspectives))
+ :config
+ (treemacs-set-scope-type 'Perspectives))

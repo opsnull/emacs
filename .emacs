@@ -16,18 +16,14 @@
    (unless (package-installed-p package)
        (package-install package)))
 
-; 获取 shell 环境变量（如 PATH），init 目录下的部分 package 依赖这些环境变量。
 (use-package exec-path-from-shell
   :ensure t
   :custom
-  ;; 不检查 shell 启动文件的使用方式是否符合预期（如 .zshrc 不应该 export 环境变量）。
   (exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-variables '("PATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
   :config
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
-; 加载 init 目录下所有以 el 结尾的文件。
 (defvar init-dir (expand-file-name "init" user-emacs-directory))
 (mapc 'load (directory-files init-dir t ".*el$"))
 

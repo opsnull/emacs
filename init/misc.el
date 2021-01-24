@@ -1,18 +1,14 @@
-; 最近打开的文件数量
 (setq recentf-max-menu-items 100
       recentf-max-saved-items 100)
 
-; 消除长的 yes or no 提示符
 (fset 'yes-or-no-p 'y-or-n-p)
 
-; 退出 emacs 时提示确认
 (setq confirm-kill-emacs #'y-or-n-p)
 
 (setq-default line-spacing 1
               fill-column 100
               comment-fill-column 0
 	          tab-width 4
-              ; 缩进时使用空格
 	          indent-tabs-mode nil)
 
 (setq-default debug-on-error         nil
@@ -25,13 +21,10 @@
 (setq scroll-margin 3
       scroll-conservatively 10000)
 
-; 使用 X 剪贴板
 (setq x-select-enable-clipboard t)
 
-; 显示图片
 (auto-image-file-mode t)
 
-; winner mode
 (winner-mode t)
 
 ; 关闭文件选择窗口
@@ -43,13 +36,14 @@
        (concat "-o ControlMaster=auto "
                "-o ControlPath='tramp.%%C' "
                "-o ControlPersist=600 "
-               "-o ServerAliveCountMax=30 "
+               "-o ServerAliveCountMax=60 "
                "-o ServerAliveInterval=5 ")
        vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出现出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 1024 1)
        tramp-copy-size-limit nil
        tramp-default-method "ssh"
+       tramp-default-user "root"
        ;; 在登录远程终端时设置 TERM 环境变量为 tramp。这样可以在远程 shell 的初始化文件中对 tramp 登录情况做特殊处理
        ;; 例如，对于 zsh，可以设置 PS1。
        tramp-terminal-type "tramp"
@@ -94,6 +88,20 @@
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 
+; dired
+(setq dired-recursive-deletes t)
+(setq dired-recursive-copies t)
+(put 'dired-find-alternate-file 'disabled nil)
+
+; 消除 Package cl is deprecated 警告。
+(setq byte-compile-warnings '(cl-functions))
+
+; 中文环境
+(prefer-coding-system 'utf-8)
+(setenv "LANG" "zh_CN.UTF-8")
+(setenv "LC_ALL" "zh_CN.UTF-8")
+(setenv "LC_CTYPE" "zh_CN.UTF-8")
+
 ; xwidget-webkit
 (setq browse-url-browser-function 'xwidget-webkit-browse-url)
 (defvar xwidget-webkit-bookmark-jump-new-session)
@@ -124,36 +132,3 @@
   :demand
   :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
-
-; dired
-(setq dired-recursive-deletes t) ; 可以递归的删除目录
-(setq dired-recursive-copies t) ; 可以递归的进行拷贝
-
-; 允许在 dired 中直接使用 a 命令进入目录
-(put 'dired-find-alternate-file 'disabled nil)
-
-; 在 dired mode 下，使用 rsync 来拷贝文件，这个拷贝是 background，不会 block emacs。
-(use-package dired-rsync
-  :ensure
-  :demand
-  :config
-  (bind-key "C-c C-r" 'dired-rsync dired-mode-map))
-
-; 提供类似于 ranger 的目录浏览体验。
-;; C-h 显示或隐藏 dotfiles。
-;; zP 切换到 range mode。
-(use-package ranger
-  :ensure
-  :demand
-  :config
-  (setq ranger-preview-file t)
-  (setq ranger-width-preview 0.50)
-  (setq ranger-width-parents 0.22)
-  (setq ranger-footer-delay 0.2)
-  (setq ranger-preview-delay 0.05)
-  (setq ranger-cleanup-eagerly t)
-  (setq ranger-show-hidden t)
-  (ranger-override-dired-mode t))
-
-; 消除 Package cl is deprecated 警告。
-(setq byte-compile-warnings '(cl-functions))
