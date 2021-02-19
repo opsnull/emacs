@@ -1,7 +1,5 @@
 (use-package pyenv-mode
-  :ensure
-  :demand
-  :after (projectile)
+  :ensure :demand :after (projectile)
   :init
   ;;(shell-command "which pyenv &>/dev/null || brew install --HEAD pyenv")
   ;;(shell-command "which pyenv-virtualenv &>/dev/null || brew install --HEAD pyenv-virtualenv")
@@ -22,9 +20,7 @@
   (:map pyenv-mode-map ("C-c C-s") . nil))
 
 (use-package python
-  :ensure
-  :demand
-  :after (pyenv-mode)
+  :ensure :demand :after (pyenv-mode)
   :custom
   (python-shell-interpreter "ipython")
   (python-shell-interpreter-args "")
@@ -40,8 +36,7 @@
                    (setq python-indent-offset 4))))
 
 (use-package lsp-pyright
-  :ensure t
-  :demand t
+  :ensure :demand
   :init
   ;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
   :after (python)
@@ -56,9 +51,7 @@
 ;; mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
 ;; 下载 jdk：https://www.oracle.com/java/technologies/javase-downloads.html
 (use-package lsp-java
-  :ensure t
-  :demand t
-  :after (lsp-mode company)
+  :ensure :demand :after (lsp-mode company)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -80,9 +73,7 @@
   (use-package dap-java :ensure nil :disabled t))
 
 (use-package go-mode
-  :ensure t
-  :demand t
-  :after (lsp-mode)
+  :ensure :demand :after (lsp-mode)
   :init
   ;;(shell-command "gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@latest")
   (defun lsp-go-install-save-hooks ()
@@ -95,7 +86,7 @@
   (go-mode . lsp-go-install-save-hooks))
 
 (use-package markdown-mode
-  :ensure t
+  :ensure
   :commands (markdown-mode gfm-mode)
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
@@ -107,23 +98,20 @@
   (setq markdown-command "multimarkdown"))
 
 (use-package json-mode 
-  :ensure t
-  :demand
+  :ensure :demand
   :config
   ;; (shell-command "which vscode-json-languageserver &>/dev/null || npm i -g vscode-json-languageserver &>/dev/null")
   )
 
 (use-package yaml-mode
-  :ensure t
-  :demand
+  :ensure :demand
   :init
   ;; (shell-command "which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>/dev/null")
   :hook
   (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent))))
 
 (use-package dockerfile-mode
-  :ensure t
-  :demand
+  :ensure :demand
   :init
   ;; (shell-command "which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile-language-server-nodejs &>/dev/null")
   :config

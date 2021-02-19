@@ -1,14 +1,14 @@
 (use-package projectile
-  :ensure t
-  :demand t
-  :after (treemacs helm)
+  :ensure :demand
+  ;:after (treemacs helm)
+  ;:after (treemacs ivy)
   :config
   (projectile-global-mode)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   (projectile-mode +1)
   (setq projectile-enable-caching t)
   (setq projectile-indexing-method 'hybrid)
-  (setq projectile-completion-system 'helm)
+  ;(setq projectile-completion-system 'helm)
   ;(setq projectile-completion-system 'ivy)
   (setq projectile-sort-order 'recently-active)
   ;; 切换 project 后显示 treemacs。
