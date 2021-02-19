@@ -20,6 +20,7 @@
   :ensure t
   :custom
   (exec-path-from-shell-check-startup-files nil)
+  (exec-path-from-shell-variables '("PATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
   :config
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
@@ -31,3 +32,4 @@
 (shell-command "touch ~/.emacs.d/custom.el")
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
+(put 'scroll-left 'disabled nil)

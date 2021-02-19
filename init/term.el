@@ -8,8 +8,7 @@
 (global-set-key [f1] 'shell)
 
 (use-package vterm
-  :ensure t
-  :demand t
+  :ensure :demand
   :init
   ;;(shell-command "which cmake &>/dev/null || brew install cmake")
   ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
@@ -23,16 +22,14 @@
   (:map vterm-mode-map ("C-\\" . nil)))
 
 (use-package multi-vterm
-  :ensure t
-  :after (vterm)
+  :ensure :after (vterm)
   :config
   (global-set-key [(control return)] 'multi-vterm)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 (use-package vterm-toggle
-  :ensure t
-  :after (vterm)
+  :ensure :after (vterm)
   :custom
   ;; 设置为 projectile scope 后，vterm-toggle 打开终端时自动切换到项目根目录。
   ;; 如果要切换到 buffer 对应的目录，可以使用 vterm-toggle-cd 命令。
@@ -50,3 +47,13 @@
      (dedicated . t)
      (reusable-frames . visible)
      (window-height . 0.3))))
+
+(use-package eshell-toggle
+  :ensure :demand
+  :custom
+  (eshell-toggle-size-fraction 3)
+  (eshell-toggle-use-projectile-root t)
+  (eshell-toggle-run-command nil)
+  (eshell-toggle-init-function #'eshell-toggle-init-ansi-term)
+  :bind
+  ("s-`" . eshell-toggle))

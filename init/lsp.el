@@ -1,5 +1,5 @@
 (use-package lsp-ui
-  :ensure t
+  :ensure
   :custom
   (lsp-ui-doc-enable nil)
   (lsp-ui-doc-delay 0.3)
@@ -10,9 +10,7 @@
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (use-package lsp-mode
-  :ensure t
-  :demand t
-  :after (flycheck)
+  :ensure :demand :after (flycheck)
   :hook
   (java-mode . lsp)
   (python-mode . lsp)
@@ -41,8 +39,6 @@
   ;; 显示函数签名
   (lsp-signature-auto-activate t)
   (lsp-signature-doc-lines 2)
-  ;; 增大垃圾回收的阈值，提高整体性能（内存换效率）
-  (gc-cons-threshold (* 1024 1024 100))
   ;; 增大同 LSP 服务器交互时的读取文件的大小
   (read-process-output-max (* 1024 1024 2))
   (lsp-idle-delay 0.1)
@@ -91,11 +87,11 @@
               ("C-c f" . lsp-format-region)
               ("C-c d" . lsp-describe-thing-at-point) 
               ("C-c a" . lsp-execute-code-action)
-              ("C-c r" . lsp-rename)))
+              ;("C-c r" . lsp-rename) ; 很少用，与 counsel-rg 冲突，故关闭；
+              ))
 
 (use-package lsp-treemacs
-  :ensure t
-  :after (lsp-mode treemacs)
+  :ensure :after (lsp-mode treemacs)
   :config
   (lsp-treemacs-sync-mode 1)
   :commands

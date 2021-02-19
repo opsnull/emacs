@@ -1,14 +1,13 @@
-(use-package leuven-theme :ensure t :disabled t)
-(use-package monokai-theme :ensure t :disabled t)
-(use-package solarized-theme :ensure t :disabled t)
-(use-package spacemacs-theme :ensure t :disabled t)
-(use-package zenburn-theme :ensure t :disabled t)
-(use-package spacemacs-theme :ensure t :disabled t)
-(use-package color-theme-sanityinc-tomorrow :ensure t :disabled t :config (load-theme 'sanityinc-tomorrow-eighties t))
+(use-package leuven-theme :ensure :disabled)
+(use-package monokai-theme :ensure :disabled)
+(use-package solarized-theme :ensure :disabled)
+(use-package spacemacs-theme :ensure :disabled)
+(use-package zenburn-theme :ensure :disabled)
+(use-package spacemacs-theme :ensure :disabled)
+(use-package color-theme-sanityinc-tomorrow :ensure :disabled :config (load-theme 'sanityinc-tomorrow-eighties t))
 
 (use-package doom-themes
-  :ensure t
-  :demand t
+  :ensure :demand
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t
@@ -19,62 +18,40 @@
   (doom-themes-org-config))
 
 (use-package doom-modeline
-  :ensure t
+  :ensure :demand
   :custom
-  (doom-modeline-buffer-encoding nil)
-  (doom-modeline-number-limit 69)
-  (doom-modeline-buffer-file-name-style 'truncate-with-project)
+  (doom-modeline-github nil)
   (doom-modeline-env-enable-python t)
-  :init
-  (doom-modeline-mode 1))
+  :init (doom-modeline-mode 1))
 
-; 需要额外执行 M-x all-the-icons-install-fonts 命令安装字体。
+; M-x all-the-icons-install-fonts
 (use-package all-the-icons :ensure t :after (doom-modeline))
 
-; 在状态栏显示列号
 (column-number-mode t)
-; 显示时间
 (display-time-mode t)
-(setq display-time-24hr-format t)
-; 时间后面不显示系统负载
-(setq display-time-default-load-average nil)
-; 不显示日期
-(setq display-time-day-and-date nil)
-; 显示文件大小
-(size-indication-mode t)
+(setq display-time-24hr-format t
+      display-time-default-load-average nil
+      display-time-day-and-date nil)
 
-;;(global-linum-mode 1)
+(size-indication-mode t)
 (setq indicate-buffer-boundaries (quote left))
 
-; 去掉工具栏
+(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+(dolist (mode '(org-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
 (tool-bar-mode -1)
-
-; 去掉滚动条
 (menu-bar-no-scroll-bar)
-
-; 去掉菜单栏
 (menu-bar-mode nil)
-
-; 语法加亮
 (global-font-lock-mode t)
-
-; 高亮显示区域选择
 (transient-mark-mode t)
 
-; 高亮显示成对括号，但不来回弹跳
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
 
-; 鼠标指针规避光标
-(mouse-avoidance-mode 'animate)
-
-; 窗口左侧显示进度提示标识
 (setq-default indicate-empty-lines t)
-(when (not indicate-empty-lines)
-  (toggle-indicate-empty-lines))
-
-(add-hook 'after-init-hook #'toggle-frame-maximized)
-;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
+(when (not indicate-empty-lines) (toggle-indicate-empty-lines))
 
 ; 静默启动
 (setq inhibit-startup-screen t)
@@ -82,16 +59,10 @@
 (setq inhibit-startup-echo-area-message t)
 (setq initial-scratch-message nil)
 
-; 高亮 dired mode 下的文件和目录，更易辨认
-(use-package diredfl
-  :ensure
-  :demand
-  :config
-  (diredfl-global-mode))
+(use-package diredfl :ensure :demand :config (diredfl-global-mode))
 
 (use-package dashboard
-  :ensure
-  :demand
+  :ensure :demand
   :config
   (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
   (setq dashboard-center-content t)
@@ -108,10 +79,8 @@
 ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14: https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
-  :ensure
-  :demand
+  :ensure :demand
   :init
-  ;; 添加自定义字体，后续可以在 cnfonts-ui 上选中；
   (setq cnfonts-personal-fontnames 
         '(("Iosevka SS14" "Fira Code")
           ("Sarasa Gothic SC" "Source Han Mono SC")
@@ -120,9 +89,12 @@
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
-; 执行 M-x fira-code-mode-install-fonts 安装 Fira Code Symbol font。
+; M-x fira-code-mode-install-fonts
 (use-package fira-code-mode
-  :ensure
-  :demand
+  :ensure :demand
   :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode)
+
+(use-package emojify :hook (erc-mode . emojify-mode) :commands emojify-mode)
+
+(use-package ns-auto-titlebar :ensure :demand :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
