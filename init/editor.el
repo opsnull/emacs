@@ -2,7 +2,7 @@
 (use-package iedit :ensure)
 
 ; 快速跳转到上次修改的位置
-(use-package goto-chg 
+(use-package goto-chg
   :ensure :config
   (global-set-key (kbd "C->") 'goto-last-change)
   (global-set-key (kbd "C-<") 'goto-last-change-reverse))

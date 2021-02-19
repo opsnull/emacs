@@ -1,0 +1,55 @@
+(use-package ivy 
+  :ensure :demand 
+  :config
+  (setq ivy-use-virtual-buffers t
+        enable-recursive-minibuffers t
+        ivy-count-format "%d/%d "
+        ivy-use-selectable-prompt t
+        ivy-re-builders-alist '((read-file-name-internal . ivy--regex-fuzzy) (t . ivy--regex-plus)))
+  (ivy-mode 1))
+
+(use-package ivy-hydra :ensure :demand :after ivy)
+
+(use-package counsel 
+  :ensure :demand :after ivy
+  :config
+  (setq ivy-initial-inputs-alist nil) ;; Don't start searches with ^
+  (global-set-key (kbd "C-c C-r") 'ivy-resume)
+  (global-set-key (kbd "<f6>") 'ivy-resume)
+  (global-set-key (kbd "<f2>") nil)
+  (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+  (global-set-key (kbd "C-c g") 'counsel-git)
+  (global-set-key (kbd "C-c G") 'counsel-git-grep)
+  (global-set-key (kbd "C-c L") 'counsel-git-log)
+  (global-set-key (kbd "C-c a") 'counsel-ag)
+  (global-set-key (kbd "C-c r") 'counsel-rg)
+  (global-set-key (kbd "C-c n") 'counsel-fzf)
+  (global-set-key (kbd "C-c j") 'counsel-file-jump)
+  (global-set-key (kbd "C-c c") 'counsel-compile)
+  (global-set-key (kbd "C-c v") 'ivy-push-view)
+  (global-set-key (kbd "C-c V") 'ivy-pop-view)
+  (global-set-key (kbd "C-c o") 'counsel-outline)
+  (global-set-key (kbd "C-c O") 'counsel-org-file)
+  (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+  (counsel-mode 1))
+
+ (use-package swiper 
+   :ensure :demand :after ivy
+   :config
+   (setq search-default-mode #'char-fold-to-regexp)
+   (global-set-key (kbd "C-s") 'swiper-isearch))
+
+; M-x counsel-tramp
+; M-x counsel-tramp-quit
+(use-package counsel-tramp 
+  :ensure :demand :after (counsel aggressive-indent editorconfig)
+  :config
+  (define-key global-map (kbd "C-c s") 'counsel-tramp)
+  (eval-after-load 'tramp '(setenv "SHELL" "/bin/bash"))
+  (add-hook 'counsel-tramp-pre-command-hook '(lambda () (projectile-mode 0)))
+  (add-hook 'counsel-tramp-quit-hook '(lambda () (projectile-mode 1))))
+
+(use-package prescient :ensure :demand :disabled :after counsel :config (prescient-persist-mode 1))
+(use-package ivy-prescient :after prescient :ensure :disabled :demand :config (ivy-prescient-mode 1))
+(use-package all-the-icons-ivy :ensure :demand :after (ivy) :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
+(use-package counsel-projectile :ensure :demand :after (counsel projectile) :config (counsel-projectile-mode 1))
