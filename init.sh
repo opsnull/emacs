@@ -11,7 +11,13 @@ which fd || brew install fd
 which ag|| brew install the_silver_searcher
 which rg || brew install ripgrep
 which fzf || brew install fzf
-which im-select || curl -Ls https://raw.githubusercontent.com/daipeihust/im-select/master/install_mac.sh | sh
+
+#  Mac 输入法切换工具，用于替代 im-select，解决后者看似输入法已经切换，但实际还是上一次的问题：
+# 系统的 “快捷键”-》“选择上一个输入法” 必须要开启：https://github.com/laishulu/macism/issues/2
+git clone https://github.com/laishulu/macism
+cd macism
+swiftc macism.swift
+mv macism /usr/local/bin
 
 pip install -q -i https://pypi.douban.com/simple/ ipython
 
