@@ -71,19 +71,13 @@
 (use-package beacon :ensure :demand :config  (beacon-mode 1))
 
 ; 自动切换到英文
+;; 使用 macism 输入法切换工具：https://github.com/laishulu/macism#install
+;; 系统的 “快捷键”-》“选择上一个输入法” 必须要开启：https://github.com/laishulu/macism/issues/2
 (use-package sis 
   :ensure :demand
-  :init
-  ;; (shell-command
-  ;;  (concat
-  ;;   "im-select &>/dev/null || curl -Ls "
-  ;;   "https://raw.githubusercontent.com/daipeihust/im-select/master/install_mac.sh | sh"))
-  (setq sis-external-ism "/usr/local/bin/im-select")
-  (setq sis-follow-context-fixed 'other)
-  (setq sis-respect-start 'other)
   :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  (sis-global-respect-mode nil)
-  (sis-global-context-mode nil)
+  (sis-global-respect-mode t)
+  (sis-global-context-mode t)
   (push "M-g" sis-prefix-override-keys)
   (global-set-key (kbd "C-\\") 'sis-switch))
