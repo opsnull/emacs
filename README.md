@@ -1,41 +1,23 @@
-# 添加 raw.githubusercontent.com 域名映射
-
-raw.githubuserconten.com 被墙，需要绑定 hosts:
-
-``` txt
-151.101.76.133 raw.githubusercontent.com
-151.101.76.133 user-images.githubusercontent.com
-151.101.76.133 avatars2.githubusercontent.com
-151.101.76.133 avatars1.githubusercontent.com
-```
-
-这样后续才能正常安装 emacs27、lsp java server 和 all-the-icons。
-
-# 编译安装 emacs 27
-
-``` bash
-brew tap d12frosted/emacs-plus
-brew install emacs-plus@27 --with-mailutils --with-xwidgets  --with-modern-papirus-icon --HEAD
-ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications/Emacs.app
-```
-
-# 编译安装 emacs 28
+# 编译安装 Emacs
 
 查看 emacs feature/native-comp 分支的最新 comit：
 https://github.com/emacs-mirror/emacs/commits/feature/native-comp
 
 ``` bash
-brew update # 更新 brew，使用最新的 gcc 和 libgccjit formula
+# 更新 brew，使用最新的 gcc 和 libgccjit formula
+brew update 
 
+# 安装编译依赖
 git clone git@github.com:jimeh/build-emacs-for-macos.git
 cd build-emacs-for-macos
-brew bundle  # 安装编译依赖
+brew bundle  
+
+# 编译安装 Emacs 27
+./build-emacs-for-macos emacs-27
+
+# 编译安装 Emacs native-comp Branch
 ./build-emacs-for-macos --git-sha f1efac1f9efbfa15b6434ebef507c00c1277633f feature/native-comp
 ```
-
-编译完毕后，生成的 Emacs.app 位于
-/Users/zhangjun/codes/github/build-emacs-for-macos/sources/emacs-mirror-emacs-f1efac1/nextstep 目录
-下，可以移动到 /Applications 目录下。
 
 # python
 
