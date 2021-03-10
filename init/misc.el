@@ -91,6 +91,12 @@
 (put 'dired-find-alternate-file 'disabled nil)
 
 (prefer-coding-system 'utf-8)
+(setq locale-coding-system 'utf-8)
+(set-buffer-file-coding-system 'utf-8)
+(setq default-buffer-file-coding-system 'utf-8)
+(set-language-environment "UTF-8")
+(set-default buffer-file-coding-system 'utf8)
+(set-default-coding-systems 'utf-8)
 (setenv "LANG" "zh_CN.UTF-8")
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
@@ -126,14 +132,6 @@
   :hook 
   (yaml-mode . origami-mode)
   (json-mode . origami-mode))
-
-; keep ediff in one frame
-(setq ediff-diff-options "-w" ;; 忽略空格
-      ediff-split-window-function 'split-window-horizontally ;; 水平展示窗口
-      ediff-window-setup-function 'ediff-setup-windows-plain ;; 不在单独的 frame 中显示控制窗口
-      ) 
-(winner-mode)
-(add-hook 'ediff-after-quit-hook-internal 'winner-undo)
 
 (add-hook 'after-init-hook #'toggle-frame-maximized)
 ;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
