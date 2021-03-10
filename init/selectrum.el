@@ -51,7 +51,7 @@
         register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
   :config
-  (setq consult-narrow-key "<") ;; (kbd "C-+")
+  (setq consult-narrow-key "<")
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function #'projectile-project-root)
 )
@@ -74,11 +74,11 @@
   :ensure :demand :init (marginalia-mode)
   :config
   (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
-  (advice-add #'marginalia-cycle :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit))))
-  :bind 
-  (:map minibuffer-local-completion-map ("C-i" . marginalia-cycle-annotators)))
+  (advice-add #'marginalia-cycle :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit 'keep-selected))))
+  :bind (("M-A" . marginalia-cycle)
+         :map minibuffer-local-map
+         ("M-A" . marginalia-cycle)))
 
-; C-h 查看 action 列表；
 (use-package embark 
   :ensure :demand :after selectrum 
   :config
@@ -86,6 +86,7 @@
   :bind (("C-c e" . embark-act) 
          ("C-;" . embark-act) 
          :map embark-variable-map ("l" . edit-list)))
+
 (use-package embark-consult 
   :ensure :demand
   :after (embark consult) 

@@ -80,4 +80,5 @@
   (sis-global-respect-mode t)
   (sis-global-context-mode t)
   (push "M-g" sis-prefix-override-keys)
+  (push "M-s" sis-prefix-override-keys)
   (global-set-key (kbd "C-\\") 'sis-switch))

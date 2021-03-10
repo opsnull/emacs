@@ -25,6 +25,8 @@
         org-agenda-span 21
         org-agenda-include-diary t
         org-image-actual-width t
+        org-cycle-level-faces nil
+        org-n-level-faces 4
         )
   (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
   (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
@@ -45,9 +47,7 @@
   :hook
   (org-mode . org-superstar-mode)
   :custom
-  (org-superstar-remove-leading-stars t)
-  ;(org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-  )
+  (org-superstar-remove-leading-stars t))
 
 (use-package org-fancy-priorities
   :ensure :demand :after (org)
