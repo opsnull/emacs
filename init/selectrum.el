@@ -1,10 +1,9 @@
 (use-package selectrum :ensure :demand :init (selectrum-mode +1)) 
 (use-package prescient :ensure :demand :config (prescient-persist-mode +1))
 (use-package selectrum-prescient :ensure :demand :init (selectrum-prescient-mode +1) (prescient-persist-mode +1) :after selectrum)
-(use-package company-prescient :ensure :demand :init (company-prescient-mode +1))
+(use-package company-prescient :ensure :demand :init (company-prescient-mode +1) :after prescient)
 (use-package consult
-  :ensure :demand
-  :after projectile
+  :ensure :demand :after projectile
   :bind (;; C-c bindings (mode-specific-map)
          ("C-c h" . consult-history)
          ("C-c m" . consult-mode-command)
@@ -53,25 +52,21 @@
   :config
   (setq consult-narrow-key "<")
   (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function #'projectile-project-root)
-)
+  (setq consult-project-root-function #'projectile-project-root))
 
-;; Compilation mode integration
 (use-package compile
-  :ensure :demand
+  :ensure :demand :after consult
   :bind (:map compilation-minor-mode-map
          ("e" . consult-compile-error)
          :map compilation-mode-map
          ("e" . consult-compile-error)))
 
-;; Optionally add the `consult-flycheck' command.
 (use-package consult-flycheck
-  :ensure :demand
-  :bind (:map flycheck-command-map
-              ("!" . consult-flycheck)))
+  :ensure :demand :after consult
+  :bind (:map flycheck-command-map ("!" . consult-flycheck)))
 
 (use-package marginalia
-  :ensure :demand :init (marginalia-mode)
+  :ensure :demand :init (marginalia-mode) :after (selectrum)
   :config
   (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
   (advice-add #'marginalia-cycle :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit 'keep-selected))))
@@ -80,14 +75,26 @@
          ("M-A" . marginalia-cycle)))
 
 (use-package embark 
-  :ensure :demand :after selectrum 
+  :ensure :demand :after (selectrum which-key)
   :config
   (setq embark-prompter 'embark-keymap-prompter) 
-  :bind (("C-c e" . embark-act) 
-         ("C-;" . embark-act) 
-         :map embark-variable-map ("l" . edit-list)))
+
+  (defun refresh-selectrum ()
+    (setq selectrum--previous-input-string nil))
+  (add-hook 'embark-pre-action-hook #'refresh-selectrum)
+  
+  ;Use which key like a key menu prompt
+  (setq embark-action-indicator
+        (lambda (map &optional _target)
+          (which-key--show-keymap "Embark" map nil nil 'no-paging)
+          #'which-key--hide-popup-ignore-command)
+        embark-become-indicator embark-action-indicator)
+
+  :bind ( ("C-;" . embark-act) :map embark-variable-map ("l" . edit-list)))
 
 (use-package embark-consult 
   :ensure :demand
   :after (embark consult) 
   :hook (embark-collect-mode . embark-consult-preview-minor-mode))
+
+
