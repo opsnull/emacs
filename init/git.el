@@ -1,6 +1,7 @@
 (use-package magit 
   :ensure
-  :config (setq auto-revert-check-vc-info t)
+  ; auto-revert-check-vc-info 会极大的增加文件打开的延迟，故关闭。
+  ;:config (setq auto-revert-check-vc-info t)
   :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (setq ediff-diff-options "-w" ;; 忽略空格
