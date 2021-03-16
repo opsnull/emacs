@@ -70,7 +70,6 @@
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
-; 备份
 ;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (setq backup-by-copying t
@@ -80,7 +79,6 @@
       kept-old-versions 2
       version-control t)
 
-; 自动保存
 ;(shell-command "mkdir -p ~/.emacs.d/autosave")
 (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
 (setq auto-save-list-file-prefix autosave-dir
