@@ -15,8 +15,8 @@
   (java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
-  (yaml-mode . lsp)
-  (json-mode . lsp)
+  ;(yaml-mode . lsp)
+  ;(json-mode . lsp)
   (dockerfile-mode . lsp)
   ;(lsp-mode . lsp-enable-which-key-integration)
   :custom
@@ -41,7 +41,7 @@
   (lsp-signature-doc-lines 2)
   ;; 增大同 LSP 服务器交互时的读取文件的大小
   (read-process-output-max (* 1024 1024 2))
-  (lsp-idle-delay 0.1)
+  (lsp-idle-delay 0.5)
   ;; 开启 log 会极大影响性能
   (lsp-log-io nil)
   (lsp-keep-workspace-alive nil)
