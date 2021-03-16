@@ -25,9 +25,8 @@
         org-agenda-span 21
         org-agenda-include-diary t
         org-image-actual-width t
-        org-cycle-level-faces nil
-        org-n-level-faces 4
-        )
+        org-cycle-level-faces t
+        org-n-level-faces 4 )
   (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
   (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
   (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
@@ -40,7 +39,9 @@
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
   (global-set-key (kbd "C-c c") 'org-capture)
-  (global-set-key (kbd "C-c b") 'org-switchb))
+  (global-set-key (kbd "C-c b") 'org-switchb)
+  (define-key org-mode-map (kbd "M-n") 'org-next-link)
+  (define-key org-mode-map (kbd "M-p") 'org-previous-link))
 
 (use-package org-superstar
   :ensure :demand :after (org)
@@ -286,9 +287,8 @@
                          (holiday-fixed 4 1   "愚人节")
                          (holiday-fixed 12 25 "圣诞节")
                          (holiday-fixed 10 1  "国庆节")
-                         (holiday-float 5 0 2 "母亲节")   ;5月的第二个星期天
-                         (holiday-float 6 0 3 "父亲节")
-                         ))
+                         (holiday-float 5 0 2 "母亲节")
+                         (holiday-float 6 0 3 "父亲节")))
 
 (setq local-holidays '((holiday-chinese 1 15  "元宵节 (正月十五)")
                        (holiday-chinese 5 5   "端午节 (五月初五)")
@@ -297,9 +297,7 @@
                        ;; 生日
                        (holiday-chinese  5 12 "老婆生日(1987)")
                        (holiday-chinese 11 15 "老妈生日(1966)")
-                       (holiday-chinese 11 15 "老妈生日(1966)")
-                       (holiday-chinese 5 20  "老爸生日(1965)")
-                       ))
+                       (holiday-chinese 5 20  "老爸生日(1965)")))
 (setq chinese-calendar-celestial-stem
       ["甲" "乙" "丙" "丁" "戊" "己" "庚" "辛" "壬" "癸"])
 (setq chinese-calendar-terrestrial-branch
@@ -319,7 +317,6 @@
 
 (autoload 'chinese-year "cal-china" "Chinese year data" t)
 
-;; 设置颜色显示                       
 (setq calendar-load-hook
       '(lambda ()
          (set-face-foreground 'diary-face   "skyblue")
@@ -344,7 +341,6 @@
 (add-to-list 'org-capture-templates
              '("n" "Notes" entry (file+headline "~/docs/inbox.org" "Notes")
                "* %^{Heading} %t %^g\n  %?\n"))
-
 
 ; brew install terminal-notifier
 (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
