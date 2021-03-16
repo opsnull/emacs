@@ -53,6 +53,8 @@
 
 (use-package flycheck
   :ensure
+  :config
+  (setq-default flycheck-disabled-checkers '(yaml-jsyaml yaml-ruby yaml-yamllint json-jsonlint json-jq jsonnet json-python-json))
   ;:hook
   ;(after-init . global-flycheck-mode)
   )
