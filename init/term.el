@@ -57,3 +57,14 @@
   (eshell-toggle-init-function #'eshell-toggle-init-ansi-term)
   :bind
   ("s-`" . eshell-toggle))
+
+(use-package native-complete
+  :ensure :demand
+  :custom
+  (with-eval-after-load 'shell
+    (native-complete-setup-bash)))
+
+(use-package company-native-complete
+  :ensure :demand :after (company)
+  :custom
+  (add-to-list 'company-backends 'company-native-complete))
