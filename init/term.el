@@ -68,3 +68,24 @@
   :ensure :demand :after (company)
   :custom
   (add-to-list 'company-backends 'company-native-complete))
+
+(setq  tramp-ssh-controlmaster-options
+       (concat "-o ControlMaster=auto "
+               "-o ControlPath='tramp.%%C' "
+               "-o ControlPersist=600 "
+               "-o ServerAliveCountMax=60 "
+               "-o ServerAliveInterval=5 ")
+       vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
+       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出现出错： “gzip: (stdin): unexpected end of file”
+       tramp-inline-compress-start-size (* 1024 1024 1)
+       tramp-copy-size-limit nil
+       tramp-default-method "ssh"
+       tramp-default-user "root"
+       ;; 在登录远程终端时设置 TERM 环境变量为 tramp。这样可以在远程 shell 的初始化文件中对 tramp 登录情况做特殊处理。
+       ;; 例如，对于 zsh，可以设置 PS1。
+       tramp-terminal-type "tramp"
+       tramp-completion-reread-directory-timeout t)
+
+; eshell 高亮模式
+(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
