@@ -346,7 +346,6 @@
 (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
 
 (defun terminal-notifier-notify (title message)
-  "Show a message with terminal-notifier-command."
   (start-process "terminal-notifier"
                  "terminal-notifier"
                  terminal-notifier-command
