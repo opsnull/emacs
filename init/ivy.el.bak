@@ -10,6 +10,23 @@
 
 (use-package ivy-hydra :ensure :demand :after ivy)
 
+(use-package ivy-rich 
+  :ensure :demand :after ivy 
+  :custom
+  (ivy-virtual-abbreviate 'full
+                          ivy-rich-switch-buffer-align-virtual-buffer t
+                          ivy-rich-path-style 'abbrev)
+  :config
+  (ivy-set-display-transformer 'ivy-switch-buffer 'ivy-rich-switch-buffer-transformer)
+  (ivy-rich-mode 1))
+
+(use-package all-the-icons-ivy-rich
+  :ensure :demand :after ivy-rich
+  :init
+  (all-the-icons-ivy-rich-mode 1)
+  :config
+  (setq all-the-icons-ivy-rich-icon-size 1.0))
+
 (use-package counsel 
   :ensure :demand :after ivy
   :config
@@ -34,22 +51,34 @@
   (counsel-mode 1))
 
  (use-package swiper 
-   :ensure :demand :after ivy
+   :ensure :demand :disabled :after ivy
    :config
    (setq search-default-mode #'char-fold-to-regexp)
-   (global-set-key (kbd "C-s") 'swiper-isearch))
+   (global-set-key (kbd "C-s") 'swiper))
 
 ; M-x counsel-tramp
 ; M-x counsel-tramp-quit
 (use-package counsel-tramp 
-  :ensure :demand :after (counsel aggressive-indent editorconfig)
+  :ensure :demand :after (counsel)
   :config
   (define-key global-map (kbd "C-c s") 'counsel-tramp)
   (eval-after-load 'tramp '(setenv "SHELL" "/bin/bash"))
   (add-hook 'counsel-tramp-pre-command-hook '(lambda () (projectile-mode 0)))
   (add-hook 'counsel-tramp-quit-hook '(lambda () (projectile-mode 1))))
 
-(use-package prescient :ensure :demand :disabled :after counsel :config (prescient-persist-mode 1))
-(use-package ivy-prescient :after prescient :ensure :disabled :demand :config (ivy-prescient-mode 1))
+(use-package prescient :ensure :demand :after counsel :config (prescient-persist-mode +1))
+(use-package ivy-prescient :after prescient :ensure :demand :config (ivy-prescient-mode +1))
+(use-package company-prescient :ensure :demand :init (company-prescient-mode +1) :after prescient)
 (use-package all-the-icons-ivy :ensure :demand :after (ivy) :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
-(use-package counsel-projectile :ensure :demand :after (counsel projectile) :config (counsel-projectile-mode 1))
+(use-package counsel-projectile 
+  :ensure :demand :after (counsel projectile) 
+  :config
+  (counsel-projectile-mode 1)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+
+(use-package ivy-xref
+  :ensure :after ivy
+  :init
+  (when (>= emacs-major-version 27)
+    (setq xref-show-definitions-function #'ivy-xref-show-defs))
+  (setq xref-show-xrefs-function #'ivy-xref-show-xrefs))

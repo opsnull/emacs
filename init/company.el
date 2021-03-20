@@ -15,8 +15,8 @@
         ("C-p"    . company-select-previous)
         ("C-n"    . company-select-next))
   :custom
-  (company-idle-delay 0.5)
-  (company-echo-delay 0.3)
+  (company-idle-delay 0.3)
+  (company-echo-delay 0.03)
   (company-show-numbers t) 
   (company-minimum-prefix-length 2)
   (company-tooltip-limit 14)
@@ -28,7 +28,7 @@
   (company-dabbrev-code-ignore-case nil)
   (company-dabbrev-code-everywhere t)
   (company-backends '(company-capf company-files (company-dabbrev-code company-keywords) company-dabbrev))
-  (company-global-modes '(not erc-mode message-mode help-mode gud-mode))
+  (company-global-modes '(not erc-mode message-mode help-mode gud-mode shell-mode eshell-mode))
   (company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
   :config (global-company-mode t))
 

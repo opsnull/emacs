@@ -59,3 +59,15 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ \
 # all-the-icons 图标
 
 第一次启动 emacs 后，需要使用命令 `M-x all-the-icons-install-fonts` 安装图标字体。
+
+# 安装 fd、rg、ag 工具
+
+projectile、counslt、helm 等 package 在查找文件时优先使用这些工具，安装后性能更好。
+
+``` bash
+brew install fd rg ag
+
+wget https://github.com/sharkdp/fd/releases/download/v8.2.1/fd-v8.2.1-x86_64-unknown-linux-musl.tar.gz
+wget https://github.com/sharkdp/fd/releases/download/v8.2.1/fd-v8.2.1-arm-unknown-linux-musleabihf.tar.gz
+```
++ 建议使用 musl 版本，这样消除对系统 Glibc 版本的依赖。

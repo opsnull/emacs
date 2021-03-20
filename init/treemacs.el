@@ -7,10 +7,10 @@
   (progn
     (setq
      treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
-     treemacs-deferred-git-apply-delay      0.5
+     treemacs-deferred-git-apply-delay      0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              500
+     treemacs-file-event-delay              100
      treemacs-file-follow-delay             0.1
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
