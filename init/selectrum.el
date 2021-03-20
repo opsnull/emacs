@@ -46,7 +46,7 @@
          ("M-s e" . consult-isearch)
          ("M-s l" . consult-line))
   :init
-  (setq register-preview-delay 0
+  (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
   :config

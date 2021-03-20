@@ -2,7 +2,7 @@
   :ensure
   :custom
   (lsp-ui-doc-enable nil)
-  (lsp-ui-doc-delay 0.3)
+  (lsp-ui-doc-delay 0.1)
   (lsp-ui-flycheck-enable t)
   (lsp-ui-sideline-enable nil)
   :config
@@ -18,7 +18,7 @@
   ;(yaml-mode . lsp)
   ;(json-mode . lsp)
   (dockerfile-mode . lsp)
-  ;(lsp-mode . lsp-enable-which-key-integration)
+  (lsp-mode . lsp-enable-which-key-integration)
   :custom
   ;; lsp 显示的 links 不准确，而且会导致 treemacs 目录显示异常，故关闭。
   ;; https://github.com/hlissner/doom-emacs/issues/2911
@@ -42,8 +42,7 @@
   ;; 增大同 LSP 服务器交互时的读取文件的大小
   (read-process-output-max (* 1024 1024 2))
   (lsp-idle-delay 0.5)
-  ;; 开启 log 会极大影响性能
-  (lsp-log-io nil)
+  (lsp-log-io nil) ;; 开启 log 会极大影响性能
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
   (lsp-file-watch-ignored '(

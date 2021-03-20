@@ -71,8 +71,8 @@
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
 
-; 切换 window 时高亮光标位置
-(use-package beacon :ensure :demand :config  (beacon-mode 1))
+; 切换 window 时高亮光标位置（影响性能，暂时关闭。）
+(use-package beacon :ensure :disabled :demand :config  (beacon-mode 1))
 
 ; 自动切换到英文
 ;; 使用 macism 输入法切换工具：https://github.com/laishulu/macism#install

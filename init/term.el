@@ -2,6 +2,7 @@
 ;; https://www.masteringemacs.org/article/running-shells-in-emacs-overview
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "bash")
+(setq shell-command-prompt-show-cwd t)
 (setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
 (setenv "SHELL" shell-file-name)
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
@@ -31,8 +32,7 @@
 (use-package vterm-toggle
   :ensure :after (vterm)
   :custom
-  ;; 设置为 projectile scope 后，vterm-toggle 打开终端时自动切换到项目根目录。
-  ;; 如果要切换到 buffer 对应的目录，可以使用 vterm-toggle-cd 命令。
+  ;; project scope 表示整个 project 的 buffers 都使用同一个 vterm buffer。
   (vterm-toggle-scope 'project)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)

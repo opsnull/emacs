@@ -5,15 +5,15 @@
   (projectile-global-mode)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   (projectile-mode +1)
+  ;; selectrum 使用 'default，可选：'ivy、'helm、'ido、'auto
+  (setq projectile-completion-system 'default) 
+  ;; 开启 cache 后，提高性能，也可以解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
-  (setq projectile-indexing-method 'hybrid)
-  ;(setq projectile-completion-system 'helm)
-  ;(setq projectile-completion-system 'ivy)
   (setq projectile-sort-order 'recently-active)
-  ;; 切换 project 后显示 treemacs。
-  (add-hook 'projectile-after-switch-project-hook 
+  (setq projectile-file-exists-remote-cache-expire (* 10 60))
+  (add-hook 'projectile-after-switch-project-hook
             (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
-  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/"))
+  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
   (dolist (dirs '(".cache"
                   ".dropbox"
                   ".git"
