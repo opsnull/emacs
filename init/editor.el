@@ -3,31 +3,36 @@
 
 ; 快速跳转到上次修改的位置
 (use-package goto-chg
-  :ensure :config
+  :ensure
+  :config
   (global-set-key (kbd "C->") 'goto-last-change)
   (global-set-key (kbd "C-<") 'goto-last-change-reverse))
 
 ; 智能括号
 (use-package smartparens
-  :ensure :config
+  :ensure
+  :config
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
 ; 智能扩展区域
 (use-package expand-region
-  :ensure :config
+  :ensure 
+  :config
   (global-set-key (kbd "C-=") 'er/expand-region))
 
 ; 快速跳转
 (use-package avy
-  :ensure :config
+  :ensure
+  :config
   (global-set-key (kbd "C-:") 'avy-goto-char)
   (global-set-key (kbd "C-'") 'avy-goto-char-2)
   (global-set-key (kbd "M-g l") 'avy-goto-line))
 
 ; 极速搜索
 (use-package deadgrep
-  :ensure :init
+  :ensure
+  :init
   ;(shell-command "rg --version || brew install ripgrep")
   :config
   (global-set-key (kbd "<f5>") #'deadgrep))
@@ -42,13 +47,15 @@
 
 ; 代码片段
 (use-package yasnippet 
-  :ensure :demand :after (lsp-mode company)
+  :ensure
+  :demand
+  :after (lsp-mode company)
+  :commands yas-minor-mode
   :init
   ;(shell-command "mkdir -p ~/.emacs.d/snippets")
   :config
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   ;(yas-global-mode 1) ;; yas-global-mode 与 sis package 不兼容。
-  :commands yas-minor-mode
   :hook (java-mode . yas-minor-mode))
 
 (use-package flycheck
@@ -61,7 +68,9 @@
 
 ; 显示缩进
 (use-package highlight-indent-guides 
-  :ensure :demand :after (python yaml-mode json-mode)
+  :ensure 
+  :demand
+  :after (python yaml-mode json-mode)
   :custom
   (highlight-indent-guides-method 'character)
   (highlight-indent-guides-responsive 'stack)
@@ -72,13 +81,18 @@
   (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
 
 ; 切换 window 时高亮光标位置（影响性能，暂时关闭。）
-(use-package beacon :ensure :disabled :demand :config  (beacon-mode 1))
+(use-package beacon 
+  :ensure
+  :disabled
+  :demand
+  :config (beacon-mode 1))
 
 ; 自动切换到英文
 ;; 使用 macism 输入法切换工具：https://github.com/laishulu/macism#install
 ;; 系统的 “快捷键”->“选择上一个输入法” 必须要开启：https://github.com/laishulu/macism/issues/2
 (use-package sis 
-  :ensure :demand
+  :ensure 
+  :demand
   :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
   (sis-global-respect-mode t)

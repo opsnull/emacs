@@ -4,8 +4,9 @@
        (package-install package)))
 
 (use-package org
-  :ensure :demand
-  :bind
+  :ensure
+  :demand
+  ;:bind
   ;;(:map org-mode-map ("C-'" . nil)) ;; 与 avy 快捷键冲突。
   :config
   (setq org-ellipsis "▾"
@@ -44,23 +45,32 @@
   (define-key org-mode-map (kbd "M-p") 'org-previous-link))
 
 (use-package org-superstar
-  :ensure :demand :after (org)
+  :ensure
+  :demand
+  :after (org)
   :hook
   (org-mode . org-superstar-mode)
   :custom
   (org-superstar-remove-leading-stars t))
 
 (use-package org-fancy-priorities
-  :ensure :demand :after (org)
-  :hook (org-mode . org-fancy-priorities-mode)
-  :config (setq org-fancy-priorities-list '("⚡" "⬆" "⬇" "☕")))
+  :ensure
+  :demand
+  :after (org)
+  :hook
+  (org-mode . org-fancy-priorities-mode)
+  :config
+  (setq org-fancy-priorities-list '("⚡" "⬆" "⬇" "☕")))
 
 (use-package org-download
-  :ensure :demand :after (posframe)
+  :ensure
+  :demand
+  :after (posframe)
   :init
   ;; org 模式下，支持图片拖拽保存或 F2 保存剪贴板中的图片。
   ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
-  :bind ("<f2>" . org-download-screenshot)
+  :bind
+  ("<f2>" . org-download-screenshot)
   :config
   (setq org-download-method 'directory)
   (setq-default org-download-image-dir "./images/")
@@ -70,16 +80,27 @@
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
-(use-package ob-go :after (org) :config (org-babel-do-load-languages 'org-babel-load-languages '((go . t))))
+(use-package ob-go
+  :after (org)
+  :config
+  (org-babel-do-load-languages 'org-babel-load-languages '((go . t))))
 
-(use-package ox-reveal :after (org))
+(use-package ox-reveal
+  :after (org))
 
-(use-package htmlize :ensure t)
+(use-package htmlize
+  :ensure)
 
-(use-package org-make-toc :ensure :after org :hook (org-mode . org-make-toc-mode))
+(use-package org-make-toc
+  :ensure
+  :after org
+  :hook
+  (org-mode . org-make-toc-mode))
 
 (use-package org-tree-slide
-  :ensure :after org :commands org-tree-slide-mode
+  :ensure
+  :after org
+  :commands org-tree-slide-mode
   :config
   (setq org-tree-slide-slide-in-effect t
         org-tree-slide-activate-message "Presentation started."
@@ -98,13 +119,16 @@
         visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
-(use-package visual-fill-column :ensure :demand :hook (org-mode . dw/org-mode-visual-fill))
+(use-package visual-fill-column
+  :ensure
+  :demand
+  :hook (org-mode . dw/org-mode-visual-fill))
 
 
 ;;; display icon for Org Agenda category
 (use-package all-the-icons
-  :ensure t
-  :defer t
+  :ensure
+  :defer
   :after org-agenda
   :config
   (setq org-agenda-category-icon-alist

@@ -10,7 +10,9 @@
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (use-package lsp-mode
-  :ensure :demand :after (flycheck)
+  :ensure
+  :demand
+  :after (flycheck)
   :hook
   (java-mode . lsp)
   (python-mode . lsp)
@@ -90,7 +92,8 @@
               ))
 
 (use-package lsp-treemacs
-  :ensure :after (lsp-mode treemacs)
+  :ensure
+  :after (lsp-mode treemacs)
   :config
   (lsp-treemacs-sync-mode 1)
   :commands
