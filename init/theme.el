@@ -13,7 +13,7 @@
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t
         doom-themes-treemacs-theme "doom-colors")
-  (load-theme 'doom-one t)
+  (load-theme 'doom-dracula t)
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
