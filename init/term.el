@@ -9,7 +9,8 @@
 (global-set-key [f1] 'shell)
 
 (use-package vterm
-  :ensure :demand
+  :ensure
+  :demand
   :init
   ;;(shell-command "which cmake &>/dev/null || brew install cmake")
   ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
@@ -23,14 +24,16 @@
   (:map vterm-mode-map ("C-\\" . nil)))
 
 (use-package multi-vterm
-  :ensure :after (vterm)
+  :ensure
+  :after (vterm)
   :config
   (global-set-key [(control return)] 'multi-vterm)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 (use-package vterm-toggle
-  :ensure :after (vterm)
+  :ensure
+  :after (vterm)
   :custom
   ;; project scope 表示整个 project 的 buffers 都使用同一个 vterm buffer。
   (vterm-toggle-scope 'project)
@@ -49,7 +52,8 @@
      (window-height . 0.3))))
 
 (use-package eshell-toggle
-  :ensure :demand
+  :ensure
+  :demand
   :custom
   (eshell-toggle-size-fraction 3)
   (eshell-toggle-use-projectile-root t)
@@ -59,13 +63,16 @@
   ("s-`" . eshell-toggle))
 
 (use-package native-complete
-  :ensure :demand
+  :ensure
+  :demand
   :custom
   (with-eval-after-load 'shell
     (native-complete-setup-bash)))
 
 (use-package company-native-complete
-  :ensure :demand :after (company)
+  :ensure
+  :demand
+  :after (company)
   :custom
   (add-to-list 'company-backends 'company-native-complete))
 

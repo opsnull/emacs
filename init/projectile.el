@@ -1,5 +1,6 @@
 (use-package projectile
-  :ensure :demand
+  :ensure
+  :demand
   :after (treemacs)
   :config
   (projectile-global-mode)

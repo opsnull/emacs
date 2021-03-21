@@ -90,7 +90,8 @@
                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
 
 (use-package osx-trash
-  :ensure :demand
+  :ensure
+  :demand
   :init
   ;;(shell-command "trash -v || brew install trash")
   :config
@@ -99,13 +100,16 @@
   (setq delete-by-moving-to-trash t))
 
 (use-package which-key
-  :ensure :demand
+  :ensure
+  :demand
   :init (which-key-mode)
   :diminish which-key-mode
-  :config (setq which-key-idle-delay 0.3))
+  :config
+  (setq which-key-idle-delay 0.3))
 
 (use-package origami
-  :ensure :demand
+  :ensure
+  :demand
   :hook 
   (yaml-mode . origami-mode)
   (json-mode . origami-mode))

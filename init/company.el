@@ -1,5 +1,6 @@
 (use-package company
-  :ensure :demand
+  :ensure
+  :demand
   :bind
   (:map company-mode-map
         ([remap completion-at-point] . company-complete)
@@ -27,9 +28,15 @@
   (company-dabbrev-downcase nil)
   (company-dabbrev-code-ignore-case nil)
   (company-dabbrev-code-everywhere t)
+  (company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
   (company-backends '(company-capf company-files (company-dabbrev-code company-keywords) company-dabbrev))
   (company-global-modes '(not erc-mode message-mode help-mode gud-mode shell-mode eshell-mode))
-  (company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
-  :config (global-company-mode t))
+  :config
+  (global-company-mode t))
 
-(use-package company-quickhelp :ensure :demand :after (company) :config (company-quickhelp-mode 1))
+(use-package company-quickhelp 
+  :ensure
+  :demand
+  :after (company)
+  :config
+  (company-quickhelp-mode 1))
