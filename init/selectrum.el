@@ -3,23 +3,21 @@
   :demand
   :init
   (selectrum-mode +1)) 
-(use-package prescient
+
+(use-package orderless
   :ensure
   :demand
+  :after (selectrum company)
+  :custom (completion-styles '(orderless))
   :config
-  (prescient-persist-mode +1))
-(use-package selectrum-prescient
-  :ensure
-  :demand
-  :init
-  (selectrum-prescient-mode +1)
-  (prescient-persist-mode +1)
-  :after selectrum)
-(use-package company-prescient
-  :ensure
-  :demand
-  :init (company-prescient-mode +1)
-  :after prescient)
+  (setq selectrum-refine-candidates-function #'orderless-filter)
+  (setq selectrum-highlight-candidates-function #'orderless-highlight-matches)
+
+  (defun just-one-face (fn &rest args)
+    (let ((orderless-match-faces [completions-common-part]))
+      (apply fn args)))
+  (advice-add 'company-capf--candidates :around #'just-one-face))
+
 (use-package consult
   :ensure
   :demand
