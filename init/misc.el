@@ -4,6 +4,7 @@
 (fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
 (winner-mode t)
+(recentf-mode t)
 (setq byte-compile-warnings '(cl-functions))
 (setq confirm-kill-emacs #'y-or-n-p)
 (setq ad-redefinition-action 'accept)
