@@ -7,9 +7,7 @@
 (use-package color-theme-sanityinc-tomorrow :ensure :disabled :config (load-theme 'sanityinc-tomorrow-eighties t))
 
 (use-package doom-themes
-  :ensure
-  :demand
-  :config
+  :ensure :demand :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t
         doom-themes-treemacs-theme "doom-colors")
@@ -19,9 +17,7 @@
   (doom-themes-org-config))
 
 (use-package doom-modeline
-  :ensure
-  :demand
-  :custom
+  :ensure :demand :custom
   (doom-modeline-github nil)
   (doom-modeline-env-enable-python t)
   :init (doom-modeline-mode 1))
@@ -55,17 +51,15 @@
 (setq-default indicate-empty-lines t)
 (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
 
-(setq inhibit-startup-screen t)
-(setq inhibit-startup-message t)
-(setq inhibit-startup-echo-area-message t)
-(setq initial-scratch-message nil)
+(setq inhibit-startup-screen t
+      inhibit-startup-message t
+      inhibit-startup-echo-area-message t
+      initial-scratch-message nil)
 
 (use-package diredfl :ensure :demand :config (diredfl-global-mode))
 
 (use-package dashboard
-  :ensure
-  :demand
-  :config
+  :ensure :demand :config
   (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
@@ -81,9 +75,7 @@
 ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14: https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
-  :ensure
-  :demand
-  :init
+  :ensure :demand :init
   (setq cnfonts-personal-fontnames 
         '(("Iosevka SS14" "Fira Code")
           ("Sarasa Gothic SC" "Source Han Mono SC")
@@ -94,19 +86,14 @@
 
 ; M-x fira-code-mode-install-fonts
 (use-package fira-code-mode
-  :ensure
-  :demand
+  :ensure :demand
   :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode)
 
 (use-package emojify
-  :ensure
-  :demand
-  :hook (erc-mode . emojify-mode)
+  :ensure :demand :hook (erc-mode . emojify-mode)
   :commands emojify-mode)
 
 (use-package ns-auto-titlebar
-  :ensure
-  :demand
-  :config
+  :ensure :demand :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))

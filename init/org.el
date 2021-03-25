@@ -4,10 +4,9 @@
        (package-install package)))
 
 (use-package org
-  :ensure
-  :demand
-  ;:bind
-  ;;(:map org-mode-map ("C-'" . nil)) ;; 与 avy 快捷键冲突。
+  :ensure :demand :bind
+  ;; 与 avy 快捷键冲突。
+  (:map org-mode-map ("C-'" . nil))
   :config
   (setq org-ellipsis "▾"
         org-hide-emphasis-markers t
@@ -45,92 +44,61 @@
   (define-key org-mode-map (kbd "M-p") 'org-previous-link))
 
 (use-package org-superstar
-  :ensure
-  :demand
-  :after (org)
-  :hook
-  (org-mode . org-superstar-mode)
-  :custom
-  (org-superstar-remove-leading-stars t))
+  :ensure :demand :after (org)
+  :hook (org-mode . org-superstar-mode)
+  :custom (org-superstar-remove-leading-stars t))
 
 (use-package org-fancy-priorities
-  :ensure
-  :demand
-  :after (org)
-  :hook
-  (org-mode . org-fancy-priorities-mode)
-  :config
-  (setq org-fancy-priorities-list '("⚡" "⬆" "⬇" "☕")))
+  :ensure :demand :after (org)
+  :hook (org-mode . org-fancy-priorities-mode)
+  :config (setq org-fancy-priorities-list '("⚡" "⬆" "⬇" "☕")))
 
+;; org 模式下，支持图片拖拽保存或 F2 保存剪贴板中的图片。
+;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
 (use-package org-download
-  :ensure
-  :demand
-  :after (posframe)
-  :init
-  ;; org 模式下，支持图片拖拽保存或 F2 保存剪贴板中的图片。
-  ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
-  :bind
-  ("<f2>" . org-download-screenshot)
+  :ensure :demand :after (posframe)
+  :bind ("<f2>" . org-download-screenshot)
   :config
-  (setq org-download-method 'directory)
   (setq-default org-download-image-dir "./images/")
-  (setq org-download-display-inline-images 'posframe)
-  (setq org-download-screenshot-method "pngpaste %s")
-  (setq org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
+  (setq org-download-method 'directory
+        org-download-display-inline-images 'posframe
+        org-download-screenshot-method "pngpaste %s"
+        org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
 (use-package ob-go
-  :after (org)
-  :config
+  :ensure :after (org) :config
   (org-babel-do-load-languages 'org-babel-load-languages '((go . t))))
 
-(use-package ox-reveal
-  :after (org))
+(use-package ox-reveal :ensure :after (org))
 
-(use-package htmlize
-  :ensure)
+(use-package htmlize :ensure)
 
-(use-package org-make-toc
-  :ensure
-  :after org
-  :hook
-  (org-mode . org-make-toc-mode))
+(use-package org-make-toc :ensure :after org :hook (org-mode . org-make-toc-mode))
 
 (use-package org-tree-slide
-  :ensure
-  :after org
-  :commands org-tree-slide-mode
-  :config
+  :ensure :after org :commands org-tree-slide-mode :config
   (setq org-tree-slide-slide-in-effect t
         org-tree-slide-activate-message "Presentation started."
         org-tree-slide-deactivate-message "Presentation ended."
-        org-tree-slide-header t))
-
-(with-eval-after-load "org-tree-slide"
-  (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
-  (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
-  (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
-  (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
-  (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content))
+        org-tree-slide-header t)
+  (with-eval-after-load "org-tree-slide"
+    (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
+    (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
+    (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
+    (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
+    (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
 
 (defun dw/org-mode-visual-fill ()
   (setq visual-fill-column-width 200
         visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
-(use-package visual-fill-column
-  :ensure
-  :demand
-  :hook (org-mode . dw/org-mode-visual-fill))
+(use-package visual-fill-column :ensure :demand :hook (org-mode . dw/org-mode-visual-fill))
 
-
-;;; display icon for Org Agenda category
 (use-package all-the-icons
-  :ensure
-  :defer
-  :after org-agenda
-  :config
+  :ensure :after org-agenda :config
   (setq org-agenda-category-icon-alist
         `(("Diary" ,(list (all-the-icons-faicon "file-text-o")) nil nil :ascent center)
           ("Todo" ,(list (all-the-icons-faicon "check-square-o" :height 1.2)) nil nil :ascent center)

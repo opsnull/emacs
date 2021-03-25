@@ -1,5 +1,3 @@
-; 默认使用 bash
-;; https://www.masteringemacs.org/article/running-shells-in-emacs-overview
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "bash")
 (setq shell-command-prompt-show-cwd t)
@@ -8,34 +6,28 @@
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
 (global-set-key [f1] 'shell)
 
+;;(shell-command "which cmake &>/dev/null || brew install cmake")
+;;(shell-command "which glibtool &>/dev/null || brew install libtool")
 (use-package vterm
-  :ensure
-  :demand
-  :init
-  ;;(shell-command "which cmake &>/dev/null || brew install cmake")
-  ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
-  :config
+  :ensure :demand :config
   (setq vterm-max-scrollback 100000)
   ;; 需要 shell-side 配置，如设置环境变量 PROMPT_COMMAND。
   (setq vterm-buffer-name-string "vterm %s")
   :bind
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止和 sis 切换输入法冲突。
-  (:map vterm-mode-map ("C-\\" . nil)))
+  (:map vterm-mode-map ("C-\\" . nil)) )
 
 (use-package multi-vterm
-  :ensure
-  :after (vterm)
-  :config
+  :ensure :after (vterm) :config
   (global-set-key [(control return)] 'multi-vterm)
-  (global-unset-key (kbd "s-p")) ;; 避免执行 ns-print-buffer 命令
+  ;; 避免执行 ns-print-buffer 命令
+  (global-unset-key (kbd "s-p")) 
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 (use-package vterm-toggle
-  :ensure
-  :after (vterm)
-  :custom
+  :ensure :after (vterm) :custom
   ;; project scope 表示整个 project 的 buffers 都使用同一个 vterm buffer。
   (vterm-toggle-scope 'project)
   :config
@@ -53,28 +45,20 @@
      (window-height . 0.3))))
 
 (use-package eshell-toggle
-  :ensure
-  :demand
-  :custom
+  :ensure :demand :custom
   (eshell-toggle-size-fraction 3)
   (eshell-toggle-use-projectile-root t)
   (eshell-toggle-run-command nil)
   (eshell-toggle-init-function #'eshell-toggle-init-ansi-term)
-  :bind
-  ("s-`" . eshell-toggle))
+  :bind ("s-`" . eshell-toggle))
 
 (use-package native-complete
-  :ensure
-  :demand
-  :custom
+  :ensure :demand :custom
   (with-eval-after-load 'shell
     (native-complete-setup-bash)))
 
 (use-package company-native-complete
-  :ensure
-  :demand
-  :after (company)
-  :custom
+  :ensure :demand :after (company) :custom
   (add-to-list 'company-backends 'company-native-complete))
 
 (setq  tramp-ssh-controlmaster-options  

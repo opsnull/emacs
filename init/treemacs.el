@@ -1,8 +1,6 @@
+;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
-  :ensure
-  :demand
-  :init
-  ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
+  :ensure :demand :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
   (progn
@@ -58,25 +56,14 @@
    ("C-x t C-t" . treemacs-find-file)
    ("C-x t M-t" . treemacs-find-tag)))
 
-(use-package treemacs-projectile
-  :after (treemacs projectile)
-  :ensure
-  :demand)
-
-(use-package treemacs-magit
-  :after (treemacs magit)
-  :ensure
-  :demand)
+(use-package treemacs-projectile :after (treemacs projectile) :ensure  :demand)
+(use-package treemacs-magit :after (treemacs magit) :ensure :demand)
 (use-package persp-mode
-  :ensure
-  :demand
-  :disabled
+  :ensure :demand :disabled
   :custom (persp-keymap-prefix (kbd "C-x p"))
   :config (persp-mode))
 
-(use-package treemacs-persp
-  :ensure
-  :demand
-  :disabled
+(use-package treemacs-persp 
+  :ensure :demand :disabled
   :after (treemacs persp-mode)
   :config (treemacs-set-scope-type 'Perspectives))
