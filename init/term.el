@@ -78,11 +78,12 @@
   (add-to-list 'company-backends 'company-native-complete))
 
 (setq  tramp-ssh-controlmaster-options  
-       "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=600 -o ServerAliveCountMax=60 -o ServerAliveInterval=5"
+       "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=600 -o ServerAliveCountMax=60 -o ServerAliveInterval=10"
        vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
        ;; 远程文件名不过期
-       remote-file-name-inhibit-cache nil
-       tramp-completion-reread-directory-timeout nil
+       ;;remote-file-name-inhibit-cache nil
+       ;;tramp-completion-reread-directory-timeout nil
+       tramp-verbose 1
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出现出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 1024 1)
        tramp-copy-size-limit nil
