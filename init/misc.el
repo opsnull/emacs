@@ -1,46 +1,44 @@
-(setq recentf-max-menu-items 100
-      recentf-max-saved-items 100)
-(setq ring-bell-function 'ignore)
+(setq  recentf-max-menu-items 100
+       recentf-max-saved-items 100
+       ring-bell-function 'ignore
+       byte-compile-warnings '(cl-functions)
+       confirm-kill-emacs #'y-or-n-p
+       ad-redefinition-action 'accept
+       vc-follow-symlinks t
+       large-file-warning-threshold nil
+       ns-pop-up-frames nil)
+
+(setq-default  line-spacing 1
+               fill-column 100
+               comment-fill-column 0
+               tab-width 4
+               indent-tabs-mode nil
+               debug-on-error nil
+               message-log-max t
+               load-prefer-newer t
+               ad-redefinition-action 'accept
+               gc-cons-threshold (* 50 1000 1000))
+
 (fset 'yes-or-no-p 'y-or-n-p)
+(recentf-mode t)
 (auto-image-file-mode t)
 (winner-mode t)
-(recentf-mode t)
-(setq byte-compile-warnings '(cl-functions))
-(setq confirm-kill-emacs #'y-or-n-p)
-(setq ad-redefinition-action 'accept)
-(setq vc-follow-symlinks t)
-(setq large-file-warning-threshold nil)
-(setq ns-pop-up-frames nil)
 
-(setq-default line-spacing 1
-              fill-column 100
-              comment-fill-column 0
-	          tab-width 4
-	          indent-tabs-mode nil)
-
-(setq-default debug-on-error         nil
-              message-log-max        t
-              load-prefer-newer      t
-              ad-redefinition-action 'accept
-              gc-cons-threshold    (* 50 1000 1000))
-
-; 鼠标
 (unless window-system
   (require 'mouse)
   (xterm-mouse-mode t)
   (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
   (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
-  (defun track-mouse (e))
   (setq mouse-sel-mode t
-   mouse-wheel-scroll-amount '(1 ((shift) . 1)) ;; one line at a time
-   mouse-wheel-progressive-speed nil ;; don't accelerate scrolling
-   mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+        mouse-wheel-scroll-amount '(1 ((shift) . 1))
+        mouse-wheel-progressive-speed nil
+        mouse-wheel-follow-mouse 't)
   (mouse-avoidance-mode 'animate)
   ;; 关闭文件选择窗口
   (setq use-file-dialog nil
         use-dialog-box nil)
   ;; 平滑滚动
-  (setq scroll-step 1 ;; keyboard scroll one line at a time
+  (setq scroll-step 1
         scroll-margin 3
         scroll-conservatively 10000
         x-select-enable-clipboard t))
@@ -69,9 +67,9 @@
 (put 'dired-find-alternate-file 'disabled nil)
 
 (prefer-coding-system 'utf-8)
-(setq locale-coding-system 'utf-8)
+(setq locale-coding-system 'utf-8
+      default-buffer-file-coding-system 'utf-8)
 (set-buffer-file-coding-system 'utf-8)
-(setq default-buffer-file-coding-system 'utf-8)
 (set-language-environment "UTF-8")
 (set-default buffer-file-coding-system 'utf8)
 (set-default-coding-systems 'utf-8)
@@ -90,28 +88,21 @@
                   (setq xwidget-webkit-bookmark-jump-new-session nil)
                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
 
+;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
-  :ensure
-  :demand
-  :init
-  ;;(shell-command "trash -v || brew install trash")
-  :config
+  :ensure :demand :config
   (when (eq system-type 'darwin)
     (osx-trash-setup))
   (setq delete-by-moving-to-trash t))
 
 (use-package which-key
-  :ensure
-  :demand
+  :ensure :demand
   :init (which-key-mode)
   :diminish which-key-mode
-  :config
-  (setq which-key-idle-delay 0.3))
+  :config (setq which-key-idle-delay 0.3))
 
 (use-package origami
-  :ensure
-  :demand
-  :hook 
+  :ensure :demand :hook 
   (yaml-mode . origami-mode)
   (json-mode . origami-mode))
 
