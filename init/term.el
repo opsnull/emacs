@@ -28,6 +28,7 @@
   :after (vterm)
   :config
   (global-set-key [(control return)] 'multi-vterm)
+  (global-unset-key (kbd "s-p")) ;; 避免执行 ns-print-buffer 命令
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
