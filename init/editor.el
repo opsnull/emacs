@@ -37,6 +37,14 @@
   :config
   (global-set-key (kbd "<f5>") #'deadgrep))
 
+(use-package xref
+  :ensure
+  :init
+  ;(shell-command "rg --version || brew install ripgrep")
+  :config
+  ;; C-x p g (project-find-regexp)
+  (setq xref-search-program 'ripgrep))
+
 ; 快速切换 buffer
 (use-package ace-window
   :ensure :config
