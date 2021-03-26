@@ -76,8 +76,8 @@
 (use-package sis 
   :ensure :demand :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  (sis-global-respect-mode t)
-  (sis-global-context-mode t)
+  (sis-global-respect-mode nil)
+  (sis-global-context-mode nil)
   (push "M-g" sis-prefix-override-keys)
   (push "M-s" sis-prefix-override-keys)
   (global-set-key (kbd "C-\\") 'sis-switch))

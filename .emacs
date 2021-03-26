@@ -2,10 +2,10 @@
       user-mail-address "mingduo.zj@alibaba-inc.com")
 
 (require 'package)
-(setq package-archives
-      '(("melpa" . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/melpa/")
-        ("org"   . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/org/")
-        ("gnu"   . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/gnu/")))
+(setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+                         ("melpa" . "https://mirrors.ustc.edu.cn/elpa/melpa/")
+                         ("melpa-stable" . "https://mirrors.ustc.edu.cn/elpa/melpa-stable/")
+                         ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
 (package-initialize)
 (setq package-archive-enable-alist '(("melpa" deft magit)))
 (unless package-archive-contents (package-refresh-contents))
