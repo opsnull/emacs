@@ -68,7 +68,7 @@
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
 
-(use-package beacon :ensure :demand :config (beacon-mode 1))
+(use-package beacon :ensure :demand :disabled :config (beacon-mode 1))
 
 ; 自动切换到英文
 ;; 使用 macism 输入法切换工具：https://github.com/laishulu/macism#install
