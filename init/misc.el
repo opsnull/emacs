@@ -20,7 +20,6 @@
                gc-cons-threshold (* 50 1000 1000))
 
 (fset 'yes-or-no-p 'y-or-n-p)
-(recentf-mode t)
 (auto-image-file-mode t)
 (winner-mode t)
 
