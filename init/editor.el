@@ -32,6 +32,8 @@
   :ensure :config
   ;; 设置为 frame 后，会忽略 treemacs frame，否则打开两个 window 的情况下，会提示输入 window 编号。
   (setq aw-scope 'frame)
+  ;; modeline 显示 window 编号
+  (ace-window-display-mode +1)
   (global-set-key (kbd "M-o") 'ace-window))
 
 ;(shell-command "mkdir -p ~/.emacs.d/snippets")

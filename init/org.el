@@ -75,7 +75,7 @@
 
 (use-package htmlize :ensure)
 
-(use-package org-make-toc :ensure :after org :hook (org-mode . org-make-toc-mode))
+(use-package org-make-toc :ensure :disabled :after org :hook (org-mode . org-make-toc-mode))
 
 (use-package org-tree-slide
   :ensure :after org :commands org-tree-slide-mode :config
