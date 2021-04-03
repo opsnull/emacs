@@ -30,3 +30,4 @@
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
 (put 'scroll-left 'disabled nil)
+(put 'downcase-region 'disabled nil)

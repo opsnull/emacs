@@ -39,12 +39,6 @@
 (dolist (mode '(org-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-(tool-bar-mode -1)
-(menu-bar-no-scroll-bar)
-(menu-bar-mode nil)
-(global-font-lock-mode t)
-(transient-mark-mode t)
-
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
 

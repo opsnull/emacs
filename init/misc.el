@@ -39,8 +39,12 @@
   ;; 平滑滚动
   (setq scroll-step 1
         scroll-margin 3
-        scroll-conservatively 10000
-        x-select-enable-clipboard t))
+        scroll-conservatively 10000)
+  ;; 支持 Emacs 和外部程序的粘贴
+  (setq x-select-enable-clipboard t
+        select-enable-primary t
+        select-enable-clipboard t
+        mouse-yank-at-point t))
 
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
@@ -104,8 +108,5 @@
   :ensure :demand :hook 
   (yaml-mode . origami-mode)
   (json-mode . origami-mode))
-
-(add-hook 'after-init-hook #'toggle-frame-maximized)
-;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
 
 (server-start)
