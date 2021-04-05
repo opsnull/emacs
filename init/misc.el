@@ -22,6 +22,7 @@
 (fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
 (winner-mode t)
+(recentf-mode +1)
 
 (unless window-system
   (require 'mouse)

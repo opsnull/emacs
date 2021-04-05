@@ -33,7 +33,7 @@
   ;; 设置为 frame 后，会忽略 treemacs frame，否则打开两个 window 的情况下，会提示输入 window 编号。
   (setq aw-scope 'frame)
   ;; modeline 显示 window 编号
-  (ace-window-display-mode +1)
+  ;;(ace-window-display-mode +1)
   (global-set-key (kbd "M-o") 'ace-window))
 
 ;(shell-command "mkdir -p ~/.emacs.d/snippets")
@@ -49,7 +49,7 @@
   :ensure :config
   ;; 关闭 yaml 和 json 的语法检查；
   (setq-default flycheck-disabled-checkers 
-                '(yaml-jsyaml 
+                '(yaml-jsyaml
                   yaml-ruby
                   yaml-yamllint
                   json-jsonlint
@@ -78,8 +78,8 @@
 (use-package sis 
   :ensure :demand :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  (sis-global-respect-mode nil)
-  (sis-global-context-mode nil)
+  (sis-global-respect-mode t)
+  (sis-global-context-mode t)
   (push "M-g" sis-prefix-override-keys)
   (push "M-s" sis-prefix-override-keys)
   (global-set-key (kbd "C-\\") 'sis-switch))
