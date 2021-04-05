@@ -41,7 +41,8 @@
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb)
   (define-key org-mode-map (kbd "M-n") 'org-next-link)
-  (define-key org-mode-map (kbd "M-p") 'org-previous-link))
+  (define-key org-mode-map (kbd "M-p") 'org-previous-link)
+  (add-hook 'org-mode-hook 'turn-on-auto-fill))
 
 (use-package org-superstar
   :ensure :demand :after (org)

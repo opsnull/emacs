@@ -1,3 +1,4 @@
+;; preview theme: https://emacsthemes.com/
 (use-package leuven-theme :ensure :disabled)
 (use-package monokai-theme :ensure :disabled)
 (use-package solarized-theme :ensure :disabled)
