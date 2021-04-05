@@ -26,7 +26,8 @@
         org-agenda-include-diary t
         org-image-actual-width t
         org-cycle-level-faces t
-        org-n-level-faces 4 )
+        org-n-level-faces 4
+        org-startup-indented t)
   (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
   (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
   (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
@@ -91,12 +92,14 @@
     (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
     (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
 
+
 (defun dw/org-mode-visual-fill ()
-  (setq visual-fill-column-width 200
+  (setq fill-column 150
         visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
-(use-package visual-fill-column :ensure :demand :hook (org-mode . dw/org-mode-visual-fill))
+;; 在 fill-column 位置 word wrapping，同时按照 logical line 执行移动命令，如 C-n
+(use-package visual-fill-column :ensure :demand :after org :hook (org-mode . dw/org-mode-visual-fill))
 
 (use-package all-the-icons
   :ensure :after org-agenda :config
