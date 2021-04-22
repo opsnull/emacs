@@ -32,6 +32,9 @@ which cmake || brew install cmake
 which glibtool || brew install libtool
 which exiftran || brew install exiftran
 which multimarkdown || brew install multimarkdown
+# 将 pdf 转换为 png
+which mutool || brew install mupdf
+which pdftotext || brew install poppler
 
 # 添加如下内容到 ~/.zshrc
 vterm_printf(){

@@ -41,9 +41,9 @@
   (global-set-key (kbd "C-c a") 'org-agenda)
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb)
+  (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (define-key org-mode-map (kbd "M-n") 'org-next-link)
-  (define-key org-mode-map (kbd "M-p") 'org-previous-link)
-  (add-hook 'org-mode-hook 'turn-on-auto-fill))
+  (define-key org-mode-map (kbd "M-p") 'org-previous-link))
 
 (use-package org-superstar
   :ensure :demand :after (org)
@@ -94,8 +94,10 @@
 
 
 (defun dw/org-mode-visual-fill ()
-  (setq fill-column 150
-        visual-fill-column-center-text t)
+  (setq 
+   visual-fill-column-width 200
+   visual-fill-column-fringes-outside-margins nil
+   visual-fill-column-center-text nil)
   (visual-fill-column-mode 1))
 
 ;; 在 fill-column 位置 word wrapping，同时按照 logical line 执行移动命令(如 C-n)
