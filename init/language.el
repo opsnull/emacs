@@ -81,7 +81,55 @@
 (use-package json-mode :ensure)
 
 ;; (shell-command "which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>/dev/null")
-(use-package yaml-mode :ensure :hook (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent))))
+(use-package yaml-mode 
+  :ensure 
+  :hook 
+  (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent)))
+  :config
+  ;; From https://gist.github.com/antonj/874106
+  (defun aj-toggle-fold ()
+    "Toggle fold all lines larger than indentation on current line"
+    (interactive)
+    (let ((col 1))
+      (save-excursion
+        (back-to-indentation)
+        (setq col (+ 1 (current-column)))
+        (set-selective-display
+         (if selective-display nil (or col 1))))))
+
+  ;; From https://github.com/yoshiki/yaml-mode/issues/25
+  (defun yaml-outline-minor-mode ()
+    (outline-minor-mode)
+    (setq outline-regexp
+          (rx
+           (seq
+            bol
+            (group (zero-or-more "  ")
+                   (or (group
+                        (seq (or (seq "\"" (*? (not (in "\"" "\n"))) "\"")
+                                 (seq "'" (*? (not (in "'" "\n"))) "'")
+                                 (*? (not (in ":" "\n"))))
+                             ":"
+                             (?? (seq
+                                  (*? " ")
+                                  (or (seq "&" (one-or-more nonl))
+                                      (seq ">-")
+                                      (seq "|"))
+                                  eol))))
+                       (group (seq
+                               "- "
+                               (+ (not (in ":" "\n")))
+                               ":"
+                               (+ nonl)
+                               eol))))))))
+  (add-hook 'yaml-mode-hook #'yaml-outline-minor-mode)
+  (with-eval-after-load 'yaml-mode
+    (define-key yaml-mode-map
+      (kbd "RET") #'newline-and-indent)
+    ;; This weird key-binding to co-exist with outline-minor mode
+    (define-key yaml-mode-map
+      (kbd "C-c @ C-j") #'aj-toggle-fold))
+  )
 
 ;; (shell-command "which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile-language-server-nodejs &>/dev/null")
 (use-package dockerfile-mode :ensure :config (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
