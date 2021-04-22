@@ -1,15 +1,22 @@
 (setq  recentf-max-menu-items 100
        recentf-max-saved-items 100
+       ;; 当 bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
+       bookmark-save-flag 1
+       ;; pdf 转为 png 时使用更高分辨率（默认 90）
+       doc-view-resolution 144
        ring-bell-function 'ignore
        byte-compile-warnings '(cl-functions)
        confirm-kill-emacs #'y-or-n-p
        ad-redefinition-action 'accept
        vc-follow-symlinks t
        large-file-warning-threshold nil
+       ;; 自动根据 window 大小显示图片
+       image-transform-resize t
+       grep-highlight-matches t
        ns-pop-up-frames nil)
 
 (setq-default  line-spacing 1
-               fill-column 100
+               fill-column 200
                comment-fill-column 0
                tab-width 4
                indent-tabs-mode nil
@@ -22,7 +29,8 @@
 (fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
 (winner-mode t)
-(recentf-mode +1)
+;; 开启 recentf-mode 后，selectrum 和 consult 切换 buffer 时明显变慢。
+;;(recentf-mode +1)
 
 (unless window-system
   (require 'mouse)
@@ -40,6 +48,8 @@
   ;; 平滑滚动
   (setq scroll-step 1
         scroll-margin 3
+        next-screen-context-lines 5
+        scroll-preserve-screen-position t
         scroll-conservatively 10000)
   ;; 支持 Emacs 和外部程序的粘贴
   (setq x-select-enable-clipboard t
@@ -66,6 +76,7 @@
 (setq auto-save-list-file-prefix autosave-dir
       auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 
+(global-set-key (kbd "C-x C-b") 'ibuffer)
 (setq dired-recursive-deletes t
       dired-recursive-copies t)
 (put 'dired-find-alternate-file 'disabled nil)

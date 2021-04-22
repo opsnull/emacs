@@ -26,6 +26,9 @@
 ; M-x all-the-icons-install-fonts
 (use-package all-the-icons :ensure t :after (doom-modeline))
 
+; emacs 27 支持 Emoji
+(set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
+
 (column-number-mode t)
 (display-time-mode t)
 (setq display-time-24hr-format t
@@ -92,3 +95,5 @@
 (use-package ns-auto-titlebar
   :ensure :demand :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+
+
