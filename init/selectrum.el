@@ -70,6 +70,10 @@
   :ensure :demand :after consult
   :bind (:map flycheck-command-map ("!" . consult-flycheck)))
 
+(use-package consult-lsp
+  :ensure :demand :after (lsp-mode consult)
+  :config (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
+
 (use-package marginalia
   :ensure :demand :init (marginalia-mode) :after (selectrum) :config
   (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
