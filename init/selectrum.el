@@ -70,6 +70,7 @@
   :ensure :demand :after consult
   :bind (:map flycheck-command-map ("!" . consult-flycheck)))
 
+;; consult-lsp 提供两个非常好用的函数：consult-lsp-symbols、consult-lsp-diagnostics
 (use-package consult-lsp
   :ensure :demand :after (lsp-mode consult)
   :config (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))

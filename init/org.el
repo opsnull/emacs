@@ -92,16 +92,16 @@
     (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
     (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
 
-
-(defun dw/org-mode-visual-fill ()
-  (setq 
-   visual-fill-column-width 200
-   visual-fill-column-fringes-outside-margins nil
-   visual-fill-column-center-text nil)
-  (visual-fill-column-mode 1))
-
 ;; 在 fill-column 位置 word wrapping，同时按照 logical line 执行移动命令(如 C-n)
-(use-package visual-fill-column :ensure :demand :after org :hook (org-mode . dw/org-mode-visual-fill))
+(defun my/org-mode-visual-fill ()
+  (setq 
+   ;; 当开启 center-text 后，fill-column 的值应该比 visual-fill-column-width 值小，否则 Auto-Fill 的段落内容会被隐藏；
+   fill-column 120
+   visual-fill-column-width 130
+   visual-fill-column-fringes-outside-margins t
+   visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+(use-package visual-fill-column :ensure :demand :after org :hook (org-mode . my/org-mode-visual-fill))
 
 (use-package all-the-icons
   :ensure :after org-agenda :config

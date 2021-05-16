@@ -96,4 +96,4 @@
   :ensure :demand :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
-
+(setq inhibit-compacting-font-caches t)
