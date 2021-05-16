@@ -16,6 +16,9 @@
        ns-pop-up-frames nil)
 
 (setq-default  line-spacing 1
+               ;; fill-column 的值应该小于 visual-fill-column-width，
+               ;; 否则居中显示时行内容会过长而被隐藏；
+               fill-column 80
                comment-fill-column 0
                tab-width 4
                indent-tabs-mode nil

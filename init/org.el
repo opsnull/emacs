@@ -95,13 +95,17 @@
 ;; 在 fill-column 位置 word wrapping，同时按照 logical line 执行移动命令(如 C-n)
 (defun my/org-mode-visual-fill ()
   (setq 
-   ;; 当开启 center-text 后，fill-column 的值应该比 visual-fill-column-width 值小，否则 Auto-Fill 的段落内容会被隐藏；
-   fill-column 120
-   visual-fill-column-width 130
-   visual-fill-column-fringes-outside-margins t
+   ;; 当开启 center-text 后，fill-column 的值应该比
+   ;; visual-fill-column-width 值小，否则 Auto-Fill 的段落内容会被隐藏；
+   ;; 列宽为 80 是较合适的值，这时在打开 treemacs 的情况下，可以在垂直
+   ;; 方向打开两个窗口而不会换行；
+   fill-column 80
+   visual-fill-column-width 85
+   visual-fill-column-fringes-outside-margins nil
    visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
-(use-package visual-fill-column :ensure :demand :after org :hook (org-mode . my/org-mode-visual-fill))
+(use-package visual-fill-column :ensure :demand :after org
+  :hook (org-mode . my/org-mode-visual-fill))
 
 (use-package all-the-icons
   :ensure :after org-agenda :config
