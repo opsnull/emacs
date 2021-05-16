@@ -16,7 +16,6 @@
        ns-pop-up-frames nil)
 
 (setq-default  line-spacing 1
-               fill-column 200
                comment-fill-column 0
                tab-width 4
                indent-tabs-mode nil
@@ -110,11 +109,12 @@
     (osx-trash-setup))
   (setq delete-by-moving-to-trash t))
 
+; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
 (use-package which-key
   :ensure :demand
   :init (which-key-mode)
   :diminish which-key-mode
-  :config (setq which-key-idle-delay 0.3))
+  :config (setq which-key-idle-delay 1.1))
 
 (use-package origami
   :ensure :demand :hook 
