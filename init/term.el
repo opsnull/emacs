@@ -22,12 +22,11 @@
 (use-package multi-vterm
   :ensure :after (vterm)
   :config
-  (global-set-key [(control return)] 'multi-vterm)
-  ;; 避免执行 ns-print-buffer 命令
-  (global-unset-key (kbd "s-p"))
-  (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
-  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
+  (define-key vterm-mode-map (kbd "M-RET") 'multi-vterm))
 
+;; vterm-toggle 如果报错 "tcsetattr: Interrupted system call"，则解决办法参考：
+;; https://github.com/jixiuf/vterm-toggle/pull/28
+;; sleep 时间可能需要增加，直到不再报错即可。
 (use-package vterm-toggle
   :ensure :after (vterm)
   :custom
@@ -36,6 +35,11 @@
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
+  (define-key vterm-mode-map (kbd "C-RET") #'vterm-toggle-insert-cd)
+  ;; 避免执行 ns-print-buffer 命令
+  (global-unset-key (kbd "s-p"))
+  (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
+  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
   ;; 在 frame 底部显示终端窗口，https://github.com/jixiuf/vterm-toggle。
   (setq vterm-toggle-fullscreen-p nil)
   (add-to-list
