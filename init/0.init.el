@@ -7,5 +7,5 @@
   (exec-path-from-shell-check-startup-files nil)
   (exec-path-from-shell-variables '("PATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
   :config
-  (when (memq window-system '(mac ns x)) 
+  (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
