@@ -1,5 +1,6 @@
 (use-package lsp-ui
-  :ensure :custom
+  :ensure 
+  :custom
   (lsp-ui-doc-enable nil)
   (lsp-ui-doc-delay 0.1)
   (lsp-ui-flycheck-enable t)
@@ -9,7 +10,8 @@
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (use-package lsp-mode
-  :ensure :demand :after (flycheck) :hook
+  :ensure :demand :after (flycheck)
+  :hook
   (java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
@@ -89,5 +91,7 @@
 
 (use-package lsp-treemacs
   :ensure :after (lsp-mode treemacs)
-  :config (lsp-treemacs-sync-mode 1)
-  :commands lsp-treemacs-errors-list)
+  :config
+  (lsp-treemacs-sync-mode 1)
+  :commands
+  lsp-treemacs-errors-list)

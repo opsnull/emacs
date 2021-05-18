@@ -62,4 +62,6 @@ vterm_prompt_end() {
 setopt PROMPT_SUBST
 PROMPT=$PROMPT'%{$(vterm_prompt_end)%}'
 
- brew install terminal-notifier # org notify
+brew install terminal-notifier # org notify
+
+pip  install ansible

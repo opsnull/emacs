@@ -8,7 +8,8 @@
 (use-package color-theme-sanityinc-tomorrow :ensure :disabled :config (load-theme 'sanityinc-tomorrow-eighties t))
 
 (use-package doom-themes
-  :ensure :demand :config
+  :ensure :demand
+  :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t
         doom-themes-treemacs-theme "doom-colors")
@@ -18,10 +19,12 @@
   (doom-themes-org-config))
 
 (use-package doom-modeline
-  :ensure :demand :custom
+  :ensure :demand
+  :custom
   (doom-modeline-github nil)
   (doom-modeline-env-enable-python t)
-  :init (doom-modeline-mode 1))
+  :init
+  (doom-modeline-mode 1))
 
 ; M-x all-the-icons-install-fonts
 (use-package all-the-icons :ensure t :after (doom-modeline))
@@ -57,7 +60,8 @@
 (use-package diredfl :ensure :demand :config (diredfl-global-mode))
 
 (use-package dashboard
-  :ensure :demand :config
+  :ensure :demand
+  :config
   (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
@@ -73,7 +77,8 @@
 ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14: https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
-  :ensure :demand :init
+  :ensure :demand
+  :init
   (setq cnfonts-personal-fontnames 
         '(("Iosevka SS14" "Fira Code")
           ("Sarasa Gothic SC" "Source Han Mono SC")
@@ -85,15 +90,46 @@
 ; M-x fira-code-mode-install-fonts
 (use-package fira-code-mode
   :ensure :demand
-  :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+  :custom
+  (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode)
 
 (use-package emojify
-  :ensure :demand :hook (erc-mode . emojify-mode)
+  :ensure :demand
+  :hook (erc-mode . emojify-mode)
   :commands emojify-mode)
 
 (use-package ns-auto-titlebar
-  :ensure :demand :config
+  :ensure :demand
+  :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
 (setq inhibit-compacting-font-caches t)
+
+(use-package rainbow-delimiters
+  :ensure :defer
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package volatile-highlights
+  :ensure
+  :init (volatile-highlights-mode))
+
+(use-package anzu
+  :ensure
+  :init
+  (setq anzu-mode-lighter "")
+  (global-set-key [remap query-replace] 'anzu-query-replace)
+  (global-set-key [remap query-replace-regexp] 'anzu-query-replace-regexp)
+  (define-key isearch-mode-map [remap isearch-query-replace] #'anzu-isearch-query-replace)
+  (define-key isearch-mode-map [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp)
+  (global-anzu-mode))
+
+(use-package symbol-overlay
+  :ensure
+  :config
+  (global-set-key (kbd "M-i") 'symbol-overlay-put)
+  (global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
+  (global-set-key (kbd "M-p") 'symbol-overlay-jump-prev)
+  (global-set-key (kbd "<f7>") 'symbol-overlay-mode)
+  (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all)
+  :hook (prog-mode . symbol-overlay-mode))

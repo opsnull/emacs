@@ -25,14 +25,21 @@
                debug-on-error nil
                message-log-max t
                load-prefer-newer t
-               ad-redefinition-action 'accept
-               gc-cons-threshold (* 50 1000 1000))
+               ad-redefinition-action 'accept)
 
 (fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
 (winner-mode t)
 ;; 开启 recentf-mode 后，selectrum 和 consult 切换 buffer 时明显变慢。
 ;;(recentf-mode +1)
+
+;; gcmh
+(setq gc-cons-threshold most-positive-fixnum)
+(defvar hidden-minor-modes '(whitespace-mode))
+(use-package gcmh
+  :ensure :demand
+  :init
+  (gcmh-mode))
 
 (unless window-system
   (require 'mouse)
@@ -107,7 +114,8 @@
 
 ;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
-  :ensure :demand :config
+  :ensure :demand
+  :config
   (when (eq system-type 'darwin)
     (osx-trash-setup))
   (setq delete-by-moving-to-trash t))
@@ -117,10 +125,12 @@
   :ensure :demand
   :init (which-key-mode)
   :diminish which-key-mode
-  :config (setq which-key-idle-delay 1.1))
+  :config
+  (setq which-key-idle-delay 1.1))
 
 (use-package origami
-  :ensure :demand :hook 
+  :ensure :demand
+  :hook
   (yaml-mode . origami-mode)
   (json-mode . origami-mode))
 
