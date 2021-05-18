@@ -7,20 +7,13 @@
                          ("melpa-stable" . "https://mirrors.ustc.edu.cn/elpa/melpa-stable/")
                          ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
 (package-initialize)
+
+; 首先安装 use-package
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
 (setq package-archive-enable-alist '(("melpa" deft magit)))
 (unless package-archive-contents (package-refresh-contents))
-
-(dolist (package '(use-package))
-   (unless (package-installed-p package)
-       (package-install package)))
-
-(use-package exec-path-from-shell
-  :ensure
-  :custom
-  (exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-variables '("PATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
-  :config
-  (when (memq window-system '(mac ns x)) (exec-path-from-shell-initialize)))
 
 (defvar init-dir (expand-file-name "init" user-emacs-directory))
 (mapc 'load (directory-files init-dir t ".*el$"))
@@ -29,5 +22,3 @@
 (shell-command "touch ~/.emacs.d/custom.el")
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file)
-(put 'scroll-left 'disabled nil)
-(put 'downcase-region 'disabled nil)

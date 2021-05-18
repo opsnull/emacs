@@ -1,31 +1,25 @@
 (use-package selectrum
-  :ensure
-  :demand
-  :init (selectrum-mode +1)) 
+  :ensure :demand
+  :init
+  (selectrum-mode +1))
 
 (use-package prescient
-  :ensure
-  :demand
-  :config (prescient-persist-mode +1))
+  :ensure :demand
+  :config
+  (prescient-persist-mode +1))
 
-(use-package selectrum-prescient 
-  :ensure
-  :demand
-  :after selectrum
+(use-package selectrum-prescient
+  :ensure :demand :after selectrum
   :init
   (selectrum-prescient-mode +1)
   (prescient-persist-mode +1))
 
-(use-package company-prescient 
-  :ensure
-  :demand
-  :after prescient
+(use-package company-prescient
+  :ensure :demand :after prescient
   :init (company-prescient-mode +1))
 
 (use-package consult
-  :ensure
-  :demand
-  :after projectile
+  :ensure :demand :after projectile
   :bind
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
@@ -67,10 +61,11 @@
    ;; Isearch integration
    ("M-s e" . consult-isearch)
    :map isearch-mode-map
-   ("M-e" . consult-isearch) 
+   ("M-e" . consult-isearch)
    ("M-s e" . consult-isearch)
    ("M-s l" . consult-line))
-  :hook (completion-list-mode . consult-preview-at-point-mode)
+  :hook
+  (completion-list-mode . consult-preview-at-point-mode)
   :init
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
@@ -84,49 +79,33 @@
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function #'projectile-project-root))
 
-(use-package compile
-  :ensure
-  :demand
-  :after (consult)
-  :bind
-  (:map compilation-minor-mode-map
-        ("e" . consult-compile-error)
-        :map compilation-mode-map
-        ("e" . consult-compile-error)))
-
 (use-package consult-flycheck
-  :ensure
-  :demand
-  :after consult
-  :bind (:map flycheck-command-map ("!" . consult-flycheck)))
+  :ensure :demand :after consult
+  :bind
+  (:map flycheck-command-map ("!" . consult-flycheck)))
 
 ;; consult-lsp 提供两个非常好用的函数：consult-lsp-symbols、consult-lsp-diagnostics
 (use-package consult-lsp
-  :ensure 
-  :demand
-  :after (lsp-mode consult)
-  :config (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
+  :ensure :demand :after (lsp-mode consult)
+  :config
+  (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
 
 (use-package marginalia
-  :ensure 
-  :demand 
-  :after (selectrum)
-  :init (marginalia-mode) 
+  :ensure :demand :after (selectrum)
+  :init (marginalia-mode)
   :config
   (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
-  (advice-add #'marginalia-cycle 
+  (advice-add #'marginalia-cycle
               :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit 'keep-selected))))
-  :bind 
-  (("M-A" . marginalia-cycle) 
+  :bind
+  (("M-A" . marginalia-cycle)
    :map minibuffer-local-map
    ("M-A" . marginalia-cycle)))
 
-(use-package embark 
-  :ensure
-  :demand
-  :after (selectrum which-key)
+(use-package embark
+  :ensure :demand :after (selectrum which-key)
   :config
-  (setq embark-prompter 'embark-keymap-prompter) 
+  (setq embark-prompter 'embark-keymap-prompter)
 
   (defun refresh-selectrum ()
     (setq selectrum--previous-input-string nil))
@@ -142,12 +121,11 @@
           #'which-key--hide-popup-ignore-command)
         embark-become-indicator embark-action-indicator)
 
-  :bind 
-  (("C-;" . embark-act-noquit) 
+  :bind
+  (("C-;" . embark-act-noquit)
    :map embark-variable-map ("l" . edit-list)))
 
-(use-package embark-consult 
-  :ensure 
-  :demand
-  :after (embark consult) 
-  :hook (embark-collect-mode . embark-consult-preview-minor-mode))
+(use-package embark-consult
+  :ensure :demand :after (embark consult)
+  :hook
+  (embark-collect-mode . embark-consult-preview-minor-mode))

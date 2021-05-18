@@ -1,5 +1,6 @@
 (use-package company
-  :ensure :demand :bind
+  :ensure :demand
+  :bind
   (:map company-mode-map
         ([remap completion-at-point] . company-complete)
         :map company-active-map
@@ -16,10 +17,10 @@
   :custom
   (company-idle-delay 0.3)
   (company-echo-delay 0.03)
-  (company-show-numbers t) 
+  (company-show-numbers t)
   (company-minimum-prefix-length 2)
   (company-tooltip-limit 14)
-  (company-tooltip-align-annotations t) 
+  (company-tooltip-align-annotations t)
   (company-dabbrev-code-everywhere t)
   (company-dabbrev-other-buffers nil)
   (company-dabbrev-ignore-case nil)
@@ -29,6 +30,10 @@
   (company-frontends '(company-pseudo-tooltip-frontend company-echo-metadata-frontend))
   (company-backends '(company-capf company-files (company-dabbrev-code company-keywords) company-dabbrev))
   (company-global-modes '(not erc-mode message-mode help-mode gud-mode shell-mode eshell-mode))
-  :config (global-company-mode t))
+  :config
+  (global-company-mode t))
 
-(use-package company-quickhelp :ensure :demand :after (company) :config (company-quickhelp-mode 1))
+(use-package company-quickhelp
+  :ensure :demand :after (company)
+  :config
+  (company-quickhelp-mode 1))

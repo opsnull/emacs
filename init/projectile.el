@@ -1,5 +1,6 @@
 (use-package projectile
-  :ensure :demand :after (treemacs) :config
+  :ensure :demand :after (treemacs)
+  :config
   (projectile-global-mode)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   (projectile-mode +1)
