@@ -80,19 +80,39 @@
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
 
-(use-package beacon 
-  :ensure :demand :disabled 
+(use-package beacon
+  :ensure :demand :disabled
   :config (beacon-mode 1))
 
 ; 自动切换到英文
 ;; 使用 macism 输入法切换工具：https://github.com/laishulu/macism#install
 ;; 系统的 “快捷键”->“选择上一个输入法” 必须要开启：https://github.com/laishulu/macism/issues/2
-(use-package sis 
-  :ensure :demand 
+(use-package sis
+  :ensure :demand :disabled
   :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
   (sis-global-respect-mode t)
-  (sis-global-context-mode t)
+  (sis-global-context-mode nil)
   (push "M-g" sis-prefix-override-keys)
   (push "M-s" sis-prefix-override-keys)
   (global-set-key (kbd "C-\\") 'sis-switch))
+
+(use-package rime
+  :ensure :demand
+  :custom
+  (rime-user-data-dir "~/Library/Rime/")
+  (rime-librime-root "~/.emacs.d/librime/dist")
+  (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
+  :config
+  ;; Emacs will automatically set default-input-method to rfc1345 if locale is
+  ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
+  (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
+  (setq rime-show-candidate 'posframe))
+
+(use-package undo-tree
+  :ensure t
+  :init
+  (setq undo-tree-mode-lighter ""
+        undo-tree-history-directory-alist
+        `((".*" . ,temporary-file-directory)))
+  (global-undo-tree-mode))
