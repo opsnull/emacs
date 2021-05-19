@@ -98,15 +98,50 @@
   (global-set-key (kbd "C-\\") 'sis-switch))
 
 (use-package rime
-  :ensure :demand
+  :ensure :demand :after (which-key)
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
   (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
+  :bind
+  ( :map rime-active-mode-map ;; 在有 RIME 候选上屏情况下生效
+         ;; 强制切换到英文模式，直到按回车
+         ("M-j" . 'rime-inline-ascii)
+         :map rime-mode-map ;; 开启 RIME 输入法模式生效
+         ;; 中英文切换
+         ;; rime-send-keybing 需要输入法侧同步配置才能生效
+         ("C-$" . 'rime-send-keybinding)
+         ;; 输入法切换( C-` 已绑定到 vterm)
+         ("C-!" . 'rime-send-keybinding)
+         ;; 强制使用中文模式
+         ("M-j" . 'rime-force-enable)
+	     ("C-\\" . 'toggle-input-method))
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
   (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
+  ;; 在开启输入法的情况下，modline 输入法图标是否高亮来区分中文或英文状态中文
+  (setq mode-line-mule-info '((:eval (rime-lighter))))
+  ;; Emacs 不支持 Shift 键切换输入法：https://github.com/DogLooksGood/emacs-rime/issues/130
+  ;; 所以下面的配置实际不会生效：
+  ;;(setq rime-inline-ascii-trigger 'shift-l)
+  (setq rime-disable-predicates
+        '(rime-predicate-ace-window-p
+          rime-predicate-evil-mode-p
+          rime-predicate-hydra-p
+          rime-predicate-which-key-activate-p
+          rime-predicate-current-uppercase-letter-p
+          rime-predicate-after-alphabet-char-p
+          rime-predicate-space-after-cc-p
+          rime-predicate-punctuation-after-space-cc-p
+          rime-predicate-prog-in-code-p
+          rime-predicate-after-ascii-char-p
+          ))
+   (defun rime-predicate-which-key-activate-p ()
+     which-key--automatic-display)
+  (setq rime-posframe-properties
+        (list :font "Sarasa Gothic SC"
+              :internal-border-width 10))
   (setq rime-show-candidate 'posframe))
 
 (use-package undo-tree
