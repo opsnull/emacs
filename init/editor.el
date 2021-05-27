@@ -110,6 +110,10 @@
          :map rime-mode-map
          ;; 中英文切换
          ("C-$" . 'rime-send-keybinding)
+         ;; 中英文标点切换
+         ("C-." . 'rime-send-keybinding)
+         ;; 全半角切换
+         ("C-," . 'rime-send-keybinding)
          ;; 输入法菜单
          ("C-!" . 'rime-send-keybinding)
          ;; 强制使用中文模式
