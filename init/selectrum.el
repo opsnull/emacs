@@ -73,6 +73,11 @@
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
+  ;; 下面的 preview-key 在 minibuff 中不生效，暂时关闭。
+  ;; (consult-customize
+  ;;  consult-ripgrep consult-git-grep consult-grep consult-bookmark consult-recent-file
+  ;;  consult--source-file consult--source-project-file consult--source-bookmark
+  ;;  :preview-key (kbd "M-."))
   ;; 选中候选者后，按 C-l 才会开启 preview，解决 preview TRAMP bookmark hang 的问题。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")

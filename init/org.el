@@ -4,7 +4,7 @@
        (package-install package)))
 
 (use-package org
-  :ensure :demand 
+  :ensure :demand
   :config
   (setq org-ellipsis "▾"
         org-hide-emphasis-markers t
@@ -16,7 +16,6 @@
         org-log-into-drawer t
         org-log-done 'note
         org-hidden-keywords '(title)
-        org-goto-auto-isearch nil
         org-export-with-broken-links t
         org-agenda-start-day "-7d"
         org-agenda-span 21
@@ -25,6 +24,8 @@
         org-cycle-level-faces t
         org-n-level-faces 4
         org-startup-folded 'content
+        ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
+        org-use-sub-superscripts nil
         org-startup-indented t)
   (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
   (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
@@ -45,7 +46,7 @@
 
 (use-package org-superstar
   :ensure :demand :after (org)
-  :hook 
+  :hook
   (org-mode . org-superstar-mode)
   :custom 
   (org-superstar-remove-leading-stars t))
@@ -102,7 +103,7 @@
 
 ;; 在 fill-column 位置 word wrapping，同时按照 logical line 执行移动命令(如 C-n)
 (defun my/org-mode-visual-fill ()
-  (setq 
+  (setq
    ;; 当开启 center-text 后，fill-column 的值应该比
    ;; visual-fill-column-width 值小，否则 Auto-Fill 的段落内容会被隐藏；
    ;; 列宽为 80 是较合适的值，这时在打开 treemacs 的情况下，可以在垂直
