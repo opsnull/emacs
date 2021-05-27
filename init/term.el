@@ -16,7 +16,7 @@
   (setq vterm-buffer-name-string "vterm %s")
   :bind
   (:map vterm-mode-map ("C-l" . nil))
-  ;; 防止和 sis 切换输入法冲突。
+  ;; 防止输入法切换冲突。
   (:map vterm-mode-map ("C-\\" . nil)) )
 
 (use-package multi-vterm
