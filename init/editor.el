@@ -42,6 +42,7 @@
 (use-package ace-window
   :ensure
   :init
+  ;; 使用字母来切换 window(默认是数字)
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
   :config
   ;; 设置为 frame 后，会忽略 treemacs frame，否则打开两个 window 的情况下，会提示输入 window 编号。
@@ -56,10 +57,8 @@
   :commands yas-minor-mode
   :config
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
-  ;(yas-global-mode 1) ;; yas-global-mode 与 sis package 不兼容。
-  :hook
-  ((prog-mode org-mode markdown-mode) . yas-minor-mode))
-
+  (yas-global-mode 1))
+  
 (use-package flycheck
   :ensure
   :config
@@ -79,23 +78,6 @@
   (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'json-mode-hook 'highlight-indent-guides-mode))
-
-(use-package beacon
-  :ensure :demand :disabled
-  :config (beacon-mode 1))
-
-; 自动切换到英文
-;; 使用 macism 输入法切换工具：https://github.com/laishulu/macism#install
-;; 系统的 “快捷键”->“选择上一个输入法” 必须要开启：https://github.com/laishulu/macism/issues/2
-(use-package sis
-  :ensure :demand :disabled
-  :config
-  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  (sis-global-respect-mode t)
-  (sis-global-context-mode nil)
-  (push "M-g" sis-prefix-override-keys)
-  (push "M-s" sis-prefix-override-keys)
-  (global-set-key (kbd "C-\\") 'sis-switch))
 
 (use-package rime
   :ensure :demand :after (which-key)
@@ -146,18 +128,10 @@
               :internal-border-width 10))
   (setq rime-show-candidate 'posframe))
 
-;; isearch 与 rime 不兼容，通过 phi-search 解决，参考：
+;; isearch 与 rime 不兼容，通过 phi-search 解决，
 ;; https://github.com/DogLooksGood/emacs-rime/issues/21
 (use-package phi-search
   :ensure :after (rime)
   :config
   (global-set-key (kbd "C-s") 'phi-search)
   (global-set-key (kbd "C-r") 'phi-search-backward))
-
-(use-package undo-tree
-  :ensure t
-  :init
-  (setq undo-tree-mode-lighter ""
-        undo-tree-history-directory-alist
-        `((".*" . ,temporary-file-directory)))
-  (global-undo-tree-mode))

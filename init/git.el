@@ -1,4 +1,4 @@
-(use-package magit 
+(use-package magit
   :ensure 
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
@@ -11,7 +11,3 @@
   :config
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
-
-(use-package git-link
-  :ensure t :defer t :disabled t
-  :config (setq git-link-use-commit t))
