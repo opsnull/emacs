@@ -1,18 +1,22 @@
-; 需要手动更新下面三个 org package。
+;; 需要手动更新下面三个 org package。
 (dolist (package '(org org-plus-contrib ob-go ox-reveal))
-   (unless (package-installed-p package)
-       (package-install package)))
+  (unless (package-installed-p package)
+    (package-install package)))
 
 (use-package org
   :ensure :demand
   :config
+  (setq org-todo-keywords
+        '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
+                    "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
+          (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
   (setq org-ellipsis "▾"
         org-hide-emphasis-markers t
         org-edit-src-content-indentation 2
         org-hide-block-startup nil
         org-src-preserve-indentation nil
         org-cycle-separator-lines 2
-        org-default-notes-file "~/docs/inbox.org"
+        org-default-notes-file "~/docs/orgs/note.org"
         org-log-into-drawer t
         org-log-done 'note
         org-hidden-keywords '(title)
@@ -27,14 +31,29 @@
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
         org-startup-indented t)
+  ;; 使用 later.org 和 gtd.org 作为 refile target.
+  (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
+                             ("~/docs/orgs/gtd.org" :maxlevel . 3)))
+
+  (setq org-agenda-time-grid (quote ((daily today require-timed)
+                                     (300 600 900 1200 1500 1800 2100 2400)
+                                     "......"
+                                     "-----------------------------------------------------"
+                                     )))
+  ;; 设置 org-agenda 展示的文件
+  (setq org-agenda-files '("~/docs/orgs/inbox.org"
+                           "~/docs/orgs/gtd.org"
+                           "~/docs/orgs/later.org"
+                           "~/docs/orgs/capture.org"
+                           ))
   (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
   (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
   (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
   (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
   (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
-  (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2) ;\large
-  (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44) ;\Large
-  (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728) ;\LARGE
+  (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
+  (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
+  (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
   (set-face-attribute 'org-document-title nil :height 2.074 :inherit 'org-level-8)
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -42,13 +61,29 @@
   (global-set-key (kbd "C-c b") 'org-switchb)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (define-key org-mode-map (kbd "M-n") 'org-next-link)
-  (define-key org-mode-map (kbd "M-p") 'org-previous-link))
+  (define-key org-mode-map (kbd "M-p") 'org-previous-link)
+  (require 'org-protocol)
+  (require 'org-capture)
+  (add-to-list 'org-capture-templates
+               '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
+                 "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
+                 :empty-lines 1))
+  (add-to-list 'org-capture-templates
+               '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
+                 "* ☞ TODO [#B] %U %i%?"))
+  (add-to-list 'org-capture-templates
+               '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
+                 "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
+  (add-to-list 'org-capture-templates
+               '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
+                 "* ☞ TODO [#B] %U %i%?"))
+  )
 
 (use-package org-superstar
   :ensure :demand :after (org)
   :hook
   (org-mode . org-superstar-mode)
-  :custom 
+  :custom
   (org-superstar-remove-leading-stars t))
 
 (use-package org-fancy-priorities
@@ -56,9 +91,9 @@
   :hook
   (org-mode . org-fancy-priorities-mode)
   :config
-  (setq org-fancy-priorities-list '("⚡" "⬆" "⬇" "☕")))
+  (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
 
-;; org 模式下，支持图片拖拽保存或 F2 保存剪贴板中的图片。
+;; 拖拽保持图片或 F2 保存剪贴板中图片。
 ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
 (use-package org-download
   :ensure :demand :after (posframe)
@@ -270,15 +305,9 @@
           ;; (".*" '(space . (:width (16))))
           )))
 
-(setq org-agenda-files '("~/docs/Org"))
-(setq org-agenda-time-grid (quote ((daily today require-timed)
-                                   (300 600 900 1200 1500 1800 2100 2400)
-                                   "......"
-                                   "-----------------------------------------------------"
-                                   )))
-(setq diary-file "~/.emacs.d/diary")
+(setq diary-file "~/docs/orgs/diary")
 (setq diary-mail-addr "geekard@qq.com")
-; 获取经纬度：https://www.latlong.net/
+;; 获取经纬度：https://www.latlong.net/
 (setq calendar-latitude +39.904202)
 (setq calendar-longitude +116.407394)
 (setq calendar-location-name "北京")
@@ -289,7 +318,7 @@
 (setq view-calendar-holidays-initially nil)   ; 不显示节日列表
 (setq org-agenda-include-diary t)
 
-;除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
+;; 除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
 (setq christian-holidays nil
       hebrew-holidays nil
       islamic-holidays nil
@@ -336,25 +365,6 @@
          (set-face-foreground 'diary-face   "skyblue")
          (set-face-background 'holiday-face "slate blue")
          (set-face-foreground 'holiday-face "white"))) 
-
-(require 'org-protocol)
-(require 'org-capture)
-(add-to-list 'org-capture-templates
-             '("c" "Capture" entry (file+headline "~/docs/inbox.org" "Capture")
-               "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
-               :empty-lines 1))
-(add-to-list 'org-capture-templates
-             '("w" "Work Task" entry (file+headline "~/docs/inbox.org" "Work")
-               "* TODO %^{Task}\n%u\n%a\n" :clock-in t :clock-resume t))
-(add-to-list 'org-capture-templates
-             '("j" "Journal" entry (file+headline "~/docs/inbox.org" "Journal")
-               "* %U - %^{Heading}\n  %?"))
-(add-to-list 'org-capture-templates
-             '("i" "Inbox" entry (file+headline "~/docs/inbox.org" "Inbox")
-               "* %U - %^{Heading} %^g\n %?\n"))
-(add-to-list 'org-capture-templates
-             '("n" "Notes" entry (file+headline "~/docs/inbox.org" "Notes")
-               "* %^{Heading} %t %^g\n  %?\n"))
 
 ; brew install terminal-notifier
 (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
