@@ -1,1 +1,28 @@
-/Users/zhangjun/Library/Rime/default.custom.yaml
+patch:
+  schema_list:
+    - schema: clover  # 使用 clover 输入法方案
+  menu/page_size: 9
+  ascii_composer/good_old_caps_lock: true
+  ascii_composer/switch_key:
+    Caps_Lock: commit_code                    
+    Shift_L: inline_ascii
+    Shift_R: commit
+    Control_L: commit_code
+    Control_R: commit_code
+  switcher/hotkeys:
+    - "Control+grave"
+    - "Control+Shift+grave"
+    - F4
+    - "Control+exclam"  # 增加使用 C-! 快捷键来调出输入法菜单
+  key_binder/bindings:
+    - { when: composing, accept: ISO_Left_Tab, send: Page_Up }
+    - { when: composing, accept: Shift+Tab, send: Page_Up }
+    - { when: composing, accept: Tab, send: Page_Down }     
+    - { when: paging, accept: minus, send: Page_Up }
+    - { when: has_menu, accept: equal, send: Page_Down }
+    - { when: paging, accept: bracketleft, send: Page_Up }
+    - { when: has_menu, accept: bracketright, send: Page_Down }
+    - { when: always, accept: "Control+dollar", toggle: ascii_mode}  # 中英文切换
+    - { when: always, accept: "Control+period", toggle: ascii_punct} # 中英文标点切换
+    - { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
+    # 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
