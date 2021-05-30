@@ -71,7 +71,7 @@
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
-;(shell-command "mkdir -p ~/.emacs.d/backup")
+;;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (setq backup-by-copying t
       backup-directory-alist (list (cons ".*" backup-dir))
@@ -80,7 +80,7 @@
       kept-old-versions 2
       version-control t)
 
-;(shell-command "mkdir -p ~/.emacs.d/autosave")
+;;(shell-command "mkdir -p ~/.emacs.d/autosave")
 (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
 (setq auto-save-list-file-prefix autosave-dir
       auto-save-file-name-transforms `((".*" ,autosave-dir t)))
@@ -120,7 +120,7 @@
     (osx-trash-setup))
   (setq delete-by-moving-to-trash t))
 
-; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
+;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
 (use-package which-key
   :ensure :demand
   :init (which-key-mode)

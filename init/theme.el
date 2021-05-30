@@ -26,10 +26,10 @@
   :init
   (doom-modeline-mode 1))
 
-; M-x all-the-icons-install-fonts
+;; M-x all-the-icons-install-fonts
 (use-package all-the-icons :ensure t :after (doom-modeline))
 
-; emacs 27 支持 Emoji
+;; emacs 27 支持 Emoji
 (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
 
 (column-number-mode t)
@@ -73,13 +73,13 @@
                           (agenda . 3)))
   (dashboard-setup-startup-hook))
 
-; 字体
+;; 字体
 ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14: https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
   :ensure :demand
   :init
-  (setq cnfonts-personal-fontnames 
+  (setq cnfonts-personal-fontnames
         '(("Iosevka SS14" "Fira Code")
           ("Sarasa Gothic SC" "Source Han Mono SC")
           ("HanaMinB")))
@@ -87,7 +87,7 @@
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
-; M-x fira-code-mode-install-fonts
+;; M-x fira-code-mode-install-fonts
 (use-package fira-code-mode
   :ensure :demand
   :custom

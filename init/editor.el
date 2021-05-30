@@ -26,13 +26,13 @@
   ("M-g c" . avy-goto-char-2)
   ("M-g l" . avy-goto-line))
 
-;(shell-command "rg --version || brew install ripgrep")
+;;(shell-command "rg --version || brew install ripgrep")
 (use-package deadgrep
   :ensure
   :bind
   ("<f5>" . deadgrep))
 
-;(shell-command "rg --version || brew install ripgrep")
+;;(shell-command "rg --version || brew install ripgrep")
 (use-package xref
   :ensure
   :config
@@ -51,7 +51,7 @@
   (ace-window-display-mode +1)
   (global-set-key (kbd "M-o") 'ace-window))
 
-;(shell-command "mkdir -p ~/.emacs.d/snippets")
+;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
   :ensure :demand :after (lsp-mode company)
   :commands yas-minor-mode
