@@ -5,7 +5,7 @@
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   (projectile-mode +1)
   ;; selectrum 使用 'default，可选：'ivy、'helm、'ido、'auto
-  (setq projectile-completion-system 'default) 
+  (setq projectile-completion-system 'default)
   ;; 开启 cache 后，提高性能，也可以解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
   (setq projectile-sort-order 'recently-active)

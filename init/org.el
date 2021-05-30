@@ -136,15 +136,11 @@
     (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
     (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
 
-;; 在 fill-column 位置 word wrapping，同时按照 logical line 执行移动命令(如 C-n)
 (defun my/org-mode-visual-fill ()
   (setq
-   ;; 当开启 center-text 后，fill-column 的值应该比
-   ;; visual-fill-column-width 值小，否则 Auto-Fill 的段落内容会被隐藏；
-   ;; 列宽为 80 是较合适的值，这时在打开 treemacs 的情况下，可以在垂直
-   ;; 方向打开两个窗口而不会换行；
-   fill-column 80
-   visual-fill-column-width 85
+   fill-column 80 ;; 自动换行的字符数
+   ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
+   visual-fill-column-width 130
    visual-fill-column-fringes-outside-margins nil
    visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
@@ -366,7 +362,7 @@
          (set-face-background 'holiday-face "slate blue")
          (set-face-foreground 'holiday-face "white"))) 
 
-; brew install terminal-notifier
+;; brew install terminal-notifier
 (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
 
 (defun terminal-notifier-notify (title message)
@@ -382,5 +378,5 @@
   (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
   (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
 
-;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
+;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))

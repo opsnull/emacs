@@ -15,8 +15,8 @@
   (java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
-  ;(yaml-mode . lsp)
-  ;(json-mode . lsp)
+  ;;(yaml-mode . lsp)
+  ;;(json-mode . lsp)
   (dockerfile-mode . lsp)
   (lsp-mode . lsp-enable-which-key-integration)
   :custom
