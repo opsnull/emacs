@@ -17,6 +17,10 @@
   (go-mode . lsp)
   ;;(yaml-mode . lsp)
   ;;(json-mode . lsp)
+  (web-mode . lsp)
+  (js-mode . lsp)
+  (tide-mode . lsp)
+  (typescript-mode . lsp)
   (dockerfile-mode . lsp)
   (lsp-mode . lsp-enable-which-key-integration)
   :custom
