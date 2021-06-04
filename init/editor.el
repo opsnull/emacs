@@ -63,6 +63,7 @@
   :ensure
   :config
   (setq flycheck-highlighting-mode (quote columns))
+  (setq flycheck-check-syntax-automatically '(save idle-change mode-enabled))
   (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
   (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
   :hook

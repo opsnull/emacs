@@ -15,16 +15,20 @@ which im-select || curl -Ls https://raw.githubusercontent.com/daipeihust/im-sele
 
 pip install -q -i https://pypi.douban.com/simple/ ipython
 
-# 微软逐渐不再维护 python-language-server，转向 pyright 和 pyglance
-# 所以，不再使用 lsp-python-ms，同时也不再使用开源社区的 pyls；
-# 选择 lsp-pyright
+# 微软逐渐不再维护 python-language-server，转向 pyright 和 pyglance 所以，不再使
+# 用 lsp-python-ms，同时也不再使用开源社区的 pyls,，选择 lsp-pyright 。
 
 go get golang.org/x/tools/gopls@latest
 
+# 关于 npm/node/yarn 等虚拟环境，可以参考：
+# https://www.yuque.com/zhangjun-ibwli/iec7qs/ndvyyx#F61Lj
 brew install npm
 npm install -g vscode-json-languageserver
 npm install -g yaml-language-server
 npm install -g dockerfile-language-server-nodejs
+
+npm install -g eslint babel-eslint eslint-plugin-react
+然后安装 eslint language server: M-x lsp-install-server RET eslint RET.
 
 trash -v || brew install trash
 pngpaste -v || brew install pngpaste
@@ -65,3 +69,5 @@ PROMPT=$PROMPT'%{$(vterm_prompt_end)%}'
 brew install terminal-notifier # org notify
 
 pip  install ansible
+
+在 require 了 dap-chrome 后需要执行 M-x dap-chrome-setup 来安装 VSCode Chrome Debug Extension.
