@@ -135,8 +135,7 @@
 (use-package typescript-mode
   :ensure :demand :after (flycheck)
   :init
-  ;; 默认对 .ts 文件开启 typescript-mode, 这里添加 .tsx 文件类型。
-  (add-to-list 'auto-mode-alist '("\\.tsx\\'" . typescript-mode))
+  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescript-mode))
   :hook
   ((typescript-mode . my/setup-tide-mode))
   :config
@@ -202,6 +201,7 @@
   (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.tmpl\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.json\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)))
 
 (use-package dap-mode
@@ -209,10 +209,7 @@
   :config
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
-;; 在 require 了 dap-chrome 后需要执行 M-x dap-chrome-setup 来安装 VSCode Chrome Debug Extension.
-
-;; (shell-command "which vscode-json-languageserver &>/dev/null || npm i -g vscode-json-languageserver &>/dev/null")
-(use-package json-mode :ensure)
+;; 执行 M-x dap-chrome-setup 安装 VSCode Chrome Debug Extension.
 
 ;; (shell-command "which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>/dev/null")
 (use-package yaml-mode
@@ -220,47 +217,5 @@
   :hook
   (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent)))
   :config
-  ;; From https://gist.github.com/antonj/874106
-  (defun aj-toggle-fold ()
-    "Toggle fold all lines larger than indentation on current line"
-    (interactive)
-    (let ((col 1))
-      (save-excursion
-        (back-to-indentation)
-        (setq col (+ 1 (current-column)))
-        (set-selective-display
-         (if selective-display nil (or col 1))))))
-
-  ;; From https://github.com/yoshiki/yaml-mode/issues/25
-  (defun yaml-outline-minor-mode ()
-    (outline-minor-mode)
-    (setq outline-regexp
-          (rx
-           (seq
-            bol
-            (group (zero-or-more "  ")
-                   (or (group
-                        (seq (or (seq "\"" (*? (not (in "\"" "\n"))) "\"")
-                                 (seq "'" (*? (not (in "'" "\n"))) "'")
-                                 (*? (not (in ":" "\n"))))
-                             ":"
-                             (?? (seq
-                                  (*? " ")
-                                  (or (seq "&" (one-or-more nonl))
-                                      (seq ">-")
-                                      (seq "|"))
-                                  eol))))
-                       (group (seq
-                               "- "
-                               (+ (not (in ":" "\n")))
-                               ":"
-                               (+ nonl)
-                               eol))))))))
-  (add-hook 'yaml-mode-hook #'yaml-outline-minor-mode)
-  (with-eval-after-load 'yaml-mode
-    (define-key yaml-mode-map
-      (kbd "RET") #'newline-and-indent)
-    ;; This weird key-binding to co-exist with outline-minor mode
-    (define-key yaml-mode-map
-      (kbd "C-c @ C-j") #'aj-toggle-fold))
-  )
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+  (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode)))

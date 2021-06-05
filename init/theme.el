@@ -1,12 +1,4 @@
 ;; preview theme: https://emacsthemes.com/
-(use-package leuven-theme :ensure :disabled)
-(use-package monokai-theme :ensure :disabled)
-(use-package solarized-theme :ensure :disabled)
-(use-package spacemacs-theme :ensure :disabled)
-(use-package zenburn-theme :ensure :disabled)
-(use-package spacemacs-theme :ensure :disabled)
-(use-package color-theme-sanityinc-tomorrow :ensure :disabled :config (load-theme 'sanityinc-tomorrow-eighties t))
-
 (use-package doom-themes
   :ensure :demand
   :config

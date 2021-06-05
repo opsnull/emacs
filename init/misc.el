@@ -128,10 +128,4 @@
   :config
   (setq which-key-idle-delay 1.1))
 
-(use-package origami
-  :ensure :demand
-  :hook
-  (yaml-mode . origami-mode)
-  (json-mode . origami-mode))
-
 (server-start)
