@@ -16,7 +16,6 @@
   (python-mode . lsp)
   (go-mode . lsp)
   ;;(yaml-mode . lsp)
-  ;;(json-mode . lsp)
   (web-mode . lsp)
   (js-mode . lsp)
   (tide-mode . lsp)
