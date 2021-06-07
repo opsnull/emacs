@@ -1,12 +1,12 @@
-Emacs 配置
+Emacs dotfile
 #+OPTIONS: toc:nil h:4
-#+STARTUP: showeverything
+#+STARTUP: overview
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
 #+TOC: headlines 4
 
 Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 
-* 软件源
+* 软件包
 
 使用清华大学的软件源镜像：
 #+begin_src emacs-lisp
@@ -15,17 +15,12 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
                          ("melpa" . "https://melpa.org/packages/")
                          ("melpa-stable" . "https://mirrors.ustc.edu.cn/elpa/melpa-stable/")
                          ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
-;; 加载已经安装的包。
 (package-initialize)
-;; 如果 package-archives cache 为空, 则从软件包源更新 cache.
 (unless package-archive-contents (package-refresh-contents))
 #+end_src
 
-* =use-package=
-
-我使用 =use-package= 来管理所有三方 Emacs 软件包, 需要先安装这个前置依赖包:
+使用 =use-package= 管理软件包, 故需要先安装它：
 #+begin_src emacs-lisp
-;; 如果没有安装 use-package 包, 则安装它。
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -33,30 +28,33 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 
 * 环境变量
 
-GUI 或 systemd 模式启动 Emaca 时，Emacs 有可能没有继承用户的 shell 环境变量，如
-=PATH= ，导致有些软件包依赖的命令可能找不到。 =exec-path-from-shell= 包提供的
-=exec-path-from-shell-variables= 变量可以配置要拷贝到 Emacs 环境的用户 shell 环境
-变量列表：
+<<exec-path-from-shell>>
+
+GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户的 shell 环境变量，如 =PATH= ，导致
+有些依赖的命令可能找不到。 =exec-path-from-shell= 包将指定的 shell 环境变量拷贝到
+Emacs 环境中： 
 #+begin_src emacs-lisp
-(use-package exec-path-from-shell
-  :ensure
-  :custom
-  (exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
-  :config
-  (when (memq window-system '(mac ns x))
-    (exec-path-from-shell-initialize)))
+  (use-package exec-path-from-shell
+    :ensure
+    :custom
+    (exec-path-from-shell-check-startup-files nil)
+    ;; 指定拷贝到 Emacs 的 shell 环境变量列表
+    (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
+    :config
+    (when (memq window-system '(mac ns x))
+      (exec-path-from-shell-initialize)))
 #+end_src
 
-* 自动补全 company
+* 自动补全
 
-company 为 Emacs 提供了自动补全框架, 它使用可插拔的前端和后端来显示候选信息。内
-置的后端包括：Elisp, Clang, Semantic, Eclim, Ropemacs, Ispell, CMake, BBDB,
-Yasnippet, dabbrev, etags, gtags, files, keywords 等。
+company 为 Emacs 提供了自动补全框架, 它使用可插拔的前端和后端来显示候选信息。
 
-通用的 CAPF 后端使用 Emacs 标准的 =completion-at-point-functions= 特性，可以和提供
-补全函数的 major mode(如 emacs-lisp-mode, css-mode, nxml-mode 和 lsp-mode) 很好
-协作。
+内置后端：Elisp, Clang, Semantic, Eclim, Ropemacs, Ispell, CMake, BBDB,
+Yasnippet, dabbrev, etags, gtags, files, keywords 和 CAPF 等。
+
+=CAPF= 是一个通用后端，它使用 Emacs 标准的 =completion-at-point-functions= 获取补全
+信息，与使用该机制的 lsp-mode, emacs-lisp-mode, css-mode, nxml-mode 等 major
+mode 能很好协作：
 
 #+begin_src emacs-lisp
   (use-package company
@@ -118,89 +116,107 @@ company-quickhelp 为 company 的候选者显示文档：
   :config
   (company-quickhelp-mode 1))
 #+end_src
-  
-* 配置
+
+* 快速跳转
+
 #+begin_src emacs-lisp
-(use-package iedit :ensure :demand)
-
-(use-package goto-chg
-  :ensure
-  :config
-  (global-set-key (kbd "C->") 'goto-last-change)
-  (global-set-key (kbd "C-<") 'goto-last-change-reverse))
-
-(use-package smartparens
-  :ensure
-  :config
-  (smartparens-global-mode t)
-  (show-smartparens-global-mode t))
-
-(use-package expand-region :ensure :bind ("M-@" . er/expand-region))
-
-(use-package avy
-  :ensure
-  :config
-  (setq avy-all-windows nil
-        avy-background t)
-  :bind
-  ("M-g c" . avy-goto-char-2)
-  ("M-g l" . avy-goto-line))
-
-;;(shell-command "rg --version || brew install ripgrep")
-(use-package deadgrep :ensure :bind  ("<f5>" . deadgrep))
-
-;;(shell-command "rg --version || brew install ripgrep")
-(use-package xref
-  :ensure
-  :config
-  ;; C-x p g (project-find-=regexp)
-  (setq xref-search-program 'ripgrep))
-
-(use-package ace-window
-  :ensure
-  :init
-  ;; 使用字母来切换 window(默认是数字)
-  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-  :config
-  ;; 设置为 frame 后，会忽略 treemacs frame，否则打开两个 window 的情况下，会提
-  ;; 示输入 window 编号。
-  (setq aw-scope 'frame)
-  ;; modeline 显示 window 编号
-  (ace-window-display-mode +1)
-  (global-set-key (kbd "M-o") 'ace-window))
-
-;;(shell-command "mkdir -p ~/.emacs.d/snippets")
-(use-package yasnippet
-  :ensure :demand :after (lsp-mode company)
-  :commands yas-minor-mode
-  :config
-  (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
-  (yas-global-mode 1))
+  (use-package goto-chg
+    :ensure
+    :config
+    (global-set-key (kbd "C->") 'goto-last-change)
+    (global-set-key (kbd "C-<") 'goto-last-change-reverse))
   
-(use-package flycheck
-  :ensure
-  :config
-  (setq flycheck-highlighting-mode (quote columns))
-  (setq flycheck-check-syntax-automatically '(save idle-change mode-enabled))
-  (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
-  (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
-  :hook
-  (prog-mode . flycheck-mode))
+  (use-package avy
+    :ensure
+    :config
+    (setq avy-all-windows nil
+          avy-background t)
+    :bind
+    ("M-g c" . avy-goto-char-2)
+    ("M-g l" . avy-goto-line))
+  
+  (use-package ace-window
+    :ensure
+    :init
+    ;; 使用字母来切换 window(默认是数字)
+    (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+    :config
+    ;; 设置为 frame 后，会忽略 treemacs frame，否则打开两个 window 的情况下，会提
+    ;; 示输入 window 编号。
+    (setq aw-scope 'frame)
+    ;; modeline 显示 window 编号
+    (ace-window-display-mode +1)
+    (global-set-key (kbd "M-o") 'ace-window))
+  
+  ;;(shell-command "rg --version || brew install ripgrep")
+  (use-package xref
+    :ensure
+    :config
+    ;; C-x p g (project-find-=regexp)
+    (setq xref-search-program 'ripgrep))
+  #+end_src
 
-(use-package highlight-indent-guides
-  :ensure :demand :after (python yaml-mode web-mode)
-  :custom
-  (highlight-indent-guides-method 'character)
-  (highlight-indent-guides-responsive 'stack)
-  (highlight-indent-guides-delay 0.1)
-  :config
-  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
+* 编辑
+#+begin_src emacs-lisp
+  (use-package iedit :ensure :demand)
+  
+  (use-package smartparens
+    :ensure
+    :config
+    (smartparens-global-mode t)
+    (show-smartparens-global-mode t))
+  
+  (use-package expand-region :ensure :bind ("M-@" . er/expand-region))
+  
+  ;;(shell-command "rg --version || brew install ripgrep")
+  (use-package deadgrep :ensure :bind  ("<f5>" . deadgrep))
+  
+  ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
+  (use-package yasnippet
+    :ensure :demand :after (lsp-mode company)
+    :commands yas-minor-mode
+    :config
+    (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
+    (yas-global-mode 1))
+  
+  (use-package highlight-indent-guides
+    :ensure :demand :after (python yaml-mode web-mode)
+    :custom
+    (highlight-indent-guides-method 'character)
+    (highlight-indent-guides-responsive 'stack)
+    (highlight-indent-guides-delay 0.1)
+    :config
+    (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+    (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+    (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 #+end_src
 
-* rime
+* 输入法
 
+Mac 系统安装 RIME 输入法：
+1. 下载 鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
+2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
+3. 重新登录用户，然后就可以使用 =Control+`= 来触发 RIME 输入法了。
+4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
+5. 部署生效,:
+  + 如果修改了 ~/Library/Rime 中的配置，则必须点击鼠须管的 “重新部署” 才能生效。
+  + 对于 emacs-rime，如果也修改了 /Library/Rime 的配置，则需要执行 =M-x
+    rime-deploy= 生效；
+
+下载 librime 二进制：
+#+Begin_src bash :results none
+curl -L -O https://github.com/rime/librime/releases/download/1.7.1/rime-1.7.1-osx.zip
+unzip rime-1.7.1-osx.zip -d ~/.emacs.d/librime
+rm -rf rime-1.7.1-osx.zip
+# 如果MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
+sudo spctl --master-disable
+# later: sudo spctl --master-enable
+#+end_src
+
+从 [[https://github.com/fkxxyz/rime-cloverpinyin][rime-cloverpinyin]] 下载最新的词库方案安装包（文件名不包含 build), 解压后配置拷
+贝到 ~/Library/Rime 目录。另外一份比较好的词库方案是 [[https://github.com/placeless/squirrel_config][squirrel_config]] 。
+
+配置 Emacs: 
 #+begin_src emacs-lisp
 (use-package rime
   :ensure :demand :after (which-key)
@@ -227,7 +243,7 @@ company-quickhelp 为 company 的候选者显示文档：
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
   (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
-  ;; 在开启输入法的情况下，modline 输入法图标是否高亮来区分中文或英文状态中文
+  ;; modline 输入法图标高亮, 用来区分中英文输入状态
   (setq mode-line-mule-info '((:eval (rime-lighter))))
   ;; Emacs 不支持 Shift 键切换输入法：
   ;; https://github.com/DogLooksGood/emacs-rime/issues/130所以下面的配置不生效：
@@ -261,8 +277,8 @@ isearch 与 rime 不兼容，通过 phi-search 解决，https://github.com/DogLo
   (global-set-key (kbd "C-r") 'phi-search-backward))
 #+end_src
 
-RIME 输入法自定义缺省配置(拷贝到 ~/Library/Rime 目录下)
-#+begin_src yaml :tangle default.custom.yaml.new
+RIME 输入法自定义缺省配置：
+#+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
 patch:
   schema_list:
     - schema: clover  # 使用 clover 输入法方案
@@ -293,8 +309,8 @@ patch:
     # 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
 #+end_src
 
-三叶草输入方案(clover) 配置(拷贝到 ~/Library/Rime 目录下):
-#+begin_src yaml :tangle clover.custom.yaml.new
+三叶草输入方案(clover) 配置:
+#+begin_src yaml :tangle ~/Library/Rime/clover.custom.yaml
 patch:
   switches:
   - name: zh_simp_s2t
@@ -335,21 +351,168 @@ patch:
     - derive/u$/uu/      # ui = u
 #+end_src
 
-* magit
+* 版本控制
+
+magit 是 Emacs 杀手级 git 版本控制界面:
 #+begin_src emacs-lisp
-(use-package magit
-  :ensure
-  :custom
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+  (use-package magit
+    :ensure
+    :custom
+    ;; 在当前 window 中显示 magit buffer
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+#+end_src
 
-(setq ediff-diff-options "-w" ;; 忽略空格
-      ediff-split-window-function 'split-window-horizontally) 
-
+git-link 为当前光标位置生成可访问的 URL:
+#+begin_src emacs-lisp
 (use-package git-link
   :ensure :defer
   :config
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
+#+end_src
+
+ediff:
+#+begin_src emacs-lisp
+  (setq ediff-diff-options "-w" ;; 忽略空格
+        ediff-split-window-function 'split-window-horizontally)
+#+end_src
+
+* 代码检查
+
+flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flymake 工具。它使用系
+统安装的一些命令工具来对 buffer 进行检查，所以如果使用 GUI Emacs, 则需要安装
+[[exec-path-from-shell][exec-path-from-shell]] 软件包。
+#+begin_src emacs-lisp
+  (use-package flycheck
+    :ensure
+    :config
+    ;; 高亮出现错误的列位置
+    (setq flycheck-highlighting-mode (quote columns))
+    (setq flycheck-check-syntax-automatically '(save idle-change mode-enabled))
+    (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
+    (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
+    ;; 在当前窗口底部显示错误列表
+    (add-to-list 'display-buffer-alist
+                 `(,(rx bos "*Flycheck errors*" eos)
+                   (display-buffer-reuse-window
+                    display-buffer-in-side-window)
+                   (side            . bottom)
+                   (reusable-frames . visible)
+                   (window-height   . 0.33)))
+  
+    :hook
+    (prog-mode . flycheck-mode))
+#+end_src
+
+flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
+#+begin_src emacs-lisp
+  (use-package flycheck-pos-tip
+    :ensure :after (flycheck)
+    :config
+    (flycheck-pos-tip-mode))
+#+end_src
+
+* lsp
+#+begin_src emacs-lisp
+  (use-package lsp-mode
+    :ensure :demand :after (flycheck)
+    :hook
+    (java-mode . lsp)
+    (python-mode . lsp)
+    (go-mode . lsp)
+    ;;(yaml-mode . lsp)
+    (web-mode . lsp)
+    (js-mode . lsp)
+    (tide-mode . lsp)
+    (typescript-mode . lsp)
+    (dockerfile-mode . lsp)
+    (lsp-mode . lsp-enable-which-key-integration)
+    :custom
+    ;; lsp 显示的 links 不准确，而且会导致 treemacs 目录显示异常，故关闭。
+    ;; https://github.com/hlissner/doom-emacs/issues/2911
+    ;; https://github.com/Alexander-Miller/treemacs/issues/626
+    (lsp-enable-links nil)
+    ;; 不在 modeline 上显示 code-actions 信息
+    (lsp-modeline-code-actions-enable nil)
+    (lsp-keymap-prefix "C-c l")
+    (lsp-auto-guess-root t)
+    (lsp-prefer-flymake nil)
+    (lsp-diagnostic-package :flycheck)
+    (lsp-completion-provider :capf)
+    (lsp-enable-snippet nil)
+    ;; 开启后，会用 minibuffer 显示文档，占用太多屏幕空间
+                                          ;(lsp-eldoc-render-all nil)
+    ;; 使用 lsp-describ-things-at-point(绑定到 C-c d) 显示详情
+    (lsp-eldoc-enable-hover nil)
+    ;; 显示函数签名
+    (lsp-signature-auto-activate t)
+    (lsp-signature-doc-lines 2)
+    ;; 增大同 LSP 服务器交互时的读取文件的大小
+    (read-process-output-max (* 1024 1024 2))
+    (lsp-idle-delay 0.5)
+    ;; 开启 log-io 会极大影响性能
+    (lsp-log-io nil)
+    (lsp-keep-workspace-alive nil)
+    (lsp-enable-file-watchers nil)
+    (lsp-file-watch-ignored '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
+                              ;; java
+                              "[/\\\\]resources/META-INF\\'"
+                              "[/\\\\]src/test\\'"
+                              ;; SCM tools
+                              "[/\\\\]\\.git\\'"
+                              "[/\\\\]\\.github\\'"
+                              "[/\\\\]\\.hg\\'"
+                              "[/\\\\]\\.bzr\\'"
+                              "[/\\\\]_darcs\\'"
+                              "[/\\\\]\\.svn\\'"
+                              "[/\\\\]_FOSSIL_\\'"
+                              ;; IDE tools
+                              "[/\\\\]\\.idea\\'"
+                              "[/\\\\]\\.ensime_cache\\'"
+                              "[/\\\\]\\.eunit\\'"
+                              ;; Others
+                              "[/\\\\]node_modules\\'"
+                              "[/\\\\]vendor\\'"
+                              "[/\\\\]\\.fslckout\\'"
+                              "[/\\\\]\\.tox\\'"
+                              "[/\\\\]\\.stack-work\\'"
+                              "[/\\\\]\\.bloop\\'"
+                              "[/\\\\]\\.metals\\'"
+                              "[/\\\\]target\\'"
+                              "[/\\\\]\\.settings\\'"
+                              "[/\\\\]\\.project\\'"
+                              ;; Autotools output
+                              "[/\\\\]\\.travis\\'"
+                              "[/\\\\]\\.deps\\'"
+                              "[/\\\\]build-aux\\'"
+                              "[/\\\\]autom4te.cache\\'"
+                              "[/\\\\]\\.reference\\'"))
+    :config
+    (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
+    (setq lsp-completion-enable-additional-text-edit nil)
+    :bind
+    (:map lsp-mode-map
+          ("C-c f" . lsp-format-region)
+          ("C-c d" . lsp-describe-thing-at-point)
+          ("C-c a" . lsp-execute-code-action)
+          ("C-c r" . lsp-rename)))
+  
+  ;; lsp-ui 结合 flycheck 提供了实时诊断能力
+  (use-package lsp-ui
+    :ensure :after (lsp-mode flycheck)
+    :custom
+    (lsp-ui-doc-enable nil)
+    (lsp-ui-doc-delay 0.1)
+    (lsp-ui-flycheck-enable t)
+    (lsp-ui-sideline-enable nil)
+    :config
+    (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
+    (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
+  
+  (use-package lsp-treemacs
+    :ensure :after (lsp-mode treemacs)
+    :config
+    (lsp-treemacs-sync-mode 1))
 #+end_src
 
 * python
@@ -586,9 +749,7 @@ https://github.com/mooz/js2-mode#react-and-jsx
     ;; 为 js/jsx 文件启动 tide.
     (add-hook 'js-mode-hook 'my/setup-tide-mode)
     ;; disable jshint since we prefer eslint checking
-    (setq-default flycheck-disabled-checkers
-                  (append flycheck-disabled-checkers
-                          '(javascript-jshint)))
+    (setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(javascript-jshint)))
     (flycheck-add-mode 'javascript-eslint 'js-mode)
     (flycheck-add-next-checker 'javascript-eslint 'javascript-tide 'append)
     (flycheck-add-next-checker 'javascript-eslint 'jsx-tide 'append)
@@ -643,110 +804,6 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
     :config
     (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
     (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode)))
-#+end_src
-
-* lsp
-#+begin_src emacs-lisp
-(use-package lsp-ui
-  :ensure 
-  :custom
-  (lsp-ui-doc-enable nil)
-  (lsp-ui-doc-delay 0.1)
-  (lsp-ui-flycheck-enable t)
-  (lsp-ui-sideline-enable nil)
-  :config
-  (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
-  (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
-
-(use-package lsp-mode
-  :ensure :demand :after (flycheck)
-  :hook
-  (java-mode . lsp)
-  (python-mode . lsp)
-  (go-mode . lsp)
-  ;;(yaml-mode . lsp)
-  (web-mode . lsp)
-  (js-mode . lsp)
-  (tide-mode . lsp)
-  (typescript-mode . lsp)
-  (dockerfile-mode . lsp)
-  (lsp-mode . lsp-enable-which-key-integration)
-  :custom
-  ;; lsp 显示的 links 不准确，而且会导致 treemacs 目录显示异常，故关闭。
-  ;; https://github.com/hlissner/doom-emacs/issues/2911
-  ;; https://github.com/Alexander-Miller/treemacs/issues/626
-  (lsp-enable-links nil)
-  ;; 不在 modeline 上显示 code-actions 信息
-  (lsp-modeline-code-actions-enable nil)
-  (lsp-keymap-prefix "C-c l")
-  (lsp-auto-guess-root t)
-  (lsp-prefer-flymake nil)
-  (lsp-diagnostic-package :flycheck)
-  (lsp-completion-provider :capf)
-  (lsp-enable-snippet nil)
-  ;; 开启后，会用 minibuffer 显示文档，占用太多屏幕空间
-  ;(lsp-eldoc-render-all nil)
-  ;; 使用 lsp-describ-things-at-point(绑定到 C-c d) 显示详情
-  (lsp-eldoc-enable-hover nil)
-  ;; 显示函数签名
-  (lsp-signature-auto-activate t)
-  (lsp-signature-doc-lines 2)
-  ;; 增大同 LSP 服务器交互时的读取文件的大小
-  (read-process-output-max (* 1024 1024 2))
-  (lsp-idle-delay 0.5)
-  ;; 开启 log-io 会极大影响性能
-  (lsp-log-io nil) 
-  (lsp-keep-workspace-alive nil)
-  (lsp-enable-file-watchers nil)
-  (lsp-file-watch-ignored '(
-    "[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
-    ; java
-    "[/\\\\]resources/META-INF\\'"
-    "[/\\\\]src/test\\'"
-    ; SCM tools
-    "[/\\\\]\\.git\\'"
-    "[/\\\\]\\.github\\'"
-    "[/\\\\]\\.hg\\'"
-    "[/\\\\]\\.bzr\\'"
-    "[/\\\\]_darcs\\'"
-    "[/\\\\]\\.svn\\'"
-    "[/\\\\]_FOSSIL_\\'"
-    ; IDE tools
-    "[/\\\\]\\.idea\\'"
-    "[/\\\\]\\.ensime_cache\\'"
-    "[/\\\\]\\.eunit\\'"
-    ; Others
-    "[/\\\\]node_modules\\'"
-    "[/\\\\]vendor\\'"
-    "[/\\\\]\\.fslckout\\'"
-    "[/\\\\]\\.tox\\'"
-    "[/\\\\]\\.stack-work\\'"
-    "[/\\\\]\\.bloop\\'"
-    "[/\\\\]\\.metals\\'"
-    "[/\\\\]target\\'"
-    "[/\\\\]\\.settings\\'"
-    "[/\\\\]\\.project\\'"
-    ; Autotools output
-    "[/\\\\]\\.travis\\'"
-    "[/\\\\]\\.deps\\'"
-    "[/\\\\]build-aux\\'"
-    "[/\\\\]autom4te.cache\\'"
-    "[/\\\\]\\.reference\\'"))
-  :config
-  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
-  (setq lsp-completion-enable-additional-text-edit nil)
-  :bind (:map lsp-mode-map
-              ("C-c f" . lsp-format-region)
-              ("C-c d" . lsp-describe-thing-at-point) 
-              ("C-c a" . lsp-execute-code-action)
-              ("C-c r" . lsp-rename)))
-
-(use-package lsp-treemacs
-  :ensure :after (lsp-mode treemacs)
-  :config
-  (lsp-treemacs-sync-mode 1)
-  :commands
-  lsp-treemacs-errors-list)
 #+end_src
 
 * misc
@@ -1436,7 +1493,7 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
   (setq consult-project-root-function #'projectile-project-root))
 
 (use-package consult-flycheck
-  :ensure :demand :after consult
+  :ensure :demand :after (consult flycheck)
   :bind
   (:map flycheck-command-map ("!" . consult-flycheck)))
 
@@ -1792,4 +1849,23 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
   :config
   (treemacs-set-scope-type 'Perspectives))
 #+end_src
+
+** 复杂 go 项目目录树
+对于依赖其它 github project module 的 go 项目, 默认通过 lsp 跳转时, 会将 mod
+cache 中的目录自动添加 treemacs 中，这样会导致 treemacs 中添加太多单个目录。解决
+办法如下：
+1. 先将项目依赖的 module repo 克隆到本地目录；
+2. 修改项目的 go.mod 文件，添加 replace 指令，将依赖的 module repo 指向刚才保存
+   的本地目录；
+   #+begin_src sh
+     replace (
+         github.com/go-admin-team/go-admin-core => /Users/zhangjun/codes/github/go-admin-core
+         github.com/go-admin-team/go-admin-core/sdk => /Users/zhangjun/codes/github/go-admin-core/sdk
+     )
+   #+end_src
+3. 执行 M-x treemacs-display-current-project-exclusively 命令，创建一个新的
+   Treemacs Workspace, 并将当前 project 加入到该 workspace;
+4. 执行 M-x treemacs-add-project-to-workspace 将依赖 module repo 的本地目录添加到该 workspace;
+5. 执行 M-x treemacs-rename-workspace 重命名当前 workspace 为有意义的名称；
+   
 
