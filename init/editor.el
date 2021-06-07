@@ -45,7 +45,8 @@
   ;; 使用字母来切换 window(默认是数字)
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
   :config
-  ;; 设置为 frame 后，会忽略 treemacs frame，否则打开两个 window 的情况下，会提示输入 window 编号。
+  ;; 设置为 frame 后，会忽略 treemacs frame，否则打开两个 window 的情况下，会提
+  ;; 示输入 window 编号。
   (setq aw-scope 'frame)
   ;; modeline 显示 window 编号
   (ace-window-display-mode +1)
@@ -107,9 +108,9 @@
   (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
   ;; 在开启输入法的情况下，modline 输入法图标是否高亮来区分中文或英文状态中文
   (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; Emacs 不支持 Shift 键切换输入法：https://github.com/DogLooksGood/emacs-rime/issues/130
-  ;; 所以下面的配置不生效：
-  ;;(setq rime-inline-ascii-trigger 'shift-l)
+  ;; Emacs 不支持 Shift 键切换输入法：
+  ;; https://github.com/DogLooksGood/emacs-rime/issues/130所以下面的配置不生效：
+  ;; (setq rime-inline-ascii-trigger 'shift-l)
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
           rime-predicate-evil-mode-p

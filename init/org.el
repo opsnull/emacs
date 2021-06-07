@@ -1,7 +1,7 @@
-;; 需要手动更新下面三个 org package。
 (dolist (package '(org org-plus-contrib ob-go ox-reveal))
   (unless (package-installed-p package)
     (package-install package)))
+
 
 (use-package org
   :ensure :demand
@@ -19,15 +19,21 @@
         org-default-notes-file "~/docs/orgs/note.org"
         org-log-into-drawer t
         org-log-done 'note
+        ;; 当 image 链接有 #+ATTR.*: width="XX" 时，将宽度设置为 XX, 否则为缺省
+        ;; 值 300
+        org-image-actual-width '(300)
         org-hidden-keywords '(title)
         org-export-with-broken-links t
         org-agenda-start-day "-7d"
         org-agenda-span 21
         org-agenda-include-diary t
-        org-image-actual-width t
+        org-html-doctype "html5"
+        org-html-html5-fancy t
         org-cycle-level-faces t
         org-n-level-faces 4
         org-startup-folded 'content
+        org-src-fontify-natively t
+        org-html-self-link-headlines t
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
         org-startup-indented t)
@@ -46,6 +52,7 @@
                            "~/docs/orgs/later.org"
                            "~/docs/orgs/capture.org"
                            ))
+  (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
   (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
   (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
   (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
@@ -77,7 +84,16 @@
   (add-to-list 'org-capture-templates
                '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
                  "* ☞ TODO [#B] %U %i%?"))
-  )
+  (setq org-confirm-babel-evaluate nil)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)
+     (js . t)
+     (go . t)
+     (emacs-lisp . t)
+     (python . t)
+     (dot . t)
+     (css . t))))
 
 (use-package org-superstar
   :ensure :demand :after (org)
@@ -97,7 +113,7 @@
 ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
 (use-package org-download
   :ensure :demand :after (posframe)
-  :bind 
+  :bind
   ("<f2>" . org-download-screenshot)
   :config
   (setq-default org-download-image-dir "./images/")
@@ -108,22 +124,17 @@
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
-(use-package ob-go
-  :ensure :after (org) 
-  :config
-  (org-babel-do-load-languages 'org-babel-load-languages '((go . t))))
-
 (use-package ox-reveal :ensure :after (org))
 
 (use-package htmlize :ensure)
 
-(use-package org-make-toc 
-  :ensure :disabled :after org 
+(use-package org-make-toc
+  :ensure :disabled :after org
   :hook (org-mode . org-make-toc-mode))
 
 (use-package org-tree-slide
-  :ensure :after org 
-  :commands org-tree-slide-mode 
+  :ensure :after org
+  :commands org-tree-slide-mode
   :config
   (setq org-tree-slide-slide-in-effect t
         org-tree-slide-activate-message "Presentation started."
@@ -138,19 +149,20 @@
 
 (defun my/org-mode-visual-fill ()
   (setq
-   fill-column 80 ;; 自动换行的字符数
+   ;; 自动换行的字符数
+   fill-column 80
    ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
    visual-fill-column-width 130
    visual-fill-column-fringes-outside-margins nil
    visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
-(use-package visual-fill-column 
+(use-package visual-fill-column
   :ensure :demand :after org
-  :hook 
+  :hook
   (org-mode . my/org-mode-visual-fill))
 
 (use-package all-the-icons
-  :ensure :after org-agenda 
+  :ensure :after org-agenda :after (org)
   :config
   (setq org-agenda-category-icon-alist
         `(("Diary" ,(list (all-the-icons-faicon "file-text-o")) nil nil :ascent center)
