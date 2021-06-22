@@ -1,3 +1,6 @@
+:PROPERTIES:
+:TOC:      :include all :depth 2 :force (depth)
+:END:
 Emacs dotfile
 #+OPTIONS: toc:nil h:4
 #+STARTUP: overview
@@ -5,6 +8,46 @@ Emacs dotfile
 #+TOC: headlines 4
 
 Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
+* 目录
+:PROPERTIES:
+:TOC:      :include all
+:END:
+:CONTENTS:
+- [[#目录][目录]]
+- [[#软件包][软件包]]
+- [[#环境变量][环境变量]]
+- [[#目录变量][目录变量]]
+- [[#自动补全][自动补全]]
+- [[#快速跳转][快速跳转]]
+  - [[#上次修改位置][上次修改位置]]
+  - [[#特定字符或行][特定字符或行]]
+  - [[#窗口][窗口]]
+- [[#编辑辅助][编辑辅助]]
+- [[#输入法][输入法]]
+- [[#版本控制][版本控制]]
+- [[#代码检查][代码检查]]
+- [[#编程开发][编程开发]]
+  - [[#lsp][lsp]]
+  - [[#python][python]]
+  - [[#java][java]]
+  - [[#golang][golang]]
+  - [[#markdown][markdown]]
+  - [[#dockerfile][dockerfile]]
+  - [[#ansible][ansible]]
+  - [[#web][web]]
+    - [[#typescript][typescript]]
+    - [[#javascript][javascript]]
+    - [[#web-mode][web-mode]]
+    - [[#dap-mode][dap-mode]]
+  - [[#yaml][yaml]]
+- [[#misc][misc]]
+- [[#orgmode][orgmode]]
+- [[#projectile][projectile]]
+- [[#selectrum][selectrum]]
+- [[#term][term]]
+- [[#theme][theme]]
+- [[#treemacs][treemacs]]
+:END:
 
 * 软件包
 
@@ -45,7 +88,7 @@ Emacs 环境中：
       (exec-path-from-shell-initialize)))
 #+end_src
 
-* 目录变量 direnv
+* 目录变量
 目录变量只对所在目录及子目录有效。
 
 先安装 direnv 命令：
@@ -86,7 +129,7 @@ direnv: unloading
 #+end_src
 注意：如果某些变量被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
 lsp-workspace-restart= 命令来重启语言服务器；
-* 自动补全 company
+* 自动补全
 
 company 为 Emacs 提供了自动补全框架, 它使用可插拔的前端和后端来显示候选信息。
 
@@ -159,7 +202,7 @@ company-quickhelp 为 company 的候选者显示文档：
 #+end_src
 
 * 快速跳转
-** 上次修改位置 goto-chg 
+** 上次修改位置
 #+begin_src emacs-lisp
   (use-package goto-chg
     :ensure
@@ -168,7 +211,7 @@ company-quickhelp 为 company 的候选者显示文档：
     (global-set-key (kbd "C-<") 'goto-last-change-reverse))
 #+end_src
 
-** 特定字符或行 avy
+** 特定字符或行
 #+begin_src emacs-lisp
   (use-package avy
     :ensure
@@ -179,7 +222,7 @@ company-quickhelp 为 company 的候选者显示文档：
     ("M-g c" . avy-goto-char-2)
     ("M-g l" . avy-goto-line))
 #+end_src 
-** 窗口 ace-window
+** 窗口
 #+begin_src emacs-lisp  
   (use-package ace-window
     :ensure
@@ -273,7 +316,7 @@ company-quickhelp 为 company 的候选者显示文档：
     (yas-global-mode 1))
 #+end_src
 
-* 输入法 rime
+* 输入法
 
 Mac 系统安装 RIME 输入法：
 1. 下载 鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
@@ -428,7 +471,7 @@ patch:
     - derive/u$/uu/      # ui = u
 #+end_src
 
-* 版本控制 magit
+* 版本控制
 
 magit 是 Emacs 杀手级 git 版本控制界面:
 #+begin_src emacs-lisp
@@ -454,7 +497,7 @@ ediff:
         ediff-split-window-function 'split-window-horizontally)
 #+end_src
 
-* 代码检查 flychck
+* 代码检查
 
 flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flymake 工具。它使用系
 统安装的一些命令工具来对 buffer 进行检查，所以如果使用 GUI Emacs, 则需要安装
@@ -489,7 +532,8 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     (flycheck-pos-tip-mode))
 #+end_src
 
-* 语言服务器 lsp
+* 编程开发
+** lsp
 #+begin_src emacs-lisp
   (use-package lsp-mode
     :ensure :demand :after (flycheck)
@@ -577,7 +621,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 lsp 使用 eldoc 在 minibuffer 显示函数签名， 变量 =lsp-signature-doc-lines= 设置显
 示的文档行数。
 
-* python
+** python
 #+begin_src emacs-lisp
 ;;(shell-command "which pyenv &>/dev/null || brew install --HEAD pyenv")
 ;;(shell-command "which pyenv-virtualenv &>/dev/null || brew install --HEAD pyenv-virtualenv")
@@ -620,7 +664,7 @@ lsp 使用 eldoc 在 minibuffer 显示函数签名， 变量 =lsp-signature-doc-
   :hook (python-mode . (lambda () (require 'lsp-pyright) (lsp))))
 #+end_src
 
-* java
+** java
 默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
 
 手动安装 lombok: 
@@ -652,7 +696,7 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   (use-package dap-java :ensure :disabled))
 #+end_src
 
-* golang
+** golang
 安装最新的 gopls:
 #+begin_src shell :results none
 gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@latest
@@ -685,7 +729,7 @@ gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@late
 emacs errors loading workspace: You are working in a nested module. Please open it as a separate workspace folder. Learn more:
 #+end_quote
 
-* markdown
+** markdown
 multimarkdown 实现将 markdown 转换为 html 进行 preview，结合 xwidget webkit 可以
 自动打开预览页面。
 #+begin_src shell :results none
@@ -704,7 +748,7 @@ multimarkdown --version &>/dev/null || brew install multimarkdown
   (setq markdown-command "multimarkdown"))
 #+end_src
 
-* dockerfile
+** dockerfile
 
 #+begin_src shell :results none
 which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile-language-server-nodejs &>/dev/null
@@ -716,7 +760,7 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
     :config (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 #+end_src
 
-* ansible
+** ansible
 #+begin_src emacs-lisp  
   (use-package ansible
     :ensure :after (yaml-mode)
@@ -741,8 +785,8 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
     (define-key ansible-doc-mode-map (kbd "M-?") #'ansible-doc))
 #+end_src
 
-* web
-** typescript
+** web
+*** typescript
 #+begin_src emacs-lisp  
   (defun my/use-eslint-from-node-modules ()
   ;; use local eslint from node_modules before global
@@ -789,7 +833,7 @@ https://github.com/sourcegraph/javascript-typescript-langserver
   ;; 开启 tsserver 的 debug 日志模式
   (setq tide-tsserver-process-environment '("TSS_LOG=-level verbose -file /tmp/tss.log"))
 #+end_src
-** javascript
+*** javascript
 js-mode (Emacs 27 内置) 和 js2-mode （js-mode 的增强，主要是 jsx 相关）用于编辑
 .js 和 .jsx 文件。
 
@@ -819,7 +863,7 @@ https://github.com/mooz/js2-mode#react-and-jsx
     (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 #+end_src
 
-** web-mode
+*** web-mode
 web-mode 指用于编辑 html/css/jinja2/gotmpl/tmpl 等模板文件。不用于编辑
 js/jsx/ts/tsx 等类型文件。
 
@@ -844,7 +888,7 @@ js/jsx/ts/tsx 等类型文件。
     (add-to-list 'auto-mode-alist '("\\.json\\'" . web-mode))
     (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)))
 #+end_src
-** dap-mode  
+*** dap-mode  
 #+begin_src  emacs-lisp
   (use-package dap-mode
     :ensure :demand
@@ -853,7 +897,7 @@ js/jsx/ts/tsx 等类型文件。
     (require 'dap-chrome))
 #+end_src
 +  执行 M-x dap-chrome-setup 安装 VSCode Chrome Debug Extension.
-* yaml  
+** yaml  
 
 #+begin_src shell :results none
 which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>/dev/null
@@ -1137,7 +1181,7 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
   (use-package htmlize :ensure)
   
   (use-package org-make-toc
-    :ensure :disabled :after org
+    :ensure :after org
     :hook (org-mode . org-make-toc-mode))
   
   (use-package org-tree-slide
