@@ -19,7 +19,7 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 (unless package-archive-contents (package-refresh-contents))
 #+end_src
 
-使用 =use-package= 管理软件包, 故需要先安装它：
+后续使用 =use-package= 管理软件包, 故需要先安装它：
 #+begin_src emacs-lisp
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
@@ -45,7 +45,48 @@ Emacs 环境中：
       (exec-path-from-shell-initialize)))
 #+end_src
 
-* 自动补全
+* 目录变量 direnv
+目录变量只对所在目录及子目录有效。
+
+先安装 direnv 命令：
+#+begin_src shell :results none
+brew install direnv
+#+end_src
+
+然后[[https://direnv.net/docs/hook.html][将 direnv hook 到 shell 中]], 对于 bash:
+#+begin_src shell :results none
+eval "$(direnv hook bash)"
+#+end_src
+
+然后重新登录 shell。
+
+对于 emacs, 安装 direnv 包：
+#+begin_src emacs-lisp
+;; 目录变量（.envrc)  
+(use-package direnv :ensure :config (direnv-mode))  
+#+end_src
+原理：调用 direnv 命令获取当前文件或目录的环境变量，然后更新到 emacs 变量
+=process-environment= 和 =exec-path= ，这样 emacs *后续* 启动的命令就会继承这些环境变
+量.
+
+使用方法：
+1. 在对应目录创建 .envrc 文件;
+2. 向 .envrc 文件添加 shell 环境变量;
+3. 执行 direnv allow . 来生效环境变量;
+#+begin_src shell :results none
+zhangjun@zj-pc16:~/codes/github/operator$ echo export BAR=bar >>.envrc
+direnv: error /Users/zhangjun/codes/github/operator/.envrc is blocked. Run `direnv allow` to approve its content
+
+zhangjun@zj-pc16:~/codes/github/operator$ direnv allow .
+direnv: loading ~/codes/github/operator/.envrc
+direnv: export +BAR +FOO +GO111MODULE
+
+zhangjun@zj-pc16:~/codes/github/operator$ cd ..
+direnv: unloading
+#+end_src
+注意：如果某些变量被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
+lsp-workspace-restart= 命令来重启语言服务器；
+* 自动补全 company
 
 company 为 Emacs 提供了自动补全框架, 它使用可插拔的前端和后端来显示候选信息。
 
@@ -118,14 +159,17 @@ company-quickhelp 为 company 的候选者显示文档：
 #+end_src
 
 * 快速跳转
-
+** 上次修改位置 goto-chg 
 #+begin_src emacs-lisp
   (use-package goto-chg
     :ensure
     :config
     (global-set-key (kbd "C->") 'goto-last-change)
     (global-set-key (kbd "C-<") 'goto-last-change-reverse))
-  
+#+end_src
+
+** 特定字符或行 avy
+#+begin_src emacs-lisp
   (use-package avy
     :ensure
     :config
@@ -134,7 +178,9 @@ company-quickhelp 为 company 的候选者显示文档：
     :bind
     ("M-g c" . avy-goto-char-2)
     ("M-g l" . avy-goto-line))
-  
+#+end_src 
+** 窗口 ace-window
+#+begin_src emacs-lisp  
   (use-package ace-window
     :ensure
     :init
@@ -147,38 +193,24 @@ company-quickhelp 为 company 的候选者显示文档：
     ;; modeline 显示 window 编号
     (ace-window-display-mode +1)
     (global-set-key (kbd "M-o") 'ace-window))
-  
-  ;;(shell-command "rg --version || brew install ripgrep")
-  (use-package xref
-    :ensure
-    :config
-    ;; C-x p g (project-find-=regexp)
-    (setq xref-search-program 'ripgrep))
-  #+end_src
+#+end_src
 
-* 编辑
+* 编辑辅助
 #+begin_src emacs-lisp
+  ;; 多光标编辑
   (use-package iedit :ensure :demand)
   
+  ;; 智能括号
   (use-package smartparens
     :ensure
     :config
     (smartparens-global-mode t)
     (show-smartparens-global-mode t))
   
+  ;; 智能扩展区域
   (use-package expand-region :ensure :bind ("M-@" . er/expand-region))
   
-  ;;(shell-command "rg --version || brew install ripgrep")
-  (use-package deadgrep :ensure :bind  ("<f5>" . deadgrep))
-  
-  ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
-  (use-package yasnippet
-    :ensure :demand :after (lsp-mode company)
-    :commands yas-minor-mode
-    :config
-    (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
-    (yas-global-mode 1))
-  
+  ;; 显示缩进
   (use-package highlight-indent-guides
     :ensure :demand :after (python yaml-mode web-mode)
     :custom
@@ -189,9 +221,59 @@ company-quickhelp 为 company 的候选者显示文档：
     (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
     (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
     (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
+  
+  ;; 彩色括号
+  (use-package rainbow-delimiters
+    :ensure :defer
+    :hook (prog-mode . rainbow-delimiters-mode))
+  
+  ;; 高亮变化的区域
+  (use-package volatile-highlights
+    :ensure
+    :init (volatile-highlights-mode))
+  
+  ;; 在 modeline 显示匹配的总数和当前位置
+  (use-package anzu
+    :ensure
+    :init
+    (setq anzu-mode-lighter "")
+    (global-set-key [remap query-replace] 'anzu-query-replace)
+    (global-set-key [remap query-replace-regexp] 'anzu-query-replace-regexp)
+    (define-key isearch-mode-map [remap isearch-query-replace] #'anzu-isearch-query-replace)
+    (define-key isearch-mode-map [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp)
+    (global-anzu-mode))
+  
+  ;; 
+  (use-package symbol-overlay
+    :ensure
+    :config
+    (global-set-key (kbd "M-i") 'symbol-overlay-put)
+    (global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
+    (global-set-key (kbd "M-p") 'symbol-overlay-jump-prev)
+    (global-set-key (kbd "<f7>") 'symbol-overlay-mode)
+    (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all)
+    :hook (prog-mode . symbol-overlay-mode))
+  
+  ;;(shell-command "rg --version || brew install ripgrep")
+  (use-package deadgrep :ensure :bind  ("<f5>" . deadgrep))
+  
+  ;;(shell-command "rg --version || brew install ripgrep")
+  (use-package xref
+    :ensure
+    :config
+    ;; C-x p g (project-find-=regexp)
+    (setq xref-search-program 'ripgrep))
+  
+  ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
+  (use-package yasnippet
+    :ensure :demand :after (lsp-mode company)
+    :commands yas-minor-mode
+    :config
+    (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
+    (yas-global-mode 1))
 #+end_src
 
-* 输入法
+* 输入法 rime
 
 Mac 系统安装 RIME 输入法：
 1. 下载 鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
@@ -203,7 +285,7 @@ Mac 系统安装 RIME 输入法：
   + 对于 emacs-rime，如果也修改了 /Library/Rime 的配置，则需要执行 =M-x
     rime-deploy= 生效；
 
-下载 librime 二进制：
+下载 librime 库, emacs rime 使用它与系统的 rime 输入法交互：
 #+Begin_src bash :results none
 curl -L -O https://github.com/rime/librime/releases/download/1.7.1/rime-1.7.1-osx.zip
 unzip rime-1.7.1-osx.zip -d ~/.emacs.d/librime
@@ -218,54 +300,49 @@ sudo spctl --master-disable
 
 配置 Emacs: 
 #+begin_src emacs-lisp
-(use-package rime
-  :ensure :demand :after (which-key)
-  :custom
-  (rime-user-data-dir "~/Library/Rime/")
-  (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
-  :bind
-  ( :map rime-active-mode-map
-         ;; 强制切换到英文模式，直到按回车
-         ("M-j" . 'rime-inline-ascii)
-         :map rime-mode-map
-         ;; 中英文切换
-         ("C-$" . 'rime-send-keybinding)
-         ;; 中英文标点切换
-         ("C-." . 'rime-send-keybinding)
-         ;; 全半角切换
-         ("C-," . 'rime-send-keybinding)
-         ;; 输入法菜单
-         ("C-!" . 'rime-send-keybinding)
-         ;; 强制使用中文模式
-         ("M-j" . 'rime-force-enable))
-  :config
-  ;; Emacs will automatically set default-input-method to rfc1345 if locale is
-  ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
-  (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
-  ;; modline 输入法图标高亮, 用来区分中英文输入状态
-  (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; Emacs 不支持 Shift 键切换输入法：
-  ;; https://github.com/DogLooksGood/emacs-rime/issues/130所以下面的配置不生效：
-  ;; (setq rime-inline-ascii-trigger 'shift-l)
-  (setq rime-disable-predicates
-        '(rime-predicate-ace-window-p
-          rime-predicate-evil-mode-p
-          rime-predicate-hydra-p
-          rime-predicate-which-key-activate-p
-          rime-predicate-current-uppercase-letter-p
-          rime-predicate-after-alphabet-char-p
-          rime-predicate-space-after-cc-p
-          rime-predicate-punctuation-after-space-cc-p
-          rime-predicate-prog-in-code-p
-          rime-predicate-after-ascii-char-p
-          ))
-   (defun rime-predicate-which-key-activate-p ()
-     which-key--automatic-display)
-  (setq rime-posframe-properties
-        (list :font "Sarasa Gothic SC"
-              :internal-border-width 10))
-  (setq rime-show-candidate 'posframe))
+  (use-package rime
+    :ensure :demand :after (which-key)
+    :custom
+    (rime-user-data-dir "~/Library/Rime/")
+    (rime-librime-root "~/.emacs.d/librime/dist")
+    (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
+    :bind
+    ( :map rime-active-mode-map
+           ;; 强制切换到英文模式，直到按回车
+           ("M-j" . 'rime-inline-ascii)
+           :map rime-mode-map
+           ;; 中英文切换
+           ("C-$" . 'rime-send-keybinding)
+           ;; 中英文标点切换
+           ("C-." . 'rime-send-keybinding)
+           ;; 全半角切换
+           ("C-," . 'rime-send-keybinding)
+           ;; 输入法菜单
+           ("C-!" . 'rime-send-keybinding)
+           ;; 强制切换到中文模式
+           ("M-j" . 'rime-force-enable))
+    :config
+    ;; Emacs will automatically set default-input-method to rfc1345 if locale is
+    ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
+    (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
+    ;; modline 输入法图标高亮, 用来区分中英文输入状态
+    (setq mode-line-mule-info '((:eval (rime-lighter))))
+    ;; Emacs 不支持 Shift 键切换输入法：
+    ;; https://github.com/DogLooksGood/emacs-rime/issues/130所以下面的配置不生效：
+    ;; (setq rime-inline-ascii-trigger 'shift-l)
+    (setq rime-disable-predicates '(rime-predicate-ace-window-p
+                                    rime-predicate-evil-mode-p
+                                    rime-predicate-hydra-p
+                                    rime-predicate-which-key-activate-p
+                                    rime-predicate-current-uppercase-letter-p
+                                    rime-predicate-after-alphabet-char-p
+                                    rime-predicate-space-after-cc-p
+                                    rime-predicate-punctuation-after-space-cc-p
+                                    rime-predicate-prog-in-code-p
+                                    rime-predicate-after-ascii-char-p))
+    (defun rime-predicate-which-key-activate-p () which-key--automatic-display)
+    (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 10))
+    (setq rime-show-candidate 'posframe))
 #+end_src
 
 isearch 与 rime 不兼容，通过 phi-search 解决，https://github.com/DogLooksGood/emacs-rime/issues/21
@@ -351,7 +428,7 @@ patch:
     - derive/u$/uu/      # ui = u
 #+end_src
 
-* 版本控制
+* 版本控制 magit
 
 magit 是 Emacs 杀手级 git 版本控制界面:
 #+begin_src emacs-lisp
@@ -362,7 +439,7 @@ magit 是 Emacs 杀手级 git 版本控制界面:
     (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 #+end_src
 
-git-link 为当前光标位置生成可访问的 URL:
+git-link 根据仓库地址、commit 等信息，为光标位置生成 URL:
 #+begin_src emacs-lisp
 (use-package git-link
   :ensure :defer
@@ -377,7 +454,7 @@ ediff:
         ediff-split-window-function 'split-window-horizontally)
 #+end_src
 
-* 代码检查
+* 代码检查 flychck
 
 flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flymake 工具。它使用系
 统安装的一些命令工具来对 buffer 进行检查，所以如果使用 GUI Emacs, 则需要安装
@@ -412,7 +489,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     (flycheck-pos-tip-mode))
 #+end_src
 
-* lsp
+* 语言服务器 lsp
 #+begin_src emacs-lisp
   (use-package lsp-mode
     :ensure :demand :after (flycheck)
@@ -428,7 +505,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     (dockerfile-mode . lsp)
     (lsp-mode . lsp-enable-which-key-integration)
     :custom
-    ;; lsp 显示的 links 不准确，而且会导致 treemacs 目录显示异常，故关闭。
+    ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
     ;; https://github.com/hlissner/doom-emacs/issues/2911
     ;; https://github.com/Alexander-Miller/treemacs/issues/626
     (lsp-enable-links nil)
@@ -436,60 +513,40 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     (lsp-modeline-code-actions-enable nil)
     (lsp-keymap-prefix "C-c l")
     (lsp-auto-guess-root t)
-    (lsp-prefer-flymake nil)
-    (lsp-diagnostic-package :flycheck)
+    (lsp-diagnostics-provider :flycheck)
+    (lsp-diagnostics-flycheck-default-level 'warning)
     (lsp-completion-provider :capf)
+    ;; 关闭 snippet
     (lsp-enable-snippet nil)
-    ;; 开启后，会用 minibuffer 显示文档，占用太多屏幕空间
-                                          ;(lsp-eldoc-render-all nil)
-    ;; 使用 lsp-describ-things-at-point(绑定到 C-c d) 显示详情
-    (lsp-eldoc-enable-hover nil)
-    ;; 显示函数签名
-    (lsp-signature-auto-activate t)
+    ;; 不显示所有文档，否则占用 minibuffer 太多屏幕空间
+    (lsp-eldoc-render-all nil)
     (lsp-signature-doc-lines 2)
     ;; 增大同 LSP 服务器交互时的读取文件的大小
     (read-process-output-max (* 1024 1024 2))
     (lsp-idle-delay 0.5)
-    ;; 开启 log-io 会极大影响性能
-    (lsp-log-io nil)
     (lsp-keep-workspace-alive nil)
     (lsp-enable-file-watchers nil)
-    (lsp-file-watch-ignored '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
-                              ;; java
-                              "[/\\\\]resources/META-INF\\'"
-                              "[/\\\\]src/test\\'"
-                              ;; SCM tools
-                              "[/\\\\]\\.git\\'"
-                              "[/\\\\]\\.github\\'"
-                              "[/\\\\]\\.hg\\'"
-                              "[/\\\\]\\.bzr\\'"
-                              "[/\\\\]_darcs\\'"
-                              "[/\\\\]\\.svn\\'"
-                              "[/\\\\]_FOSSIL_\\'"
-                              ;; IDE tools
-                              "[/\\\\]\\.idea\\'"
-                              "[/\\\\]\\.ensime_cache\\'"
-                              "[/\\\\]\\.eunit\\'"
-                              ;; Others
-                              "[/\\\\]node_modules\\'"
-                              "[/\\\\]vendor\\'"
-                              "[/\\\\]\\.fslckout\\'"
-                              "[/\\\\]\\.tox\\'"
-                              "[/\\\\]\\.stack-work\\'"
-                              "[/\\\\]\\.bloop\\'"
-                              "[/\\\\]\\.metals\\'"
-                              "[/\\\\]target\\'"
-                              "[/\\\\]\\.settings\\'"
-                              "[/\\\\]\\.project\\'"
-                              ;; Autotools output
-                              "[/\\\\]\\.travis\\'"
-                              "[/\\\\]\\.deps\\'"
-                              "[/\\\\]build-aux\\'"
-                              "[/\\\\]autom4te.cache\\'"
-                              "[/\\\\]\\.reference\\'"))
     :config
     (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
     (setq lsp-completion-enable-additional-text-edit nil)
+    (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
+                   "[/\\\\]resources/META-INF\\'"
+                   "[/\\\\]node_modules\\'"
+                   "[/\\\\]vendor\\'"
+                   "[/\\\\]\\.fslckout\\'"
+                   "[/\\\\]\\.tox\\'"
+                   "[/\\\\]\\.stack-work\\'"
+                   "[/\\\\]\\.bloop\\'"
+                   "[/\\\\]\\.metals\\'"
+                   "[/\\\\]target\\'"
+                   "[/\\\\]\\.settings\\'"
+                   "[/\\\\]\\.project\\'"
+                   "[/\\\\]\\.travis\\'"
+                   "[/\\\\]bazel-*"
+                   "[/\\\\]\\.cache"
+                   "[/\\\\]_build"
+                   "[/\\\\]\\.clwb$"))
+      (push dir lsp-file-watch-ignored-directories))
     :bind
     (:map lsp-mode-map
           ("C-c f" . lsp-format-region)
@@ -497,11 +554,11 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
           ("C-c a" . lsp-execute-code-action)
           ("C-c r" . lsp-rename)))
   
-  ;; lsp-ui 结合 flycheck 提供了实时诊断能力
   (use-package lsp-ui
     :ensure :after (lsp-mode flycheck)
     :custom
-    (lsp-ui-doc-enable nil)
+    ;; 关闭 cursor hover, 但 mouse hover 时显示文档
+    (lsp-ui-doc-show-with-cursor nil)
     (lsp-ui-doc-delay 0.1)
     (lsp-ui-flycheck-enable t)
     (lsp-ui-sideline-enable nil)
@@ -514,6 +571,11 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     :config
     (lsp-treemacs-sync-mode 1))
 #+end_src
++ 开启 log-io 会极大影响性能, (lsp-log-io nil);
++ lsp-mode 和 lsp-ui 的特性可以[[https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/][参考这个页面]]来进行选择性的打开和关闭；
+
+lsp 使用 eldoc 在 minibuffer 显示函数签名， 变量 =lsp-signature-doc-lines= 设置显
+示的文档行数。
 
 * python
 #+begin_src emacs-lisp
@@ -617,7 +679,8 @@ gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@late
 + gopls 的有些变量可以通过 setq 来设置，如 (setq lsp-gopls-use-placeholders
   nil), 详细参考 [[https://github.com/emacs-lsp/lsp-mode/blob/master/clients/lsp-go.el][lsp-go]] . 有些环境变量需要通过 =lsp-register-custom-settings= 来设
   置;
-+ 需要开启 =gopls.experimentalWorkspaceModule=, 否则在打开相应 module 时提示 
++ 需要开启 =gopls.experimentalWorkspaceModule= 来支持嵌入式 module, 否则在打开相应
+  module 时提示：
 #+begin_quote
 emacs errors loading workspace: You are working in a nested module. Please open it as a separate workspace folder. Learn more:
 #+end_quote
@@ -944,399 +1007,399 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
 * orgmode
 
 #+begin_src emacs-lisp
-(dolist (package '(org org-plus-contrib ob-go ox-reveal))
-  (unless (package-installed-p package)
-    (package-install package)))
-
-(use-package org
-  :ensure :demand
-  :config
-  (setq org-todo-keywords
-        '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
-                    "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
-          (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-  (setq org-ellipsis "▾"
-        org-hide-emphasis-markers t
-        org-edit-src-content-indentation 2
-        org-hide-block-startup nil
-        org-src-preserve-indentation nil
-        org-cycle-separator-lines 2
-        org-default-notes-file "~/docs/orgs/note.org"
-        org-log-into-drawer t
-        org-log-done 'note
-        ;; 当 image 链接有 #+ATTR.*: width="XX" 时，将宽度设置为 XX, 否则为缺省
-        ;; 值 300
-        org-image-actual-width '(300)
-        org-hidden-keywords '(title)
-        org-export-with-broken-links t
-        org-agenda-start-day "-7d"
-        org-agenda-span 21
-        org-agenda-include-diary t
-        org-html-doctype "html5"
-        org-html-html5-fancy t
-        org-cycle-level-faces t
-        org-n-level-faces 4
-        org-startup-folded 'content
-        org-src-fontify-natively t
-        org-html-self-link-headlines t
-        ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
-        org-use-sub-superscripts nil
-        org-startup-indented t)
-  ;; 使用 later.org 和 gtd.org 作为 refile target.
-  (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
-                             ("~/docs/orgs/gtd.org" :maxlevel . 3)))
-
-  (setq org-agenda-time-grid (quote ((daily today require-timed)
-                                     (300 600 900 1200 1500 1800 2100 2400)
-                                     "......"
-                                     "-----------------------------------------------------"
-                                     )))
-  ;; 设置 org-agenda 展示的文件
-  (setq org-agenda-files '("~/docs/orgs/inbox.org"
-                           "~/docs/orgs/gtd.org"
-                           "~/docs/orgs/later.org"
-                           "~/docs/orgs/capture.org"
-                           ))
-  (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
-  (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
-  (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
-  (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
-  (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
-  (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
-  (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
-  (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
-  (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
-  (set-face-attribute 'org-document-title nil :height 2.074 :inherit 'org-level-8)
-  (global-set-key (kbd "C-c l") 'org-store-link)
-  (global-set-key (kbd "C-c a") 'org-agenda)
-  (global-set-key (kbd "C-c c") 'org-capture)
-  (global-set-key (kbd "C-c b") 'org-switchb)
-  (add-hook 'org-mode-hook 'turn-on-auto-fill)
-  (define-key org-mode-map (kbd "M-n") 'org-next-link)
-  (define-key org-mode-map (kbd "M-p") 'org-previous-link)
-  (require 'org-protocol)
-  (require 'org-capture)
-  (add-to-list 'org-capture-templates
-               '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
-                 "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
-                 :empty-lines 1))
-  (add-to-list 'org-capture-templates
-               '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
-                 "* ☞ TODO [#B] %U %i%?"))
-  (add-to-list 'org-capture-templates
-               '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
-                 "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
-  (add-to-list 'org-capture-templates
-               '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
-                 "* ☞ TODO [#B] %U %i%?"))
-  (setq org-confirm-babel-evaluate nil)
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((shell . t)
-     (js . t)
-     (go . t)
-     (emacs-lisp . t)
-     (python . t)
-     (dot . t)
-     (css . t))))
-
-(use-package org-superstar
-  :ensure :demand :after (org)
-  :hook
-  (org-mode . org-superstar-mode)
-  :custom
-  (org-superstar-remove-leading-stars t))
-
-(use-package org-fancy-priorities
-  :ensure :demand :after (org)
-  :hook
-  (org-mode . org-fancy-priorities-mode)
-  :config
-  (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
-
-;; 拖拽保持图片或 F2 保存剪贴板中图片。
-;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
-(use-package org-download
-  :ensure :demand :after (posframe)
-  :bind
-  ("<f2>" . org-download-screenshot)
-  :config
-  (setq-default org-download-image-dir "./images/")
-  (setq org-download-method 'directory
-        org-download-display-inline-images 'posframe
-        org-download-screenshot-method "pngpaste %s"
-        org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
-  (add-hook 'dired-mode-hook 'org-download-enable)
-  (org-download-enable))
-
-(use-package ox-reveal :ensure :after (org))
-
-(use-package htmlize :ensure)
-
-(use-package org-make-toc
-  :ensure :disabled :after org
-  :hook (org-mode . org-make-toc-mode))
-
-(use-package org-tree-slide
-  :ensure :after org
-  :commands org-tree-slide-mode
-  :config
-  (setq org-tree-slide-slide-in-effect t
-        org-tree-slide-activate-message "Presentation started."
-        org-tree-slide-deactivate-message "Presentation ended."
-        org-tree-slide-header t)
-  (with-eval-after-load "org-tree-slide"
-    (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
-    (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
-    (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
-    (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
-    (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
-
-(defun my/org-mode-visual-fill ()
-  (setq
-   ;; 自动换行的字符数
-   fill-column 80
-   ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
-   visual-fill-column-width 130
-   visual-fill-column-fringes-outside-margins nil
-   visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
-(use-package visual-fill-column
-  :ensure :demand :after org
-  :hook
-  (org-mode . my/org-mode-visual-fill))
-
-(use-package all-the-icons
-  :ensure :after org-agenda :after (org)
-  :config
-  (setq org-agenda-category-icon-alist
-        `(("Diary" ,(list (all-the-icons-faicon "file-text-o")) nil nil :ascent center)
-          ("Todo" ,(list (all-the-icons-faicon "check-square-o" :height 1.2)) nil nil :ascent center)
-          ("Habit" ,(list (all-the-icons-faicon "refresh")) nil nil :ascent center)
-          ("Star" ,(list (all-the-icons-faicon "star-o")) nil nil :ascent center)
-          ("Org" ,(list (all-the-icons-fileicon "org")) nil nil :ascent center)
-          
-          ;; <Work>
-          ("Work" ,(list (all-the-icons-faicon "black-tie")) nil nil :ascent center)
-          ("Writing" ,(list (all-the-icons-faicon "pencil-square-o" :height 1.1)) nil nil :ascent center)
-          ("Print" ,(list (all-the-icons-faicon "print")) nil nil :ascent center)
-
-          ;; <Programming>
-          ("Emacs" ,(list (all-the-icons-fileicon "emacs")) nil nil :ascent center)
-          ("Code" ,(list (all-the-icons-faicon "keyboard-o")) nil nil :ascent center) ; "file-code-o"
-          ("Programming" ,(list (all-the-icons-faicon "code")) nil nil :ascent center)
-          ("Bug" ,(list (all-the-icons-faicon "bug" :height 1.1)) nil nil :ascent center)
-          ("Issue" ,(list (all-the-icons-octicon "issue-opened" :height 1.2)) nil nil :ascent center)
-          ("Feature" ,(list (all-the-icons-faicon "check-circle-o" :height 1.2)) nil nil :ascent center)
-          ("VCS" ,(list (all-the-icons-faicon "git")) nil nil :ascent center)
-          ("Git" ,(list (all-the-icons-faicon "git")) nil nil :ascent center)
-          ("Database" ,(list (all-the-icons-faicon "database" :height 1.2)) nil nil :ascent center)
-          ("Design" ,(list (all-the-icons-material "palette")) nil nil :ascent center)
-          ("Computer" ,(list (all-the-icons-faicon "laptop")) nil nil :ascent center) ; desktop
-          ("Laptop" ,(list (all-the-icons-faicon "laptop")) nil nil :ascent center)
-          ("Hardware" ,(list (all-the-icons-faicon "desktop")) nil nil :ascent center)
-          ("Server" ,(list (all-the-icons-faicon "server")) nil nil :ascent center)
-          ("Audio" ,(list (all-the-icons-faicon "file-audio-o")) nil nil :ascent center)
-          ("Analysis" ,(list (all-the-icons-faicon "bar-chart" :height 0.9)) nil nil :ascent center)
-          ("Email" ,(list (all-the-icons-material "email")) nil nil :ascent center)
-          ("Idea" ,(list (all-the-icons-faicon "lightbulb-o" :height 1.2)) nil nil :ascent center)
-          ("Project" ,(list (all-the-icons-faicon "tasks" :height 1.1)) nil nil :ascent center)
-          ("Agriculture" ,(list (all-the-icons-faicon "leaf" :height 1.1)) nil nil :ascent center)
-          ("Industry" ,(list (all-the-icons-faicon "industry")) nil nil :ascent center)
-          ("Express" ,(list (all-the-icons-faicon "truck")) nil nil :ascent center)
-          ("Startup" ,(list (all-the-icons-faicon "codepen")) nil nil :ascent center)
-          ("Hack" ,(list (all-the-icons-material "security")) nil nil :ascent center)
-          ("Crack" ,(list (all-the-icons-faicon "user-secret" :height 1.1)) nil nil :ascent center)
-          ("Security" ,(list (all-the-icons-material "security")) nil nil :ascent center)
-          ;; ("Anonymous"  ,(expand-file-name "resources/icon/Anonymous.xpm" user-emacs-directory) nil nil :ascent center)
-          ("Daily" ,(list (all-the-icons-faicon "calendar-check-o")) nil nil :ascent center)
-          ("Learning" ,(list (all-the-icons-material "library_books")) nil nil :ascent center)
-          ("University" ,(list (all-the-icons-faicon "university" :height 0.9)) nil nil :ascent center)
-          ("Reading" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-          ("Linux" ,(list (all-the-icons-faicon "linux" :height 1.2)) nil nil :ascent center)
-          ("macOS" ,(list (all-the-icons-faicon "apple")) nil nil :ascent center)
-          ("Windows" ,(list (all-the-icons-faicon "windows")) nil nil :ascent center)
-          ("Config" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-          ("Command" ,(list (all-the-icons-faicon "terminal")) nil nil :ascent center)
-          ("Document" ,(list (all-the-icons-faicon "file-o")) nil nil :ascent center)
-          ("Info" ,(list (all-the-icons-faicon "info")) nil nil :ascent center)
-          ;; ("GNU" ,(list (all-the-icons-faicon "")) nil nil :ascent center)
-          ;; ("Arch" ,(list (all-the-icons-faicon "arch-linux")) nil nil :ascent center)
-          ;; ("Ubuntu" ,(list (all-the-icons-faicon "ubuntu-linux")) nil nil :ascent center)
-          ;; ("BSD" ,(list (all-the-icons-faicon "bsd")) nil nil :ascent center)
-          ("Android" ,(list (all-the-icons-faicon "android")) nil nil :ascent center)
-          ("Apple" ,(list (all-the-icons-faicon "apple")) nil nil :ascent center)
-          ("Lisp" ,(list (all-the-icons-fileicon "lisp")) nil nil :ascent center)
-          ("Common Lisp" ,(list (all-the-icons-fileicon "clisp")) nil nil :ascent center)
-          ("Clojure" ,(list (all-the-icons-alltheicon "clojure-line")) nil nil :ascent center)
-          ("CLJS" ,(list (all-the-icons-fileicon "cljs")) nil nil :ascent center)
-          ("Ruby" ,(list (all-the-icons-alltheicon "ruby")) nil nil :ascent center)
-          ("Python" ,(list (all-the-icons-alltheicon "python")) nil nil :ascent center)
-          ("Perl" ,(list (all-the-icons-alltheicon "perl")) nil nil :ascent center)
-          ("Shell" ,(list (all-the-icons-faicon "terminal")) nil nil :ascent center)
-          ("PHP" ,(list (all-the-icons-fileicon "php")) nil nil :ascent center)
-          ("Haskell" ,(list (all-the-icons-alltheicon "haskell")) nil nil :ascent center)
-          ("Erlang" ,(list (all-the-icons-alltheicon "erlang")) nil nil :ascent center)
-          ("Prolog" ,(list (all-the-icons-alltheicon "prolog")) nil nil :ascent center)
-          ("C Language" ,(list (all-the-icons-alltheicon "c")) nil nil :ascent center)
-          ("C++ Language" ,(list (all-the-icons-alltheicon "cplusplus")) nil nil :ascent center)
-          ("Go Language" ,(list (all-the-icons-alltheicon "go")) nil nil :ascent center)
-          ("Swift" ,(list (all-the-icons-alltheicon "swift")) nil nil :ascent center)
-          ("Rust" ,(list (all-the-icons-alltheicon "rust")) nil nil :ascent center)
-          ("JavaScript" ,(list (all-the-icons-alltheicon "javascript" :height 1.1)) nil nil :ascent center)
-          ("Java" ,(list (all-the-icons-alltheicon "java")) nil nil :ascent center)
-          ("HTML5" ,(list (all-the-icons-alltheicon "html5")) nil nil :ascent center)
-          ("HTML" ,(list (all-the-icons-alltheicon "html5")) nil nil :ascent center)
-          ("CSS3" ,(list (all-the-icons-alltheicon "css3")) nil nil :ascent center)
-          ("CSS" ,(list (all-the-icons-alltheicon "css3")) nil nil :ascent center)
-          ("SQL" ,(list (all-the-icons-faicon "database")) nil nil :ascent center)
-          ("PostgreSQL" ,(list (all-the-icons-alltheicon "postgresql")) nil nil :ascent center)
-          ("R" ,(list (all-the-icons-fileicon "R")) nil nil :ascent center)
-          ("Julia" ,(list (all-the-icons-fileicon "julia")) nil nil :ascent center)
-          ("TeX" ,(list (all-the-icons-fileicon "tex")) nil nil :ascent center)
-          ("LaTeX" ,(list (all-the-icons-fileicon "tex")) nil nil :ascent center)
-          ("Web" ,(list (all-the-icons-faicon "globe" :height 1.1)) nil nil :ascent center)
-          ("Network" ,(list (all-the-icons-faicon "sitemap")) nil nil :ascent center)
-          ("GitHub" ,(list (all-the-icons-faicon "github")) nil nil :ascent center)
-          ("Bitbucket" ,(list (all-the-icons-faicon "bitbucket")) nil nil :ascent center)
-          ("Bitcoin" ,(list (all-the-icons-faicon "btc")) nil nil :ascent center)
-
-          ;; <Design>
-          ("Design" ,(list (all-the-icons-faicon "paint-brush")) nil nil :ascent center)
-          
-          ;; <Life>
-          ("Home" ,(list (all-the-icons-material "home" :height 1.1)) nil nil :ascent center)
-          ("Hotel" ,(list (all-the-icons-material "hotel")) nil nil :ascent center)
-          ("Entertainment" ,(list (all-the-icons-faicon "youtube")) nil nil :ascent center)
-          ("Place" ,(list (all-the-icons-material "place")) nil nil :ascent center)
-          ("Health" ,(list (all-the-icons-faicon "medkit" :height 1.1)) nil nil :ascent center)
-          ("Hospital" ,(list (all-the-icons-faicon "hospital-o" :height 1.3)) nil nil :ascent center)
-          ("Dining" ,(list (all-the-icons-faicon "cutlery")) nil nil :ascent center)
-          ("Shopping" ,(list (all-the-icons-faicon "shopping-basket")) nil nil :ascent center)
-          ("Express" ,(list (all-the-icons-material "local_shipping")) nil nil :ascent center)
-          ("Sport" ,(list (all-the-icons-faicon "dribbble")) nil nil :ascent center)
-          ("Game" ,(list (all-the-icons-faicon "gamepad")) nil nil :ascent center)
-          ("Sex" ,(list (all-the-icons-faicon "female" :height 1.2)) nil nil :ascent center)
-          ("News" ,(list (all-the-icons-faicon "newspaper-o")) nil nil :ascent center)
-          ("Car" ,(list (all-the-icons-faicon "car")) nil nil :ascent center)
-          ("Bus" ,(list (all-the-icons-faicon "bus")) nil nil :ascent center)
-          ("Contact" ,(list (all-the-icons-material "contact_mail")) nil nil :ascent center)
-          ("Talk" ,(list (all-the-icons-faicon "comments" :height 1.1)) nil nil :ascent center)
-          ("Video-Call" ,(list (all-the-icons-material "video_call")) nil nil :ascent center)
-          ("Call" ,(list (all-the-icons-faicon "phone" :height 1.3)) nil nil :ascent center)
-          ("Music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-          ("Airplane" ,(list (all-the-icons-faicon "plane")) nil nil :ascent center)
-          ("Travel" ,(list (all-the-icons-faicon "motorcycle")) nil nil :ascent center)
-          ("Gift" ,(list (all-the-icons-faicon "gift")) nil nil :ascent center)
-          ("WiFi" ,(list (all-the-icons-faicon "wifi")) nil nil :ascent center)
-          ("Search" ,(list (all-the-icons-faicon "search" :height 1.2)) nil nil :ascent center)
-          ("Mobile" ,(list (all-the-icons-material "tablet_mac" :height 1.1)) nil nil :ascent center)
-          ("WeChat" ,(list (all-the-icons-faicon "weixin")) nil nil :ascent center)
-          ("QQ" ,(list (all-the-icons-faicon "qq" :height 1.1)) nil nil :ascent center)
-          ("Weibo" ,(list (all-the-icons-faicon "weibo")) nil nil :ascent center)
-          ("Slack" ,(list (all-the-icons-faicon "slack")) nil nil :ascent center)
-          ("Facebook" ,(list (all-the-icons-faicon "facebook-official")) nil nil :ascent center)
-          ("Twitter" ,(list (all-the-icons-faicon "twitter-square")) nil nil :ascent center)
-          ("YouTube" ,(list (all-the-icons-faicon "youtube-square")) nil nil :ascent center)
-          ("RSS" ,(list (all-the-icons-faicon "rss-square")) nil nil :ascent center)
-          ("Wikipedia" ,(list (all-the-icons-faicon "wikipedia-w")) nil nil :ascent center)
-          ("Money" ,(list (all-the-icons-faicon "usd")) nil nil :ascent center)
-          ("Accounting" ,(list (all-the-icons-faicon "pie-chart")) nil nil :ascent center)
-          ("Bank" ,(list (all-the-icons-material "account_balance")) nil nil :ascent center)
-          ("Person" ,(list (all-the-icons-faicon "male")) nil nil :ascent center)
-          ("Birthday" ,(list (all-the-icons-faicon "birthday-cake")) nil nil :ascent center)
-          
-          ;; <Business>
-          ("Calculate" ,(list (all-the-icons-faicon "percent")) nil nil :ascent center)
-          ("Chart" ,(list (all-the-icons-faicon "bar-chart")) nil nil :ascent center)
-          
-          ;; <Science>
-          ("Chemistry" ,(list (all-the-icons-faicon "flask")) nil nil :ascent center)
-          ("Language" ,(list (all-the-icons-faicon "language")) nil nil :ascent center)
-          
-          (".*" ,(list (all-the-icons-faicon "question-circle-o")) nil nil :ascent center)
-          ;; (".*" '(space . (:width (16))))
-          )))
-
-(setq diary-file "~/docs/orgs/diary")
-(setq diary-mail-addr "geekard@qq.com")
-;; 获取经纬度：https://www.latlong.net/
-(setq calendar-latitude +39.904202)
-(setq calendar-longitude +116.407394)
-(setq calendar-location-name "北京")
-(setq calendar-remove-frame-by-deleting t)
-(setq calendar-week-start-day 1)              ; 每周第一天是周一
-(setq mark-diary-entries-in-calendar t)       ; 标记有记录的日子
-(setq mark-holidays-in-calendar nil)          ; 标记节假日
-(setq view-calendar-holidays-initially nil)   ; 不显示节日列表
-(setq org-agenda-include-diary t)
-
-;; 除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
-(setq christian-holidays nil
-      hebrew-holidays nil
-      islamic-holidays nil
-      solar-holidays nil
-      bahai-holidays nil)
-
-(setq general-holidays '((holiday-fixed 1 1   "元旦")
-                         (holiday-fixed 2 14  "情人节")
-                         (holiday-fixed 4 1   "愚人节")
-                         (holiday-fixed 12 25 "圣诞节")
-                         (holiday-fixed 10 1  "国庆节")
-                         (holiday-float 5 0 2 "母亲节")
-                         (holiday-float 6 0 3 "父亲节")))
-
-(setq local-holidays '((holiday-chinese 1 15  "元宵节 (正月十五)")
-                       (holiday-chinese 5 5   "端午节 (五月初五)")
-                       (holiday-chinese 9 9   "重阳节 (九月初九)")
-                       (holiday-chinese 8 15  "中秋节 (八月十五)")
-                       ;; 生日
-                       (holiday-chinese  5 12 "老婆生日(1987)")
-                       (holiday-chinese 11 15 "老妈生日(1966)")
-                       (holiday-chinese 5 20  "老爸生日(1965)")))
-(setq chinese-calendar-celestial-stem
-      ["甲" "乙" "丙" "丁" "戊" "己" "庚" "辛" "壬" "癸"])
-(setq chinese-calendar-terrestrial-branch
-      ["子" "丑" "寅" "卯" "辰" "巳" "午" "未" "申" "酉" "戌" "亥"])
-
-(setq mark-diary-entries-in-calendar t
-      appt-issue-message nil
-      mark-holidays-in-calendar t
-      view-calendar-holidays-initially nil)
-
-(setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
-      calendar-date-display-form '(year "/" month "/" day)
-      calendar-time-display-form
-      '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
-
-(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
-
-(autoload 'chinese-year "cal-china" "Chinese year data" t)
-
-(setq calendar-load-hook
-      '(lambda ()
-         (set-face-foreground 'diary-face   "skyblue")
-         (set-face-background 'holiday-face "slate blue")
-         (set-face-foreground 'holiday-face "white"))) 
-
-;; brew install terminal-notifier
-(defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
-
-(defun terminal-notifier-notify (title message)
-  (start-process "terminal-notifier"
-                 "terminal-notifier"
-                 terminal-notifier-command
-                 "-title" title
-                 "-sound" "default"
-                 "-message" message
-                 "-activate" "org.gnu.Emacs"))
-
-(defun timed-notification (time msg)
-  (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
-  (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
-
-;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
-(setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
+  (dolist (package '(org org-plus-contrib ob-go ox-reveal))
+    (unless (package-installed-p package)
+      (package-install package)))
+  
+  (use-package org
+    :ensure :demand
+    :config
+    (setq org-todo-keywords
+          '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
+                      "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
+            (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+    (setq org-ellipsis "▾"
+          org-hide-emphasis-markers t
+          org-edit-src-content-indentation 2
+          org-hide-block-startup nil
+          org-src-preserve-indentation nil
+          org-cycle-separator-lines 2
+          org-default-notes-file "~/docs/orgs/note.org"
+          org-log-into-drawer t
+          org-log-done 'note
+          ;; 当 image 链接有 #+ATTR.*: width="XX" 时，将宽度设置为 XX, 否则为缺省
+          ;; 值 300
+          org-image-actual-width '(300)
+          org-hidden-keywords '(title)
+          org-export-with-broken-links t
+          org-agenda-start-day "-7d"
+          org-agenda-span 21
+          org-agenda-include-diary t
+          org-html-doctype "html5"
+          org-html-html5-fancy t
+          org-cycle-level-faces t
+          org-n-level-faces 4
+          org-startup-folded 'content
+          org-src-fontify-natively t
+          org-html-self-link-headlines t
+          ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
+          org-use-sub-superscripts nil
+          org-startup-indented t)
+    ;; 使用 later.org 和 gtd.org 作为 refile target.
+    (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
+                               ("~/docs/orgs/gtd.org" :maxlevel . 3)))
+  
+    (setq org-agenda-time-grid (quote ((daily today require-timed)
+                                       (300 600 900 1200 1500 1800 2100 2400)
+                                       "......"
+                                       "-----------------------------------------------------"
+                                       )))
+    ;; 设置 org-agenda 展示的文件
+    (setq org-agenda-files '("~/docs/orgs/inbox.org"
+                             "~/docs/orgs/gtd.org"
+                             "~/docs/orgs/later.org"
+                             "~/docs/orgs/capture.org"))
+    (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
+    (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
+    (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
+    (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
+    (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
+    (set-face-attribute 'org-document-title nil :height 2.074 :inherit 'org-level-8)
+    (global-set-key (kbd "C-c l") 'org-store-link)
+    (global-set-key (kbd "C-c a") 'org-agenda)
+    (global-set-key (kbd "C-c c") 'org-capture)
+    (global-set-key (kbd "C-c b") 'org-switchb)
+    (add-hook 'org-mode-hook 'turn-on-auto-fill)
+    ;; M-n 和 M-p 绑定到 highlight-symbol 
+    ;(define-key org-mode-map (kbd "M-n") 'org-next-link)
+    ;(define-key org-mode-map (kbd "M-p") 'org-previous-link)
+    (require 'org-protocol)
+    (require 'org-capture)
+    (add-to-list 'org-capture-templates
+                 '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
+                   "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
+                   :empty-lines 1))
+    (add-to-list 'org-capture-templates
+                 '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
+                   "* ☞ TODO [#B] %U %i%?"))
+    (add-to-list 'org-capture-templates
+                 '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
+                   "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
+    (add-to-list 'org-capture-templates
+                 '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
+                   "* ☞ TODO [#B] %U %i%?"))
+    (setq org-confirm-babel-evaluate nil)
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((shell . t)
+       (js . t)
+       (go . t)
+       (emacs-lisp . t)
+       (python . t)
+       (dot . t)
+       (css . t))))
+  
+  (use-package org-superstar
+    :ensure :demand :after (org)
+    :hook
+    (org-mode . org-superstar-mode)
+    :custom
+    (org-superstar-remove-leading-stars t))
+  
+  (use-package org-fancy-priorities
+    :ensure :demand :after (org)
+    :hook
+    (org-mode . org-fancy-priorities-mode)
+    :config
+    (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
+  
+  ;; 拖拽保持图片或 F2 保存剪贴板中图片。
+  ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
+  (use-package org-download
+    :ensure :demand :after (posframe)
+    :bind
+    ("<f2>" . org-download-screenshot)
+    :config
+    (setq-default org-download-image-dir "./images/")
+    (setq org-download-method 'directory
+          org-download-display-inline-images 'posframe
+          org-download-screenshot-method "pngpaste %s"
+          org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
+    (add-hook 'dired-mode-hook 'org-download-enable)
+    (org-download-enable))
+  
+  (use-package ox-reveal :ensure :after (org))
+  
+  (use-package htmlize :ensure)
+  
+  (use-package org-make-toc
+    :ensure :disabled :after org
+    :hook (org-mode . org-make-toc-mode))
+  
+  (use-package org-tree-slide
+    :ensure :after org
+    :commands org-tree-slide-mode
+    :config
+    (setq org-tree-slide-slide-in-effect t
+          org-tree-slide-activate-message "Presentation started."
+          org-tree-slide-deactivate-message "Presentation ended."
+          org-tree-slide-header t)
+    (with-eval-after-load "org-tree-slide"
+      (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
+      (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
+      (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
+      (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
+      (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
+  
+  (defun my/org-mode-visual-fill ()
+    (setq
+     ;; 自动换行的字符数
+     fill-column 80
+     ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
+     visual-fill-column-width 130
+     visual-fill-column-fringes-outside-margins nil
+     visual-fill-column-center-text t)
+    (visual-fill-column-mode 1))
+  (use-package visual-fill-column
+    :ensure :demand :after org
+    :hook
+    (org-mode . my/org-mode-visual-fill))
+  
+  (use-package all-the-icons
+    :ensure :after org-agenda :after (org)
+    :config
+    (setq org-agenda-category-icon-alist
+          `(("Diary" ,(list (all-the-icons-faicon "file-text-o")) nil nil :ascent center)
+            ("Todo" ,(list (all-the-icons-faicon "check-square-o" :height 1.2)) nil nil :ascent center)
+            ("Habit" ,(list (all-the-icons-faicon "refresh")) nil nil :ascent center)
+            ("Star" ,(list (all-the-icons-faicon "star-o")) nil nil :ascent center)
+            ("Org" ,(list (all-the-icons-fileicon "org")) nil nil :ascent center)
+  
+            ;; <Work>
+            ("Work" ,(list (all-the-icons-faicon "black-tie")) nil nil :ascent center)
+            ("Writing" ,(list (all-the-icons-faicon "pencil-square-o" :height 1.1)) nil nil :ascent center)
+            ("Print" ,(list (all-the-icons-faicon "print")) nil nil :ascent center)
+  
+            ;; <Programming>
+            ("Emacs" ,(list (all-the-icons-fileicon "emacs")) nil nil :ascent center)
+            ("Code" ,(list (all-the-icons-faicon "keyboard-o")) nil nil :ascent center) ; "file-code-o"
+            ("Programming" ,(list (all-the-icons-faicon "code")) nil nil :ascent center)
+            ("Bug" ,(list (all-the-icons-faicon "bug" :height 1.1)) nil nil :ascent center)
+            ("Issue" ,(list (all-the-icons-octicon "issue-opened" :height 1.2)) nil nil :ascent center)
+            ("Feature" ,(list (all-the-icons-faicon "check-circle-o" :height 1.2)) nil nil :ascent center)
+            ("VCS" ,(list (all-the-icons-faicon "git")) nil nil :ascent center)
+            ("Git" ,(list (all-the-icons-faicon "git")) nil nil :ascent center)
+            ("Database" ,(list (all-the-icons-faicon "database" :height 1.2)) nil nil :ascent center)
+            ("Design" ,(list (all-the-icons-material "palette")) nil nil :ascent center)
+            ("Computer" ,(list (all-the-icons-faicon "laptop")) nil nil :ascent center) ; desktop
+            ("Laptop" ,(list (all-the-icons-faicon "laptop")) nil nil :ascent center)
+            ("Hardware" ,(list (all-the-icons-faicon "desktop")) nil nil :ascent center)
+            ("Server" ,(list (all-the-icons-faicon "server")) nil nil :ascent center)
+            ("Audio" ,(list (all-the-icons-faicon "file-audio-o")) nil nil :ascent center)
+            ("Analysis" ,(list (all-the-icons-faicon "bar-chart" :height 0.9)) nil nil :ascent center)
+            ("Email" ,(list (all-the-icons-material "email")) nil nil :ascent center)
+            ("Idea" ,(list (all-the-icons-faicon "lightbulb-o" :height 1.2)) nil nil :ascent center)
+            ("Project" ,(list (all-the-icons-faicon "tasks" :height 1.1)) nil nil :ascent center)
+            ("Agriculture" ,(list (all-the-icons-faicon "leaf" :height 1.1)) nil nil :ascent center)
+            ("Industry" ,(list (all-the-icons-faicon "industry")) nil nil :ascent center)
+            ("Express" ,(list (all-the-icons-faicon "truck")) nil nil :ascent center)
+            ("Startup" ,(list (all-the-icons-faicon "codepen")) nil nil :ascent center)
+            ("Hack" ,(list (all-the-icons-material "security")) nil nil :ascent center)
+            ("Crack" ,(list (all-the-icons-faicon "user-secret" :height 1.1)) nil nil :ascent center)
+            ("Security" ,(list (all-the-icons-material "security")) nil nil :ascent center)
+            ;; ("Anonymous"  ,(expand-file-name "resources/icon/Anonymous.xpm" user-emacs-directory) nil nil :ascent center)
+            ("Daily" ,(list (all-the-icons-faicon "calendar-check-o")) nil nil :ascent center)
+            ("Learning" ,(list (all-the-icons-material "library_books")) nil nil :ascent center)
+            ("University" ,(list (all-the-icons-faicon "university" :height 0.9)) nil nil :ascent center)
+            ("Reading" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+            ("Linux" ,(list (all-the-icons-faicon "linux" :height 1.2)) nil nil :ascent center)
+            ("macOS" ,(list (all-the-icons-faicon "apple")) nil nil :ascent center)
+            ("Windows" ,(list (all-the-icons-faicon "windows")) nil nil :ascent center)
+            ("Config" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
+            ("Command" ,(list (all-the-icons-faicon "terminal")) nil nil :ascent center)
+            ("Document" ,(list (all-the-icons-faicon "file-o")) nil nil :ascent center)
+            ("Info" ,(list (all-the-icons-faicon "info")) nil nil :ascent center)
+            ;; ("GNU" ,(list (all-the-icons-faicon "")) nil nil :ascent center)
+            ;; ("Arch" ,(list (all-the-icons-faicon "arch-linux")) nil nil :ascent center)
+            ;; ("Ubuntu" ,(list (all-the-icons-faicon "ubuntu-linux")) nil nil :ascent center)
+            ;; ("BSD" ,(list (all-the-icons-faicon "bsd")) nil nil :ascent center)
+            ("Android" ,(list (all-the-icons-faicon "android")) nil nil :ascent center)
+            ("Apple" ,(list (all-the-icons-faicon "apple")) nil nil :ascent center)
+            ("Lisp" ,(list (all-the-icons-fileicon "lisp")) nil nil :ascent center)
+            ("Common Lisp" ,(list (all-the-icons-fileicon "clisp")) nil nil :ascent center)
+            ("Clojure" ,(list (all-the-icons-alltheicon "clojure-line")) nil nil :ascent center)
+            ("CLJS" ,(list (all-the-icons-fileicon "cljs")) nil nil :ascent center)
+            ("Ruby" ,(list (all-the-icons-alltheicon "ruby")) nil nil :ascent center)
+            ("Python" ,(list (all-the-icons-alltheicon "python")) nil nil :ascent center)
+            ("Perl" ,(list (all-the-icons-alltheicon "perl")) nil nil :ascent center)
+            ("Shell" ,(list (all-the-icons-faicon "terminal")) nil nil :ascent center)
+            ("PHP" ,(list (all-the-icons-fileicon "php")) nil nil :ascent center)
+            ("Haskell" ,(list (all-the-icons-alltheicon "haskell")) nil nil :ascent center)
+            ("Erlang" ,(list (all-the-icons-alltheicon "erlang")) nil nil :ascent center)
+            ("Prolog" ,(list (all-the-icons-alltheicon "prolog")) nil nil :ascent center)
+            ("C Language" ,(list (all-the-icons-alltheicon "c")) nil nil :ascent center)
+            ("C++ Language" ,(list (all-the-icons-alltheicon "cplusplus")) nil nil :ascent center)
+            ("Go Language" ,(list (all-the-icons-alltheicon "go")) nil nil :ascent center)
+            ("Swift" ,(list (all-the-icons-alltheicon "swift")) nil nil :ascent center)
+            ("Rust" ,(list (all-the-icons-alltheicon "rust")) nil nil :ascent center)
+            ("JavaScript" ,(list (all-the-icons-alltheicon "javascript" :height 1.1)) nil nil :ascent center)
+            ("Java" ,(list (all-the-icons-alltheicon "java")) nil nil :ascent center)
+            ("HTML5" ,(list (all-the-icons-alltheicon "html5")) nil nil :ascent center)
+            ("HTML" ,(list (all-the-icons-alltheicon "html5")) nil nil :ascent center)
+            ("CSS3" ,(list (all-the-icons-alltheicon "css3")) nil nil :ascent center)
+            ("CSS" ,(list (all-the-icons-alltheicon "css3")) nil nil :ascent center)
+            ("SQL" ,(list (all-the-icons-faicon "database")) nil nil :ascent center)
+            ("PostgreSQL" ,(list (all-the-icons-alltheicon "postgresql")) nil nil :ascent center)
+            ("R" ,(list (all-the-icons-fileicon "R")) nil nil :ascent center)
+            ("Julia" ,(list (all-the-icons-fileicon "julia")) nil nil :ascent center)
+            ("TeX" ,(list (all-the-icons-fileicon "tex")) nil nil :ascent center)
+            ("LaTeX" ,(list (all-the-icons-fileicon "tex")) nil nil :ascent center)
+            ("Web" ,(list (all-the-icons-faicon "globe" :height 1.1)) nil nil :ascent center)
+            ("Network" ,(list (all-the-icons-faicon "sitemap")) nil nil :ascent center)
+            ("GitHub" ,(list (all-the-icons-faicon "github")) nil nil :ascent center)
+            ("Bitbucket" ,(list (all-the-icons-faicon "bitbucket")) nil nil :ascent center)
+            ("Bitcoin" ,(list (all-the-icons-faicon "btc")) nil nil :ascent center)
+  
+            ;; <Design>
+            ("Design" ,(list (all-the-icons-faicon "paint-brush")) nil nil :ascent center)
+  
+            ;; <Life>
+            ("Home" ,(list (all-the-icons-material "home" :height 1.1)) nil nil :ascent center)
+            ("Hotel" ,(list (all-the-icons-material "hotel")) nil nil :ascent center)
+            ("Entertainment" ,(list (all-the-icons-faicon "youtube")) nil nil :ascent center)
+            ("Place" ,(list (all-the-icons-material "place")) nil nil :ascent center)
+            ("Health" ,(list (all-the-icons-faicon "medkit" :height 1.1)) nil nil :ascent center)
+            ("Hospital" ,(list (all-the-icons-faicon "hospital-o" :height 1.3)) nil nil :ascent center)
+            ("Dining" ,(list (all-the-icons-faicon "cutlery")) nil nil :ascent center)
+            ("Shopping" ,(list (all-the-icons-faicon "shopping-basket")) nil nil :ascent center)
+            ("Express" ,(list (all-the-icons-material "local_shipping")) nil nil :ascent center)
+            ("Sport" ,(list (all-the-icons-faicon "dribbble")) nil nil :ascent center)
+            ("Game" ,(list (all-the-icons-faicon "gamepad")) nil nil :ascent center)
+            ("Sex" ,(list (all-the-icons-faicon "female" :height 1.2)) nil nil :ascent center)
+            ("News" ,(list (all-the-icons-faicon "newspaper-o")) nil nil :ascent center)
+            ("Car" ,(list (all-the-icons-faicon "car")) nil nil :ascent center)
+            ("Bus" ,(list (all-the-icons-faicon "bus")) nil nil :ascent center)
+            ("Contact" ,(list (all-the-icons-material "contact_mail")) nil nil :ascent center)
+            ("Talk" ,(list (all-the-icons-faicon "comments" :height 1.1)) nil nil :ascent center)
+            ("Video-Call" ,(list (all-the-icons-material "video_call")) nil nil :ascent center)
+            ("Call" ,(list (all-the-icons-faicon "phone" :height 1.3)) nil nil :ascent center)
+            ("Music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+            ("Airplane" ,(list (all-the-icons-faicon "plane")) nil nil :ascent center)
+            ("Travel" ,(list (all-the-icons-faicon "motorcycle")) nil nil :ascent center)
+            ("Gift" ,(list (all-the-icons-faicon "gift")) nil nil :ascent center)
+            ("WiFi" ,(list (all-the-icons-faicon "wifi")) nil nil :ascent center)
+            ("Search" ,(list (all-the-icons-faicon "search" :height 1.2)) nil nil :ascent center)
+            ("Mobile" ,(list (all-the-icons-material "tablet_mac" :height 1.1)) nil nil :ascent center)
+            ("WeChat" ,(list (all-the-icons-faicon "weixin")) nil nil :ascent center)
+            ("QQ" ,(list (all-the-icons-faicon "qq" :height 1.1)) nil nil :ascent center)
+            ("Weibo" ,(list (all-the-icons-faicon "weibo")) nil nil :ascent center)
+            ("Slack" ,(list (all-the-icons-faicon "slack")) nil nil :ascent center)
+            ("Facebook" ,(list (all-the-icons-faicon "facebook-official")) nil nil :ascent center)
+            ("Twitter" ,(list (all-the-icons-faicon "twitter-square")) nil nil :ascent center)
+            ("YouTube" ,(list (all-the-icons-faicon "youtube-square")) nil nil :ascent center)
+            ("RSS" ,(list (all-the-icons-faicon "rss-square")) nil nil :ascent center)
+            ("Wikipedia" ,(list (all-the-icons-faicon "wikipedia-w")) nil nil :ascent center)
+            ("Money" ,(list (all-the-icons-faicon "usd")) nil nil :ascent center)
+            ("Accounting" ,(list (all-the-icons-faicon "pie-chart")) nil nil :ascent center)
+            ("Bank" ,(list (all-the-icons-material "account_balance")) nil nil :ascent center)
+            ("Person" ,(list (all-the-icons-faicon "male")) nil nil :ascent center)
+            ("Birthday" ,(list (all-the-icons-faicon "birthday-cake")) nil nil :ascent center)
+  
+            ;; <Business>
+            ("Calculate" ,(list (all-the-icons-faicon "percent")) nil nil :ascent center)
+            ("Chart" ,(list (all-the-icons-faicon "bar-chart")) nil nil :ascent center)
+  
+            ;; <Science>
+            ("Chemistry" ,(list (all-the-icons-faicon "flask")) nil nil :ascent center)
+            ("Language" ,(list (all-the-icons-faicon "language")) nil nil :ascent center)
+  
+            (".*" ,(list (all-the-icons-faicon "question-circle-o")) nil nil :ascent center)
+            ;; (".*" '(space . (:width (16))))
+            )))
+  
+  (setq diary-file "~/docs/orgs/diary")
+  (setq diary-mail-addr "geekard@qq.com")
+  ;; 获取经纬度：https://www.latlong.net/
+  (setq calendar-latitude +39.904202)
+  (setq calendar-longitude +116.407394)
+  (setq calendar-location-name "北京")
+  (setq calendar-remove-frame-by-deleting t)
+  (setq calendar-week-start-day 1)              ; 每周第一天是周一
+  (setq mark-diary-entries-in-calendar t)       ; 标记有记录的日子
+  (setq mark-holidays-in-calendar nil)          ; 标记节假日
+  (setq view-calendar-holidays-initially nil)   ; 不显示节日列表
+  (setq org-agenda-include-diary t)
+  
+  ;; 除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
+  (setq christian-holidays nil
+        hebrew-holidays nil
+        islamic-holidays nil
+        solar-holidays nil
+        bahai-holidays nil)
+  
+  (setq general-holidays '((holiday-fixed 1 1   "元旦")
+                           (holiday-fixed 2 14  "情人节")
+                           (holiday-fixed 4 1   "愚人节")
+                           (holiday-fixed 12 25 "圣诞节")
+                           (holiday-fixed 10 1  "国庆节")
+                           (holiday-float 5 0 2 "母亲节")
+                           (holiday-float 6 0 3 "父亲节")))
+  
+  (setq local-holidays '((holiday-chinese 1 15  "元宵节 (正月十五)")
+                         (holiday-chinese 5 5   "端午节 (五月初五)")
+                         (holiday-chinese 9 9   "重阳节 (九月初九)")
+                         (holiday-chinese 8 15  "中秋节 (八月十五)")
+                         ;; 生日
+                         (holiday-chinese  5 12 "老婆生日(1987)")
+                         (holiday-chinese 11 15 "老妈生日(1966)")
+                         (holiday-chinese 5 20  "老爸生日(1965)")))
+  (setq chinese-calendar-celestial-stem
+        ["甲" "乙" "丙" "丁" "戊" "己" "庚" "辛" "壬" "癸"])
+  (setq chinese-calendar-terrestrial-branch
+        ["子" "丑" "寅" "卯" "辰" "巳" "午" "未" "申" "酉" "戌" "亥"])
+  
+  (setq mark-diary-entries-in-calendar t
+        appt-issue-message nil
+        mark-holidays-in-calendar t
+        view-calendar-holidays-initially nil)
+  
+  (setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
+        calendar-date-display-form '(year "/" month "/" day)
+        calendar-time-display-form
+        '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
+  
+  (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+  
+  (autoload 'chinese-year "cal-china" "Chinese year data" t)
+  
+  (setq calendar-load-hook
+        '(lambda ()
+           (set-face-foreground 'diary-face   "skyblue")
+           (set-face-background 'holiday-face "slate blue")
+           (set-face-foreground 'holiday-face "white"))) 
+  
+  ;; brew install terminal-notifier
+  (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
+  
+  (defun terminal-notifier-notify (title message)
+    (start-process "terminal-notifier"
+                   "terminal-notifier"
+                   terminal-notifier-command
+                   "-title" title
+                   "-sound" "default"
+                   "-message" message
+                   "-activate" "org.gnu.Emacs"))
+  
+  (defun timed-notification (time msg)
+    (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
+    (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
+  
+  ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
+  (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 #+end_src
 
 * projectile
@@ -1744,33 +1807,7 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
   
   (setq inhibit-compacting-font-caches t)
   
-  (use-package rainbow-delimiters
-    :ensure :defer
-    :hook (prog-mode . rainbow-delimiters-mode))
-  
-  (use-package volatile-highlights
-    :ensure
-    :init (volatile-highlights-mode))
-  
-  (use-package anzu
-    :ensure
-    :init
-    (setq anzu-mode-lighter "")
-    (global-set-key [remap query-replace] 'anzu-query-replace)
-    (global-set-key [remap query-replace-regexp] 'anzu-query-replace-regexp)
-    (define-key isearch-mode-map [remap isearch-query-replace] #'anzu-isearch-query-replace)
-    (define-key isearch-mode-map [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp)
-    (global-anzu-mode))
-  
-  (use-package symbol-overlay
-    :ensure
-    :config
-    (global-set-key (kbd "M-i") 'symbol-overlay-put)
-    (global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
-    (global-set-key (kbd "M-p") 'symbol-overlay-jump-prev)
-    (global-set-key (kbd "<f7>") 'symbol-overlay-mode)
-    (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all)
-    :hook (prog-mode . symbol-overlay-mode))
+
 #+end_src
 
 * treemacs
@@ -1849,23 +1886,3 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
   :config
   (treemacs-set-scope-type 'Perspectives))
 #+end_src
-
-** 复杂 go 项目目录树
-对于依赖其它 github project module 的 go 项目, 默认通过 lsp 跳转时, 会将 mod
-cache 中的目录自动添加 treemacs 中，这样会导致 treemacs 中添加太多单个目录。解决
-办法如下：
-1. 先将项目依赖的 module repo 克隆到本地目录；
-2. 修改项目的 go.mod 文件，添加 replace 指令，将依赖的 module repo 指向刚才保存
-   的本地目录；
-   #+begin_src sh
-     replace (
-         github.com/go-admin-team/go-admin-core => /Users/zhangjun/codes/github/go-admin-core
-         github.com/go-admin-team/go-admin-core/sdk => /Users/zhangjun/codes/github/go-admin-core/sdk
-     )
-   #+end_src
-3. 执行 M-x treemacs-display-current-project-exclusively 命令，创建一个新的
-   Treemacs Workspace, 并将当前 project 加入到该 workspace;
-4. 执行 M-x treemacs-add-project-to-workspace 将依赖 module repo 的本地目录添加到该 workspace;
-5. 执行 M-x treemacs-rename-workspace 重命名当前 workspace 为有意义的名称；
-   
-
