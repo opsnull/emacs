@@ -9,17 +9,6 @@
 :END:
 :CONTENTS:
 - [[#外部依赖][外部依赖]]
-- [[#软件源][软件源]]
-- [[#环境变量][环境变量]]
-- [[#目录变量][目录变量]]
-- [[#增量补全][增量补全]]
-- [[#快速跳转][快速跳转]]
-  - [[#修改位置][修改位置]]
-  - [[#字符或行][字符或行]]
-  - [[#窗口][窗口]]
-- [[#输入法][输入法]]
-- [[#编辑辅助][编辑辅助]]
-- [[#文档写作][文档写作]]
 - [[#版本控制][版本控制]]
   - [[#magit][magit]]
   - [[#git-link][git-link]]
@@ -181,142 +170,144 @@ lsp-workspace-restart= 命令来重启语言服务器。
 * 增量补全
 
 #+begin_src emacs-lisp
-(use-package selectrum
-  :ensure :demand
-  :init
-  (selectrum-mode +1))
-
-(use-package prescient
-  :ensure :demand
-  :config
-  (prescient-persist-mode +1))
-
-(use-package selectrum-prescient
-  :ensure :demand :after selectrum
-  :init
-  (selectrum-prescient-mode +1)
-  (prescient-persist-mode +1))
-
-(use-package company-prescient
-  :ensure :demand :after prescient
-  :init (company-prescient-mode +1))
-
-(use-package consult
-  :ensure :demand :after projectile
-  :bind
-  (;; C-c bindings (mode-specific-map)
-   ("C-c h" . consult-history)
-   ("C-c m" . consult-mode-command)
-   ("C-c b" . consult-bookmark)
-   ("C-c k" . consult-kmacro)
-   ;; C-x bindings (ctl-x-map)
-   ("C-x M-:" . consult-complex-command)
-   ("C-x b" . consult-buffer)
-   ("C-x 4 b" . consult-buffer-other-window)
-   ("C-x 5 b" . consult-buffer-other-frame)
-   ;; Custom M-# bindings for fast register access
-   ("M-#" . consult-register-load)
-   ("M-'" . consult-register-store)
-   ("C-M-#" . consult-register)
-   ;; Other custom bindings
-   ("M-y" . consult-yank-pop)
-   ("<help> a" . consult-apropos)
-   ;; M-g bindings (goto-map)
-   ("M-g e" . consult-compile-error)
-   ("M-g f" . consult-flycheck)
-   ("M-g g" . consult-goto-line)
-   ("M-g M-g" . consult-goto-line)
-   ("M-g o" . consult-outline)
-   ("M-g m" . consult-mark)
-   ("M-g k" . consult-global-mark)
-   ("M-g i" . consult-imenu)
-   ("M-g I" . consult-project-imenu)
-   ;; M-s bindings (search-map)
-   ("M-s f" . consult-find)
-   ("M-s L" . consult-locate)
-   ("M-s g" . consult-grep)
-   ("M-s G" . consult-git-grep)
-   ("M-s r" . consult-ripgrep)
-   ("M-s l" . consult-line)
-   ("M-s m" . consult-multi-occur)
-   ("M-s k" . consult-keep-lines)
-   ("M-s u" . consult-focus-lines)
-   ;; Isearch integration
-   ("M-s e" . consult-isearch)
-   :map isearch-mode-map
-   ("M-e" . consult-isearch)
-   ("M-s e" . consult-isearch)
-   ("M-s l" . consult-line))
-  :hook
-  (completion-list-mode . consult-preview-at-point-mode)
-  :init
-  (setq register-preview-delay 0.1
-        register-preview-function #'consult-register-format)
-  (advice-add #'register-preview :override #'consult-register-window)
-  (setq xref-show-xrefs-function #'consult-xref
-        xref-show-definitions-function #'consult-xref)
-  :config
-  ;; 下面的 preview-key 在 minibuff 中不生效，暂时关闭。
-  ;; (consult-customize
-  ;;  consult-ripgrep consult-git-grep consult-grep consult-bookmark consult-recent-file
-  ;;  consult--source-file consult--source-project-file consult--source-bookmark
-  ;;  :preview-key (kbd "M-."))
-  ;; 选中候选者后，按 C-l 才会开启 preview，解决 preview TRAMP bookmark hang 的问题。
-  (setq consult-preview-key (kbd "C-l"))
-  (setq consult-narrow-key "<")
-  (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function #'projectile-project-root))
-
-(use-package consult-flycheck
-  :ensure :demand :after (consult flycheck)
-  :bind
-  (:map flycheck-command-map ("!" . consult-flycheck)))
-
-;; consult-lsp 提供两个非常好用的函数：consult-lsp-symbols、consult-lsp-diagnostics
-(use-package consult-lsp
-  :ensure :demand :after (lsp-mode consult)
-  :config
-  (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
-
-(use-package marginalia
-  :ensure :demand :after (selectrum)
-  :init (marginalia-mode)
-  :config
-  (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
-  (advice-add #'marginalia-cycle
-              :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit 'keep-selected))))
-  :bind
-  (("M-A" . marginalia-cycle)
-   :map minibuffer-local-map
-   ("M-A" . marginalia-cycle)))
-
-(use-package embark
-  :ensure :demand :after (selectrum which-key)
-  :config
-  (setq embark-prompter 'embark-keymap-prompter)
-
-  (defun refresh-selectrum ()
-    (setq selectrum--previous-input-string nil))
-  (add-hook 'embark-pre-action-hook #'refresh-selectrum)
+  (use-package selectrum
+    :ensure :demand
+    :init
+    (selectrum-mode +1))
   
-  (defun embark-act-noquit ()
-    (interactive)
-    (let ((embark-quit-after-action nil)) (embark-act)))
-
-  (setq embark-action-indicator
-        (lambda (map &optional _target)
-          (which-key--show-keymap "Embark" map nil nil 'no-paging)
-          #'which-key--hide-popup-ignore-command)
-        embark-become-indicator embark-action-indicator)
-
-  :bind
-  (("C-;" . embark-act-noquit)
-   :map embark-variable-map ("l" . edit-list)))
-
-(use-package embark-consult
-  :ensure :demand :after (embark consult)
-  :hook
-  (embark-collect-mode . embark-consult-preview-minor-mode))
+  (use-package prescient
+    :ensure :demand
+    :config
+    (prescient-persist-mode +1))
+  
+  (use-package selectrum-prescient
+    :ensure :demand :after selectrum
+    :init
+    (selectrum-prescient-mode +1)
+    (prescient-persist-mode +1))
+  
+  (use-package company-prescient
+    :ensure :demand :after prescient
+    :init (company-prescient-mode +1))
+  
+  (use-package consult
+    :ensure :demand :after projectile
+    :bind
+    (;; C-c bindings (mode-specific-map)
+     ("C-c h" . consult-history)
+     ("C-c m" . consult-mode-command)
+     ("C-c b" . consult-bookmark)
+     ("C-c k" . consult-kmacro)
+     ;; C-x bindings (ctl-x-map)
+     ("C-x M-:" . consult-complex-command)
+     ("C-x b" . consult-buffer)
+     ("C-x 4 b" . consult-buffer-other-window)
+     ("C-x 5 b" . consult-buffer-other-frame)
+     ;; Custom M-# bindings for fast register access
+     ("M-#" . consult-register-load)
+     ("M-'" . consult-register-store)
+     ("C-M-#" . consult-register)
+     ;; Other custom bindings
+     ("M-y" . consult-yank-pop)
+     ("<help> a" . consult-apropos)
+     ;; M-g bindings (goto-map)
+     ("M-g e" . consult-compile-error)
+     ("M-g f" . consult-flycheck)
+     ("M-g g" . consult-goto-line)
+     ("M-g M-g" . consult-goto-line)
+     ("M-g o" . consult-outline)
+     ("M-g m" . consult-mark)
+     ("M-g k" . consult-global-mark)
+     ("M-g i" . consult-imenu)
+     ("M-g I" . consult-project-imenu)
+     ;; M-s bindings (search-map)
+     ("M-s f" . consult-find)
+     ("M-s L" . consult-locate)
+     ("M-s g" . consult-grep)
+     ("M-s G" . consult-git-grep)
+     ("M-s r" . consult-ripgrep)
+     ("M-s l" . consult-line)
+     ("M-s m" . consult-multi-occur)
+     ("M-s k" . consult-keep-lines)
+     ("M-s u" . consult-focus-lines)
+     ;; Isearch integration
+     ("M-s e" . consult-isearch)
+     :map isearch-mode-map
+     ("M-e" . consult-isearch)
+     ("M-s e" . consult-isearch)
+     ("M-s l" . consult-line))
+    :hook
+    (completion-list-mode . consult-preview-at-point-mode)
+    :init
+    ;; 使用 consult 来预览 register 内容
+    (setq register-preview-delay 0.1
+          register-preview-function #'consult-register-format)
+    (advice-add #'register-preview :override #'consult-register-window)
+    (setq xref-show-xrefs-function #'consult-xref
+          xref-show-definitions-function #'consult-xref)
+    :config
+    ;; 下面的 preview-key 在 minibuff 中不生效，暂时关闭。
+    ;; (consult-customize
+    ;;  consult-ripgrep consult-git-grep consult-grep consult-bookmark consult-recent-file
+    ;;  consult--source-file consult--source-project-file consult--source-bookmark
+    ;;  :preview-key (kbd "M-."))
+  
+    ;; 选中候选者后，按 C-l 才会开启 preview，解决 preview TRAMP bookmark hang 的问题。
+    (setq consult-preview-key (kbd "C-l"))
+    (setq consult-narrow-key "<")
+    (autoload 'projectile-project-root "projectile")
+    (setq consult-project-root-function #'projectile-project-root))
+  
+  (use-package consult-flycheck
+    :ensure :demand :after (consult flycheck)
+    :bind
+    (:map flycheck-command-map ("!" . consult-flycheck)))
+  
+  ;; consult-lsp 提供两个非常好用的函数：consult-lsp-symbols、consult-lsp-diagnostics
+  (use-package consult-lsp
+    :ensure :demand :after (lsp-mode consult)
+    :config
+    (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
+  
+  (use-package marginalia
+    :ensure :demand :after (selectrum)
+    :init (marginalia-mode)
+    :config
+    (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
+    (advice-add #'marginalia-cycle
+                :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit 'keep-selected))))
+    :bind
+    (("M-A" . marginalia-cycle)
+     :map minibuffer-local-map
+     ("M-A" . marginalia-cycle)))
+  
+  (use-package embark
+    :ensure :demand :after (selectrum which-key)
+    :config
+    (setq embark-prompter 'embark-keymap-prompter)
+  
+    (defun refresh-selectrum ()
+      (setq selectrum--previous-input-string nil))
+    (add-hook 'embark-pre-action-hook #'refresh-selectrum)
+  
+    (defun embark-act-noquit ()
+      (interactive)
+      (let ((embark-quit-after-action nil)) (embark-act)))
+  
+    (setq embark-action-indicator
+          (lambda (map &optional _target)
+            (which-key--show-keymap "Embark" map nil nil 'no-paging)
+            #'which-key--hide-popup-ignore-command)
+          embark-become-indicator embark-action-indicator)
+  
+    :bind
+    (("C-;" . embark-act-noquit)
+     :map embark-variable-map ("l" . edit-list)))
+  
+  (use-package embark-consult
+    :ensure :demand :after (embark consult)
+    :hook
+    (embark-collect-mode . embark-consult-preview-minor-mode))
 #+end_src
 
 * 快速跳转
@@ -372,15 +363,33 @@ lsp-workspace-restart= 命令来重启语言服务器。
     :config
     (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
     ;; 自动切换到英文的前缀快捷键
+    (push "C-;" sis-prefix-override-keys)
     (push "M-o" sis-prefix-override-keys)
     (push "M-g" sis-prefix-override-keys)
     (push "M-s" sis-prefix-override-keys)
     (sis-global-context-mode nil)
     (sis-global-respect-mode t)
-    (global-set-key (kbd "C-\\") 'sis-switch))
+    (global-set-key (kbd "C-\\") 'sis-switch)
+    ;; (add-to-list sis-respect-minibuffer-triggers (cons 'org-roam-find-file (lambda () 'other)))
+    ;; (add-to-list sis-respect-minibuffer-triggers (cons 'org-roam-insert (lambda () 'other)))
+    ;; (add-to-list sis-respect-minibuffer-triggers (cons 'org-roam-capture (lambda () 'other)))
+    ;; (add-to-list sis-respect-minibuffer-triggers (cons 'counsel-rg (lambda () 'other))
+               ;; (setq sis-prefix-override-buffer-disable-predicates
+               ;;       (list 'minibufferp
+               ;;             (lambda (buffer)
+               ;;               (sis--string-match-p "^magit-revision:" (buffer-name buffer)))
+               ;;             (lambda (buffer)
+               ;;               (and (sis--string-match-p "^\*" (buffer-name buffer))
+               ;;                    (not (sis--string-match-p "^\*About GNU Emacs" (buffer-name buffer)))
+               ;;                    (not (sis--string-match-p "^\*New" (buffer-name buffer)))
+               ;;                    (not (sis--string-match-p "^\*Scratch" (buffer-name buffer)))
+               ;;                    (not (sis--string-match-p "^\*doom:scra" (buffer-name buffer)))))))
+  
+  )
 #+end_src
 + 必须在启用 respect-mode 之前设置 sis-prefix-override-keys 变量，否则
   prefix-override 不生效。
+
 * 编辑辅助
 
 #+begin_src emacs-lisp
@@ -461,224 +470,229 @@ lsp-workspace-restart= 命令来重启语言服务器。
 * 文档写作
 
 #+begin_src emacs-lisp
-  (dolist (package '(org org-plus-contrib ob-go ox-reveal))
-    (unless (package-installed-p package)
-      (package-install package)))
+   (dolist (package '(org org-plus-contrib ob-go ox-reveal))
+     (unless (package-installed-p package)
+       (package-install package)))
   
-  (use-package org
-    :ensure :demand
-    :config
-    (setq org-todo-keywords
-          '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
-                      "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
-            (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-    (setq org-ellipsis "▾"
-          org-hide-emphasis-markers t
-          org-edit-src-content-indentation 2
-          org-hide-block-startup nil
-          org-src-preserve-indentation nil
-          org-cycle-separator-lines 2
-          org-default-notes-file "~/docs/orgs/note.org"
-          org-log-into-drawer t
-          org-log-done 'note
-          org-image-actual-width '(300)
-          org-hidden-keywords '(title)
-          org-export-with-broken-links t
-          org-agenda-start-day "-7d"
-          org-agenda-span 21
-          org-agenda-include-diary t
-          org-html-doctype "html5"
-          org-html-html5-fancy t
-          org-cycle-level-faces t
-          org-n-level-faces 4
-          org-startup-folded 'content
-          org-src-fontify-natively t
-          org-html-self-link-headlines t
-          ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
-          org-use-sub-superscripts nil
-          org-startup-indented t)
-    ;; 使用 later.org 和 gtd.org 作为 refile target.
-    (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
-                               ("~/docs/orgs/gtd.org" :maxlevel . 3)))
+   (use-package org
+     :ensure :demand
+     :config
+     (setq org-todo-keywords
+           '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
+                       "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
+             (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+     (setq org-ellipsis "▾"
+           org-hide-emphasis-markers t
+           org-edit-src-content-indentation 2
+           org-hide-block-startup nil
+           org-src-preserve-indentation nil
+           org-cycle-separator-lines 2
+           org-default-notes-file "~/docs/orgs/note.org"
+           org-log-into-drawer t
+           org-log-done 'note
+           org-image-actual-width '(300)
+           org-hidden-keywords '(title)
+           org-export-with-broken-links t
+           org-agenda-start-day "-7d"
+           org-agenda-span 21
+           org-agenda-include-diary t
+           org-html-doctype "html5"
+           org-html-html5-fancy t
+           org-cycle-level-faces t
+           org-n-level-faces 4
+           org-startup-folded 'content
+           org-src-fontify-natively t
+           org-html-self-link-headlines t
+           ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
+           org-use-sub-superscripts nil
+           org-startup-indented t)
+     ;; 使用 later.org 和 gtd.org 作为 refile target.
+     (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
+                                ("~/docs/orgs/gtd.org" :maxlevel . 3)))
   
-    (setq org-agenda-time-grid (quote ((daily today require-timed)
-                                       (300 600 900 1200 1500 1800 2100 2400)
-                                       "......"
-                                       "-----------------------------------------------------"
-                                       )))
-    ;; 设置 org-agenda 展示的文件
-    (setq org-agenda-files '("~/docs/orgs/inbox.org"
-                             "~/docs/orgs/gtd.org"
-                             "~/docs/orgs/later.org"
-                             "~/docs/orgs/capture.org"))
-    (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
-    (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
-    (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
-    (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
-    (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
-    (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
-    (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
-    (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
-    (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
-    (set-face-attribute 'org-document-title nil :height 2.074 :inherit 'org-level-8)
-    (global-set-key (kbd "C-c l") 'org-store-link)
-    (global-set-key (kbd "C-c a") 'org-agenda)
-    (global-set-key (kbd "C-c c") 'org-capture)
-    (global-set-key (kbd "C-c b") 'org-switchb)
-    (add-hook 'org-mode-hook 'turn-on-auto-fill)
-    ;; M-n 和 M-p 绑定到 highlight-symbol 
-    ;(define-key org-mode-map (kbd "M-n") 'org-next-link)
-    ;(define-key org-mode-map (kbd "M-p") 'org-previous-link)
-    (require 'org-protocol)
-    (require 'org-capture)
-    (add-to-list 'org-capture-templates
-                 '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
-                   "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
-                   :empty-lines 1))
-    (add-to-list 'org-capture-templates
-                 '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
-                   "* ☞ TODO [#B] %U %i%?"))
-    (add-to-list 'org-capture-templates
-                 '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
-                   "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
-    (add-to-list 'org-capture-templates
-                 '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
-                   "* ☞ TODO [#B] %U %i%?"))
-    (setq org-confirm-babel-evaluate nil)
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((shell . t)
-       (js . t)
-       (go . t)
-       (emacs-lisp . t)
-       (python . t)
-       (dot . t)
-       (css . t))))
+     (setq org-agenda-time-grid (quote ((daily today require-timed)
+                                        (300 600 900 1200 1500 1800 2100 2400)
+                                        "......"
+                                        "-----------------------------------------------------"
+                                        )))
+     ;; 设置 org-agenda 展示的文件
+     (setq org-agenda-files '("~/docs/orgs/inbox.org"
+                              "~/docs/orgs/gtd.org"
+                              "~/docs/orgs/later.org"
+                              "~/docs/orgs/capture.org"))
+     (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
+     (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
+     (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
+     (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
+     (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
+     (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
+     (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
+     (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
+     (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
+     (set-face-attribute 'org-document-title nil :inherit 'org-level-8 :height 3.0)
+     (global-set-key (kbd "C-c l") 'org-store-link)
+     (global-set-key (kbd "C-c a") 'org-agenda)
+     (global-set-key (kbd "C-c c") 'org-capture)
+     (global-set-key (kbd "C-c b") 'org-switchb)
+     (add-hook 'org-mode-hook 'turn-on-auto-fill)
+     ;; M-n 和 M-p 绑定到 highlight-symbol 
+     ;(define-key org-mode-map (kbd "M-n") 'org-next-link)
+     ;(define-key org-mode-map (kbd "M-p") 'org-previous-link)
+     (require 'org-protocol)
+     (require 'org-capture)
+     (add-to-list 'org-capture-templates
+                  '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
+                    "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
+                    :empty-lines 1))
+     (add-to-list 'org-capture-templates
+                  '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
+                    "* ☞ TODO [#B] %U %i%?"))
+     (add-to-list 'org-capture-templates
+                  '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
+                    "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
+     (add-to-list 'org-capture-templates
+                  '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
+                    "* ☞ TODO [#B] %U %i%?"))
+     (setq org-confirm-babel-evaluate nil)
+     (org-babel-do-load-languages
+      'org-babel-load-languages
+      '((shell . t)
+        (js . t)
+        (go . t)
+        (emacs-lisp . t)
+        (python . t)
+        (dot . t)
+        (css . t))))
   
-  (use-package org-superstar
-    :ensure :demand :after (org)
-    :hook
-    (org-mode . org-superstar-mode)
-    :custom
-    (org-superstar-remove-leading-stars t))
+   (defun my/org-faces ()
+     (custom-set-faces
+      '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 3.0))))))
+   (add-hook 'org-mode-hook 'my/org-faces)
   
-  (use-package org-fancy-priorities
-    :ensure :demand :after (org)
-    :hook
-    (org-mode . org-fancy-priorities-mode)
-    :config
-    (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
+   (use-package org-superstar
+     :ensure :demand :after (org)
+     :hook
+     (org-mode . org-superstar-mode)
+     :custom
+     (org-superstar-remove-leading-stars t))
   
-  ;; 拖拽保持图片或 F2 保存剪贴板中图片。
-  ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
-  (use-package org-download
-    :ensure :demand :after (posframe)
-    :bind
-    ("<f2>" . org-download-screenshot)
-    :config
-    (setq-default org-download-image-dir "./images/")
-    (setq org-download-method 'directory
-          org-download-display-inline-images 'posframe
-          org-download-screenshot-method "pngpaste %s"
-          org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
-    (add-hook 'dired-mode-hook 'org-download-enable)
-    (org-download-enable))
+   (use-package org-fancy-priorities
+     :ensure :demand :after (org)
+     :hook
+     (org-mode . org-fancy-priorities-mode)
+     :config
+     (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
   
-  (use-package ox-reveal :ensure :after (org))
+   ;; 拖拽保持图片或 F2 保存剪贴板中图片。
+   ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
+   (use-package org-download
+     :ensure :demand :after (posframe)
+     :bind
+     ("<f2>" . org-download-screenshot)
+     :config
+     (setq-default org-download-image-dir "./images/")
+     (setq org-download-method 'directory
+           org-download-display-inline-images 'posframe
+           org-download-screenshot-method "pngpaste %s"
+           org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
+     (add-hook 'dired-mode-hook 'org-download-enable)
+     (org-download-enable))
   
-  (use-package htmlize :ensure)
+   (use-package ox-reveal :ensure :after (org))
   
-  (use-package org-make-toc
-    :ensure :after org
-    :hook (org-mode . org-make-toc-mode))
+   (use-package htmlize :ensure)
   
-  (use-package org-tree-slide
-    :ensure :after org
-    :commands org-tree-slide-mode
-    :config
-    (setq org-tree-slide-slide-in-effect t
-          org-tree-slide-activate-message "Presentation started."
-          org-tree-slide-deactivate-message "Presentation ended."
-          org-tree-slide-header t)
-    (with-eval-after-load "org-tree-slide"
-      (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
-      (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
-      (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
-      (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
-      (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
+   (use-package org-make-toc
+     :ensure :after org
+     :hook (org-mode . org-make-toc-mode))
   
-  (defun my/org-mode-visual-fill ()
-    (setq
-     ;; 自动换行的字符数
-     fill-column 80
-     ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
-     visual-fill-column-width 130
-     visual-fill-column-fringes-outside-margins nil
-     visual-fill-column-center-text t)
-    (visual-fill-column-mode 1))
-  (use-package visual-fill-column
-    :ensure :demand :after org
-    :hook
-    (org-mode . my/org-mode-visual-fill))
+   (use-package org-tree-slide
+     :ensure :after org
+     :commands org-tree-slide-mode
+     :config
+     (setq org-tree-slide-slide-in-effect t
+           org-tree-slide-activate-message "Presentation started."
+           org-tree-slide-deactivate-message "Presentation ended."
+           org-tree-slide-header t)
+     (with-eval-after-load "org-tree-slide"
+       (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
+       (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
+       (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
+       (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
+       (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
   
-  (setq diary-file "~/docs/orgs/diary")
-  (setq diary-mail-addr "geekard@qq.com")
-  ;; 获取经纬度：https://www.latlong.net/
-  (setq calendar-latitude +39.904202)
-  (setq calendar-longitude +116.407394)
-  (setq calendar-location-name "北京")
-  (setq calendar-remove-frame-by-deleting t)
-  (setq calendar-week-start-day 1)              ;; 每周第一天是周一
-  (setq mark-diary-entries-in-calendar t)       ;; 标记有记录的日子
-  (setq mark-holidays-in-calendar nil)          ;; 标记节假日
-  (setq view-calendar-holidays-initially nil)   ;; 不显示节日列表
-  (setq org-agenda-include-diary t)
+   (defun my/org-mode-visual-fill ()
+     (setq
+      ;; 自动换行的字符数
+      fill-column 80
+      ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
+      visual-fill-column-width 130
+      visual-fill-column-fringes-outside-margins nil
+      visual-fill-column-center-text t)
+     (visual-fill-column-mode 1))
+   (use-package visual-fill-column
+     :ensure :demand :after org
+     :hook
+     (org-mode . my/org-mode-visual-fill))
   
-  ;; 除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
-  (setq christian-holidays nil
-        hebrew-holidays nil
-        islamic-holidays nil
-        solar-holidays nil
-        bahai-holidays nil)
+   (setq diary-file "~/docs/orgs/diary")
+   (setq diary-mail-addr "geekard@qq.com")
+   ;; 获取经纬度：https://www.latlong.net/
+   (setq calendar-latitude +39.904202)
+   (setq calendar-longitude +116.407394)
+   (setq calendar-location-name "北京")
+   (setq calendar-remove-frame-by-deleting t)
+   (setq calendar-week-start-day 1)              ;; 每周第一天是周一
+   (setq mark-diary-entries-in-calendar t)       ;; 标记有记录的日子
+   (setq mark-holidays-in-calendar nil)          ;; 标记节假日
+   (setq view-calendar-holidays-initially nil)   ;; 不显示节日列表
+   (setq org-agenda-include-diary t)
   
-  (setq mark-diary-entries-in-calendar t
-        appt-issue-message nil
-        mark-holidays-in-calendar t
-        view-calendar-holidays-initially nil)
+   ;; 除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
+   (setq christian-holidays nil
+         hebrew-holidays nil
+         islamic-holidays nil
+         solar-holidays nil
+         bahai-holidays nil)
   
-  (setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
-        calendar-date-display-form '(year "/" month "/" day)
-        calendar-time-display-form
-        '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
+   (setq mark-diary-entries-in-calendar t
+         appt-issue-message nil
+         mark-holidays-in-calendar t
+         view-calendar-holidays-initially nil)
   
-  (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+   (setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
+         calendar-date-display-form '(year "/" month "/" day)
+         calendar-time-display-form
+         '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
   
-  (autoload 'chinese-year "cal-china" "Chinese year data" t)
+   (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
   
-  (setq calendar-load-hook
-        '(lambda ()
-           (set-face-foreground 'diary-face   "skyblue")
-           (set-face-background 'holiday-face "slate blue")
-           (set-face-foreground 'holiday-face "white"))) 
+   (autoload 'chinese-year "cal-china" "Chinese year data" t)
   
-  ;; brew install terminal-notifier
-  (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
+   (setq calendar-load-hook
+         '(lambda ()
+            (set-face-foreground 'diary-face   "skyblue")
+            (set-face-background 'holiday-face "slate blue")
+            (set-face-foreground 'holiday-face "white"))) 
   
-  (defun terminal-notifier-notify (title message)
-    (start-process "terminal-notifier"
-                   "terminal-notifier"
-                   terminal-notifier-command
-                   "-title" title
-                   "-sound" "default"
-                   "-message" message
-                   "-activate" "org.gnu.Emacs"))
+   ;; brew install terminal-notifier
+   (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
   
-  (defun timed-notification (time msg)
-    (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
-    (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
+   (defun terminal-notifier-notify (title message)
+     (start-process "terminal-notifier"
+                    "terminal-notifier"
+                    terminal-notifier-command
+                    "-title" title
+                    "-sound" "default"
+                    "-message" message
+                    "-activate" "org.gnu.Emacs"))
   
-  ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
-  (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
+   (defun timed-notification (time msg)
+     (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
+     (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
+  
+   ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
+   (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 #+end_src
 
 * 版本控制
@@ -1371,8 +1385,9 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 
 * 主题界面
+
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
-; emacs 28
+;; emacs 28
 ;; (when (fboundp 'native-compile-async)
 ;;   (setenv "LIBRARY_PATH" 
 ;;           (concat (getenv "LIBRARY_PATH") 
@@ -1390,7 +1405,7 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 (global-font-lock-mode t)
 (transient-mark-mode t)
 
-;; 禁止 Emacs 使用 Mac 原生的全屏模式，防止出现黑屏
+;; 不使用 Mac 原生全屏模式，防止出现黑屏（如 Ediff）
 (when (eq system-type 'darwin)
   (setq ns-use-native-fullscreen nil
         ns-use-fullscreen-animation nil))
@@ -1426,6 +1441,7 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
   ;; emacs 27 支持 Emoji
   (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
   
+  (display-battery-mode t)
   (column-number-mode t)
   (display-time-mode t)
   (setq display-time-24hr-format t
@@ -1469,7 +1485,7 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
   
   ;; 字体
   ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
-  ;; 英文：Iosevka SS14: https://github.com/be5invis/Iosevka/releases
+  ;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
   (use-package cnfonts
     :ensure :demand
     :init
@@ -1601,136 +1617,136 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 
 * 其它
 #+begin_src emacs-lisp
-(setq  recentf-max-menu-items 100
-       recentf-max-saved-items 100
-       ;; 当 bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
-       bookmark-save-flag 1
-       ;; pdf 转为 png 时使用更高分辨率（默认 90）
-       doc-view-resolution 144
-       ring-bell-function 'ignore
-       byte-compile-warnings '(cl-functions)
-       confirm-kill-emacs #'y-or-n-p
-       ad-redefinition-action 'accept
-       vc-follow-symlinks t
-       large-file-warning-threshold nil
-       ;; 自动根据 window 大小显示图片
-       image-transform-resize t
-       grep-highlight-matches t
-       ns-pop-up-frames nil)
-
-(setq-default  line-spacing 1
-               ;; fill-column 的值应该小于 visual-fill-column-width，
-               ;; 否则居中显示时行内容会过长而被隐藏；
-               fill-column 80
-               comment-fill-column 0
-               tab-width 4
-               indent-tabs-mode nil
-               debug-on-error nil
-               message-log-max t
-               load-prefer-newer t
-               ad-redefinition-action 'accept)
-
-(fset 'yes-or-no-p 'y-or-n-p)
-(auto-image-file-mode t)
-(winner-mode t)
-;; 开启 recentf-mode 后，selectrum 和 consult 切换 buffer 时明显变慢。
-;;(recentf-mode +1)
-
-;; gcmh
-(setq gc-cons-threshold most-positive-fixnum)
-(defvar hidden-minor-modes '(whitespace-mode))
-(use-package gcmh
-  :ensure :demand
-  :init
-  (gcmh-mode))
-
-(unless window-system
-  (require 'mouse)
-  (xterm-mouse-mode t)
-  (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
-  (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
-  (setq mouse-sel-mode t
-        mouse-wheel-scroll-amount '(1 ((shift) . 1))
-        mouse-wheel-progressive-speed nil
-        mouse-wheel-follow-mouse 't)
-  (mouse-avoidance-mode 'animate)
-  ;; 关闭文件选择窗口
-  (setq use-file-dialog nil
-        use-dialog-box nil)
-  ;; 平滑滚动
-  (setq scroll-step 1
-        scroll-margin 3
-        next-screen-context-lines 5
-        scroll-preserve-screen-position t
-        scroll-conservatively 10000)
-  ;; 支持 Emacs 和外部程序的粘贴
-  (setq x-select-enable-clipboard t
-        select-enable-primary t
-        select-enable-clipboard t
-        mouse-yank-at-point t))
-
-(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "S-C-<down>") 'shrink-window)
-(global-set-key (kbd "S-C-<up>") 'enlarge-window)
-
-;;(shell-command "mkdir -p ~/.emacs.d/backup")
-(defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
-(setq backup-by-copying t
-      backup-directory-alist (list (cons ".*" backup-dir))
-      delete-old-versions t
-      kept-new-versions 6
-      kept-old-versions 2
-      version-control t)
-
-;;(shell-command "mkdir -p ~/.emacs.d/autosave")
-(defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
-(setq auto-save-list-file-prefix autosave-dir
-      auto-save-file-name-transforms `((".*" ,autosave-dir t)))
-
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(setq dired-recursive-deletes t
-      dired-recursive-copies t)
-(put 'dired-find-alternate-file 'disabled nil)
-
-(prefer-coding-system 'utf-8)
-(setq locale-coding-system 'utf-8
-      default-buffer-file-coding-system 'utf-8)
-(set-buffer-file-coding-system 'utf-8)
-(set-language-environment "UTF-8")
-(set-default buffer-file-coding-system 'utf8)
-(set-default-coding-systems 'utf-8)
-(setenv "LANG" "zh_CN.UTF-8")
-(setenv "LC_ALL" "zh_CN.UTF-8")
-(setenv "LC_CTYPE" "zh_CN.UTF-8")
-
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-(defvar xwidget-webkit-bookmark-jump-new-session)
-(defvar xwidget-webkit-last-session-buffer)
-(add-hook 'pre-command-hook
-          (lambda ()
-            (if (eq this-command #'bookmark-bmenu-list)
-                (if (not (eq major-mode 'xwidget-webkit-mode))
-                    (setq xwidget-webkit-bookmark-jump-new-session t)
-                  (setq xwidget-webkit-bookmark-jump-new-session nil)
-                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
-
-;;(shell-command "trash -v || brew install trash")
-(use-package osx-trash
-  :ensure :demand
-  :config
-  (when (eq system-type 'darwin)
-    (osx-trash-setup))
-  (setq delete-by-moving-to-trash t))
-
-;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
-(use-package which-key
-  :ensure :demand
-  :init (which-key-mode)
-  :diminish which-key-mode
-  :config
-  (setq which-key-idle-delay 1.1))
-
-(server-start)
+  (setq  recentf-max-menu-items 100
+         recentf-max-saved-items 100
+         ;; 当 bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存, 或执行
+         ;; M-x bookmark-save 命令）
+         bookmark-save-flag 1
+         ;; pdf 转为 png 时使用更高分辨率（默认 90）
+         doc-view-resolution 144
+         ring-bell-function 'ignore
+         byte-compile-warnings '(cl-functions)
+         confirm-kill-emacs #'y-or-n-p
+         ad-redefinition-action 'accept
+         vc-follow-symlinks t
+         large-file-warning-threshold nil
+         ;; 自动根据 window 大小显示图片
+         image-transform-resize t
+         grep-highlight-matches t
+         ns-pop-up-frames nil)
+  
+  (setq-default  line-spacing 1
+                 ;; fill-column 的值应该小于 visual-fill-column-width，
+                 ;; 否则居中显示时行内容会过长而被隐藏；
+                 fill-column 80
+                 comment-fill-column 0
+                 tab-width 4
+                 indent-tabs-mode nil
+                 debug-on-error nil
+                 message-log-max t
+                 load-prefer-newer t
+                 ad-redefinition-action 'accept)
+  
+  (fset 'yes-or-no-p 'y-or-n-p)
+  (auto-image-file-mode t)
+  (winner-mode t)
+  (recentf-mode +1)
+  
+  ;; gcmh
+  (setq gc-cons-threshold most-positive-fixnum)
+  (defvar hidden-minor-modes '(whitespace-mode))
+  (use-package gcmh
+    :ensure :demand
+    :init
+    (gcmh-mode))
+  
+  (unless window-system
+    (require 'mouse)
+    (xterm-mouse-mode t)
+    (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
+    (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
+    (setq mouse-sel-mode t
+          mouse-wheel-scroll-amount '(1 ((shift) . 1))
+          mouse-wheel-progressive-speed nil
+          mouse-wheel-follow-mouse 't)
+    (mouse-avoidance-mode 'animate)
+    ;; 关闭文件选择窗口
+    (setq use-file-dialog nil
+          use-dialog-box nil)
+    ;; 平滑滚动
+    (setq scroll-step 1
+          scroll-margin 3
+          next-screen-context-lines 5
+          scroll-preserve-screen-position t
+          scroll-conservatively 10000)
+    ;; 支持 Emacs 和外部程序的粘贴
+    (setq x-select-enable-clipboard t
+          select-enable-primary t
+          select-enable-clipboard t
+          mouse-yank-at-point t))
+  
+  (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
+  (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
+  (global-set-key (kbd "S-C-<down>") 'shrink-window)
+  (global-set-key (kbd "S-C-<up>") 'enlarge-window)
+  
+  ;;(shell-command "mkdir -p ~/.emacs.d/backup")
+  (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
+  (setq backup-by-copying t
+        backup-directory-alist (list (cons ".*" backup-dir))
+        delete-old-versions t
+        kept-new-versions 6
+        kept-old-versions 2
+        version-control t)
+  
+  ;;(shell-command "mkdir -p ~/.emacs.d/autosave")
+  (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
+  (setq auto-save-list-file-prefix autosave-dir
+        auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+  
+  (global-set-key (kbd "C-x C-b") 'ibuffer)
+  (setq dired-recursive-deletes t
+        dired-recursive-copies t)
+  (put 'dired-find-alternate-file 'disabled nil)
+  
+  (prefer-coding-system 'utf-8)
+  (setq locale-coding-system 'utf-8
+        default-buffer-file-coding-system 'utf-8)
+  (set-buffer-file-coding-system 'utf-8)
+  (set-language-environment "UTF-8")
+  (set-default buffer-file-coding-system 'utf8)
+  (set-default-coding-systems 'utf-8)
+  (setenv "LANG" "zh_CN.UTF-8")
+  (setenv "LC_ALL" "zh_CN.UTF-8")
+  (setenv "LC_CTYPE" "zh_CN.UTF-8")
+  
+  (setq browse-url-browser-function 'xwidget-webkit-browse-url)
+  (defvar xwidget-webkit-bookmark-jump-new-session)
+  (defvar xwidget-webkit-last-session-buffer)
+  (add-hook 'pre-command-hook
+            (lambda ()
+              (if (eq this-command #'bookmark-bmenu-list)
+                  (if (not (eq major-mode 'xwidget-webkit-mode))
+                      (setq xwidget-webkit-bookmark-jump-new-session t)
+                    (setq xwidget-webkit-bookmark-jump-new-session nil)
+                    (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+  
+  ;;(shell-command "trash -v || brew install trash")
+  (use-package osx-trash
+    :ensure :demand
+    :config
+    (when (eq system-type 'darwin)
+      (osx-trash-setup))
+    (setq delete-by-moving-to-trash t))
+  
+  ;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
+  (use-package which-key
+    :ensure :demand
+    :init (which-key-mode)
+    :diminish which-key-mode
+    :config
+    (setq which-key-idle-delay 1.1))
+  
+  (server-start)
 #+end_src
 
