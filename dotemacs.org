@@ -9,6 +9,17 @@
 :END:
 :CONTENTS:
 - [[#外部依赖][外部依赖]]
+- [[#软件源][软件源]]
+- [[#环境变量][环境变量]]
+- [[#目录变量][目录变量]]
+- [[#增量补全][增量补全]]
+- [[#快速跳转][快速跳转]]
+  - [[#修改位置][修改位置]]
+  - [[#字符或行][字符或行]]
+  - [[#窗口][窗口]]
+- [[#输入法][输入法]]
+- [[#编辑辅助][编辑辅助]]
+- [[#文档写作][文档写作]]
 - [[#版本控制][版本控制]]
   - [[#magit][magit]]
   - [[#git-link][git-link]]
@@ -470,229 +481,230 @@ lsp-workspace-restart= 命令来重启语言服务器。
 * 文档写作
 
 #+begin_src emacs-lisp
-   (dolist (package '(org org-plus-contrib ob-go ox-reveal))
-     (unless (package-installed-p package)
-       (package-install package)))
+  (dolist (package '(org org-plus-contrib ob-go ox-reveal))
+    (unless (package-installed-p package)
+      (package-install package)))
   
-   (use-package org
-     :ensure :demand
-     :config
-     (setq org-todo-keywords
-           '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
-                       "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
-             (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-     (setq org-ellipsis "▾"
-           org-hide-emphasis-markers t
-           org-edit-src-content-indentation 2
-           org-hide-block-startup nil
-           org-src-preserve-indentation nil
-           org-cycle-separator-lines 2
-           org-default-notes-file "~/docs/orgs/note.org"
-           org-log-into-drawer t
-           org-log-done 'note
-           org-image-actual-width '(300)
-           org-hidden-keywords '(title)
-           org-export-with-broken-links t
-           org-agenda-start-day "-7d"
-           org-agenda-span 21
-           org-agenda-include-diary t
-           org-html-doctype "html5"
-           org-html-html5-fancy t
-           org-cycle-level-faces t
-           org-n-level-faces 4
-           org-startup-folded 'content
-           org-src-fontify-natively t
-           org-html-self-link-headlines t
-           ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
-           org-use-sub-superscripts nil
-           org-startup-indented t)
-     ;; 使用 later.org 和 gtd.org 作为 refile target.
-     (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
-                                ("~/docs/orgs/gtd.org" :maxlevel . 3)))
+  (use-package org
+    :ensure :demand
+    :config
+    (setq org-todo-keywords
+          '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
+                      "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
+            (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+    (setq org-ellipsis "▾"
+          org-hide-emphasis-markers t
+          org-edit-src-content-indentation 2
+          org-hide-block-startup nil
+          org-src-preserve-indentation nil
+          org-cycle-separator-lines 2
+          org-default-notes-file "~/docs/orgs/note.org"
+          org-log-into-drawer t
+          org-log-done 'note
+          org-image-actual-width '(300)
+          org-hidden-keywords '(title)
+          org-export-with-broken-links t
+          org-agenda-start-day "-7d"
+          org-agenda-span 21
+          org-agenda-include-diary t
+          org-html-doctype "html5"
+          org-html-html5-fancy t
+          org-cycle-level-faces t
+          org-n-level-faces 4
+          org-startup-folded 'content
+          org-src-fontify-natively t
+          org-html-self-link-headlines t
+          ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
+          org-use-sub-superscripts nil
+          org-startup-indented t)
+    ;; 使用 later.org 和 gtd.org 作为 refile target.
+    (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
+                               ("~/docs/orgs/gtd.org" :maxlevel . 3)))
   
-     (setq org-agenda-time-grid (quote ((daily today require-timed)
-                                        (300 600 900 1200 1500 1800 2100 2400)
-                                        "......"
-                                        "-----------------------------------------------------"
-                                        )))
-     ;; 设置 org-agenda 展示的文件
-     (setq org-agenda-files '("~/docs/orgs/inbox.org"
-                              "~/docs/orgs/gtd.org"
-                              "~/docs/orgs/later.org"
-                              "~/docs/orgs/capture.org"))
-     (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
-     (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
-     (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
-     (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
-     (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
-     (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
-     (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
-     (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
-     (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
-     (set-face-attribute 'org-document-title nil :inherit 'org-level-8 :height 3.0)
-     (global-set-key (kbd "C-c l") 'org-store-link)
-     (global-set-key (kbd "C-c a") 'org-agenda)
-     (global-set-key (kbd "C-c c") 'org-capture)
-     (global-set-key (kbd "C-c b") 'org-switchb)
-     (add-hook 'org-mode-hook 'turn-on-auto-fill)
-     ;; M-n 和 M-p 绑定到 highlight-symbol 
-     ;(define-key org-mode-map (kbd "M-n") 'org-next-link)
-     ;(define-key org-mode-map (kbd "M-p") 'org-previous-link)
-     (require 'org-protocol)
-     (require 'org-capture)
-     (add-to-list 'org-capture-templates
-                  '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
-                    "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
-                    :empty-lines 1))
-     (add-to-list 'org-capture-templates
-                  '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
-                    "* ☞ TODO [#B] %U %i%?"))
-     (add-to-list 'org-capture-templates
-                  '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
-                    "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
-     (add-to-list 'org-capture-templates
-                  '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
-                    "* ☞ TODO [#B] %U %i%?"))
-     (setq org-confirm-babel-evaluate nil)
-     (org-babel-do-load-languages
-      'org-babel-load-languages
-      '((shell . t)
-        (js . t)
-        (go . t)
-        (emacs-lisp . t)
-        (python . t)
-        (dot . t)
-        (css . t))))
+    (setq org-agenda-time-grid (quote ((daily today require-timed)
+                                       (300 600 900 1200 1500 1800 2100 2400)
+                                       "......"
+                                       "-----------------------------------------------------"
+                                       )))
+    ;; 设置 org-agenda 展示的文件
+    (setq org-agenda-files '("~/docs/orgs/inbox.org"
+                             "~/docs/orgs/gtd.org"
+                             "~/docs/orgs/later.org"
+                             "~/docs/orgs/capture.org"))
+    (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
+    (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
+    (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
+    (set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
+    (set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
+    (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
+    (set-face-attribute 'org-document-title nil :inherit 'org-level-8 :height 3.0)
+    (global-set-key (kbd "C-c l") 'org-store-link)
+    (global-set-key (kbd "C-c a") 'org-agenda)
+    (global-set-key (kbd "C-c c") 'org-capture)
+    (global-set-key (kbd "C-c b") 'org-switchb)
+    (add-hook 'org-mode-hook 'turn-on-auto-fill)
+    ;; M-n 和 M-p 绑定到 highlight-symbol 
+    ;(define-key org-mode-map (kbd "M-n") 'org-next-link)
+    ;(define-key org-mode-map (kbd "M-p") 'org-previous-link)
+    (require 'org-protocol)
+    (require 'org-capture)
+    (add-to-list 'org-capture-templates
+                 '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
+                   "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
+                   :empty-lines 1))
+    (add-to-list 'org-capture-templates
+                 '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
+                   "* ☞ TODO [#B] %U %i%?"))
+    (add-to-list 'org-capture-templates
+                 '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
+                   "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
+    (add-to-list 'org-capture-templates
+                 '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
+                   "* ☞ TODO [#B] %U %i%?"))
+    (setq org-confirm-babel-evaluate nil)
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((shell . t)
+       (js . t)
+       (go . t)
+       (emacs-lisp . t)
+       (python . t)
+       (dot . t)
+       (css . t))))
   
-   (defun my/org-faces ()
-     (custom-set-faces
-      '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 3.0))))))
-   (add-hook 'org-mode-hook 'my/org-faces)
+  ;; set-face-attribute 配置的 org-document-title 字体大小不生效，这里再次调整。
+  (defun my/org-faces ()
+    (custom-set-faces
+     '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 3.0))))))
+  (add-hook 'org-mode-hook 'my/org-faces)
   
-   (use-package org-superstar
-     :ensure :demand :after (org)
-     :hook
-     (org-mode . org-superstar-mode)
-     :custom
-     (org-superstar-remove-leading-stars t))
+  (use-package org-superstar
+    :ensure :demand :after (org)
+    :hook
+    (org-mode . org-superstar-mode)
+    :custom
+    (org-superstar-remove-leading-stars t))
   
-   (use-package org-fancy-priorities
-     :ensure :demand :after (org)
-     :hook
-     (org-mode . org-fancy-priorities-mode)
-     :config
-     (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
+  (use-package org-fancy-priorities
+    :ensure :demand :after (org)
+    :hook
+    (org-mode . org-fancy-priorities-mode)
+    :config
+    (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
   
-   ;; 拖拽保持图片或 F2 保存剪贴板中图片。
-   ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
-   (use-package org-download
-     :ensure :demand :after (posframe)
-     :bind
-     ("<f2>" . org-download-screenshot)
-     :config
-     (setq-default org-download-image-dir "./images/")
-     (setq org-download-method 'directory
-           org-download-display-inline-images 'posframe
-           org-download-screenshot-method "pngpaste %s"
-           org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
-     (add-hook 'dired-mode-hook 'org-download-enable)
-     (org-download-enable))
+  ;; 拖拽保持图片或 F2 保存剪贴板中图片。
+  ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
+  (use-package org-download
+    :ensure :demand :after (posframe)
+    :bind
+    ("<f2>" . org-download-screenshot)
+    :config
+    (setq-default org-download-image-dir "./images/")
+    (setq org-download-method 'directory
+          org-download-display-inline-images 'posframe
+          org-download-screenshot-method "pngpaste %s"
+          org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
+    (add-hook 'dired-mode-hook 'org-download-enable)
+    (org-download-enable))
   
-   (use-package ox-reveal :ensure :after (org))
+  (use-package ox-reveal :ensure :after (org))
   
-   (use-package htmlize :ensure)
+  (use-package htmlize :ensure)
   
-   (use-package org-make-toc
-     :ensure :after org
-     :hook (org-mode . org-make-toc-mode))
+  (use-package org-make-toc
+    :ensure :after org
+    :hook (org-mode . org-make-toc-mode))
   
-   (use-package org-tree-slide
-     :ensure :after org
-     :commands org-tree-slide-mode
-     :config
-     (setq org-tree-slide-slide-in-effect t
-           org-tree-slide-activate-message "Presentation started."
-           org-tree-slide-deactivate-message "Presentation ended."
-           org-tree-slide-header t)
-     (with-eval-after-load "org-tree-slide"
-       (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
-       (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
-       (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
-       (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
-       (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
+  (use-package org-tree-slide
+    :ensure :after org
+    :commands org-tree-slide-mode
+    :config
+    (setq org-tree-slide-slide-in-effect t
+          org-tree-slide-activate-message "Presentation started."
+          org-tree-slide-deactivate-message "Presentation ended."
+          org-tree-slide-header t)
+    (with-eval-after-load "org-tree-slide"
+      (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
+      (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
+      (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
+      (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
+      (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
   
-   (defun my/org-mode-visual-fill ()
-     (setq
-      ;; 自动换行的字符数
-      fill-column 80
-      ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
-      visual-fill-column-width 130
-      visual-fill-column-fringes-outside-margins nil
-      visual-fill-column-center-text t)
-     (visual-fill-column-mode 1))
-   (use-package visual-fill-column
-     :ensure :demand :after org
-     :hook
-     (org-mode . my/org-mode-visual-fill))
+  (defun my/org-mode-visual-fill ()
+    (setq
+     ;; 自动换行的字符数
+     fill-column 80
+     ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
+     visual-fill-column-width 130
+     visual-fill-column-fringes-outside-margins nil
+     visual-fill-column-center-text t)
+    (visual-fill-column-mode 1))
+  (use-package visual-fill-column
+    :ensure :demand :after org
+    :hook
+    (org-mode . my/org-mode-visual-fill))
   
-   (setq diary-file "~/docs/orgs/diary")
-   (setq diary-mail-addr "geekard@qq.com")
-   ;; 获取经纬度：https://www.latlong.net/
-   (setq calendar-latitude +39.904202)
-   (setq calendar-longitude +116.407394)
-   (setq calendar-location-name "北京")
-   (setq calendar-remove-frame-by-deleting t)
-   (setq calendar-week-start-day 1)              ;; 每周第一天是周一
-   (setq mark-diary-entries-in-calendar t)       ;; 标记有记录的日子
-   (setq mark-holidays-in-calendar nil)          ;; 标记节假日
-   (setq view-calendar-holidays-initially nil)   ;; 不显示节日列表
-   (setq org-agenda-include-diary t)
+  (setq diary-file "~/docs/orgs/diary")
+  (setq diary-mail-addr "geekard@qq.com")
+  ;; 获取经纬度：https://www.latlong.net/
+  (setq calendar-latitude +39.904202)
+  (setq calendar-longitude +116.407394)
+  (setq calendar-location-name "北京")
+  (setq calendar-remove-frame-by-deleting t)
+  (setq calendar-week-start-day 1)              ;; 每周第一天是周一
+  (setq mark-diary-entries-in-calendar t)       ;; 标记有记录的日子
+  (setq mark-holidays-in-calendar nil)          ;; 标记节假日
+  (setq view-calendar-holidays-initially nil)   ;; 不显示节日列表
+  (setq org-agenda-include-diary t)
   
-   ;; 除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
-   (setq christian-holidays nil
-         hebrew-holidays nil
-         islamic-holidays nil
-         solar-holidays nil
-         bahai-holidays nil)
+  ;; 除去基督徒的节日、希伯来人的节日和伊斯兰教的节日。
+  (setq christian-holidays nil
+        hebrew-holidays nil
+        islamic-holidays nil
+        solar-holidays nil
+        bahai-holidays nil)
   
-   (setq mark-diary-entries-in-calendar t
-         appt-issue-message nil
-         mark-holidays-in-calendar t
-         view-calendar-holidays-initially nil)
+  (setq mark-diary-entries-in-calendar t
+        appt-issue-message nil
+        mark-holidays-in-calendar t
+        view-calendar-holidays-initially nil)
   
-   (setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
-         calendar-date-display-form '(year "/" month "/" day)
-         calendar-time-display-form
-         '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
+  (setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
+        calendar-date-display-form '(year "/" month "/" day)
+        calendar-time-display-form
+        '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
   
-   (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+  (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
   
-   (autoload 'chinese-year "cal-china" "Chinese year data" t)
+  (autoload 'chinese-year "cal-china" "Chinese year data" t)
   
-   (setq calendar-load-hook
-         '(lambda ()
-            (set-face-foreground 'diary-face   "skyblue")
-            (set-face-background 'holiday-face "slate blue")
-            (set-face-foreground 'holiday-face "white"))) 
+  (setq calendar-load-hook
+        '(lambda ()
+           (set-face-foreground 'diary-face   "skyblue")
+           (set-face-background 'holiday-face "slate blue")
+           (set-face-foreground 'holiday-face "white"))) 
   
-   ;; brew install terminal-notifier
-   (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
+  ;; brew install terminal-notifier
+  (defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
   
-   (defun terminal-notifier-notify (title message)
-     (start-process "terminal-notifier"
-                    "terminal-notifier"
-                    terminal-notifier-command
-                    "-title" title
-                    "-sound" "default"
-                    "-message" message
-                    "-activate" "org.gnu.Emacs"))
+  (defun terminal-notifier-notify (title message)
+    (start-process "terminal-notifier"
+                   "terminal-notifier"
+                   terminal-notifier-command
+                   "-title" title
+                   "-sound" "default"
+                   "-message" message
+                   "-activate" "org.gnu.Emacs"))
   
-   (defun timed-notification (time msg)
-     (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
-     (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
+  (defun timed-notification (time msg)
+    (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
+    (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
   
-   ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
-   (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
+  ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
+  (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 #+end_src
 
 * 版本控制
