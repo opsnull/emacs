@@ -417,7 +417,7 @@
   (setq org-download-method 'directory
         org-download-display-inline-images 'posframe
         org-download-screenshot-method "pngpaste %s"
-        org-download-image-attr-list '("#+ATTR_HTML: :width 80% :align center"))
+        org-download-image-attr-list '("#+ATTR_HTML: :width 400 :align center"))
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
