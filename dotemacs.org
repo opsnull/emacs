@@ -1,4 +1,4 @@
-#+OPTIONS: toc:nil h:4
+#+Options: toc:nil h:4
 #+STARTUP: overview
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
 #+TOC: headlines 4
@@ -1417,7 +1417,7 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 (global-font-lock-mode t)
 (transient-mark-mode t)
 
-;; 不使用 Mac 原生全屏模式，防止出现黑屏（如 Ediff）
+;; 不使用 Mac 原生全屏模式，防止黑屏（如 Ediff）
 (when (eq system-type 'darwin)
   (setq ns-use-native-fullscreen nil
         ns-use-fullscreen-animation nil))
@@ -1427,106 +1427,109 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
 #+end_src
 
 #+begin_src emacs-lisp
-  ;; preview theme: https://emacsthemes.com/
-  (use-package doom-themes
-    :ensure :demand
-    :config
-    (setq doom-themes-enable-bold t
-          doom-themes-enable-italic t
-          doom-themes-treemacs-theme "doom-colors")
-    (load-theme 'doom-dracula t)
-    (doom-themes-visual-bell-config)
-    (doom-themes-treemacs-config)
-    (doom-themes-org-config))
-  
-  (use-package doom-modeline
-    :ensure :demand
-    :custom
-    (doom-modeline-github nil)
-    (doom-modeline-env-enable-python t)
-    :init
-    (doom-modeline-mode 1))
-  
-  ;; M-x all-the-icons-install-fonts
-  (use-package all-the-icons :ensure t :after (doom-modeline))
-  
-  ;; emacs 27 支持 Emoji
-  (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
-  
-  (display-battery-mode t)
-  (column-number-mode t)
-  (display-time-mode t)
-  (setq display-time-24hr-format t
-        display-time-default-load-average nil
-        display-time-day-and-date nil)
-  
-  (size-indication-mode t)
-  (setq indicate-buffer-boundaries (quote left))
-  
-  (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 1))))
-  (dolist (mode '(org-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 0))))
-  
-  (show-paren-mode t)
-  (setq show-paren-style 'parentheses)
-  
-  (setq-default indicate-empty-lines t)
-  (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
-  
-  (setq inhibit-startup-screen t
-        inhibit-startup-message t
-        inhibit-startup-echo-area-message t
-        initial-scratch-message nil)
-  
-  (use-package diredfl :ensure :demand :config (diredfl-global-mode))
-  
-  (use-package dashboard
-    :ensure :demand
-    :config
-    (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
-    (setq dashboard-center-content t)
-    (setq dashboard-set-heading-icons t)
-    (setq dashboard-set-navigator t)
-    (setq dashboard-set-file-icons t)
-    (setq dashboard-items '((recents  . 5)
-                            (projects . 5)
-                            (bookmarks . 3)
-                            (agenda . 3)))
-    (dashboard-setup-startup-hook))
-  
-  ;; 字体
-  ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
-  ;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
-  (use-package cnfonts
-    :ensure :demand
-    :init
-    (setq cnfonts-personal-fontnames
-          '(("Iosevka SS14" "Fira Code")
-            ("Sarasa Gothic SC" "Source Han Mono SC")
-            ("HanaMinB")))
-    :config
-    (setq cnfonts-use-face-font-rescale t)
-    (cnfonts-enable))
-  
-  ;; M-x fira-code-mode-install-fonts
-  (use-package fira-code-mode
-    :ensure :demand
-    :custom
-    (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-    :hook prog-mode)
-  
-  (use-package emojify
-    :ensure :demand
-    :hook (erc-mode . emojify-mode)
-    :commands emojify-mode)
-  
-  (use-package ns-auto-titlebar
-    :ensure :demand
-    :config
-    (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
-  
-  (setq inhibit-compacting-font-caches t)
+    ;; preview theme: https://emacsthemes.com/
+    (use-package doom-themes
+      :ensure :demand
+      :config
+      (setq doom-themes-enable-bold t
+            doom-themes-enable-italic t
+            doom-themes-treemacs-theme "doom-colors")
+      (load-theme 'doom-dracula t)
+      (doom-themes-visual-bell-config)
+      (doom-themes-treemacs-config)
+      (doom-themes-org-config))
+    
+    (use-package doom-modeline
+      :ensure :demand
+      :custom
+      (doom-modeline-github nil)
+      (doom-modeline-env-enable-python t)
+      :init
+      (doom-modeline-mode 1))
+    
+    ;; M-x all-the-icons-install-fonts
+    (use-package all-the-icons :ensure t :after (doom-modeline))
+    
+    ;; emacs 27 支持 Emoji
+    (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
+    
+    (display-battery-mode t)
+    (column-number-mode t)
+    (display-time-mode t)
+    (setq display-time-24hr-format t
+          display-time-default-load-average nil
+          display-time-day-and-date nil)
+    
+    (size-indication-mode t)
+    (setq indicate-buffer-boundaries (quote left))
+    
+    (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
+      (add-hook mode (lambda () (display-line-numbers-mode 1))))
+    (dolist (mode '(org-mode-hook))
+      (add-hook mode (lambda () (display-line-numbers-mode 0))))
+    
+    (show-paren-mode t)
+    (setq show-paren-style 'parentheses)
+    
+    (setq-default indicate-empty-lines t)
+    (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
+    
+    (setq inhibit-startup-screen t
+          inhibit-startup-message t
+          inhibit-startup-echo-area-message t
+          initial-scratch-message nil)
+    
+    (use-package diredfl :ensure :demand :config (diredfl-global-mode))
+    
+    (use-package dashboard
+      :ensure :demand
+      :config
+      (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
+      (setq dashboard-center-content t)
+      (setq dashboard-set-heading-icons t)
+      (setq dashboard-set-navigator t)
+      (setq dashboard-set-file-icons t)
+      (setq dashboard-items '((recents  . 5)
+                              (projects . 5)
+                              (bookmarks . 3)
+                              (agenda . 3)))
+      (dashboard-setup-startup-hook))
+    
+    ;; 字体
+    ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
+    ;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
+    (use-package cnfonts
+      :ensure :demand
+      :init
+      (setq cnfonts-personal-fontnames
+            '(("Iosevka SS14" "Fira Code")
+              ("Sarasa Gothic SC" "Source Han Mono SC")
+              ("HanaMinB")))
+      :config
+      (setq cnfonts-use-face-font-rescale t)
+      (cnfonts-enable))
+    
+    ;; M-x fira-code-mode-install-fonts
+    (use-package fira-code-mode
+      :ensure :demand
+      :custom
+      (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+      :hook prog-mode)
+    
+    (use-package emojify
+      :ensure :demand
+      :hook (erc-mode . emojify-mode)
+      :commands emojify-mode)
+    
+    (use-package ns-auto-titlebar
+      :ensure :demand
+      :config
+      (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+    
+    (setq inhibit-compacting-font-caches t)
+    
+    ;; 显示光标位置
+    (use-package beacon :ensure :config (beacon-mode 1))
 #+end_src
 
 * 终端

@@ -1126,6 +1126,9 @@
 
 (setq inhibit-compacting-font-caches t)
 
+;; 显示光标位置
+(use-package beacon :ensure :config (beacon-mode 1))
+
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "bash")
 (setq shell-command-prompt-show-cwd t)
