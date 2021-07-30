@@ -162,7 +162,7 @@ eval "$(direnv hook bash)"
 使用方法：
 1. 在对应目录创建 .envrc 文件;
 2. 向 .envrc 文件添加 shell 环境变量;
-3. 执行 direnv allow . 来生效环境变量;
+3. 执行 =direnv allow .= 生效环境变量;
    
 #+begin_src shell :results none
 $ echo export BAR=bar >>.envrc
@@ -175,7 +175,7 @@ direnv: export +BAR +FOO +GO111MODULE
 $ cd ..
 direnv: unloading
 #+end_src
-+ 如果某些变量被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
++ 如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
 lsp-workspace-restart= 命令来重启语言服务器。
 
 * 增量补全
@@ -234,10 +234,12 @@ lsp-workspace-restart= 命令来重启语言服务器。
      ;; M-s bindings (search-map)
      ("M-s f" . consult-find)
      ("M-s L" . consult-locate)
+     ("M-s F" . consult-locate)
      ("M-s g" . consult-grep)
      ("M-s G" . consult-git-grep)
      ("M-s r" . consult-ripgrep)
      ("M-s l" . consult-line)
+     ("M-s L" . consult-line-multi)
      ("M-s m" . consult-multi-occur)
      ("M-s k" . consult-keep-lines)
      ("M-s u" . consult-focus-lines)
@@ -716,7 +718,11 @@ magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有�
     :ensure
     :custom
     ;; 在当前 window 中显示 magit buffer
-    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+    :config
+    ;; 自动同步 modeline 上的分支信息
+    (setq auto-revert-check-vc-info t)
+    )
 #+end_src
 
 ** git-link
@@ -849,6 +855,7 @@ mode 能很好协作：
     (lsp-idle-delay 0.5)
     (lsp-keep-workspace-alive nil)
     (lsp-enable-file-watchers nil)
+    (lsp-headerline-breadcrumb-enable nil)
     :config
     (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
     (setq lsp-completion-enable-additional-text-edit nil)

@@ -76,10 +76,12 @@
    ;; M-s bindings (search-map)
    ("M-s f" . consult-find)
    ("M-s L" . consult-locate)
+   ("M-s F" . consult-locate)
    ("M-s g" . consult-grep)
    ("M-s G" . consult-git-grep)
    ("M-s r" . consult-ripgrep)
    ("M-s l" . consult-line)
+   ("M-s L" . consult-line-multi)
    ("M-s m" . consult-multi-occur)
    ("M-s k" . consult-keep-lines)
    ("M-s u" . consult-focus-lines)
@@ -521,7 +523,11 @@
   :ensure
   :custom
   ;; 在当前 window 中显示 magit buffer
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+  :config
+  ;; 自动同步 modeline 上的分支信息
+  (setq auto-revert-check-vc-info t)
+  )
 
 (use-package git-link
   :ensure :defer
@@ -619,6 +625,7 @@
   (lsp-idle-delay 0.5)
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
+  (lsp-headerline-breadcrumb-enable nil)
   :config
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (setq lsp-completion-enable-additional-text-edit nil)
