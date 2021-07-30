@@ -47,6 +47,7 @@
 - [[#image][image]]
 - [[#web-开发][web 开发]]
 - [[#不常用][不常用]]
+- [[#footnotes][Footnotes]]
 :END:
 
 * 文件
@@ -901,7 +902,7 @@ subshell in that buffer. You can also rename the *shell* buffer using =M-x
 rename-uniquely=, then create a new *shell* buffer using plain M-x shell. Subshells
 in different buffers run independently and in parallel.
 
-Shell mode：不支持终端转义字符， =不建议使用= ；
+Shell mode：不支持终端转义字符， =不建议使用= ：
 + 如果在 M-x shell 环境，则 emacs 设置环境变量 =INSIDE_EMACS= in the subshell to
     ‘version,comint’,这样可以针对性的初始化 shell。
 + C-c C-u、C-c C-w、C-c C-c、C-c C-\、C-c C-z
@@ -1787,7 +1788,10 @@ rebase 过程中，对 pick 类型的 commit，都可以修改它的 commit mess
   执行 k 命令可以用来删除 branch；
 
 * org
+** 参考
++ [[https://www.cnblogs.com/Open_Source/archive/2011/07/17/2108747.html][Org-mode 简明手册]]
 ** Global and local cycling
+
 + TAB：循环展开当前级别（光标必须位于 headerline）。
 + C-u TAB/Shift-TAB：循环展开所有级别。
 + C-u C-u TAB (org-set-startup-visibility): Switch back to the startup
@@ -1825,7 +1829,7 @@ rebase 过程中，对 pick 类型的 commit，都可以修改它的 commit mess
 + C-c C-f/b：相同级别间移动
 + C-c C-j (org-goto):
     1. TAB： 循环可见性
-    2. / : regexp 搜索，M-g n、p 跳转到下一个和上一个匹配的位置；
+    2. /: regexp 搜索，M-g n、p 跳转到下一个和上一个匹配的位置；
     3. n/p: next/previous headline
     4. f/b: nex/previous headline same
     5. u: one level upstream
@@ -1837,7 +1841,7 @@ rebase 过程中，对 pick 类型的 commit，都可以修改它的 commit mess
 插入 header、item 或 row。在当前行前插入（光标位于行首），将行拆分（光标位于行
 中），在当前行尾插入（光标位于行尾）。如果光标没有位于 header、item 或 row，而是
 普通行，则在当前行插入 headline 或 item。
-+ C-u prefix M-RET :: 在当前 subtree 后插入 headline。
++ C-u M-RET :: 在当前 subtree 后插入 headline。
 + C-u C-u M-RET :: 在 parent subtree 后插入 headline。
   
 + C-RET (org-insert-heading-respect-content) :: 在当前 subtree 后插入 headerline。
@@ -1907,19 +1911,6 @@ Sparse tree 根据匹配条件，只显示匹配所在的 subtree 和它的父 t
 + C-c ^ :: Sort the plain list. Prompt for the sorting method: numerically,
   alphabetically, by time, or by custom function.
 ** Drawers
-:PROPERTIES:
-:END:
-:LOGBOOK:
-- Note taken on [2021-05-16 Sun 23:24] \\
-  just a teafsdkfja dalkfjasldf asd fas dfa
-  
-  asdfasdfja sdfjals dfalsdf af
-- Note taken on [2021-04-17 Sat 11:28] \\
-  asdfasdfasd
-:END:
-:MY_DRAWER:
-test drawers
-:END:
 
 Sometimes you want to keep information associated with an entry, but you
 normally do not want to see it. For this, Org mode has drawers.
@@ -1932,6 +1923,7 @@ and clock times (see Clocking Work Time) to be stored in a ‘LOGBOOK’ drawer.
 + C-c C-x p :: set propertiy
 + C-u C-c C-x d :: org-insert-property-drawer
 + C-c C-z :: Add a time-stamped note to the ‘LOGBOOK’ drawer.
+
 ** Blocks
 
 Org mode uses ‘#+BEGIN’ … ‘#+END’ blocks for various purposes from including
@@ -2029,11 +2021,11 @@ when point is on the link, or with a mouse click
 Org provides several refinements to internal navigation within a document. Most
 notably, a construct like ‘[[#my-custom-id]]’ specifically targets the entry with
 the =‘CUSTOM_ID’= property set to ‘my-custom-id’. Also, an internal link looking
-like =‘[[*Some section]]’= points to a headline with the name ‘Some section’25.
+like =‘[[*Some section]]’= points to =a headline= with the name ‘Some section’25.
 
 When the link does not belong to any of the cases above, Org looks for a
-dedicated target: the same string in double angular brackets, like ‘<<My
-Target>>’.
+dedicated target: the same string in double angular brackets, like =‘<<My
+Target>>’= .
 
 If no dedicated target exists, the link tries to match the exact name of an
 element within the buffer. Naming is done, unsurprisingly, with the ‘NAME’
@@ -2053,9 +2045,10 @@ keyword,
 + M-n、M-p：next/previous link
   
 ** ☞ TODO TODO-Items
+
 + C-c C-t (org-todo) :: Rotate the TODO state of the current item among
 + S-RIGHT/S-LEFT :: Select the following/preceding TODO state, similar to
-  cycling （M-LEFT/M-RIGHT 是改变当前 headline 的级别）   
+  cycling （M-LEFT/M-RIGHT 是改变当前 headline 的级别）
 + S-M-RET (org-insert-todo-heading) :: Insert a new TODO entry below the current
   one.
 + C-u C-c C-t (org-todo) :: Prompt for a note and record a the time of the TODO
@@ -2104,19 +2097,19 @@ CLOCK: [2021-04-18 Sun 20:08]--[2021-04-18 Sun 20:09] =>  0:01
 日期和时间戳类型：
 + Plain timestamp; Event; Appointment ::  <2006-11-02 Thu 20:00-22:00>
 + Timestamp with repeater interval ::   <2007-05-16 Wed 12:30 +1w>
-+ Diary-style expression entries ::  <%%(diary-float t 4 2)>
++ Diary-style expression entries ::  =<%%(diary-float t 4 2)>=
 + Time/Date range ::  <2004-08-23 Mon>--<2004-08-26 Thu>
 + Inactive timestamp :: [2006-11-01 Wed]
 
-+ C-c . (org-time-stamp), 当加 C-u 时插入带时间的日期；
-+ C-c ! (org-time-stamp-inactive)
++ C-c . (org-time-stamp) ::  当加 C-u 时插入带时间的日期；
++ C-c ! (org-time-stamp-inactive) :: 插入不活动的时间戳；
 + C-c C-c :: Normalize timestamp, insert or fix day name if missing or wrong.
 + C-c C-o (org-open-at-point) :: Access the agenda for the date given by the
   timestamp or -range at poin
 + S-LEFT (org-timestamp-down-day) / S-RIGHT (org-timestamp-up-day) :: Change
   date at point by one day.
 + S-UP (org-timestamp-up) / S-DOWN (org-timestamp-down) :: On the beginning or
-  enclosing bracket of a timestamp, change its type
+  enclosing bracket of a timestamp, change its type.
 
 + DEADLINE: <2004-02-29 Sun>
 + SCHEDULED: <2004-12-25 Sat>
@@ -2353,6 +2346,7 @@ but not any simpler ---Albert Einstein
 Everything should be made as simple as possible, \\
 but not any simpler
 #+END_CENTER
+
 *** Emphasis and Monospace
 
 You can make words ‘*bold*’, ‘/italic/’, ‘_underlined_’, ‘=verbatim=’ and
@@ -2402,8 +2396,6 @@ circumference is \pi{}d.
 A large number of entities is provided, with names taken from both HTML and
 LaTeX; you can comfortably browse the complete list from a dedicated buffer
 using the command =org-entities-help=.
-
-*** Embedded LaTeX
 
 *** Literal Examples
 
@@ -2486,12 +2478,13 @@ If the syntax for the label format conflicts with the language syntax, use a
 如果 Example 或 SRC 内如比较长，可以用 =C-c ' (org-edit-special)= 来在另一个buffer
 中编辑内容。编辑结束后用 =C-c '= 来保存， =C-c C-k= 来关闭。
 
-在这个 buffer 中，可以用C-c l(org-store-link) 来为当前光标行添加 ref label, 然后
-用 C-c C-l 插入这个 ref 的链接。这样不需要自己手动在代码中添加引用标记。
+在这个 buffer 中，可以用 =C-c l(org-store-link)= 来为当前光标行添加 ref label, 然后
+用 =C-c C-l= 插入这个 ref 的链接。这样不需要自己手动在代码中添加引用标记。
 
 *** Images
+
 An image is a link to an image file118 that =does not have a description part=,
-for example
+for example:
 
 #+CAPTION: This is the caption for the next table (or link)
 #+ATTR_HTML: :width 600px
@@ -2501,6 +2494,7 @@ If you wish to define a =caption= for the image (see Captions) and maybe =a labe
 for internal cross references (see Internal Links), make sure that the link is
 on a line by itself and precede it with =‘CAPTION’ and ‘NAME’= keywords as
 follows:
+
 #+begin_example
 #+CAPTION: This is the caption for the next figure link (or table)
 #+NAME:   fig:SED-HR4049
@@ -2536,9 +2530,8 @@ You can assign a caption to a specific part of a document by inserting a
 |-----+-----|
 #+end_example
 
-Optionally, the caption can take the form:
+Optionally, the caption can take the form: #+CAPTION[Short caption]: Longer caption.
 
-#+CAPTION[Short caption]: Longer caption.
 #+begin_example
 #+CAPTION[Short caption]: Longer caption.
 #+end_example
@@ -2554,6 +2547,7 @@ A line consisting of only dashes, and =at least 5= of them, is exported as a
 horizontal line.
 
 *** Creating Footnotes
+
 A footnote is started by a footnote marker in =square brackets in column 0=, no
 indentation allowed. It ends at the next footnote definition, headline, or after
 =two consecutive= empty lines. The footnote reference is simply the marker in
@@ -2563,7 +2557,6 @@ square brackets, inside text. Markers always start with =‘fn:’=. For example
 The Org homepage[fn:1] now looks a lot better than it used to.
 ...
 [fn:1] The link is: https://orgmode.org
-
 #+end_example
 
 Org mode extends the number-based syntax to =named footnotes= and optional inline
@@ -2580,11 +2573,11 @@ An anonymous footnote where the definition is given directly at the reference po
 An inline definition of a footnote, which also specifies a name for the note. 
 #+end_example
 
-+ C-c C-x f :: The footnote action command. 插入 inline footnote.
++ C-c C-x f :: The footnote action command. 光标位于居中时，插入 inline footnote.
 + C-c C-c :: If point is on a footnote reference, jump to the definition. If it
   is at the definition, jump back to the reference.
 + C-c C-o  :: Footnote labels are also links to the corresponding definition or
-  reference,
+  reference
 
 ** Exporting
 
@@ -2794,6 +2787,7 @@ Org includes a publishing management system that allows you to configure
 automatic HTML conversion of projects composed of interlinked Org files.
 
 *** Working with Source Code
+
 Users can control how live they want each source code block by tweaking the
 =header arguments= (see Using Header Arguments) for compiling, execution,
 extraction, and exporting.
@@ -2808,7 +2802,10 @@ source files—a process known as =tangling= in literate programming terminology
 For exporting and publishing, Org’s back-ends can format a source code block
 appropriately, often with =native syntax highlighting=.
 
++ C-c C-v t（org-babel-tangle)： 将 source code 输出到文件中。
+
 ** babel
+
 如果执行 go 代码时出错，提示
 #+begin_example
 Debugger entered--Lisp error: (wrong-number-of-arguments (1 . 1) 2) 
@@ -3895,5 +3892,6 @@ from their auto save files with the command =M-x recover-session=
 2. autosave 文件是编辑过程中自动创建的文件，用于预防断电等情况，文件名的开头和结
    尾均有 # ；
 
+* Footnotes
 
-
+[fn:1] 
