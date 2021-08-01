@@ -94,7 +94,7 @@
   :hook
   (completion-list-mode . consult-preview-at-point-mode)
   :init
-  ;; 使用 consult 来预览 register 内容
+  ;; 预览 register
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
@@ -106,8 +106,7 @@
   ;;  consult-ripgrep consult-git-grep consult-grep consult-bookmark consult-recent-file
   ;;  consult--source-file consult--source-project-file consult--source-bookmark
   ;;  :preview-key (kbd "M-."))
-
-  ;; 选中候选者后，按 C-l 才会开启 preview，解决 preview TRAMP bookmark hang 的问题。
+  ;; 选中候选者后，按 C-l 来预览，解决预览 TRAMP bookmark hang 的问题。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (autoload 'projectile-project-root "projectile")
@@ -118,7 +117,6 @@
   :bind
   (:map flycheck-command-map ("!" . consult-flycheck)))
 
-;; consult-lsp 提供两个非常好用的函数：consult-lsp-symbols、consult-lsp-diagnostics
 (use-package consult-lsp
   :ensure :demand :after (lsp-mode consult)
   :config
@@ -182,14 +180,13 @@
 (use-package ace-window
   :ensure
   :init
-  ;; 使用字母来切换窗口(默认数字)
+  ;; 使用字母而非数字标记窗口，便于跳转
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
   :config
-  ;; 设置为 frame 后会忽略 treemacs frame，否则打开两个 window 的情况下，会提示
-  ;; 窗口编号。
+  ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择
   (setq aw-scope 'frame)
   ;; modeline 显示窗口编号
-  (ace-window-display-mode +1)
+  ;;(ace-window-display-mode +1)
   (global-set-key (kbd "M-o") 'ace-window))
 
 (use-package sis
@@ -223,6 +220,19 @@
 
 ;; 多光标编辑
 (use-package iedit :ensure :demand)
+
+;; 直接在 minibuffer 中编辑 query
+(use-package isearch-mb
+  :ensure :demand :after(consult anzu)
+  :config
+  (add-to-list 'isearch-mb--with-buffer #'consult-isearch)
+  (define-key isearch-mb-minibuffer-map (kbd "M-r") #'consult-isearch)
+
+  (add-to-list 'isearch-mb--after-exit #'anzu-isearch-query-replace)
+  (define-key isearch-mb-minibuffer-map (kbd "M-%") 'anzu-isearch-query-replace)
+
+  (add-to-list 'isearch-mb--after-exit #'consult-line)
+  (define-key isearch-mb-minibuffer-map (kbd "M-s l") 'consult-line))
 
 ;; 智能括号
 (use-package smartparens
@@ -520,14 +530,14 @@
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
 (use-package magit
-  :ensure
-  :custom
-  ;; 在当前 window 中显示 magit buffer
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-  :config
-  ;; 自动同步 modeline 上的分支信息
-  (setq auto-revert-check-vc-info t)
-  )
+    :ensure
+    :custom
+    ;; 在当前 window 中显示 magit buffer
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+    :config
+    ;; 自动 revert buff，确保 modeline 上的分支名正确
+    (setq auto-revert-check-vc-info t)
+)
 
 (use-package git-link
   :ensure :defer
@@ -535,8 +545,10 @@
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
 
-(setq ediff-diff-options "-w" ;; 忽略空格
-      ediff-split-window-function 'split-window-horizontally)
+(setq
+ ;; 忽略空格
+ ediff-diff-options "-w" 
+ ediff-split-window-function 'split-window-horizontally)
 
 (use-package company
   :ensure :demand
@@ -555,9 +567,14 @@
         ("C-p"    . company-select-previous)
         ("C-n"    . company-select-next))
   :custom
-  (company-idle-delay 0.3)
-  (company-echo-delay 0.03)
+  ;; trigger completion immediately.
+  (company-idle-delay 0)
+  (company-echo-delay 0)
+  ;; allow input string that do not match candidate words
+  ( company-require-match nil) 
+  ;; number the candidates (use M-1, M-2 etc to select completions).
   (company-show-numbers t)
+  ;; pop up a completion menu by tapping a character
   (company-minimum-prefix-length 1)
   (company-tooltip-limit 14)
   (company-tooltip-align-annotations t)
@@ -565,10 +582,11 @@
   (company-dabbrev-code-everywhere t)
   ;; 不启用其它 buffer 作为来源
   (company-dabbrev-other-buffers nil)
-  ;; dabbrev 大小写敏感
-  (company-dabbrev-ignore-case nil)
-  (company-dabbrev-downcase nil)
+  ;; 除代码外，大小写不敏感
+  (company-dabbrev-ignore-case t)
   (company-dabbrev-code-ignore-case nil)
+  ;; Don't downcase the returned candidates.
+  (company-dabbrev-downcase nil)
   (company-frontends '(company-pseudo-tooltip-frontend
                        company-echo-metadata-frontend))
   (company-backends '(company-capf
@@ -583,6 +601,23 @@
                               shell-mode
                               eshell-mode))
   :config
+  ;; Add yasnippet support for all company backends.
+  (defvar company-mode/enable-yas t
+    "Enable yasnippet for all backends.")
+
+  (defun company-mode/backend-with-yas (backend)
+    (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
+        backend
+      (append (if (consp backend) backend (list backend))
+              '(:with company-yasnippet))))
+
+  (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends))
+
+  ;; Add `company-elisp' backend for elisp.
+  (add-hook 'emacs-lisp-mode-hook
+            #'(lambda ()
+                (require 'company-elisp)
+                (push 'company-elisp company-backends)))
   (global-company-mode t))
 
 (use-package company-quickhelp
@@ -598,12 +633,15 @@
   (go-mode . lsp)
   ;;(yaml-mode . lsp)
   (web-mode . lsp)
-  (js-mode . lsp)
+  ;;(js-mode . lsp)
   (tide-mode . lsp)
   (typescript-mode . lsp)
   (dockerfile-mode . lsp)
   (lsp-mode . lsp-enable-which-key-integration)
   :custom
+  ;; 调试时开启，极大影响性能
+  (lsp-log-io nil)
+  (lsp-enable-folding nil)
   ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
   ;; https://github.com/hlissner/doom-emacs/issues/2911
   ;; https://github.com/Alexander-Miller/treemacs/issues/626
@@ -615,17 +653,24 @@
   (lsp-diagnostics-provider :flycheck)
   (lsp-diagnostics-flycheck-default-level 'warning)
   (lsp-completion-provider :capf)
+  ;; Turn off for better performance
+  (setq lsp-enable-symbol-highlighting nil)
   ;; 关闭 snippet
   (lsp-enable-snippet nil)
-  ;; 不显示所有文档，否则占用 minibuffer 太多屏幕空间
+  ;; 不显示所有文档，否则 minibuffer 占用太多屏幕空间
   (lsp-eldoc-render-all nil)
+  ;; lsp 使用 eldoc 在 minibuffer 显示函数签名， 设置显示的文档行数
   (lsp-signature-doc-lines 2)
-  ;; 增大同 LSP 服务器交互时的读取文件的大小
-  (read-process-output-max (* 1024 1024 2))
-  (lsp-idle-delay 0.5)
+  ;; 增加 IO 性能
+  (process-adaptive-read-buffering nil)
+  ;; 增大同 LSP 服务器交互时读取的文件大小
+  (read-process-output-max (* 1024 1024))
+  (lsp-idle-delay 0.1)
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
   (lsp-headerline-breadcrumb-enable nil)
+  ;; Auto restart LSP.
+  (lsp-restart 'auto-restart)
   :config
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (setq lsp-completion-enable-additional-text-edit nil)
@@ -647,6 +692,14 @@
                  "[/\\\\]_build"
                  "[/\\\\]\\.clwb$"))
     (push dir lsp-file-watch-ignored-directories))
+  ;; Don't ping LSP lanaguage server too frequently.
+  (defvar lsp-on-touch-time 0)
+  (defadvice lsp-on-change (around lsp-on-change-hack activate)
+    ;; don't run `lsp-on-change' too frequently
+    (when (> (- (float-time (current-time))
+                lsp-on-touch-time) 30) ;; 30 seconds
+      (setq lsp-on-touch-time (float-time (current-time)))
+      ad-do-it))
   :bind
   (:map lsp-mode-map
         ("C-c f" . lsp-format-region)
@@ -671,8 +724,6 @@
   :config
   (lsp-treemacs-sync-mode 1))
 
-;;(shell-command "which pyenv &>/dev/null || brew install --HEAD pyenv")
-;;(shell-command "which pyenv-virtualenv &>/dev/null || brew install --HEAD pyenv-virtualenv")
 (use-package pyenv-mode
   :ensure :demand :after (projectile)
   :init
@@ -691,17 +742,32 @@
   (:map pyenv-mode-map ("C-c C-u") . nil)
   (:map pyenv-mode-map ("C-c C-s") . nil))
 
+(defun my/python-setup-shell (&rest args)
+  "Set up python shell"
+  (if (executable-find "ipython")
+      (progn
+        (setq python-shell-interpreter "ipython")
+        ;; ipython version >= 5
+        (setq python-shell-interpreter-args "--simple-prompt -i"))
+    (progn
+      (setq python-shell-interpreter "python")
+      (setq python-shell-interpreter-args "-i"))))
+
+(defun my/python-setup-checkers (&rest args)
+  (when (fboundp 'flycheck-set-checker-executable)
+    (let ((pylint (executable-find "pylint"))
+          (flake8 (executable-find "flake8")))
+      (when pylint
+        (flycheck-set-checker-executable "python-pylint" pylint))
+      (when flake8
+        (flycheck-set-checker-executable "python-flake8" flake8)))))
+
 (use-package python
-  :ensure :demand :after (pyenv-mode)
-  :custom
-  (python-shell-interpreter "ipython")
-  (python-shell-interpreter-args "")
-  (python-shell-prompt-regexp "In \\[[0-9]+\\]: ")
-  (python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
-  (python-shell-completion-setup-code "from IPython.core.completerlib import module_completion")
-  (python-shell-completion-string-code "';'.join(get_ipython().Completer.all_completions('''%s'''))\n")
+  :ensure :demand :after(flycheck)
   :hook
   (python-mode . (lambda ()
+                   (my/python-setup-shell)
+                   (my/python-setup-checkers)
                    (setq indent-tabs-mode nil)
                    (setq tab-width 4)
                    (setq python-indent-offset 4))))
@@ -757,7 +823,25 @@
    ("\\.md\\'" . markdown-mode)
    ("\\.markdown\\'" . markdown-mode))
   :init
-  (setq markdown-command "multimarkdown"))
+  (when (executable-find "multimarkdown")
+    (setq markdown-command "multimarkdown")))
+
+;; Preview via `grip'
+;; Install: pip install grip
+(use-package grip-mode
+  :bind (:map markdown-mode-command-map
+              ("g" . grip-mode))
+  :config
+  (setq grip-preview-use-webkit nil)
+  ;; 支持网络访问（默认 localhost）
+  (setq grip-preview-host "0.0.0.0")
+  ;; 保存文件时才更新预览
+  (setq grip-update-after-change nil)
+  ;; 从 ~/.authinfo 文件获取认证信息
+  (require 'auth-source)
+  (let ((credential (auth-source-user-and-password "api.github.com")))
+             (setq grip-github-user (car credential)
+                   grip-github-password (cadr credential))))
 
 (use-package dockerfile-mode
   :ensure
@@ -857,6 +941,18 @@
   (add-to-list 'auto-mode-alist '("\\.json\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)))
 
+(use-package emmet-mode 
+  :ensure :demand :after(web-mode js2-mode)
+  :config
+  (add-hook 'sgml-mode-hook 'emmet-mode)
+  (add-hook 'css-mode-hook  'emmet-mode)
+  (add-hook 'web-mode-hook  'emmet-mode)
+  (add-hook 'emmet-mode-hook (lambda () (setq emmet-indent-after-insert nil)))
+  (add-hook 'emmet-mode-hook (lambda () (setq emmet-indentation 2)))
+  (setq emmet-expand-jsx-className? t)
+  ;; Make `emmet-expand-yas' not conflict with yas/mode
+  (setq emmet-preview-default nil))
+
 (use-package dap-mode
   :ensure :demand
   :config
@@ -925,6 +1021,7 @@
                   "logs"
                   "target"
                   ".idea"
+                  "build"
                   ".devcontainer"
                   ".settings"
                   ".gradle"
@@ -938,6 +1035,7 @@
                   ".tags"
                   ".classpath"
                   ".project"
+                  ".DS_Store"
                   "__init__.py"))
     (add-to-list 'projectile-globally-ignored-files item))
   (dolist (list '("\\.elc\\'"
@@ -1039,7 +1137,7 @@
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t
         doom-themes-treemacs-theme "doom-colors")
-  (load-theme 'doom-dracula t)
+  (load-theme 'doom-gruvbox t)
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
@@ -1047,27 +1145,30 @@
 (use-package doom-modeline
   :ensure :demand
   :custom
+  ;; 不显示换行和编码，节省空间
+  (doom-modeline-buffer-encoding nil)
+  ;; 显示语言版本（go、python 等）
+  (doom-modeline-env-version t)
+  ;; 分支名称长度
+  (doom-modeline-vcs-max-length 20)
   (doom-modeline-github nil)
-  (doom-modeline-env-enable-python t)
   :init
   (doom-modeline-mode 1))
-
-;; M-x all-the-icons-install-fonts
-(use-package all-the-icons :ensure t :after (doom-modeline))
-
-;; emacs 27 支持 Emoji
-(set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
 
 (display-battery-mode t)
 (column-number-mode t)
 (display-time-mode t)
 (setq display-time-24hr-format t
       display-time-default-load-average nil
-      display-time-day-and-date nil)
+      display-time-format "%Y%m%d-%u-%H:%M"
+      display-time-day-and-date t)
 
 (size-indication-mode t)
 (setq indicate-buffer-boundaries (quote left))
 
+;; Line numbers are not displayed when large files are used.
+(setq line-number-display-limit large-file-warning-threshold)
+(setq line-number-display-limit-width 1000)
 (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 1))))
 (dolist (mode '(org-mode-hook))
@@ -1114,7 +1215,10 @@
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
-;; M-x fira-code-mode-install-fonts
+;; 使用字体缓存，避免卡顿
+(setq inhibit-compacting-font-caches t)
+
+;; 更新字体：M-x fira-code-mode-install-fonts
 (use-package fira-code-mode
   :ensure :demand
   :custom
@@ -1126,23 +1230,22 @@
   :hook (erc-mode . emojify-mode)
   :commands emojify-mode)
 
+;; Emoji 字体
+(set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
+
+;; 更新字体：M-x all-the-icons-install-fonts
+(use-package all-the-icons :ensure)
+
+;; 按照中文折行
+(setq word-wrap-by-category t)
+
 (use-package ns-auto-titlebar
   :ensure :demand
   :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
-(setq inhibit-compacting-font-caches t)
-
-;; 显示光标位置
+  ;; 显示光标位置
 (use-package beacon :ensure :config (beacon-mode 1))
-
-(setq explicit-shell-file-name "/bin/bash")
-(setq shell-file-name "bash")
-(setq shell-command-prompt-show-cwd t)
-(setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
-(setenv "SHELL" shell-file-name)
-(add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
-;;(global-set-key [f1] 'shell)
 
 ;;(shell-command "which cmake &>/dev/null || brew install cmake")
 ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
@@ -1150,7 +1253,7 @@
   :ensure :demand
   :config
   (setq vterm-max-scrollback 100000)
-  ;; 需要 shell-side 配置，如设置环境变量 PROMPT_COMMAND。
+  ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND。）。
   (setq vterm-buffer-name-string "vterm %s")
   :bind
   (:map vterm-mode-map ("C-l" . nil))
@@ -1162,9 +1265,6 @@
   :config
   (define-key vterm-mode-map (kbd "M-RET") 'multi-vterm))
 
-;; vterm-toggle 如果报错 "tcsetattr: Interrupted system call"，则解决办法参考：
-;; https://github.com/jixiuf/vterm-toggle/pull/28
-;; sleep 时间可能需要增加，直到不再报错即可。
 (use-package vterm-toggle
   :ensure :after (vterm)
   :custom
@@ -1189,6 +1289,14 @@
      (reusable-frames . visible)
      (window-height . 0.3))))
 
+(setq explicit-shell-file-name "/bin/bash")
+(setq shell-file-name "bash")
+(setq shell-command-prompt-show-cwd t)
+(setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
+(setenv "SHELL" shell-file-name)
+(add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
+;;(global-set-key [f1] 'shell)
+
 (use-package eshell-toggle
   :ensure :demand
   :custom
@@ -1210,69 +1318,75 @@
   :custom
   (add-to-list 'company-backends 'company-native-complete))
 
+;;; --- Cominit 模式
+(setq comint-prompt-read-only t)        ;;提示符只读
+
+;;; --- Shell 模式
+(setq shell-command-completion-mode t)     ;;开启命令补全模式
+
+;; eshell 高亮模式
+(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
+
 (setq  tramp-ssh-controlmaster-options
        "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=600 -o ServerAliveCountMax=60 -o ServerAliveInterval=10"
        vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
        ;; 远程文件名不过期
        ;;remote-file-name-inhibit-cache nil
        ;;tramp-completion-reread-directory-timeout nil
-       tramp-verbose 1
-       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出现出错： “gzip: (stdin): unexpected end of file”
+       ;;tramp-verbose 1
+       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 1024 1)
        tramp-copy-size-limit nil
        tramp-default-method "ssh"
        tramp-default-user "root"
-       ;; 在登录远程终端时设置 TERM 环境变量为 tramp。这样可以在远程 shell 的初始化文件中对 tramp 登录情况做特殊处理。
-       ;; 例如，对于 zsh，可以设置 PS1。
+       ;; 在登录远程终端时设置 TERM 环境变量为 tramp，这样可以在远程 shell 的初
+       ;; 始化文件中对 tramp 登录情况做特殊处理，如设置 zsh 的 PS1。
        tramp-terminal-type "tramp"
        tramp-completion-reread-directory-timeout t)
 
-;; eshell 高亮模式
-(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
-(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
+(setq
+ ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
+ bookmark-save-flag 1
+ ;; pdf 转为 png 时使用更高分辨率（默认 90）
+ doc-view-resolution 144
+ ;; 关闭烦人的出错时的提示声
+ ring-bell-function 'ignore
+ byte-compile-warnings '(cl-functions)
+ confirm-kill-emacs #'y-or-n-p
+ ad-redefinition-action 'accept
+ vc-follow-symlinks t
+ large-file-warning-threshold nil
+ ;; 自动根据 window 大小显示图片
+ image-transform-resize t
+ grep-highlight-matches t
+ ns-pop-up-frames nil)
 
-(setq  recentf-max-menu-items 100
-       recentf-max-saved-items 100
-       ;; 当 bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存, 或执行
-       ;; M-x bookmark-save 命令）
-       bookmark-save-flag 1
-       ;; pdf 转为 png 时使用更高分辨率（默认 90）
-       doc-view-resolution 144
-       ring-bell-function 'ignore
-       byte-compile-warnings '(cl-functions)
-       confirm-kill-emacs #'y-or-n-p
-       ad-redefinition-action 'accept
-       vc-follow-symlinks t
-       large-file-warning-threshold nil
-       ;; 自动根据 window 大小显示图片
-       image-transform-resize t
-       grep-highlight-matches t
-       ns-pop-up-frames nil)
-
-(setq-default  line-spacing 1
-               ;; fill-column 的值应该小于 visual-fill-column-width，
-               ;; 否则居中显示时行内容会过长而被隐藏；
-               fill-column 80
-               comment-fill-column 0
-               tab-width 4
-               indent-tabs-mode nil
-               debug-on-error nil
-               message-log-max t
-               load-prefer-newer t
-               ad-redefinition-action 'accept)
+(recentf-mode +1)
+(setq-default  
+ line-spacing 1
+ ;; fill-column 的值应该小于 visual-fill-column-width，
+ ;; 否则居中显示时行内容会过长而被隐藏；
+ fill-column 80
+ comment-fill-column 0
+ recentf-max-menu-items 100
+ recentf-max-saved-items 100
+ recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
+ tab-width 4
+ indent-tabs-mode nil
+ debug-on-error nil
+ message-log-max t
+ load-prefer-newer t
+ ad-redefinition-action 'accept)
 
 (fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
 (winner-mode t)
-(recentf-mode +1)
 
-;; gcmh
+;; Garbage Collector Magic Hack
 (setq gc-cons-threshold most-positive-fixnum)
 (defvar hidden-minor-modes '(whitespace-mode))
-(use-package gcmh
-  :ensure :demand
-  :init
-  (gcmh-mode))
+(use-package gcmh :ensure :demand :init (gcmh-mode))
 
 (unless window-system
   (require 'mouse)
@@ -1284,20 +1398,24 @@
         mouse-wheel-progressive-speed nil
         mouse-wheel-follow-mouse 't)
   (mouse-avoidance-mode 'animate)
-  ;; 关闭文件选择窗口
   (setq use-file-dialog nil
         use-dialog-box nil)
-  ;; 平滑滚动
-  (setq scroll-step 1
-        scroll-margin 3
-        next-screen-context-lines 5
-        scroll-preserve-screen-position t
-        scroll-conservatively 10000)
-  ;; 支持 Emacs 和外部程序的粘贴
-  (setq x-select-enable-clipboard t
-        select-enable-primary t
-        select-enable-clipboard t
-        mouse-yank-at-point t))
+
+  (setq 
+   ;; 平滑滚动
+   scroll-step 1
+   scroll-margin 3
+   next-screen-context-lines 5
+   scroll-preserve-screen-position t
+   scroll-conservatively 10000
+   ;; Emacs 和外部程序的粘贴
+   x-select-enable-clipboard t
+   select-enable-primary t
+   select-enable-clipboard t
+   ;; 粘贴于光标处,而不是鼠标指针处
+   mouse-yank-at-point t
+   ;; 设置缩放的模式, 避免 Mac 平台最大化窗口以后右边和下边有空隙
+   frame-resize-pixelwise t))
 
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
@@ -1334,16 +1452,16 @@
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
 
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-(defvar xwidget-webkit-bookmark-jump-new-session)
-(defvar xwidget-webkit-last-session-buffer)
-(add-hook 'pre-command-hook
-          (lambda ()
-            (if (eq this-command #'bookmark-bmenu-list)
-                (if (not (eq major-mode 'xwidget-webkit-mode))
-                    (setq xwidget-webkit-bookmark-jump-new-session t)
-                  (setq xwidget-webkit-bookmark-jump-new-session nil)
-                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+;;(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+;; (defvar xwidget-webkit-bookmark-jump-new-session)
+;; (defvar xwidget-webkit-last-session-buffer)
+;; (add-hook 'pre-command-hook
+;;           (lambda ()
+;;             (if (eq this-command #'bookmark-bmenu-list)
+;;                 (if (not (eq major-mode 'xwidget-webkit-mode))
+;;                     (setq xwidget-webkit-bookmark-jump-new-session t)
+;;                   (setq xwidget-webkit-bookmark-jump-new-session nil)
+;;                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
 
 ;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
