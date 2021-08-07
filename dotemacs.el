@@ -34,17 +34,13 @@
   (prescient-persist-mode +1))
 
 (use-package selectrum-prescient
-  :ensure :demand :after selectrum
+  :ensure :demand :after (selectrum)
   :init
   (selectrum-prescient-mode +1)
   (prescient-persist-mode +1))
 
-(use-package company-prescient
-  :ensure :demand :after prescient
-  :init (company-prescient-mode +1))
-
 (use-package consult
-  :ensure :demand :after projectile
+  :ensure :demand :after (projectile)
   :bind
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
@@ -111,16 +107,6 @@
   (setq consult-narrow-key "<")
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function #'projectile-project-root))
-
-(use-package consult-flycheck
-  :ensure :demand :after (consult flycheck)
-  :bind
-  (:map flycheck-command-map ("!" . consult-flycheck)))
-
-(use-package consult-lsp
-  :ensure :demand :after (lsp-mode consult)
-  :config
-  (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
 
 (use-package marginalia
   :ensure :demand :after (selectrum)
@@ -219,7 +205,7 @@
 )
 
 ;; 多光标编辑
-(use-package iedit :ensure :demand)
+(use-package iedit :ensure :disabled :demand)
 
 ;; 直接在 minibuffer 中编辑 query
 (use-package isearch-mb
@@ -263,12 +249,12 @@
 
 ;; 高亮变化的区域
 (use-package volatile-highlights
-  :ensure
+  :ensure :disabled
   :init (volatile-highlights-mode))
 
 ;; 在 modeline 显示匹配的总数和当前序号
 (use-package anzu
-  :ensure
+  :ensure :disabled
   :init
   (setq anzu-mode-lighter "")
   (global-set-key [remap query-replace] 'anzu-query-replace)
@@ -277,6 +263,7 @@
   (define-key isearch-mode-map [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp)
   (global-anzu-mode))
 
+;; 快速跳转当前 symbol
 (use-package symbol-overlay
   :ensure
   :config
@@ -301,6 +288,8 @@
   :ensure :demand :after (lsp-mode company)
   :commands yas-minor-mode
   :config
+  ;; 手动触发补全
+  (global-set-key (kbd "C-c y") 'company-yasnippet)
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   (yas-global-mode 1))
 
@@ -534,9 +523,10 @@
     :custom
     ;; 在当前 window 中显示 magit buffer
     (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-    :config
-    ;; 自动 revert buff，确保 modeline 上的分支名正确
-    (setq auto-revert-check-vc-info t)
+    ;;:config
+    ;; 自动 revert buff，确保 modeline 上的分支名正确。
+    ;; CPU profile 显示比较影响性能，暂不开启。
+    ;;(setq auto-revert-check-vc-info nil)
 )
 
 (use-package git-link
@@ -571,54 +561,27 @@
   (company-idle-delay 0)
   (company-echo-delay 0)
   ;; allow input string that do not match candidate words
-  ( company-require-match nil) 
+  ;;(company-require-match nil)
   ;; number the candidates (use M-1, M-2 etc to select completions).
   (company-show-numbers t)
   ;; pop up a completion menu by tapping a character
   (company-minimum-prefix-length 1)
   (company-tooltip-limit 14)
   (company-tooltip-align-annotations t)
-  ;; 为 code 启用 dabbrev
-  (company-dabbrev-code-everywhere t)
-  ;; 不启用其它 buffer 作为来源
-  (company-dabbrev-other-buffers nil)
-  ;; 除代码外，大小写不敏感
-  (company-dabbrev-ignore-case t)
-  (company-dabbrev-code-ignore-case nil)
+  ;; 大小写不敏感
+  (company-dabbrev-ignore-case nil)
   ;; Don't downcase the returned candidates.
   (company-dabbrev-downcase nil)
-  (company-frontends '(company-pseudo-tooltip-frontend
-                       company-echo-metadata-frontend))
   (company-backends '(company-capf
-                      company-files
-                      (company-dabbrev-code company-keywords)
                       company-dabbrev
-                      company-yasnippet))
-  (company-global-modes '(not erc-mode
-                              message-mode
-                              help-mode
-                              gud-mode
-                              shell-mode
-                              eshell-mode))
+                      company-files
+                      company-keywords))
   :config
-  ;; Add yasnippet support for all company backends.
-  (defvar company-mode/enable-yas t
-    "Enable yasnippet for all backends.")
-
-  (defun company-mode/backend-with-yas (backend)
-    (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
-        backend
-      (append (if (consp backend) backend (list backend))
-              '(:with company-yasnippet))))
-
-  (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends))
-
-  ;; Add `company-elisp' backend for elisp.
-  (add-hook 'emacs-lisp-mode-hook
-            #'(lambda ()
-                (require 'company-elisp)
-                (push 'company-elisp company-backends)))
   (global-company-mode t))
+
+(use-package company-prescient
+  :ensure :demand :after prescient
+  :init (company-prescient-mode +1))
 
 (use-package company-quickhelp
   :ensure :demand :after (company)
@@ -654,26 +617,25 @@
   (lsp-diagnostics-flycheck-default-level 'warning)
   (lsp-completion-provider :capf)
   ;; Turn off for better performance
-  (setq lsp-enable-symbol-highlighting nil)
-  ;; 关闭 snippet
-  (lsp-enable-snippet nil)
+  (lsp-enable-symbol-highlighting nil)
+  ;; 不显示面包屑
+  (lsp-headerline-breadcrumb-enable nil)
+  (lsp-enable-snippet t)
   ;; 不显示所有文档，否则 minibuffer 占用太多屏幕空间
   (lsp-eldoc-render-all nil)
   ;; lsp 使用 eldoc 在 minibuffer 显示函数签名， 设置显示的文档行数
-  (lsp-signature-doc-lines 2)
+  (lsp-signature-doc-lines 3)
   ;; 增加 IO 性能
   (process-adaptive-read-buffering nil)
   ;; 增大同 LSP 服务器交互时读取的文件大小
   (read-process-output-max (* 1024 1024))
   (lsp-idle-delay 0.1)
-  (lsp-keep-workspace-alive nil)
-  (lsp-enable-file-watchers nil)
-  (lsp-headerline-breadcrumb-enable nil)
+  (lsp-keep-workspace-alive t)
+  (lsp-enable-file-watchers t)
   ;; Auto restart LSP.
   (lsp-restart 'auto-restart)
   :config
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
-  (setq lsp-completion-enable-additional-text-edit nil)
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
                  "[/\\\\]node_modules\\'"
@@ -692,20 +654,17 @@
                  "[/\\\\]_build"
                  "[/\\\\]\\.clwb$"))
     (push dir lsp-file-watch-ignored-directories))
-  ;; Don't ping LSP lanaguage server too frequently.
-  (defvar lsp-on-touch-time 0)
-  (defadvice lsp-on-change (around lsp-on-change-hack activate)
-    ;; don't run `lsp-on-change' too frequently
-    (when (> (- (float-time (current-time))
-                lsp-on-touch-time) 30) ;; 30 seconds
-      (setq lsp-on-touch-time (float-time (current-time)))
-      ad-do-it))
   :bind
   (:map lsp-mode-map
         ("C-c f" . lsp-format-region)
         ("C-c d" . lsp-describe-thing-at-point)
         ("C-c a" . lsp-execute-code-action)
         ("C-c r" . lsp-rename)))
+
+(use-package consult-lsp
+  :ensure :demand :after (lsp-mode consult)
+  :config
+  (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
 
 (use-package lsp-ui
   :ensure :after (lsp-mode flycheck)
@@ -720,12 +679,12 @@
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (use-package lsp-treemacs
-  :ensure :after (lsp-mode treemacs)
+  :ensure :disabled :after (lsp-mode treemacs)
   :config
   (lsp-treemacs-sync-mode 1))
 
 (use-package pyenv-mode
-  :ensure :demand :after (projectile)
+  :ensure :demand :disabled :after (projectile)
   :init
   (add-to-list 'exec-path "~/.pyenv/shims")
   (setenv "WORKON_HOME" "~/.pyenv/versions/")
@@ -778,7 +737,7 @@
   :hook (python-mode . (lambda () (require 'lsp-pyright) (lsp))))
 
 (use-package lsp-java
-  :ensure :demand :after (lsp-mode company)
+  :ensure :demand :disabled t :after (lsp-mode company)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -795,8 +754,8 @@
               (concat "-javaagent:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar"))))
   :hook (java-mode . lsp)
   :config
-  (use-package dap-mode :ensure :disabled :after (lsp-java) :config (dap-auto-configure-mode))
-  (use-package dap-java :ensure :disabled))
+  (use-package dap-mode :ensure :disabled t :after (lsp-java) :config (dap-auto-configure-mode))
+  (use-package dap-java :ensure :disabled t))
 
 (use-package go-mode
   :ensure :demand :after (lsp-mode)
@@ -954,7 +913,7 @@
   (setq emmet-preview-default nil))
 
 (use-package dap-mode
-  :ensure :demand
+  :ensure :demand :disabled
   :config
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
@@ -986,6 +945,11 @@
 
   :hook
   (prog-mode . flycheck-mode))
+
+(use-package consult-flycheck
+  :ensure :demand :after (consult flycheck)
+  :bind
+  (:map flycheck-command-map ("!" . consult-flycheck)))
 
 (use-package flycheck-pos-tip
   :ensure :after (flycheck)
@@ -1160,10 +1124,11 @@
 (display-time-mode t)
 (setq display-time-24hr-format t
       display-time-default-load-average nil
-      display-time-format "%Y%m%d-%u-%H:%M"
+      display-time-load-average-threshold 5
+      display-time-format "%m/%d[%u]%H:%M"
       display-time-day-and-date t)
-
-(size-indication-mode t)
+;; 不显示文件大小
+(size-indication-mode -1)
 (setq indicate-buffer-boundaries (quote left))
 
 ;; Line numbers are not displayed when large files are used.
@@ -1383,6 +1348,12 @@
 (auto-image-file-mode t)
 (winner-mode t)
 
+;; Mac 的 Command 键当做 meta 使用
+(setq mac-option-key-is-meta nil
+      mac-command-key-is-meta t
+      mac-command-modifier 'meta
+      mac-option-modifier 'none)
+
 ;; Garbage Collector Magic Hack
 (setq gc-cons-threshold most-positive-fixnum)
 (defvar hidden-minor-modes '(whitespace-mode))
@@ -1477,6 +1448,6 @@
   :init (which-key-mode)
   :diminish which-key-mode
   :config
-  (setq which-key-idle-delay 1.1))
+  (setq which-key-idle-delay 0.5))
 
 (server-start)
