@@ -49,6 +49,25 @@
 - [[#其它][其它]]
 :END:
 
+* 编译安装
+
+编译安装 Emacs 27：
+#+begin_src shell :results none
+brew tap d12frosted/emacs-plus
+brew install emacs-plus@27 --with-no-titlebar --with-no-frame-refocus --with-xwidgets --HEAD
+brew link --overwrite emacs-plus@27
+ln -s /usr/local/opt/emacs-plus@27/Emacs.app /Applications
+#+end_src
+
+编译安装 Emacs 28：
+#+begin_src shell :results none
+brew reinstall gcc libgccjit
+brew install emacs-plus@28  --with-xwidgets --with-native-comp
+brew unlink emacs-plus@27
+brew link --overwrite emacs-plus@28
+ln -s /usr/local/opt/emacs-plus@28/Emacs.app /Applications
+#+end_src
+
 * 外部依赖
 
 本 emacs 配置依赖如下外部工具命令或软件包：
@@ -117,17 +136,19 @@
 
 先安装 =use-package=, 后续使用它管理所有第三方软件包：
 #+begin_src emacs-lisp
-(setq use-package-always-ensure t)
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+  ;; use-package 默认添加 ensure 和 demand 参数
+  (setq use-package-always-ensure t)
+  (setq use-package-always-demand t)
+  (unless (package-installed-p 'use-package)
+    (package-refresh-contents)
+    (package-install 'use-package))
 #+end_src
 
 * 环境变量
 
 GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境变量，如 =PATH= ，导
 致有些依赖的命令找不到。 =exec-path-from-shell= 包通过将指定的 shell 环境变量拷贝
-到Emacs 环境中来解决这个问题：<<exec-path-from-shell>>
+到 Emacs 环境中来解决这个问题：<<exec-path-from-shell>>
 
 #+begin_src emacs-lisp
   (use-package exec-path-from-shell
@@ -141,61 +162,19 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
       (exec-path-from-shell-initialize)))
 #+end_src
 
-* 目录变量
-
-目录变量是只对特定目录及子目录有效的变量。
-
-安装 =direnv= 工具命令：
-#+begin_src shell :results none
-brew install direnv
-#+end_src
-
-[[https://direnv.net/docs/hook.html][将 direnv hook 到 shell 启动文件中]]：
-#+begin_src shell :results none
-eval "$(direnv hook bash)"
-#+end_src
-
-安装 emacs direnv 软件包，调用 direnv 命令获取当前文件或目录的环境变量，然后更新
-到 emacs 变量 =process-environment= 和 =exec-path= ，emacs 后续启动的命令就会继承这
-些环境变量：
-#+begin_src emacs-lisp
-;; 目录变量（.envrc)  
-(use-package direnv :ensure :config (direnv-mode))  
-#+end_src
-
-使用步骤：
-1. 在对应目录创建 =.envrc= 文件;
-2. 向 .envrc 文件添加 shell 环境变量;
-3. 执行 =direnv allow .= 生效环境变量;
-   
-#+begin_src shell :results none
-$ echo export BAR=bar >>.envrc
-direnv: error /Users/zhangjun/codes/github/operator/.envrc is blocked. Run `direnv allow` to approve its content
-
-$ direnv allow .
-direnv: loading ~/codes/github/operator/.envrc
-direnv: export +BAR +FOO +GO111MODULE
-
-$ cd ..
-direnv: unloading
-#+end_src
-+ 如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
-lsp-workspace-restart= 命令来重启语言服务器。
-
 * 启动优化
 
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
-  ;; emacs 28
-  ;; (when (fboundp 'native-compile-async)
-  ;;   (setenv "LIBRARY_PATH" 
-  ;;           (concat (getenv "LIBRARY_PATH") 
-  ;;                   "/usr/local/opt/gcc/lib/gcc/10:/usr/local/opt/gcc/lib/gcc/10/gcc/x86_64-apple-darwin20/10.2.0"))
-  ;;   (setq comp-speed 3
-  ;;         comp-async-jobs-number 4 
-  ;;         comp-deferred-compilation nil
-  ;;         comp-deferred-compilation-black-list '()
-  ;;         ))
-  ;; (setq package-native-compile t)
+  ;; Emacs 28
+  (when (fboundp 'native-compile-async)
+    (setenv "LIBRARY_PATH" 
+            (concat (getenv "LIBRARY_PATH") 
+                    "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin20/11.2.0"))
+    (setq native-comp-speed 2
+          native-comp-async-jobs-number 4
+          native-comp-deferred-compilation nil
+          native-comp-deferred-compilation-deny-list '()))
+  (setq package-native-compile t)
   
   (tool-bar-mode -1)
   (menu-bar-no-scroll-bar)
@@ -207,17 +186,13 @@ lsp-workspace-restart= 命令来重启语言服务器。
   (setq gc-cons-threshold most-positive-fixnum
         gc-cons-percentage 0.5)
   
-  (add-hook 'emacs-startup-hook
-            (lambda ()
-              "Recover GC values after startup."
-              (setq gc-cons-threshold 800000
-                    gc-cons-percentage 0.1)))
-  
   ;; Increase how much is read from processes in a single chunk (default is 4kb)
   (setq read-process-output-max #x10000)  ; 64kb
   
   ;; Don't ping things that look like domain names.
   (setq ffap-machine-p-known 'reject)
+  
+  (setq frame-resize-pixelwise t)
   
   ;; 默认先最大化。
   (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
@@ -266,27 +241,66 @@ lsp-workspace-restart= 命令来重启语言服务器。
     "Are we running a macport build on a Mac system?")
 #+end_src
 
+* 目录变量
+
+目录变量是只对特定目录及子目录有效的变量。
+
+安装 =direnv= 工具命令：
+#+begin_src shell :results none
+brew install direnv
+#+end_src
+
+[[https://direnv.net/docs/hook.html][将 direnv hook 到 shell 启动文件中]]：
+#+begin_src shell :results none
+eval "$(direnv hook bash)"
+#+end_src
+
+安装 emacs direnv 软件包，调用 direnv 命令获取当前文件或目录的环境变量，然后更新
+到 emacs 变量 =process-environment= 和 =exec-path= ，emacs 后续启动的命令就会继承这
+些环境变量：
+#+begin_src emacs-lisp
+;; 目录变量（.envrc)  
+(use-package direnv :ensure :config (direnv-mode))  
+#+end_src
+
+使用步骤：
+1. 在对应目录创建 =.envrc= 文件;
+2. 向 .envrc 文件添加 shell 环境变量;
+3. 执行 =direnv allow .= 生效环境变量;
+   
+#+begin_src shell :results none
+$ echo export BAR=bar >>.envrc
+direnv: error /Users/zhangjun/codes/github/operator/.envrc is blocked. Run `direnv allow` to approve its content
+
+$ direnv allow .
+direnv: loading ~/codes/github/operator/.envrc
+direnv: export +BAR +FOO +GO111MODULE
+
+$ cd ..
+direnv: unloading
+#+end_src
++ 如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
+lsp-workspace-restart= 命令来重启语言服务器。
+
 * 增量补全
 
 #+begin_src emacs-lisp
   (use-package selectrum
-    :ensure :demand
     :init
     (selectrum-mode +1))
   
   (use-package prescient
-    :ensure :demand
     :config
     (prescient-persist-mode +1))
   
   (use-package selectrum-prescient
-    :ensure :demand :after (selectrum)
+    :after (selectrum)
     :init
     (selectrum-prescient-mode +1)
     (prescient-persist-mode +1))
   
   (use-package consult
-    :ensure :demand :after (projectile)
+    :after (projectile)
     :bind
     (;; C-c bindings (mode-specific-map)
      ("C-c h" . consult-history)
@@ -355,7 +369,7 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (setq consult-project-root-function #'projectile-project-root))
   
   (use-package marginalia
-    :ensure :demand :after (selectrum)
+    :after (selectrum)
     :init (marginalia-mode)
     :config
     (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
@@ -367,7 +381,7 @@ lsp-workspace-restart= 命令来重启语言服务器。
      ("M-A" . marginalia-cycle)))
   
   (use-package embark
-    :ensure :demand :after (selectrum which-key)
+    :after (selectrum which-key)
     :config
     (setq embark-prompter 'embark-keymap-prompter)
   
@@ -384,13 +398,12 @@ lsp-workspace-restart= 命令来重启语言服务器。
             (which-key--show-keymap "Embark" map nil nil 'no-paging)
             #'which-key--hide-popup-ignore-command)
           embark-become-indicator embark-action-indicator)
-  
     :bind
     (("C-;" . embark-act-noquit)
      :map embark-variable-map ("l" . edit-list)))
   
   (use-package embark-consult
-    :ensure :demand :after (embark consult)
+    :after (embark consult)
     :hook
     (embark-collect-mode . embark-consult-preview-minor-mode))
 #+end_src
@@ -408,7 +421,6 @@ mode 能很好协作：
 
 #+begin_src emacs-lisp
   (use-package company
-    :ensure :demand
     :bind
     (:map company-mode-map
           ([remap completion-at-point] . company-complete)
@@ -440,6 +452,7 @@ mode 能很好协作：
     (company-dabbrev-ignore-case nil)
     ;; Don't downcase the returned candidates.
     (company-dabbrev-downcase nil)
+    ;; 候选框宽度
     (company-tooltip-minimum-width 70)
     (company-tooltip-maximum-width 100)
     (company-backends '((company-capf :with company-yasnippet)
@@ -447,14 +460,14 @@ mode 能很好协作：
                         company-dabbrev))
     :config
     (global-company-mode t)
-
+  
     ;; 修复与 lsp 不兼容的情况
     (defun my-lsp-fix-company-capf ()
       "Remove redundant `comapny-capf'."
       (setq company-backends
             (remove 'company-backends (remq 'company-capf company-backends))))
     (advice-add #'lsp-completion--enable :after #'my-lsp-fix-company-capf)
-
+  
     ;; 不在前缀的候选列表里 snippets
     (defun my-company-yasnippet-disable-inline (fn cmd &optional arg &rest _ignore)
       "Enable yasnippet but disable it inline."
@@ -482,7 +495,7 @@ mode 能很好协作：
 company-box 为候选者显示图标：
 #+begin_src emacs-lisp
   (use-package company-box
-    :ensure :demand :after (company all-the-icons)
+    :after (company all-the-icons)
     :init
     ;;(setq company-box-doc-enable nil)
     (setq company-box-doc-delay 0.1)
@@ -492,7 +505,7 @@ company-box 为候选者显示图标：
 company-prescient 精准排序：
 #+begin_src emacs-lisp
   (use-package company-prescient
-    :ensure :demand :after prescient
+    :after prescient
     :init (company-prescient-mode +1))
 #+end_src
 
@@ -511,7 +524,6 @@ company-quickhelp 显示候选者的帮助文档：
 跳转到上次修改位置：
 #+begin_src emacs-lisp
   (use-package goto-chg
-    :ensure
     :config
     (global-set-key (kbd "C->") 'goto-last-change)
     (global-set-key (kbd "C-<") 'goto-last-change-reverse))
@@ -520,7 +532,6 @@ company-quickhelp 显示候选者的帮助文档：
 跳转到特定字符或行：
 #+begin_src emacs-lisp
   (use-package avy
-    :ensure
     :config
     (setq avy-all-windows nil
           avy-background t)
@@ -532,7 +543,6 @@ company-quickhelp 显示候选者的帮助文档：
 跳转到指定窗口：
 #+begin_src emacs-lisp  
   (use-package ace-window
-    :ensure
     :init
     ;; 使用字母而非数字标记窗口，便于跳转
     (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
@@ -552,7 +562,6 @@ company-quickhelp 显示候选者的帮助文档：
 
 #+begin_src emacs-lisp
   (use-package sis
-    :ensure :demand
     :config
     (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
     ;; 自动切换到英文的前缀快捷键
@@ -586,11 +595,11 @@ company-quickhelp 显示候选者的帮助文档：
 
 #+begin_src emacs-lisp
   ;; 多光标编辑
-  (use-package iedit :disabled :demand)
+  (use-package iedit :disabled)
   
   ;; 直接在 minibuffer 中编辑 query
   (use-package isearch-mb
-    :demand :after(consult)
+    :after (consult)
     :config
     (add-to-list 'isearch-mb--with-buffer #'consult-isearch)
     (define-key isearch-mb-minibuffer-map (kbd "M-r") #'consult-isearch)
@@ -615,7 +624,7 @@ company-quickhelp 显示候选者的帮助文档：
   
   ;; 显示缩进
   (use-package highlight-indent-guides
-    :ensure :demand :after (python yaml-mode web-mode)
+    :after (python yaml-mode web-mode)
     :custom
     (highlight-indent-guides-method 'character)
     (highlight-indent-guides-responsive 'stack)
@@ -661,7 +670,7 @@ company-quickhelp 显示候选者的帮助文档：
   
   ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
   (use-package yasnippet
-    :demand :after (lsp-mode company)
+    :after (lsp-mode company)
     :commands yas-minor-mode
     :config
     ;; 手动触发补全
@@ -731,7 +740,6 @@ company-quickhelp 显示候选者的帮助文档：
       (package-install package)))
   
   (use-package org
-    :ensure :demand
     :config
     (setq org-todo-keywords
           '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
@@ -829,14 +837,14 @@ company-quickhelp 显示候选者的帮助文档：
   (add-hook 'org-mode-hook 'my/org-faces)
   
   (use-package org-superstar
-    :ensure :demand :after (org)
+    :after (org)
     :hook
     (org-mode . org-superstar-mode)
     :custom
     (org-superstar-remove-leading-stars t))
   
   (use-package org-fancy-priorities
-    :ensure :demand :after (org)
+    :after (org)
     :hook
     (org-mode . org-fancy-priorities-mode)
     :config
@@ -845,7 +853,7 @@ company-quickhelp 显示候选者的帮助文档：
   ;; 拖拽保持图片或 F2 保存剪贴板中图片。
   ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
   (use-package org-download
-    :ensure :demand :after (posframe)
+    :after (posframe)
     :bind
     ("<f2>" . org-download-screenshot)
     :config
@@ -862,7 +870,7 @@ company-quickhelp 显示候选者的帮助文档：
   (use-package toc-org :after (org) :hook (org-mode . toc-org-mode))
   
   (use-package org-tree-slide
-    :ensure :after org
+    :after org
     :commands org-tree-slide-mode
     :config
     (setq org-tree-slide-slide-in-effect t
@@ -897,7 +905,7 @@ company-quickhelp 显示候选者的帮助文档：
      visual-fill-column-center-text t)
     (visual-fill-column-mode 1))
   (use-package visual-fill-column
-    :ensure :demand :after org
+    :after org
     :hook
     (org-mode . my/org-mode-visual-fill))
   
@@ -966,7 +974,6 @@ company-quickhelp 显示候选者的帮助文档：
 magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有之一！
 #+begin_src emacs-lisp
     (use-package magit
-      :ensure
       :custom
       ;; 在当前 window 中显示 magit buffer
       (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
@@ -980,7 +987,6 @@ magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有�
 git-link 根据仓库地址、commit 等信息，为光标位置生成 URL:
 #+begin_src emacs-lisp
 (use-package git-link
-  :ensure :defer
   :config
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
@@ -999,7 +1005,7 @@ ediff:
 
 #+begin_src emacs-lisp
   (use-package lsp-mode
-    :ensure :demand :after (flycheck)
+    :after (flycheck)
     :hook
     (java-mode . lsp)
     (python-mode . lsp)
@@ -1039,6 +1045,7 @@ ediff:
     (process-adaptive-read-buffering nil)
     ;; 增大同 LSP 服务器交互时读取的文件大小
     (read-process-output-max (* 1024 1024))
+    ;; refresh the highlights, lenses, links
     (lsp-idle-delay 0.1)
     (lsp-keep-workspace-alive t)
     (lsp-enable-file-watchers t)
@@ -1075,7 +1082,6 @@ ediff:
 origami 提供代码折叠功能：
 #+begin_src emacs-lisp
   (use-package origami
-    :demand
     :config
     (define-prefix-command 'origami-mode-map)
     (global-set-key (kbd "C-x C-z") 'origami-mode-map)
@@ -1099,7 +1105,7 @@ origami 提供代码折叠功能：
 consult-lsp 提供两个非常有用的命令：consult-lsp-symbols 和 consult-lsp-diagnostics：
   #+begin_src emacs-lisp
   (use-package consult-lsp
-    :ensure :demand :after (lsp-mode consult)
+    :after (lsp-mode consult)
     :config
     (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
   #+end_src
@@ -1107,7 +1113,7 @@ consult-lsp 提供两个非常有用的命令：consult-lsp-symbols 和 consult-
 lsp-ui 用于显示帮助信息：
 #+begin_src emacs-lisp
   (use-package lsp-ui
-    :ensure :after (lsp-mode flycheck)
+    :after (lsp-mode flycheck)
     :custom
     ;; 关闭 cursor hover, 但 mouse hover 时显示文档
     (lsp-ui-doc-show-with-cursor nil)
@@ -1153,7 +1159,7 @@ pyenv 使用方法：
 pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pyenv 环境的目的：
 #+begin_src emacs-lisp
   (use-package pyenv-mode
-    :ensure :demand :disabled :after (projectile)
+    :disabled :after (projectile)
     :init
     (add-to-list 'exec-path "~/.pyenv/shims")
     (setenv "WORKON_HOME" "~/.pyenv/versions/")
@@ -1195,7 +1201,7 @@ pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pye
           (flycheck-set-checker-executable "python-flake8" flake8)))))
   
   (use-package python
-    :ensure :demand :after(flycheck)
+    :after(flycheck)
     :hook
     (python-mode . (lambda ()
                      (my/python-setup-shell)
@@ -1213,13 +1219,13 @@ lsp-python-ms 和 pyls，转向使用 lsp-pyright。
 #+begin_src emacs-lisp
   ;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
   (use-package lsp-pyright
-    :ensure :demand :after (python)
+    :after (python)
     :preface
-         ;; Use yapf to format
-         (defun lsp-pyright-format-buffer ()
-           (interactive)
-           (when (and (executable-find "yapf") buffer-file-name)
-             (call-process "yapf" nil nil nil "-i" buffer-file-name)))
+    ;; Use yapf to format
+    (defun lsp-pyright-format-buffer ()
+      (interactive)
+      (when (and (executable-find "yapf") buffer-file-name)
+        (call-process "yapf" nil nil nil "-i" buffer-file-name)))
     :hook
     (python-mode . (lambda ()
                      (require 'lsp-pyright)
@@ -1239,7 +1245,6 @@ pyright _不使用_ pyenv 的 ~.python-version~ 指定的 python 版本或 venv�
 可以安装 =pyenv-pyright= 插件来方便的创建和更新 pyrightconfig.json 文件中的 venv
 和 venvPath 配置：
 #+begin_src shell :results none
-# 安装 pyright 插件
 git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins/pyenv-pyright
 #+end_src
 
@@ -1297,7 +1302,7 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 
 #+begin_src emacs-lisp
 (use-package lsp-java
-  :ensure :demand :disabled t :after (lsp-mode company)
+  :disabled t :after (lsp-mode company)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -1327,7 +1332,7 @@ go get golang.org/x/tools/gopls@latest
 
 #+begin_src emacs-lisp
   (use-package go-mode
-    :ensure :demand :after (lsp-mode)
+    :after (lsp-mode)
     :init
     (defun lsp-go-install-save-hooks ()
       (add-hook 'before-save-hook #'lsp-format-buffer t t)
@@ -1364,7 +1369,6 @@ pip install grip
 
 #+begin_src emacs-lisp
   (use-package markdown-mode
-    :ensure
     :commands (markdown-mode gfm-mode)
     :mode
     (("README\\.md\\'" . gfm-mode)
@@ -1432,8 +1436,7 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
 + M-x grip-browse-preview 使用浏览器来预览
 #+begin_src emacs-lisp  
   (use-package grip-mode
-    :bind (:map markdown-mode-command-map
-                ("g" . grip-mode))
+    :bind (:map markdown-mode-command-map ("g" . grip-mode))
     :config
     (setq grip-preview-use-webkit nil)
     ;; 支持网络访问（默认 localhost）
@@ -1450,7 +1453,7 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
 
 #+begin_src emacs-lisp
   (use-package markdown-toc
-    :ensure :demand :after(markdown-mode)
+    :after(markdown-mode)
     :bind (:map markdown-mode-command-map
            ("r" . markdown-toc-generate-or-refresh-toc)))
 #+end_src
@@ -1463,19 +1466,19 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
 
 #+begin_src emacs-lisp
   (use-package dockerfile-mode
-    :ensure
-    :config (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
+    :config
+    (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 #+end_src
 
 ** ansible
 #+begin_src emacs-lisp  
   (use-package ansible
-    :ensure :after (yaml-mode)
+    :after (yaml-mode)
     :config
     (add-hook 'yaml-mode-hook '(lambda () (ansible 1))))
   
   (use-package company-ansible
-    :ensure :after (ansible company)
+    :after (ansible company)
     :config
     (add-hook 'ansible-hook
               (lambda()
@@ -1484,7 +1487,7 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
   ;; ansible-doc 使用系统的 ansible-doc 命令搜索文档
   ;; (shell-command "pip install ansible")
   (use-package ansible-doc
-    :ensure :after (ansible yasnippet)
+    :after (ansible yasnippet)
     :config
     (add-hook 'ansible-hook
               (lambda()
@@ -1515,7 +1518,7 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
   
   ;; for .ts and .tsx file
   (use-package typescript-mode
-    :ensure :demand :after (flycheck)
+    :after (flycheck)
     :init
     (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescript-mode))
     :hook
@@ -1536,7 +1539,7 @@ https://github.com/sourcegraph/javascript-typescript-langserver
 
 #+begin_src  emacs-lisp
   (use-package tide
-    :ensure :demand :after (typescript-mode company flycheck)
+    :after (typescript-mode company flycheck)
     :hook ((before-save . tide-format-before-save)))
   ;; 开启 tsserver 的 debug 日志模式
   (setq tide-tsserver-process-environment '("TSS_LOG=-level verbose -file /tmp/tss.log"))
@@ -1555,7 +1558,7 @@ https://github.com/mooz/js2-mode#react-and-jsx
 
 #+begin_src emacs-lisp
   (use-package js2-mode
-    :ensure :demand :after (tide)
+    :after (tide)
     :config
     ;; js-mode-map 将 M-. 绑定到 js-find-symbol, 没有使用 tide 和 lsp, 所以需要解
     ;; 绑。这样 M-. 被 tide 绑定到 tide-jump-to-definition.
@@ -1580,7 +1583,7 @@ js/jsx/ts/tsx 等类型文件。
 
 #+begin_src  emacs-lisp
   (use-package web-mode
-    :ensure :demand :after (tide)
+    :after (tide)
     :custom
     (web-mode-enable-auto-pairing t)
     (web-mode-enable-css-colorization t)
@@ -1604,7 +1607,7 @@ js/jsx/ts/tsx 等类型文件。
 
 #+begin_src emacs-lisp
   (use-package emmet-mode 
-    :ensure :demand :after(web-mode js2-mode)
+    :after(web-mode js2-mode)
     :config
     (add-hook 'sgml-mode-hook 'emmet-mode)
     (add-hook 'css-mode-hook  'emmet-mode)
@@ -1620,7 +1623,7 @@ js/jsx/ts/tsx 等类型文件。
 
 #+begin_src  emacs-lisp
   (use-package dap-mode
-    :ensure :demand :disabled
+    :disabled
     :config
     (dap-auto-configure-mode 1)
     (require 'dap-chrome))
@@ -1634,7 +1637,6 @@ which yaml-language-server &>/dev/null || npm install -g yaml-language-server &>
 
 #+begin_src  emacs-lisp
   (use-package yaml-mode
-    :ensure
     :hook
     (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent)))
     :config
@@ -1650,7 +1652,6 @@ flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flym
 
 #+begin_src emacs-lisp
   (use-package flycheck
-    :ensure
     :config
     ;; 高亮出现错误的列位置
     (setq flycheck-highlighting-mode (quote columns))
@@ -1665,12 +1666,11 @@ flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flym
                    (side            . bottom)
                    (reusable-frames . visible)
                    (window-height   . 0.33)))
-  
-    :hook
+      :hook
     (prog-mode . flycheck-mode))
   
   (use-package consult-flycheck
-    :ensure :demand :after (consult flycheck)
+    :after (consult flycheck)
     :bind
     (:map flycheck-command-map ("!" . consult-flycheck)))
 #+end_src
@@ -1678,7 +1678,7 @@ flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flym
 flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 #+begin_src emacs-lisp
   (use-package flycheck-pos-tip
-    :ensure :after (flycheck)
+    :after (flycheck)
     :config
     (flycheck-pos-tip-mode))
 #+end_src
@@ -1686,7 +1686,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 * 项目管理
 #+begin_src emacs-lisp
   (use-package projectile
-    :ensure :demand :after (treemacs)
+    :after (treemacs)
     :config
     (projectile-global-mode)
     (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
@@ -1747,7 +1747,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
       (add-to-list 'projectile-globally-ignored-file-suffixes list)))
   
   ;; C-c p s r (projectile-ripgrep)
-  (use-package ripgrep :ensure :demand :after (projectile))
+  (use-package ripgrep :after (projectile))
 #+end_src
 
 * 树形浏览
@@ -1755,7 +1755,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 #+begin_src emacs-lisp
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
-  :ensure :demand
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -1812,24 +1811,24 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
    ("C-x t C-t" . treemacs-find-file)
    ("C-x t M-t" . treemacs-find-tag)))
 
-(use-package treemacs-projectile :after (treemacs projectile) :ensure  :demand)
-(use-package treemacs-magit :after (treemacs magit) :ensure :demand)
+(use-package treemacs-projectile :after (treemacs projectile))
+(use-package treemacs-magit :after (treemacs magit))
 (use-package persp-mode
-  :ensure :demand :disabled
+  :disabled
   :custom
   (persp-keymap-prefix (kbd "C-x p"))
   :config
   (persp-mode))
 
 (use-package treemacs-persp 
-  :ensure :demand :disabled
+  :disabled
   :after (treemacs persp-mode)
   :config
   (treemacs-set-scope-type 'Perspectives))
 
 ;;lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
 (use-package lsp-treemacs
-  :ensure :disabled :after (lsp-mode treemacs)
+  :disabled :after (lsp-mode treemacs)
   :config
   (lsp-treemacs-sync-mode 1))
 #+end_src
@@ -1899,7 +1898,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   
   ;; preview theme: https://emacsthemes.com/
   (use-package doom-themes
-    :ensure :demand
     :custom-face
     (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
     :custom
@@ -1914,7 +1912,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     (doom-themes-org-config))
   
   (use-package doom-modeline
-    :ensure :demand
     :custom
     ;; 不显示换行和编码，节省空间
     (doom-modeline-buffer-encoding nil)
@@ -1926,10 +1923,9 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     :init
     (doom-modeline-mode 1))
   
-  (use-package diredfl :ensure :demand :config (diredfl-global-mode))
+  (use-package diredfl :config (diredfl-global-mode))
   
   (use-package dashboard
-    :ensure :demand
     :config
     (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
     (setq dashboard-center-content t)
@@ -1946,7 +1942,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
   ;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
   (use-package cnfonts
-    :ensure :demand
     :init
     (setq cnfonts-personal-fontnames
           '(("Iosevka SS14" "Fira Code")
@@ -1961,13 +1956,11 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   
   ;; 更新字体：M-x fira-code-mode-install-fonts
   (use-package fira-code-mode
-    :ensure :demand
     :custom
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode)
   
   (use-package emojify
-    :ensure :demand
     :hook (erc-mode . emojify-mode)
     :commands emojify-mode)
   
@@ -1975,15 +1968,14 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
   
   ;; 更新字体：M-x all-the-icons-install-fonts
-  (use-package all-the-icons :ensure)
+  (use-package all-the-icons)
   
   (use-package ns-auto-titlebar
-    :ensure :demand
     :config
     (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
   
   ;; 显示光标位置
-  (use-package beacon :ensure :config (beacon-mode 1))
+  (use-package beacon :config (beacon-mode 1))
 #+end_src
 
 * 终端
@@ -1993,7 +1985,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   ;;(shell-command "which cmake &>/dev/null || brew install cmake")
   ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
   (use-package vterm
-    :ensure :demand
     :config
     (setq vterm-max-scrollback 100000)
     ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND。）。
@@ -2004,12 +1995,12 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     (:map vterm-mode-map ("C-\\" . nil)) )
   
   (use-package multi-vterm
-    :ensure :after (vterm)
+    :after (vterm)
     :config
     (define-key vterm-mode-map (kbd "M-RET") 'multi-vterm))
   
   (use-package vterm-toggle
-    :ensure :after (vterm)
+    :after (vterm)
     :custom
     ;; project scope 表示整个 project 的 buffers 都使用同一个 vterm buffer。
     (vterm-toggle-scope 'project)
@@ -2124,7 +2115,6 @@ fi
   ;;(global-set-key [f1] 'shell)
   
   (use-package eshell-toggle
-    :ensure :demand
     :custom
     (eshell-toggle-size-fraction 3)
     (eshell-toggle-use-projectile-root t)
@@ -2134,20 +2124,16 @@ fi
     ("s-`" . eshell-toggle))
   
   (use-package native-complete
-    :ensure :demand
     :custom
     (with-eval-after-load 'shell
       (native-complete-setup-bash)))
   
   (use-package company-native-complete
-    :ensure :demand :after (company)
+    :after (company)
     :custom
     (add-to-list 'company-backends 'company-native-complete))
   
-  ;;; --- Cominit 模式
   (setq comint-prompt-read-only t)        ;;提示符只读
-  
-  ;;; --- Shell 模式
   (setq shell-command-completion-mode t)     ;;开启命令补全模式
   
   ;; eshell 高亮模式
@@ -2191,196 +2177,198 @@ fi
 
 * 其它
 #+begin_src emacs-lisp
-    (setq
-     ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
-     bookmark-save-flag 1
-     ;; pdf 转为 png 时使用更高分辨率（默认 90）
-     doc-view-resolution 144
-     ;; 关闭烦人的出错时的提示声
-     ring-bell-function 'ignore
-     byte-compile-warnings '(cl-functions)
-     confirm-kill-emacs #'y-or-n-p
-     ad-redefinition-action 'accept
-     vc-follow-symlinks t
-     large-file-warning-threshold nil
-     ;; 自动根据 window 大小显示图片
-     image-transform-resize t
-     grep-highlight-matches t
-     ns-pop-up-frames nil)
-    
-    (setq-default  
-     line-spacing 1
-     ;; fill-column 的值应该小于 visual-fill-column-width，
-     ;; 否则居中显示时行内容会过长而被隐藏；
-     fill-column 80
-     comment-fill-column 0
-     recentf-max-menu-items 100
-     recentf-max-saved-items 100
-     recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
-     tab-width 4
-     indent-tabs-mode nil
-     debug-on-error nil
-     message-log-max t
-     load-prefer-newer t
-     ad-redefinition-action 'accept)
-    
-    (recentf-mode +1)
-    (fset 'yes-or-no-p 'y-or-n-p)
-    (auto-image-file-mode t)
-    (winner-mode t)
-    
-    ;; Mac 的 Command 键当做 meta 使用
-    (setq mac-option-key-is-meta nil
-          mac-command-key-is-meta t
-          mac-command-modifier 'meta
-          mac-option-modifier 'none)
-    
-    ;; Garbage Collector Magic Hack
-    (setq gc-cons-threshold most-positive-fixnum)
-    (defvar hidden-minor-modes '(whitespace-mode))
-    (use-package gcmh
-      :demand
-      :init
-      (setq gcmh-idle-delay 5
-            gcmh-high-cons-threshold #x1000000) ; 16MB
-      (gcmh-mode))
-    
-    ;; Mouse & Smooth Scroll
-    ;; Scroll one line at a time (less "jumpy" than defaults)
-    (when (display-graphic-p)
-      (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
-            mouse-wheel-scroll-amount-horizontal 1
-            mouse-wheel-progressive-speed nil))
-    (setq scroll-step 1
-          scroll-margin 0
-          scroll-conservatively 100000
-          auto-window-vscroll nil
-          scroll-preserve-screen-position t)
-    
-    (unless window-system
-      (xterm-mouse-mode t)
-      (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
-      (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
-      (setq 
-       use-file-dialog nil
-       use-dialog-box nil
-       next-screen-context-lines 5
-       ;; Emacs 和外部程序的粘贴
-       x-select-enable-clipboard t
-       select-enable-primary t
-       select-enable-clipboard t
-       ;; 粘贴于光标处,而不是鼠标指针处
-       mouse-yank-at-point t))
-    
-    (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
-    (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
-    (global-set-key (kbd "S-C-<down>") 'shrink-window)
-    (global-set-key (kbd "S-C-<up>") 'enlarge-window)
-    
-    ;;(shell-command "mkdir -p ~/.emacs.d/backup")
-    (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
-    (setq backup-by-copying t
-          backup-directory-alist (list (cons ".*" backup-dir))
-          delete-old-versions t
-          kept-new-versions 6
-          kept-old-versions 2
-          version-control t)
-    
-    ;;(shell-command "mkdir -p ~/.emacs.d/autosave")
-    (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
-    (setq auto-save-list-file-prefix autosave-dir
-          auto-save-file-name-transforms `((".*" ,autosave-dir t)))
-    
-    (global-set-key (kbd "C-x C-b") 'ibuffer)
-    (setq dired-recursive-deletes t
-          dired-recursive-copies t)
-    (put 'dired-find-alternate-file 'disabled nil)
-    
-    (prefer-coding-system 'utf-8)
-    (setq locale-coding-system 'utf-8
-          default-buffer-file-coding-system 'utf-8)
-    (set-buffer-file-coding-system 'utf-8)
-    (set-language-environment "UTF-8")
-    (set-default buffer-file-coding-system 'utf8)
-    (set-default-coding-systems 'utf-8)
-    (setenv "LANG" "zh_CN.UTF-8")
-    (setenv "LC_ALL" "zh_CN.UTF-8")
-    (setenv "LC_CTYPE" "zh_CN.UTF-8")
-    
-    ;;(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-    ;; (defvar xwidget-webkit-bookmark-jump-new-session)
-    ;; (defvar xwidget-webkit-last-session-buffer)
-    ;; (add-hook 'pre-command-hook
-    ;;           (lambda ()
-    ;;             (if (eq this-command #'bookmark-bmenu-list)
-    ;;                 (if (not (eq major-mode 'xwidget-webkit-mode))
-    ;;                     (setq xwidget-webkit-bookmark-jump-new-session t)
-    ;;                   (setq xwidget-webkit-bookmark-jump-new-session nil)
-    ;;                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
-    
-    ;;(shell-command "trash -v || brew install trash")
-    (use-package osx-trash
-      :config
-      (when (eq system-type 'darwin)
-        (osx-trash-setup))
-      (setq delete-by-moving-to-trash t))
-    
-    ;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
-    (use-package which-key
-      :demand
-      :init (which-key-mode)
-      :diminish which-key-mode
-      :config
-      (setq which-key-idle-delay 1.1))
-    
-    ;; Emacs startup profiler
-    (use-package esup)
-    
-    (use-package pomidor
-      :bind ("<f12>" . pomidor)
-      :config
-      (setq pomidor-sound-tick nil
-            pomidor-sound-tack nil)
-      :init
-      (setq alert-default-style 'mode-line)
-      (setq pomidor-seconds (* 25 60)) ; 25 minutes for the work period
-      (setq pomidor-break-seconds (* 5 60)) ; 5 minutes break time
-      (setq pomidor-breaks-before-long 4) ; wait 4 short breaks before long break
-      (setq pomidor-long-break-seconds (* 20 60)) ; 20 minutes long break time
-      (with-eval-after-load 'all-the-icons
-        (setq alert-severity-faces
-              '((urgent   . all-the-icons-red)
-                (high     . all-the-icons-orange)
-                (moderate . all-the-icons-yellow)
-                (normal   . all-the-icons-green)
-                (low      . all-the-icons-blue)
-                (trivial  . all-the-icons-purple))
-              alert-severity-colors
-              `((urgent   . ,(face-foreground 'all-the-icons-red))
-                (high     . ,(face-foreground 'all-the-icons-orange))
-                (moderate . ,(face-foreground 'all-the-icons-yellow))
-                (normal   . ,(face-foreground 'all-the-icons-green))
-                (low      . ,(face-foreground 'all-the-icons-blue))
-                (trivial  . ,(face-foreground 'all-the-icons-purple)))))
-      
-      (when sys/macp
-        (setq pomidor-play-sound-file
-              (lambda (file)
-                (when (executable-find "afplay")
-                  (start-process "pomidor-play-sound" nil "afplay" file))))))
-    
-    ;; REST
-    (use-package restclient
-      :mode ("\\.http\\'" . restclient-mode)
-      :config
-      (use-package restclient-test
-        :diminish
-        :hook (restclient-mode . restclient-test-mode))
-    
-      (with-eval-after-load 'company
-        (use-package company-restclient
-          :defines company-backends
-          :init (add-to-list 'company-backends 'company-restclient))))
+  (setq
+   ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
+   bookmark-save-flag 1
+   ;; pdf 转为 png 时使用更高分辨率（默认 90）
+   doc-view-resolution 144
+   ;; 关闭烦人的出错时的提示声
+   ring-bell-function 'ignore
+   byte-compile-warnings '(cl-functions)
+   confirm-kill-emacs #'y-or-n-p
+   ad-redefinition-action 'accept
+   vc-follow-symlinks t
+   large-file-warning-threshold nil
+   ;; 自动根据 window 大小显示图片
+   image-transform-resize t
+   grep-highlight-matches t
+   ns-pop-up-frames nil)
   
-    (server-start)
+  (setq-default  
+   line-spacing 1
+   ;; fill-column 的值应该小于 visual-fill-column-width，
+   ;; 否则居中显示时行内容会过长而被隐藏；
+   fill-column 80
+   comment-fill-column 0
+   recentf-max-menu-items 100
+   recentf-max-saved-items 100
+   recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
+   tab-width 4
+   indent-tabs-mode nil
+   debug-on-error nil
+   message-log-max t
+   load-prefer-newer t
+   ad-redefinition-action 'accept)
+  
+  (recentf-mode +1)
+  (fset 'yes-or-no-p 'y-or-n-p)
+  (auto-image-file-mode t)
+  (winner-mode t)
+  
+  ;; Mac 的 Command 键当做 meta 使用
+  (setq mac-option-key-is-meta nil
+        mac-command-key-is-meta t
+        mac-command-modifier 'meta
+        mac-option-modifier 'none)
+
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              "Recover GC values after startup."
+              (setq gc-cons-threshold 16777216 ;; 16MB
+                    gc-cons-percentage 0.1)))
+  
+  ;; Garbage Collector Magic Hack
+  (defvar hidden-minor-modes '(whitespace-mode))
+  (use-package gcmh
+    :init
+    (setq gcmh-idle-delay 5
+          gcmh-high-cons-threshold #x1000000) ;; 16MB
+    (gcmh-mode))
+  
+  ;; Mouse & Smooth Scroll
+  ;; Scroll one line at a time (less "jumpy" than defaults)
+  (when (display-graphic-p)
+    (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
+          mouse-wheel-scroll-amount-horizontal 1
+          mouse-wheel-progressive-speed nil))
+  
+  (setq scroll-step 1
+        scroll-margin 0
+        scroll-conservatively 100000
+        auto-window-vscroll nil
+        scroll-preserve-screen-position t)
+  
+  (unless window-system
+    (xterm-mouse-mode t)
+    (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
+    (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
+    (setq 
+     use-file-dialog nil
+     use-dialog-box nil
+     next-screen-context-lines 5
+     ;; Emacs 和外部程序的粘贴
+     x-select-enable-clipboard t
+     select-enable-primary t
+     select-enable-clipboard t
+     ;; 粘贴于光标处,而不是鼠标指针处
+     mouse-yank-at-point t))
+  
+  (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
+  (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
+  (global-set-key (kbd "S-C-<down>") 'shrink-window)
+  (global-set-key (kbd "S-C-<up>") 'enlarge-window)
+  
+  ;;(shell-command "mkdir -p ~/.emacs.d/backup")
+  (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
+  (setq backup-by-copying t
+        backup-directory-alist (list (cons ".*" backup-dir))
+        delete-old-versions t
+        kept-new-versions 6
+        kept-old-versions 2
+        version-control t)
+  
+  ;;(shell-command "mkdir -p ~/.emacs.d/autosave")
+  (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
+  (setq auto-save-list-file-prefix autosave-dir
+        auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+  
+  (global-set-key (kbd "C-x C-b") 'ibuffer)
+  (setq dired-recursive-deletes t
+        dired-recursive-copies t)
+  (put 'dired-find-alternate-file 'disabled nil)
+  
+  (prefer-coding-system 'utf-8)
+  (setq locale-coding-system 'utf-8
+        default-buffer-file-coding-system 'utf-8)
+  (set-buffer-file-coding-system 'utf-8)
+  (set-language-environment "UTF-8")
+  (set-default buffer-file-coding-system 'utf8)
+  (set-default-coding-systems 'utf-8)
+  (setenv "LANG" "zh_CN.UTF-8")
+  (setenv "LC_ALL" "zh_CN.UTF-8")
+  (setenv "LC_CTYPE" "zh_CN.UTF-8")
+  
+  (setq browse-url-browser-function 'xwidget-webkit-browse-url)
+  (defvar xwidget-webkit-bookmark-jump-new-session)
+  (defvar xwidget-webkit-last-session-buffer)
+  (add-hook 'pre-command-hook
+            (lambda ()
+              (if (eq this-command #'bookmark-bmenu-list)
+                  (if (not (eq major-mode 'xwidget-webkit-mode))
+                      (setq xwidget-webkit-bookmark-jump-new-session t)
+                    (setq xwidget-webkit-bookmark-jump-new-session nil)
+                    (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+  
+  ;;(shell-command "trash -v || brew install trash")
+  (use-package osx-trash
+    :config
+    (when (eq system-type 'darwin)
+      (osx-trash-setup))
+    (setq delete-by-moving-to-trash t))
+  
+  ;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
+  (use-package which-key
+    :init (which-key-mode)
+    :diminish which-key-mode
+    :config (setq which-key-idle-delay 0.8))
+  
+  ;; Emacs startup profiler
+  (use-package esup)
+  
+  (use-package pomidor
+    :bind ("<f12>" . pomidor)
+    :config
+    ;;(setq pomidor-sound-tick nil
+    ;;      pomidor-sound-tack nil)
+    :init
+    (setq alert-default-style 'mode-line)
+    (setq pomidor-seconds (* 25 60)) ;; 25 minutes for the work period
+    (setq pomidor-break-seconds (* 5 60)) ;; 5 minutes break time
+    (setq pomidor-breaks-before-long 4) ;; wait 4 short breaks before long break
+    (setq pomidor-long-break-seconds (* 20 60)) ;; 20 minutes long break time
+    (with-eval-after-load 'all-the-icons
+      (setq alert-severity-faces
+            '((urgent   . all-the-icons-red)
+              (high     . all-the-icons-orange)
+              (moderate . all-the-icons-yellow)
+              (normal   . all-the-icons-green)
+              (low      . all-the-icons-blue)
+              (trivial  . all-the-icons-purple))
+            alert-severity-colors
+            `((urgent   . ,(face-foreground 'all-the-icons-red))
+              (high     . ,(face-foreground 'all-the-icons-orange))
+              (moderate . ,(face-foreground 'all-the-icons-yellow))
+              (normal   . ,(face-foreground 'all-the-icons-green))
+              (low      . ,(face-foreground 'all-the-icons-blue))
+              (trivial  . ,(face-foreground 'all-the-icons-purple)))))
+  
+    (when sys/macp
+      (setq pomidor-play-sound-file
+            (lambda (file)
+              (when (executable-find "afplay")
+                (start-process "pomidor-play-sound" nil "afplay" file))))))
+  
+  (use-package restclient
+    :mode ("\\.http\\'" . restclient-mode)
+    :config
+    (use-package restclient-test
+      :diminish
+      :hook (restclient-mode . restclient-test-mode))
+  
+    (with-eval-after-load 'company
+      (use-package company-restclient
+        :defines company-backends
+        :init (add-to-list 'company-backends 'company-restclient))))
+  
+  (server-start)
 #+end_src

@@ -2,3 +2,4 @@
 !*.org
 !dotemacs.el
 !README.md
+!early-init.el
