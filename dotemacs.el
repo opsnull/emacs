@@ -6,7 +6,9 @@
 (package-initialize)
 (unless package-archive-contents (package-refresh-contents))
 
+;; use-package 默认添加 ensure 和 demand 参数
 (setq use-package-always-ensure t)
+(setq use-package-always-demand t)
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -25,23 +27,21 @@
 (use-package direnv :ensure :config (direnv-mode))
 
 (use-package selectrum
-  :ensure :demand
   :init
   (selectrum-mode +1))
 
 (use-package prescient
-  :ensure :demand
   :config
   (prescient-persist-mode +1))
 
 (use-package selectrum-prescient
-  :ensure :demand :after (selectrum)
+  :after (selectrum)
   :init
   (selectrum-prescient-mode +1)
   (prescient-persist-mode +1))
 
 (use-package consult
-  :ensure :demand :after (projectile)
+  :after (projectile)
   :bind
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
@@ -110,7 +110,7 @@
   (setq consult-project-root-function #'projectile-project-root))
 
 (use-package marginalia
-  :ensure :demand :after (selectrum)
+  :after (selectrum)
   :init (marginalia-mode)
   :config
   (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
@@ -122,7 +122,7 @@
    ("M-A" . marginalia-cycle)))
 
 (use-package embark
-  :ensure :demand :after (selectrum which-key)
+  :after (selectrum which-key)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
 
@@ -139,18 +139,16 @@
           (which-key--show-keymap "Embark" map nil nil 'no-paging)
           #'which-key--hide-popup-ignore-command)
         embark-become-indicator embark-action-indicator)
-
   :bind
   (("C-;" . embark-act-noquit)
    :map embark-variable-map ("l" . edit-list)))
 
 (use-package embark-consult
-  :ensure :demand :after (embark consult)
+  :after (embark consult)
   :hook
   (embark-collect-mode . embark-consult-preview-minor-mode))
 
 (use-package company
-  :ensure :demand
   :bind
   (:map company-mode-map
         ([remap completion-at-point] . company-complete)
@@ -182,6 +180,7 @@
   (company-dabbrev-ignore-case nil)
   ;; Don't downcase the returned candidates.
   (company-dabbrev-downcase nil)
+  ;; 候选框宽度
   (company-tooltip-minimum-width 70)
   (company-tooltip-maximum-width 100)
   (company-backends '((company-capf :with company-yasnippet)
@@ -217,14 +216,14 @@
   (advice-add #'company-yasnippet :around #'my-company-yasnippet-disable-inline))
 
 (use-package company-box
-  :ensure :demand :after (company all-the-icons)
+  :after (company all-the-icons)
   :init
   ;;(setq company-box-doc-enable nil)
   (setq company-box-doc-delay 0.1)
   :hook (company-mode . company-box-mode))
 
 (use-package company-prescient
-  :ensure :demand :after prescient
+  :after prescient
   :init (company-prescient-mode +1))
 
 ;; (use-package company-quickhelp ;
@@ -235,13 +234,11 @@
 ;;   (company-quickhelp-mode 1))
 
 (use-package goto-chg
-  :ensure
   :config
   (global-set-key (kbd "C->") 'goto-last-change)
   (global-set-key (kbd "C-<") 'goto-last-change-reverse))
 
 (use-package avy
-  :ensure
   :config
   (setq avy-all-windows nil
         avy-background t)
@@ -250,7 +247,6 @@
   ("M-g l" . avy-goto-line))
 
 (use-package ace-window
-  :ensure
   :init
   ;; 使用字母而非数字标记窗口，便于跳转
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
@@ -262,7 +258,6 @@
   (global-set-key (kbd "M-o") 'ace-window))
 
 (use-package sis
-  :ensure :demand
   :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
   ;; 自动切换到英文的前缀快捷键
@@ -291,11 +286,11 @@
 )
 
 ;; 多光标编辑
-(use-package iedit :disabled :demand)
+(use-package iedit :disabled)
 
 ;; 直接在 minibuffer 中编辑 query
 (use-package isearch-mb
-  :demand :after(consult)
+  :after (consult)
   :config
   (add-to-list 'isearch-mb--with-buffer #'consult-isearch)
   (define-key isearch-mb-minibuffer-map (kbd "M-r") #'consult-isearch)
@@ -320,7 +315,7 @@
 
 ;; 显示缩进
 (use-package highlight-indent-guides
-  :ensure :demand :after (python yaml-mode web-mode)
+  :after (python yaml-mode web-mode)
   :custom
   (highlight-indent-guides-method 'character)
   (highlight-indent-guides-responsive 'stack)
@@ -366,7 +361,7 @@
 
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
-  :demand :after (lsp-mode company)
+  :after (lsp-mode company)
   :commands yas-minor-mode
   :config
   ;; 手动触发补全
@@ -432,7 +427,6 @@
     (package-install package)))
 
 (use-package org
-  :ensure :demand
   :config
   (setq org-todo-keywords
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
@@ -530,14 +524,14 @@
 (add-hook 'org-mode-hook 'my/org-faces)
 
 (use-package org-superstar
-  :ensure :demand :after (org)
+  :after (org)
   :hook
   (org-mode . org-superstar-mode)
   :custom
   (org-superstar-remove-leading-stars t))
 
 (use-package org-fancy-priorities
-  :ensure :demand :after (org)
+  :after (org)
   :hook
   (org-mode . org-fancy-priorities-mode)
   :config
@@ -546,7 +540,7 @@
 ;; 拖拽保持图片或 F2 保存剪贴板中图片。
 ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
 (use-package org-download
-  :ensure :demand :after (posframe)
+  :after (posframe)
   :bind
   ("<f2>" . org-download-screenshot)
   :config
@@ -563,7 +557,7 @@
 (use-package toc-org :after (org) :hook (org-mode . toc-org-mode))
 
 (use-package org-tree-slide
-  :ensure :after org
+  :after org
   :commands org-tree-slide-mode
   :config
   (setq org-tree-slide-slide-in-effect t
@@ -598,7 +592,7 @@
    visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 (use-package visual-fill-column
-  :ensure :demand :after org
+  :after org
   :hook
   (org-mode . my/org-mode-visual-fill))
 
@@ -662,7 +656,6 @@
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
 (use-package magit
-    :ensure
     :custom
     ;; 在当前 window 中显示 magit buffer
     (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
@@ -673,7 +666,6 @@
 )
 
 (use-package git-link
-  :ensure :defer
   :config
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
@@ -684,7 +676,7 @@
  ediff-split-window-function 'split-window-horizontally)
 
 (use-package lsp-mode
-  :ensure :demand :after (flycheck)
+  :after (flycheck)
   :hook
   (java-mode . lsp)
   (python-mode . lsp)
@@ -724,6 +716,7 @@
   (process-adaptive-read-buffering nil)
   ;; 增大同 LSP 服务器交互时读取的文件大小
   (read-process-output-max (* 1024 1024))
+  ;; refresh the highlights, lenses, links
   (lsp-idle-delay 0.1)
   (lsp-keep-workspace-alive t)
   (lsp-enable-file-watchers t)
@@ -757,7 +750,6 @@
         ("C-c r" . lsp-rename)))
 
 (use-package origami
-  :demand
   :config
   (define-prefix-command 'origami-mode-map)
   (global-set-key (kbd "C-x C-z") 'origami-mode-map)
@@ -778,12 +770,12 @@
         ("x" . origami-reset)))
 
 (use-package consult-lsp
-  :ensure :demand :after (lsp-mode consult)
+  :after (lsp-mode consult)
   :config
   (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
 
 (use-package lsp-ui
-  :ensure :after (lsp-mode flycheck)
+  :after (lsp-mode flycheck)
   :custom
   ;; 关闭 cursor hover, 但 mouse hover 时显示文档
   (lsp-ui-doc-show-with-cursor nil)
@@ -795,7 +787,7 @@
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (use-package pyenv-mode
-  :ensure :demand :disabled :after (projectile)
+  :disabled :after (projectile)
   :init
   (add-to-list 'exec-path "~/.pyenv/shims")
   (setenv "WORKON_HOME" "~/.pyenv/versions/")
@@ -833,7 +825,7 @@
         (flycheck-set-checker-executable "python-flake8" flake8)))))
 
 (use-package python
-  :ensure :demand :after(flycheck)
+  :after(flycheck)
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
@@ -844,13 +836,13 @@
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
 (use-package lsp-pyright
-  :ensure :demand :after (python)
+  :after (python)
   :preface
-       ;; Use yapf to format
-       (defun lsp-pyright-format-buffer ()
-         (interactive)
-         (when (and (executable-find "yapf") buffer-file-name)
-           (call-process "yapf" nil nil nil "-i" buffer-file-name)))
+  ;; Use yapf to format
+  (defun lsp-pyright-format-buffer ()
+    (interactive)
+    (when (and (executable-find "yapf") buffer-file-name)
+      (call-process "yapf" nil nil nil "-i" buffer-file-name)))
   :hook
   (python-mode . (lambda ()
                    (require 'lsp-pyright)
@@ -859,7 +851,7 @@
           (setq lsp-pyright-python-executable-cmd "python3")))
 
 (use-package lsp-java
-  :ensure :demand :disabled t :after (lsp-mode company)
+  :disabled t :after (lsp-mode company)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -880,7 +872,7 @@
   (use-package dap-java :ensure :disabled t))
 
 (use-package go-mode
-  :ensure :demand :after (lsp-mode)
+  :after (lsp-mode)
   :init
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
@@ -897,7 +889,6 @@
      ("gopls.allExperiments" t t))))
 
 (use-package markdown-mode
-  :ensure
   :commands (markdown-mode gfm-mode)
   :mode
   (("README\\.md\\'" . gfm-mode)
@@ -949,8 +940,7 @@ mermaid.initialize({
         markdown-gfm-additional-languages "Mermaid"))
 
 (use-package grip-mode
-  :bind (:map markdown-mode-command-map
-              ("g" . grip-mode))
+  :bind (:map markdown-mode-command-map ("g" . grip-mode))
   :config
   (setq grip-preview-use-webkit nil)
   ;; 支持网络访问（默认 localhost）
@@ -964,21 +954,21 @@ mermaid.initialize({
                    grip-github-password (cadr credential))))
 
 (use-package markdown-toc
-  :ensure :demand :after(markdown-mode)
+  :after(markdown-mode)
   :bind (:map markdown-mode-command-map
          ("r" . markdown-toc-generate-or-refresh-toc)))
 
 (use-package dockerfile-mode
-  :ensure
-  :config (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
+  :config
+  (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 
 (use-package ansible
-  :ensure :after (yaml-mode)
+  :after (yaml-mode)
   :config
   (add-hook 'yaml-mode-hook '(lambda () (ansible 1))))
 
 (use-package company-ansible
-  :ensure :after (ansible company)
+  :after (ansible company)
   :config
   (add-hook 'ansible-hook
             (lambda()
@@ -987,7 +977,7 @@ mermaid.initialize({
 ;; ansible-doc 使用系统的 ansible-doc 命令搜索文档
 ;; (shell-command "pip install ansible")
 (use-package ansible-doc
-  :ensure :after (ansible yasnippet)
+  :after (ansible yasnippet)
   :config
   (add-hook 'ansible-hook
             (lambda()
@@ -1013,7 +1003,7 @@ mermaid.initialize({
 
 ;; for .ts and .tsx file
 (use-package typescript-mode
-  :ensure :demand :after (flycheck)
+  :after (flycheck)
   :init
   (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescript-mode))
   :hook
@@ -1023,13 +1013,13 @@ mermaid.initialize({
   (setq typescript-indent-level 2))
 
 (use-package tide
-  :ensure :demand :after (typescript-mode company flycheck)
+  :after (typescript-mode company flycheck)
   :hook ((before-save . tide-format-before-save)))
 ;; 开启 tsserver 的 debug 日志模式
 (setq tide-tsserver-process-environment '("TSS_LOG=-level verbose -file /tmp/tss.log"))
 
 (use-package js2-mode
-  :ensure :demand :after (tide)
+  :after (tide)
   :config
   ;; js-mode-map 将 M-. 绑定到 js-find-symbol, 没有使用 tide 和 lsp, 所以需要解
   ;; 绑。这样 M-. 被 tide 绑定到 tide-jump-to-definition.
@@ -1047,7 +1037,7 @@ mermaid.initialize({
   (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 
 (use-package web-mode
-  :ensure :demand :after (tide)
+  :after (tide)
   :custom
   (web-mode-enable-auto-pairing t)
   (web-mode-enable-css-colorization t)
@@ -1067,7 +1057,7 @@ mermaid.initialize({
   (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)))
 
 (use-package emmet-mode 
-  :ensure :demand :after(web-mode js2-mode)
+  :after(web-mode js2-mode)
   :config
   (add-hook 'sgml-mode-hook 'emmet-mode)
   (add-hook 'css-mode-hook  'emmet-mode)
@@ -1079,13 +1069,12 @@ mermaid.initialize({
   (setq emmet-preview-default nil))
 
 (use-package dap-mode
-  :ensure :demand :disabled
+  :disabled
   :config
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
 
 (use-package yaml-mode
-  :ensure
   :hook
   (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent)))
   :config
@@ -1093,7 +1082,6 @@ mermaid.initialize({
   (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode)))
 
 (use-package flycheck
-  :ensure
   :config
   ;; 高亮出现错误的列位置
   (setq flycheck-highlighting-mode (quote columns))
@@ -1108,22 +1096,21 @@ mermaid.initialize({
                  (side            . bottom)
                  (reusable-frames . visible)
                  (window-height   . 0.33)))
-
-  :hook
+    :hook
   (prog-mode . flycheck-mode))
 
 (use-package consult-flycheck
-  :ensure :demand :after (consult flycheck)
+  :after (consult flycheck)
   :bind
   (:map flycheck-command-map ("!" . consult-flycheck)))
 
 (use-package flycheck-pos-tip
-  :ensure :after (flycheck)
+  :after (flycheck)
   :config
   (flycheck-pos-tip-mode))
 
 (use-package projectile
-  :ensure :demand :after (treemacs)
+  :after (treemacs)
   :config
   (projectile-global-mode)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
@@ -1184,11 +1171,10 @@ mermaid.initialize({
     (add-to-list 'projectile-globally-ignored-file-suffixes list)))
 
 ;; C-c p s r (projectile-ripgrep)
-(use-package ripgrep :ensure :demand :after (projectile))
+(use-package ripgrep :after (projectile))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
-  :ensure :demand
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -1245,24 +1231,24 @@ mermaid.initialize({
    ("C-x t C-t" . treemacs-find-file)
    ("C-x t M-t" . treemacs-find-tag)))
 
-(use-package treemacs-projectile :after (treemacs projectile) :ensure  :demand)
-(use-package treemacs-magit :after (treemacs magit) :ensure :demand)
+(use-package treemacs-projectile :after (treemacs projectile))
+(use-package treemacs-magit :after (treemacs magit))
 (use-package persp-mode
-  :ensure :demand :disabled
+  :disabled
   :custom
   (persp-keymap-prefix (kbd "C-x p"))
   :config
   (persp-mode))
 
 (use-package treemacs-persp 
-  :ensure :demand :disabled
+  :disabled
   :after (treemacs persp-mode)
   :config
   (treemacs-set-scope-type 'Perspectives))
 
 ;;lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
 (use-package lsp-treemacs
-  :ensure :disabled :after (lsp-mode treemacs)
+  :disabled :after (lsp-mode treemacs)
   :config
   (lsp-treemacs-sync-mode 1))
 
@@ -1328,7 +1314,6 @@ mermaid.initialize({
 
 ;; preview theme: https://emacsthemes.com/
 (use-package doom-themes
-  :ensure :demand
   :custom-face
   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
   :custom
@@ -1343,7 +1328,6 @@ mermaid.initialize({
   (doom-themes-org-config))
 
 (use-package doom-modeline
-  :ensure :demand
   :custom
   ;; 不显示换行和编码，节省空间
   (doom-modeline-buffer-encoding nil)
@@ -1355,10 +1339,9 @@ mermaid.initialize({
   :init
   (doom-modeline-mode 1))
 
-(use-package diredfl :ensure :demand :config (diredfl-global-mode))
+(use-package diredfl :config (diredfl-global-mode))
 
 (use-package dashboard
-  :ensure :demand
   :config
   (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
   (setq dashboard-center-content t)
@@ -1375,7 +1358,6 @@ mermaid.initialize({
 ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
-  :ensure :demand
   :init
   (setq cnfonts-personal-fontnames
         '(("Iosevka SS14" "Fira Code")
@@ -1390,13 +1372,11 @@ mermaid.initialize({
 
 ;; 更新字体：M-x fira-code-mode-install-fonts
 (use-package fira-code-mode
-  :ensure :demand
   :custom
   (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode)
 
 (use-package emojify
-  :ensure :demand
   :hook (erc-mode . emojify-mode)
   :commands emojify-mode)
 
@@ -1404,20 +1384,18 @@ mermaid.initialize({
 (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
 
 ;; 更新字体：M-x all-the-icons-install-fonts
-(use-package all-the-icons :ensure)
+(use-package all-the-icons)
 
 (use-package ns-auto-titlebar
-  :ensure :demand
   :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
 ;; 显示光标位置
-(use-package beacon :ensure :config (beacon-mode 1))
+(use-package beacon :config (beacon-mode 1))
 
 ;;(shell-command "which cmake &>/dev/null || brew install cmake")
 ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
 (use-package vterm
-  :ensure :demand
   :config
   (setq vterm-max-scrollback 100000)
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND。）。
@@ -1428,12 +1406,12 @@ mermaid.initialize({
   (:map vterm-mode-map ("C-\\" . nil)) )
 
 (use-package multi-vterm
-  :ensure :after (vterm)
+  :after (vterm)
   :config
   (define-key vterm-mode-map (kbd "M-RET") 'multi-vterm))
 
 (use-package vterm-toggle
-  :ensure :after (vterm)
+  :after (vterm)
   :custom
   ;; project scope 表示整个 project 的 buffers 都使用同一个 vterm buffer。
   (vterm-toggle-scope 'project)
@@ -1465,7 +1443,6 @@ mermaid.initialize({
 ;;(global-set-key [f1] 'shell)
 
 (use-package eshell-toggle
-  :ensure :demand
   :custom
   (eshell-toggle-size-fraction 3)
   (eshell-toggle-use-projectile-root t)
@@ -1475,20 +1452,16 @@ mermaid.initialize({
   ("s-`" . eshell-toggle))
 
 (use-package native-complete
-  :ensure :demand
   :custom
   (with-eval-after-load 'shell
     (native-complete-setup-bash)))
 
 (use-package company-native-complete
-  :ensure :demand :after (company)
+  :after (company)
   :custom
   (add-to-list 'company-backends 'company-native-complete))
 
-;;; --- Cominit 模式
 (setq comint-prompt-read-only t)        ;;提示符只读
-
-;;; --- Shell 模式
 (setq shell-command-completion-mode t)     ;;开启命令补全模式
 
 ;; eshell 高亮模式
@@ -1556,14 +1529,18 @@ mermaid.initialize({
       mac-command-modifier 'meta
       mac-option-modifier 'none)
 
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            "Recover GC values after startup."
+            (setq gc-cons-threshold 16777216 ;; 16MB
+                  gc-cons-percentage 0.1)))
+
 ;; Garbage Collector Magic Hack
-(setq gc-cons-threshold most-positive-fixnum)
 (defvar hidden-minor-modes '(whitespace-mode))
 (use-package gcmh
-  :demand
   :init
   (setq gcmh-idle-delay 5
-        gcmh-high-cons-threshold #x1000000) ; 16MB
+        gcmh-high-cons-threshold #x1000000) ;; 16MB
   (gcmh-mode))
 
 ;; Mouse & Smooth Scroll
@@ -1572,6 +1549,7 @@ mermaid.initialize({
   (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
         mouse-wheel-scroll-amount-horizontal 1
         mouse-wheel-progressive-speed nil))
+
 (setq scroll-step 1
       scroll-margin 0
       scroll-conservatively 100000
@@ -1628,16 +1606,16 @@ mermaid.initialize({
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
 
-;;(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-;; (defvar xwidget-webkit-bookmark-jump-new-session)
-;; (defvar xwidget-webkit-last-session-buffer)
-;; (add-hook 'pre-command-hook
-;;           (lambda ()
-;;             (if (eq this-command #'bookmark-bmenu-list)
-;;                 (if (not (eq major-mode 'xwidget-webkit-mode))
-;;                     (setq xwidget-webkit-bookmark-jump-new-session t)
-;;                   (setq xwidget-webkit-bookmark-jump-new-session nil)
-;;                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+(defvar xwidget-webkit-bookmark-jump-new-session)
+(defvar xwidget-webkit-last-session-buffer)
+(add-hook 'pre-command-hook
+          (lambda ()
+            (if (eq this-command #'bookmark-bmenu-list)
+                (if (not (eq major-mode 'xwidget-webkit-mode))
+                    (setq xwidget-webkit-bookmark-jump-new-session t)
+                  (setq xwidget-webkit-bookmark-jump-new-session nil)
+                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
 
 ;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
@@ -1648,11 +1626,9 @@ mermaid.initialize({
 
 ;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
 (use-package which-key
-  :demand
   :init (which-key-mode)
   :diminish which-key-mode
-  :config
-  (setq which-key-idle-delay 1.1))
+  :config (setq which-key-idle-delay 0.8))
 
 ;; Emacs startup profiler
 (use-package esup)
@@ -1660,14 +1636,14 @@ mermaid.initialize({
 (use-package pomidor
   :bind ("<f12>" . pomidor)
   :config
-  (setq pomidor-sound-tick nil
-        pomidor-sound-tack nil)
+  ;;(setq pomidor-sound-tick nil
+  ;;      pomidor-sound-tack nil)
   :init
   (setq alert-default-style 'mode-line)
-  (setq pomidor-seconds (* 25 60)) ; 25 minutes for the work period
-  (setq pomidor-break-seconds (* 5 60)) ; 5 minutes break time
-  (setq pomidor-breaks-before-long 4) ; wait 4 short breaks before long break
-  (setq pomidor-long-break-seconds (* 20 60)) ; 20 minutes long break time
+  (setq pomidor-seconds (* 25 60)) ;; 25 minutes for the work period
+  (setq pomidor-break-seconds (* 5 60)) ;; 5 minutes break time
+  (setq pomidor-breaks-before-long 4) ;; wait 4 short breaks before long break
+  (setq pomidor-long-break-seconds (* 20 60)) ;; 20 minutes long break time
   (with-eval-after-load 'all-the-icons
     (setq alert-severity-faces
           '((urgent   . all-the-icons-red)
@@ -1690,7 +1666,6 @@ mermaid.initialize({
             (when (executable-find "afplay")
               (start-process "pomidor-play-sound" nil "afplay" file))))))
 
-;; REST
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
   :config
