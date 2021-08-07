@@ -6,6 +6,7 @@
 (package-initialize)
 (unless package-archive-contents (package-refresh-contents))
 
+(setq use-package-always-ensure t)
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -148,6 +149,91 @@
   :hook
   (embark-collect-mode . embark-consult-preview-minor-mode))
 
+(use-package company
+  :ensure :demand
+  :bind
+  (:map company-mode-map
+        ([remap completion-at-point] . company-complete)
+        :map company-active-map
+        ([escape] . company-abort)
+        ("C-p"     . company-select-previous)
+        ("C-n"     . company-select-next)
+        ("C-s"     . company-filter-candidates)
+        ([tab]     . company-complete-common-or-cycle)
+        ([backtab] . company-select-previous-or-abort)
+        :map company-search-map
+        ([escape] . company-search-abort)
+        ("C-p"    . company-select-previous)
+        ("C-n"    . company-select-next))
+  :custom
+  ;; trigger completion immediately.
+  (company-idle-delay 0)
+  (company-echo-delay 0)
+  ;; allow input string that do not match candidate words
+  ;; 开启后有大量不匹配的候选情况，故关闭
+  ;;(company-require-match nil)
+  ;; number the candidates (use M-1, M-2 etc to select completions).
+  (company-show-numbers t)
+  ;; pop up a completion menu by tapping a character
+  (company-minimum-prefix-length 1)
+  (company-tooltip-limit 14)
+  (company-tooltip-align-annotations t)
+  ;; 大小写不敏感
+  (company-dabbrev-ignore-case nil)
+  ;; Don't downcase the returned candidates.
+  (company-dabbrev-downcase nil)
+  (company-tooltip-minimum-width 70)
+  (company-tooltip-maximum-width 100)
+  (company-backends '((company-capf :with company-yasnippet)
+                      (company-dabbrev-code company-keywords company-files)
+                      company-dabbrev))
+  :config
+  (global-company-mode t)
+
+  ;; 修复与 lsp 不兼容的情况
+  (defun my-lsp-fix-company-capf ()
+    "Remove redundant `comapny-capf'."
+    (setq company-backends
+          (remove 'company-backends (remq 'company-capf company-backends))))
+  (advice-add #'lsp-completion--enable :after #'my-lsp-fix-company-capf)
+
+  ;; 不在前缀的候选列表里 snippets
+  (defun my-company-yasnippet-disable-inline (fn cmd &optional arg &rest _ignore)
+    "Enable yasnippet but disable it inline."
+    (if (eq cmd  'prefix)
+        (when-let ((prefix (funcall fn 'prefix)))
+          (unless (memq (char-before (- (point) (length prefix)))
+                        '(?. ?< ?> ?\( ?\) ?\[ ?{ ?} ?\" ?' ?`))
+            prefix))
+      (progn
+        (when (and (bound-and-true-p lsp-mode)
+                   arg (not (get-text-property 0 'yas-annotation-patch arg)))
+          (let* ((name (get-text-property 0 'yas-annotation arg))
+                 (snip (format "%s (Snippet)" name))
+                 (len (length arg)))
+            (put-text-property 0 len 'yas-annotation snip arg)
+            (put-text-property 0 len 'yas-annotation-patch t arg)))
+        (funcall fn cmd  arg))))
+  (advice-add #'company-yasnippet :around #'my-company-yasnippet-disable-inline))
+
+(use-package company-box
+  :ensure :demand :after (company all-the-icons)
+  :init
+  ;;(setq company-box-doc-enable nil)
+  (setq company-box-doc-delay 0.1)
+  :hook (company-mode . company-box-mode))
+
+(use-package company-prescient
+  :ensure :demand :after prescient
+  :init (company-prescient-mode +1))
+
+;; (use-package company-quickhelp ;
+;;   :ensure :demand :disabled  :after (company)
+;;   :init
+;;   (setq company-quickhelp-delay 0.3)
+;;   :config
+;;   (company-quickhelp-mode 1))
+
 (use-package goto-chg
   :ensure
   :config
@@ -205,11 +291,11 @@
 )
 
 ;; 多光标编辑
-(use-package iedit :ensure :disabled :demand)
+(use-package iedit :disabled :demand)
 
 ;; 直接在 minibuffer 中编辑 query
 (use-package isearch-mb
-  :ensure :demand :after(consult anzu)
+  :demand :after(consult)
   :config
   (add-to-list 'isearch-mb--with-buffer #'consult-isearch)
   (define-key isearch-mb-minibuffer-map (kbd "M-r") #'consult-isearch)
@@ -222,13 +308,15 @@
 
 ;; 智能括号
 (use-package smartparens
-  :ensure
   :config
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
+;; 彩色括号
+(use-package rainbow-delimiters :hook (prog-mode . rainbow-delimiters-mode))
+
 ;; 智能扩展区域
-(use-package expand-region :ensure :bind ("M-@" . er/expand-region))
+(use-package expand-region :bind ("M-@" . er/expand-region))
 
 ;; 显示缩进
 (use-package highlight-indent-guides
@@ -242,19 +330,14 @@
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; 彩色括号
-(use-package rainbow-delimiters
-  :ensure :defer
-  :hook (prog-mode . rainbow-delimiters-mode))
-
 ;; 高亮变化的区域
 (use-package volatile-highlights
-  :ensure :disabled
+  :disabled
   :init (volatile-highlights-mode))
 
 ;; 在 modeline 显示匹配的总数和当前序号
 (use-package anzu
-  :ensure :disabled
+  :disabled
   :init
   (setq anzu-mode-lighter "")
   (global-set-key [remap query-replace] 'anzu-query-replace)
@@ -265,7 +348,6 @@
 
 ;; 快速跳转当前 symbol
 (use-package symbol-overlay
-  :ensure
   :config
   (global-set-key (kbd "M-i") 'symbol-overlay-put)
   (global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
@@ -275,25 +357,77 @@
   :hook (prog-mode . symbol-overlay-mode))
 
 ;; brew install ripgrep
-(use-package deadgrep :ensure :bind  ("<f5>" . deadgrep))
+(use-package deadgrep :bind  ("<f5>" . deadgrep))
 
 (use-package xref
-  :ensure
   :config
   ;; C-x p g (project-find-regexp)
   (setq xref-search-program 'ripgrep))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
-  :ensure :demand :after (lsp-mode company)
+  :demand :after (lsp-mode company)
   :commands yas-minor-mode
   :config
   ;; 手动触发补全
-  (global-set-key (kbd "C-c y") 'company-yasnippet)
+  ;; (global-set-key (kbd "C-c y") 'company-yasnippet)
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   (yas-global-mode 1))
 
-(dolist (package '(org org-plus-contrib ob-go ox-reveal))
+;; Youdao Dictionary
+(use-package youdao-dictionary
+  :commands youdao-dictionary-play-voice-of-current-word
+  :bind (("C-c y" . my-youdao-dictionary-search-at-point)
+         ("C-c Y" . youdao-dictionary-search-at-point)
+         :map youdao-dictionary-mode-map
+         ("h" . youdao-dictionary-hydra/body)
+         ("?" . youdao-dictionary-hydra/body))
+  :init
+  (setq url-automatic-caching t
+        ;; 中文分词
+        youdao-dictionary-use-chinese-word-segmentation t) 
+
+  (defun my-youdao-dictionary-search-at-point ()
+    "Search word at point and display result with `posframe', `pos-tip', or buffer."
+    (interactive)
+    (if (display-graphic-p)
+        (youdao-dictionary-search-at-point-posframe)
+      (youdao-dictionary-search-at-point)))
+  :config
+  (with-no-warnings
+    (defun my-youdao-dictionary--posframe-tip (string)
+      "Show STRING using posframe-show."
+      (unless (and (require 'posframe nil t) (posframe-workable-p))
+        (error "Posframe not workable"))
+
+      (let ((word (youdao-dictionary--region-or-word)))
+        (if word
+            (progn
+              (with-current-buffer (get-buffer-create youdao-dictionary-buffer-name)
+                (let ((inhibit-read-only t))
+                  (erase-buffer)
+                  (youdao-dictionary-mode)
+                  (insert (propertize "\n" 'face '(:height 0.5)))
+                  (insert string)
+                  (insert (propertize "\n" 'face '(:height 0.5)))
+                  (set (make-local-variable 'youdao-dictionary-current-buffer-word) word)))
+              (posframe-show youdao-dictionary-buffer-name
+                             :position (point)
+                             :left-fringe 16
+                             :right-fringe 16
+                             :background-color (face-background 'tooltip nil t)
+                             :internal-border-color (face-foreground 'font-lock-comment-face nil t)
+                             :internal-border-width 1)
+              (unwind-protect
+                  (push (read-event) unread-command-events)
+                (progn
+                  (posframe-hide youdao-dictionary-buffer-name)
+                  (other-frame 0))))
+          (message "Nothing to look up"))))
+    (advice-add #'youdao-dictionary--posframe-tip
+                :override #'my-youdao-dictionary--posframe-tip)))
+
+(dolist (package '(org org-plus-contrib ob-go ox-reveal ox-gfm))
   (unless (package-installed-p package)
     (package-install package)))
 
@@ -308,7 +442,6 @@
         org-hide-emphasis-markers t
         org-edit-src-content-indentation 2
         org-hide-block-startup nil
-        org-src-preserve-indentation nil
         org-cycle-separator-lines 2
         org-default-notes-file "~/docs/orgs/note.org"
         org-log-into-drawer t
@@ -324,7 +457,6 @@
         org-cycle-level-faces t
         org-n-level-faces 4
         org-startup-folded 'content
-        org-src-fontify-natively t
         org-html-self-link-headlines t
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
@@ -358,9 +490,6 @@
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
-  ;; M-n 和 M-p 绑定到 highlight-symbol 
-  ;(define-key org-mode-map (kbd "M-n") 'org-next-link)
-  ;(define-key org-mode-map (kbd "M-p") 'org-previous-link)
   (require 'org-protocol)
   (require 'org-capture)
   (add-to-list 'org-capture-templates
@@ -376,7 +505,11 @@
   (add-to-list 'org-capture-templates
                '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
                  "* ☞ TODO [#B] %U %i%?"))
-  (setq org-confirm-babel-evaluate nil)
+  ;; Babel
+  (setq org-confirm-babel-evaluate nil
+        org-src-fontify-natively t
+        org-src-preserve-indentation nil
+        org-src-tab-acts-natively t)
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((shell . t)
@@ -386,6 +519,9 @@
      (python . t)
      (dot . t)
      (css . t))))
+
+;; Add gfm/md backends
+(add-to-list 'org-export-backends 'md)
 
 ;; set-face-attribute 配置的 org-document-title 字体大小不生效，这里再次调整。
 (defun my/org-faces ()
@@ -422,13 +558,9 @@
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
-(use-package ox-reveal :ensure :after (org))
+(use-package htmlize)
 
-(use-package htmlize :ensure)
-
-(use-package org-make-toc
-  :ensure :after org
-  :hook (org-mode . org-make-toc-mode))
+(use-package toc-org :after (org) :hook (org-mode . toc-org-mode))
 
 (use-package org-tree-slide
   :ensure :after org
@@ -438,12 +570,23 @@
         org-tree-slide-activate-message "Presentation started."
         org-tree-slide-deactivate-message "Presentation ended."
         org-tree-slide-header t)
-  (with-eval-after-load "org-tree-slide"
-    (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
-    (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
-    (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
-    (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
-    (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
+  :bind (:map org-mode-map
+              ("<f8>" . org-tree-slide-mode)
+              :map org-tree-slide-mode-map
+              ("<left>" . org-tree-slide-move-previous-tree)
+              ("<right>" . org-tree-slide-move-next-tree)
+              ("S-SPC" . org-tree-slide-move-previous-tree)
+              ("SPC" . org-tree-slide-move-next-tree))
+  :hook ((org-tree-slide-play . (lambda ()
+                                  (text-scale-increase 3)
+                                  (beacon-mode -1)
+                                  (org-display-inline-images)
+                                  (read-only-mode 1)))
+         (org-tree-slide-stop . (lambda ()
+                                  (text-scale-increase 0)
+                                  (org-remove-inline-images)
+                                  (beacon-mode +1)
+                                  (read-only-mode -1)))))
 
 (defun my/org-mode-visual-fill ()
   (setq
@@ -540,54 +683,6 @@
  ediff-diff-options "-w" 
  ediff-split-window-function 'split-window-horizontally)
 
-(use-package company
-  :ensure :demand
-  :bind
-  (:map company-mode-map
-        ([remap completion-at-point] . company-complete)
-        :map company-active-map
-        ([escape] . company-abort)
-        ("C-p"     . company-select-previous)
-        ("C-n"     . company-select-next)
-        ("C-s"     . company-filter-candidates)
-        ([tab]     . company-complete-common-or-cycle)
-        ([backtab] . company-select-previous-or-abort)
-        :map company-search-map
-        ([escape] . company-search-abort)
-        ("C-p"    . company-select-previous)
-        ("C-n"    . company-select-next))
-  :custom
-  ;; trigger completion immediately.
-  (company-idle-delay 0)
-  (company-echo-delay 0)
-  ;; allow input string that do not match candidate words
-  ;;(company-require-match nil)
-  ;; number the candidates (use M-1, M-2 etc to select completions).
-  (company-show-numbers t)
-  ;; pop up a completion menu by tapping a character
-  (company-minimum-prefix-length 1)
-  (company-tooltip-limit 14)
-  (company-tooltip-align-annotations t)
-  ;; 大小写不敏感
-  (company-dabbrev-ignore-case nil)
-  ;; Don't downcase the returned candidates.
-  (company-dabbrev-downcase nil)
-  (company-backends '(company-capf
-                      company-dabbrev
-                      company-files
-                      company-keywords))
-  :config
-  (global-company-mode t))
-
-(use-package company-prescient
-  :ensure :demand :after prescient
-  :init (company-prescient-mode +1))
-
-(use-package company-quickhelp
-  :ensure :demand :after (company)
-  :config
-  (company-quickhelp-mode 1))
-
 (use-package lsp-mode
   :ensure :demand :after (flycheck)
   :hook
@@ -604,7 +699,7 @@
   :custom
   ;; 调试时开启，极大影响性能
   (lsp-log-io nil)
-  (lsp-enable-folding nil)
+  (lsp-enable-folding t)
   ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
   ;; https://github.com/hlissner/doom-emacs/issues/2911
   ;; https://github.com/Alexander-Miller/treemacs/issues/626
@@ -661,6 +756,27 @@
         ("C-c a" . lsp-execute-code-action)
         ("C-c r" . lsp-rename)))
 
+(use-package origami
+  :demand
+  :config
+  (define-prefix-command 'origami-mode-map)
+  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
+  (global-origami-mode)
+  :bind
+  (:map origami-mode-map
+        ("o" . origami-open-node)
+        ("O" . origami-open-node-recursively)
+        ("c" . origami-close-node)
+        ("C" . origami-close-node-recursively)
+        ("a" . origami-toggle-node)
+        ("A" . origami-recursively-toggle-node)
+        ("R" . origami-open-all-nodes)
+        ("M" . origami-close-all-nodes)
+        ("v" . origami-show-only-node)
+        ("k" . origami-previous-fold)
+        ("j" . origami-forward-fold)
+        ("x" . origami-reset)))
+
 (use-package consult-lsp
   :ensure :demand :after (lsp-mode consult)
   :config
@@ -677,11 +793,6 @@
   :config
   (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
-
-(use-package lsp-treemacs
-  :ensure :disabled :after (lsp-mode treemacs)
-  :config
-  (lsp-treemacs-sync-mode 1))
 
 (use-package pyenv-mode
   :ensure :demand :disabled :after (projectile)
@@ -734,7 +845,18 @@
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
 (use-package lsp-pyright
   :ensure :demand :after (python)
-  :hook (python-mode . (lambda () (require 'lsp-pyright) (lsp))))
+  :preface
+       ;; Use yapf to format
+       (defun lsp-pyright-format-buffer ()
+         (interactive)
+         (when (and (executable-find "yapf") buffer-file-name)
+           (call-process "yapf" nil nil nil "-i" buffer-file-name)))
+  :hook
+  (python-mode . (lambda ()
+                   (require 'lsp-pyright)
+                   (add-hook 'after-save-hook #'lsp-pyright-format-buffer t t)))
+  :init (when (executable-find "python3")
+          (setq lsp-pyright-python-executable-cmd "python3")))
 
 (use-package lsp-java
   :ensure :demand :disabled t :after (lsp-mode company)
@@ -783,10 +905,49 @@
    ("\\.markdown\\'" . markdown-mode))
   :init
   (when (executable-find "multimarkdown")
-    (setq markdown-command "multimarkdown")))
+    (setq markdown-command "multimarkdown"))
+  (setq markdown-enable-wiki-links t
+        markdown-italic-underscore t
+        markdown-asymmetric-header t
+        markdown-make-gfm-checkboxes-buttons t
+        markdown-gfm-uppercase-checkbox t
+        markdown-fontify-code-blocks-natively t
+        markdown-content-type "application/xhtml+xml"
+        markdown-css-paths '("https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css"
+                             "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github.min.css")
+        markdown-xhtml-header-content "
+<meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+<style>
+body {
+  box-sizing: border-box;
+  max-width: 740px;
+  width: 100%;
+  margin: 40px auto;
+  padding: 0 10px;
+}
+</style>
+<link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/default.min.css'>
+<script src='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('markdown-body');
+  document.querySelectorAll('pre code').forEach((code) => {
+    if (code.className != 'mermaid') {
+      hljs.highlightBlock(code);
+    }
+  });
+});
+</script>
+<script src='https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js'></script>
+<script>
+mermaid.initialize({
+  theme: 'default',  // default, forest, dark, neutral
+  startOnLoad: true
+});
+</script>
+"
+        markdown-gfm-additional-languages "Mermaid"))
 
-;; Preview via `grip'
-;; Install: pip install grip
 (use-package grip-mode
   :bind (:map markdown-mode-command-map
               ("g" . grip-mode))
@@ -801,6 +962,11 @@
   (let ((credential (auth-source-user-and-password "api.github.com")))
              (setq grip-github-user (car credential)
                    grip-github-password (cadr credential))))
+
+(use-package markdown-toc
+  :ensure :demand :after(markdown-mode)
+  :bind (:map markdown-mode-command-map
+         ("r" . markdown-toc-generate-or-refresh-toc)))
 
 (use-package dockerfile-mode
   :ensure
@@ -1094,14 +1260,84 @@
   :config
   (treemacs-set-scope-type 'Perspectives))
 
+;;lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
+(use-package lsp-treemacs
+  :ensure :disabled :after (lsp-mode treemacs)
+  :config
+  (lsp-treemacs-sync-mode 1))
+
+;; Make certain buffers grossly incandescent
+(display-battery-mode t)
+(column-number-mode t)
+(size-indication-mode -1)
+(display-time-mode t)
+(setq display-time-24hr-format t
+      display-time-default-load-average nil
+      display-time-load-average-threshold 5
+      display-time-format "%m/%d[%u]%H:%M"
+      display-time-day-and-date t)
+(setq indicate-buffer-boundaries (quote left))
+
+(show-paren-mode t)
+(setq show-paren-style 'parentheses)
+
+;; Line numbers are not displayed when large files are used.
+(setq line-number-display-limit large-file-warning-threshold)
+(setq line-number-display-limit-width 1000)
+(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+(dolist (mode '(org-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+(setq-default indicate-empty-lines t)
+(when (not indicate-empty-lines) (toggle-indicate-empty-lines))
+
+(setq inhibit-startup-screen t
+      inhibit-startup-message t
+      inhibit-startup-echo-area-message t
+      initial-scratch-message nil)
+
+;; 按照中文折行
+(setq word-wrap-by-category t)
+
+;; Optimization
+(setq idle-update-delay 1.0)
+
+(when (and sys/mac-ns-p sys/mac-x-p)
+  (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+  (add-to-list 'default-frame-alist '(ns-appearance . dark))
+  (add-hook 'after-load-theme-hook
+            (lambda ()
+              (let ((bg (frame-parameter nil 'background-mode)))
+                (set-frame-parameter nil 'ns-appearance bg)
+                (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
+
+;; Inhibit resizing frame
+;;(setq frame-inhibit-implied-resize t
+;;      frame-resize-pixelwise t)
+
+(setq-default cursor-in-non-selected-windows nil)
+(setq highlight-nonselected-windows nil)
+
+(setq fast-but-imprecise-scrolling t)
+(setq redisplay-skip-fontification-on-input t)
+
+(use-package solaire-mode
+  :ensure :demand
+  :hook (after-load-theme . solaire-global-mode))
+
 ;; preview theme: https://emacsthemes.com/
 (use-package doom-themes
   :ensure :demand
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  (doom-themes-treemacs-theme "doom-colors")
   :config
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t
-        doom-themes-treemacs-theme "doom-colors")
   (load-theme 'doom-gruvbox t)
+  ;; Enable flashing mode-line on errors
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
@@ -1118,37 +1354,6 @@
   (doom-modeline-github nil)
   :init
   (doom-modeline-mode 1))
-
-(display-battery-mode t)
-(column-number-mode t)
-(display-time-mode t)
-(setq display-time-24hr-format t
-      display-time-default-load-average nil
-      display-time-load-average-threshold 5
-      display-time-format "%m/%d[%u]%H:%M"
-      display-time-day-and-date t)
-;; 不显示文件大小
-(size-indication-mode -1)
-(setq indicate-buffer-boundaries (quote left))
-
-;; Line numbers are not displayed when large files are used.
-(setq line-number-display-limit large-file-warning-threshold)
-(setq line-number-display-limit-width 1000)
-(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 1))))
-(dolist (mode '(org-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
-(show-paren-mode t)
-(setq show-paren-style 'parentheses)
-
-(setq-default indicate-empty-lines t)
-(when (not indicate-empty-lines) (toggle-indicate-empty-lines))
-
-(setq inhibit-startup-screen t
-      inhibit-startup-message t
-      inhibit-startup-echo-area-message t
-      initial-scratch-message nil)
 
 (use-package diredfl :ensure :demand :config (diredfl-global-mode))
 
@@ -1201,15 +1406,12 @@
 ;; 更新字体：M-x all-the-icons-install-fonts
 (use-package all-the-icons :ensure)
 
-;; 按照中文折行
-(setq word-wrap-by-category t)
-
 (use-package ns-auto-titlebar
   :ensure :demand
   :config
   (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
-  ;; 显示光标位置
+;; 显示光标位置
 (use-package beacon :ensure :config (beacon-mode 1))
 
 ;;(shell-command "which cmake &>/dev/null || brew install cmake")
@@ -1327,7 +1529,6 @@
  grep-highlight-matches t
  ns-pop-up-frames nil)
 
-(recentf-mode +1)
 (setq-default  
  line-spacing 1
  ;; fill-column 的值应该小于 visual-fill-column-width，
@@ -1344,6 +1545,7 @@
  load-prefer-newer t
  ad-redefinition-action 'accept)
 
+(recentf-mode +1)
 (fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
 (winner-mode t)
@@ -1357,36 +1559,39 @@
 ;; Garbage Collector Magic Hack
 (setq gc-cons-threshold most-positive-fixnum)
 (defvar hidden-minor-modes '(whitespace-mode))
-(use-package gcmh :ensure :demand :init (gcmh-mode))
+(use-package gcmh
+  :demand
+  :init
+  (setq gcmh-idle-delay 5
+        gcmh-high-cons-threshold #x1000000) ; 16MB
+  (gcmh-mode))
+
+;; Mouse & Smooth Scroll
+;; Scroll one line at a time (less "jumpy" than defaults)
+(when (display-graphic-p)
+  (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
+        mouse-wheel-scroll-amount-horizontal 1
+        mouse-wheel-progressive-speed nil))
+(setq scroll-step 1
+      scroll-margin 0
+      scroll-conservatively 100000
+      auto-window-vscroll nil
+      scroll-preserve-screen-position t)
 
 (unless window-system
-  (require 'mouse)
   (xterm-mouse-mode t)
   (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
   (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
-  (setq mouse-sel-mode t
-        mouse-wheel-scroll-amount '(1 ((shift) . 1))
-        mouse-wheel-progressive-speed nil
-        mouse-wheel-follow-mouse 't)
-  (mouse-avoidance-mode 'animate)
-  (setq use-file-dialog nil
-        use-dialog-box nil)
-
   (setq 
-   ;; 平滑滚动
-   scroll-step 1
-   scroll-margin 3
+   use-file-dialog nil
+   use-dialog-box nil
    next-screen-context-lines 5
-   scroll-preserve-screen-position t
-   scroll-conservatively 10000
    ;; Emacs 和外部程序的粘贴
    x-select-enable-clipboard t
    select-enable-primary t
    select-enable-clipboard t
    ;; 粘贴于光标处,而不是鼠标指针处
-   mouse-yank-at-point t
-   ;; 设置缩放的模式, 避免 Mac 平台最大化窗口以后右边和下边有空隙
-   frame-resize-pixelwise t))
+   mouse-yank-at-point t))
 
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
@@ -1436,7 +1641,6 @@
 
 ;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
-  :ensure :demand
   :config
   (when (eq system-type 'darwin)
     (osx-trash-setup))
@@ -1444,10 +1648,59 @@
 
 ;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
 (use-package which-key
-  :ensure :demand
+  :demand
   :init (which-key-mode)
   :diminish which-key-mode
   :config
-  (setq which-key-idle-delay 0.5))
+  (setq which-key-idle-delay 1.1))
+
+;; Emacs startup profiler
+(use-package esup)
+
+(use-package pomidor
+  :bind ("<f12>" . pomidor)
+  :config
+  (setq pomidor-sound-tick nil
+        pomidor-sound-tack nil)
+  :init
+  (setq alert-default-style 'mode-line)
+  (setq pomidor-seconds (* 25 60)) ; 25 minutes for the work period
+  (setq pomidor-break-seconds (* 5 60)) ; 5 minutes break time
+  (setq pomidor-breaks-before-long 4) ; wait 4 short breaks before long break
+  (setq pomidor-long-break-seconds (* 20 60)) ; 20 minutes long break time
+  (with-eval-after-load 'all-the-icons
+    (setq alert-severity-faces
+          '((urgent   . all-the-icons-red)
+            (high     . all-the-icons-orange)
+            (moderate . all-the-icons-yellow)
+            (normal   . all-the-icons-green)
+            (low      . all-the-icons-blue)
+            (trivial  . all-the-icons-purple))
+          alert-severity-colors
+          `((urgent   . ,(face-foreground 'all-the-icons-red))
+            (high     . ,(face-foreground 'all-the-icons-orange))
+            (moderate . ,(face-foreground 'all-the-icons-yellow))
+            (normal   . ,(face-foreground 'all-the-icons-green))
+            (low      . ,(face-foreground 'all-the-icons-blue))
+            (trivial  . ,(face-foreground 'all-the-icons-purple)))))
+
+  (when sys/macp
+    (setq pomidor-play-sound-file
+          (lambda (file)
+            (when (executable-find "afplay")
+              (start-process "pomidor-play-sound" nil "afplay" file))))))
+
+;; REST
+(use-package restclient
+  :mode ("\\.http\\'" . restclient-mode)
+  :config
+  (use-package restclient-test
+    :diminish
+    :hook (restclient-mode . restclient-test-mode))
+
+  (with-eval-after-load 'company
+    (use-package company-restclient
+      :defines company-backends
+      :init (add-to-list 'company-backends 'company-restclient))))
 
 (server-start)
