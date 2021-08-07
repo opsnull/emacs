@@ -12,13 +12,14 @@
 - [[#软件源][软件源]]
 - [[#环境变量][环境变量]]
 - [[#目录变量][目录变量]]
+- [[#启动优化][启动优化]]
 - [[#增量补全][增量补全]]
+- [[#自动补全][自动补全]]
 - [[#快速跳转][快速跳转]]
 - [[#输入法][输入法]]
 - [[#编辑辅助][编辑辅助]]
 - [[#文档写作][文档写作]]
 - [[#版本控制][版本控制]]
-- [[#自动补全][自动补全]]
 - [[#编程开发][编程开发]]
   - [[#lsp][lsp]]
   - [[#python][python]]
@@ -77,6 +78,7 @@
   npm install -g dockerfile-language-server-nodejs
   npm install -g eslint babel-eslint eslint-plugin-react
   npm install -g pyright
+  pip install yapf
   
   brew install --HEAD pyenv
   brew install --HEAD pyenv-virtualenv
@@ -115,6 +117,7 @@
 
 先安装 =use-package=, 后续使用它管理所有第三方软件包：
 #+begin_src emacs-lisp
+(setq use-package-always-ensure t)
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -178,6 +181,90 @@ direnv: unloading
 #+end_src
 + 如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
 lsp-workspace-restart= 命令来重启语言服务器。
+
+* 启动优化
+
+#+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
+  ;; emacs 28
+  ;; (when (fboundp 'native-compile-async)
+  ;;   (setenv "LIBRARY_PATH" 
+  ;;           (concat (getenv "LIBRARY_PATH") 
+  ;;                   "/usr/local/opt/gcc/lib/gcc/10:/usr/local/opt/gcc/lib/gcc/10/gcc/x86_64-apple-darwin20/10.2.0"))
+  ;;   (setq comp-speed 3
+  ;;         comp-async-jobs-number 4 
+  ;;         comp-deferred-compilation nil
+  ;;         comp-deferred-compilation-black-list '()
+  ;;         ))
+  ;; (setq package-native-compile t)
+  
+  (tool-bar-mode -1)
+  (menu-bar-no-scroll-bar)
+  (menu-bar-mode nil)
+  (global-font-lock-mode t)
+  (transient-mark-mode t)
+  
+  ;; Defer garbage collection further back in the startup process
+  (setq gc-cons-threshold most-positive-fixnum
+        gc-cons-percentage 0.5)
+  
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              "Recover GC values after startup."
+              (setq gc-cons-threshold 800000
+                    gc-cons-percentage 0.1)))
+  
+  ;; Increase how much is read from processes in a single chunk (default is 4kb)
+  (setq read-process-output-max #x10000)  ; 64kb
+  
+  ;; Don't ping things that look like domain names.
+  (setq ffap-machine-p-known 'reject)
+  
+  ;; 默认先最大化。
+  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+  
+  ;; Speed up startup
+  (setq auto-mode-case-fold nil)  
+  
+  ;; 在Mac平台, Emacs不能进入Mac原生的全屏模式,否则会导致 `make-frame' 创建时也集
+  ;; 成原生全屏属性后造成白屏和左右滑动现象. 所以先设置 `ns-use-native-fullscreen'
+  ;; 和 `ns-use-fullscreen-animation' 禁止Emacs使用Mac原生的全屏模式. 而是采用传统
+  ;; 的全屏模式, 传统的全屏模式, 只会在当前工作区全屏,而不是切换到Mac那种单独的全
+  ;; 屏工作区,这样执行 `make-frame' 先关代码或插件时,就不会因为Mac单独工作区左右滑
+  ;; 动产生的bug.
+  ;;
+  ;; Mac平台下,不能直接使用 `set-frame-parameter' 和 `fullboth' 来设置全屏,那样也
+  ;; 会导致Mac窗口管理器直接把Emacs窗口扔到单独的工作区, 从而对 `make-frame' 产生
+  ;; 同样的Bug. 所以, 启动的时候通过 `set-frame-parameter' 和 `maximized' 先设置
+  ;; Emacs为最大化窗口状态, 启动5秒以后再设置成全屏状态, Mac就不会移动Emacs窗口到
+  ;; 单独的工作区, 最终解决Mac平台下原生全屏窗口导致 `make-frame' 左右滑动闪烁的问
+  ;; 题.
+  (when (eq system-type 'darwin)
+    (setq ns-use-native-fullscreen nil
+          ns-use-fullscreen-animation nil))
+  
+  (add-hook 'after-init-hook #'toggle-frame-fullscreen)
+  ;;(add-hook 'after-init-hook #'toggle-frame-maximized)
+  
+  (defconst sys/macp
+    (eq system-type 'darwin)
+    "Are we running on a Mac system?")
+  
+  (defconst sys/mac-x-p
+    (and (display-graphic-p) sys/macp)
+    "Are we running under X on a Mac system?")
+  
+  (defconst sys/mac-ns-p
+    (eq window-system 'ns)
+    "Are we running on a GNUstep or Macintosh Cocoa display?")
+  
+  (defconst sys/mac-cocoa-p
+    (featurep 'cocoa)
+    "Are we running with Cocoa on a Mac system?")
+  
+  (defconst sys/mac-port-p
+    (eq window-system 'mac)
+    "Are we running a macport build on a Mac system?")
+#+end_src
 
 * 增量补全
 
@@ -308,6 +395,117 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (embark-collect-mode . embark-consult-preview-minor-mode))
 #+end_src
 
+* 自动补全
+
+company 为 emacs 提供了自动补全框架, 它使用可插拔的前端和后端显示候选信息。
+
+内置后端：Elisp, Clang, Semantic, Eclim, Ropemacs, Ispell, CMake, BBDB,
+Yasnippet, dabbrev, etags, gtags, files, keywords 和 CAPF 等。
+
+=CAPF= 是一个通用后端，它使用 Emacs 标准的 =completion-at-point-functions= 获取补全
+信息，与使用该机制的 lsp-mode, emacs-lisp-mode, css-mode, nxml-mode 等 major
+mode 能很好协作：
+
+#+begin_src emacs-lisp
+  (use-package company
+    :ensure :demand
+    :bind
+    (:map company-mode-map
+          ([remap completion-at-point] . company-complete)
+          :map company-active-map
+          ([escape] . company-abort)
+          ("C-p"     . company-select-previous)
+          ("C-n"     . company-select-next)
+          ("C-s"     . company-filter-candidates)
+          ([tab]     . company-complete-common-or-cycle)
+          ([backtab] . company-select-previous-or-abort)
+          :map company-search-map
+          ([escape] . company-search-abort)
+          ("C-p"    . company-select-previous)
+          ("C-n"    . company-select-next))
+    :custom
+    ;; trigger completion immediately.
+    (company-idle-delay 0)
+    (company-echo-delay 0)
+    ;; allow input string that do not match candidate words
+    ;; 开启后有大量不匹配的候选情况，故关闭
+    ;;(company-require-match nil)
+    ;; number the candidates (use M-1, M-2 etc to select completions).
+    (company-show-numbers t)
+    ;; pop up a completion menu by tapping a character
+    (company-minimum-prefix-length 1)
+    (company-tooltip-limit 14)
+    (company-tooltip-align-annotations t)
+    ;; 大小写不敏感
+    (company-dabbrev-ignore-case nil)
+    ;; Don't downcase the returned candidates.
+    (company-dabbrev-downcase nil)
+    (company-tooltip-minimum-width 70)
+    (company-tooltip-maximum-width 100)
+    (company-backends '((company-capf :with company-yasnippet)
+                        (company-dabbrev-code company-keywords company-files)
+                        company-dabbrev))
+    :config
+    (global-company-mode t)
+
+    ;; 修复与 lsp 不兼容的情况
+    (defun my-lsp-fix-company-capf ()
+      "Remove redundant `comapny-capf'."
+      (setq company-backends
+            (remove 'company-backends (remq 'company-capf company-backends))))
+    (advice-add #'lsp-completion--enable :after #'my-lsp-fix-company-capf)
+
+    ;; 不在前缀的候选列表里 snippets
+    (defun my-company-yasnippet-disable-inline (fn cmd &optional arg &rest _ignore)
+      "Enable yasnippet but disable it inline."
+      (if (eq cmd  'prefix)
+          (when-let ((prefix (funcall fn 'prefix)))
+            (unless (memq (char-before (- (point) (length prefix)))
+                          '(?. ?< ?> ?\( ?\) ?\[ ?{ ?} ?\" ?' ?`))
+              prefix))
+        (progn
+          (when (and (bound-and-true-p lsp-mode)
+                     arg (not (get-text-property 0 'yas-annotation-patch arg)))
+            (let* ((name (get-text-property 0 'yas-annotation arg))
+                   (snip (format "%s (Snippet)" name))
+                   (len (length arg)))
+              (put-text-property 0 len 'yas-annotation snip arg)
+              (put-text-property 0 len 'yas-annotation-patch t arg)))
+          (funcall fn cmd  arg))))
+    (advice-add #'company-yasnippet :around #'my-company-yasnippet-disable-inline))
+  #+end_src  
++ =dabbrev-expand= is essentially a form of completion where you first type a
+  couple of letters of a word and press =M-/= . Emacs tries to complete the word
+  by first looking at all the words in the current buffer, then in all other
+  open buffers.
+
+company-box 为候选者显示图标：
+#+begin_src emacs-lisp
+  (use-package company-box
+    :ensure :demand :after (company all-the-icons)
+    :init
+    ;;(setq company-box-doc-enable nil)
+    (setq company-box-doc-delay 0.1)
+    :hook (company-mode . company-box-mode))
+#+end_src
+
+company-prescient 精准排序：
+#+begin_src emacs-lisp
+  (use-package company-prescient
+    :ensure :demand :after prescient
+    :init (company-prescient-mode +1))
+#+end_src
+
+company-quickhelp 显示候选者的帮助文档：
+#+begin_src emacs-lisp
+  ;; (use-package company-quickhelp ;
+  ;;   :ensure :demand :disabled  :after (company)
+  ;;   :init
+  ;;   (setq company-quickhelp-delay 0.3)
+  ;;   :config
+  ;;   (company-quickhelp-mode 1))
+#+end_src
+
 * 快速跳转
 
 跳转到上次修改位置：
@@ -388,11 +586,11 @@ lsp-workspace-restart= 命令来重启语言服务器。
 
 #+begin_src emacs-lisp
   ;; 多光标编辑
-  (use-package iedit :ensure :disabled :demand)
+  (use-package iedit :disabled :demand)
   
   ;; 直接在 minibuffer 中编辑 query
   (use-package isearch-mb
-    :ensure :demand :after(consult anzu)
+    :demand :after(consult)
     :config
     (add-to-list 'isearch-mb--with-buffer #'consult-isearch)
     (define-key isearch-mb-minibuffer-map (kbd "M-r") #'consult-isearch)
@@ -405,13 +603,15 @@ lsp-workspace-restart= 命令来重启语言服务器。
   
   ;; 智能括号
   (use-package smartparens
-    :ensure
     :config
     (smartparens-global-mode t)
     (show-smartparens-global-mode t))
-  
+
+  ;; 彩色括号
+  (use-package rainbow-delimiters :hook (prog-mode . rainbow-delimiters-mode))
+
   ;; 智能扩展区域
-  (use-package expand-region :ensure :bind ("M-@" . er/expand-region))
+  (use-package expand-region :bind ("M-@" . er/expand-region))
   
   ;; 显示缩进
   (use-package highlight-indent-guides
@@ -425,19 +625,14 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
     (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
   
-  ;; 彩色括号
-  (use-package rainbow-delimiters
-    :ensure :defer
-    :hook (prog-mode . rainbow-delimiters-mode))
-  
   ;; 高亮变化的区域
   (use-package volatile-highlights
-    :ensure :disabled
+    :disabled
     :init (volatile-highlights-mode))
   
   ;; 在 modeline 显示匹配的总数和当前序号
   (use-package anzu
-    :ensure :disabled
+    :disabled
     :init
     (setq anzu-mode-lighter "")
     (global-set-key [remap query-replace] 'anzu-query-replace)
@@ -448,7 +643,6 @@ lsp-workspace-restart= 命令来重启语言服务器。
   
   ;; 快速跳转当前 symbol
   (use-package symbol-overlay
-    :ensure
     :config
     (global-set-key (kbd "M-i") 'symbol-overlay-put)
     (global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
@@ -458,29 +652,81 @@ lsp-workspace-restart= 命令来重启语言服务器。
     :hook (prog-mode . symbol-overlay-mode))
   
   ;; brew install ripgrep
-  (use-package deadgrep :ensure :bind  ("<f5>" . deadgrep))
+  (use-package deadgrep :bind  ("<f5>" . deadgrep))
   
   (use-package xref
-    :ensure
     :config
     ;; C-x p g (project-find-regexp)
     (setq xref-search-program 'ripgrep))
   
   ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
   (use-package yasnippet
-    :ensure :demand :after (lsp-mode company)
+    :demand :after (lsp-mode company)
     :commands yas-minor-mode
     :config
     ;; 手动触发补全
-    (global-set-key (kbd "C-c y") 'company-yasnippet)
+    ;; (global-set-key (kbd "C-c y") 'company-yasnippet)
     (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
     (yas-global-mode 1))
+  
+  ;; Youdao Dictionary
+  (use-package youdao-dictionary
+    :commands youdao-dictionary-play-voice-of-current-word
+    :bind (("C-c y" . my-youdao-dictionary-search-at-point)
+           ("C-c Y" . youdao-dictionary-search-at-point)
+           :map youdao-dictionary-mode-map
+           ("h" . youdao-dictionary-hydra/body)
+           ("?" . youdao-dictionary-hydra/body))
+    :init
+    (setq url-automatic-caching t
+          ;; 中文分词
+          youdao-dictionary-use-chinese-word-segmentation t) 
+  
+    (defun my-youdao-dictionary-search-at-point ()
+      "Search word at point and display result with `posframe', `pos-tip', or buffer."
+      (interactive)
+      (if (display-graphic-p)
+          (youdao-dictionary-search-at-point-posframe)
+        (youdao-dictionary-search-at-point)))
+    :config
+    (with-no-warnings
+      (defun my-youdao-dictionary--posframe-tip (string)
+        "Show STRING using posframe-show."
+        (unless (and (require 'posframe nil t) (posframe-workable-p))
+          (error "Posframe not workable"))
+  
+        (let ((word (youdao-dictionary--region-or-word)))
+          (if word
+              (progn
+                (with-current-buffer (get-buffer-create youdao-dictionary-buffer-name)
+                  (let ((inhibit-read-only t))
+                    (erase-buffer)
+                    (youdao-dictionary-mode)
+                    (insert (propertize "\n" 'face '(:height 0.5)))
+                    (insert string)
+                    (insert (propertize "\n" 'face '(:height 0.5)))
+                    (set (make-local-variable 'youdao-dictionary-current-buffer-word) word)))
+                (posframe-show youdao-dictionary-buffer-name
+                               :position (point)
+                               :left-fringe 16
+                               :right-fringe 16
+                               :background-color (face-background 'tooltip nil t)
+                               :internal-border-color (face-foreground 'font-lock-comment-face nil t)
+                               :internal-border-width 1)
+                (unwind-protect
+                    (push (read-event) unread-command-events)
+                  (progn
+                    (posframe-hide youdao-dictionary-buffer-name)
+                    (other-frame 0))))
+            (message "Nothing to look up"))))
+      (advice-add #'youdao-dictionary--posframe-tip
+                  :override #'my-youdao-dictionary--posframe-tip)))
 #+end_src
 
 * 文档写作
 
 #+begin_src emacs-lisp
-  (dolist (package '(org org-plus-contrib ob-go ox-reveal))
+  (dolist (package '(org org-plus-contrib ob-go ox-reveal ox-gfm))
     (unless (package-installed-p package)
       (package-install package)))
   
@@ -495,7 +741,6 @@ lsp-workspace-restart= 命令来重启语言服务器。
           org-hide-emphasis-markers t
           org-edit-src-content-indentation 2
           org-hide-block-startup nil
-          org-src-preserve-indentation nil
           org-cycle-separator-lines 2
           org-default-notes-file "~/docs/orgs/note.org"
           org-log-into-drawer t
@@ -511,7 +756,6 @@ lsp-workspace-restart= 命令来重启语言服务器。
           org-cycle-level-faces t
           org-n-level-faces 4
           org-startup-folded 'content
-          org-src-fontify-natively t
           org-html-self-link-headlines t
           ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
           org-use-sub-superscripts nil
@@ -519,7 +763,7 @@ lsp-workspace-restart= 命令来重启语言服务器。
     ;; 使用 later.org 和 gtd.org 作为 refile target.
     (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
                                ("~/docs/orgs/gtd.org" :maxlevel . 3)))
-  
+    
     (setq org-agenda-time-grid (quote ((daily today require-timed)
                                        (300 600 900 1200 1500 1800 2100 2400)
                                        "......"
@@ -545,9 +789,6 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (global-set-key (kbd "C-c c") 'org-capture)
     (global-set-key (kbd "C-c b") 'org-switchb)
     (add-hook 'org-mode-hook 'turn-on-auto-fill)
-    ;; M-n 和 M-p 绑定到 highlight-symbol 
-    ;(define-key org-mode-map (kbd "M-n") 'org-next-link)
-    ;(define-key org-mode-map (kbd "M-p") 'org-previous-link)
     (require 'org-protocol)
     (require 'org-capture)
     (add-to-list 'org-capture-templates
@@ -563,7 +804,11 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (add-to-list 'org-capture-templates
                  '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
                    "* ☞ TODO [#B] %U %i%?"))
-    (setq org-confirm-babel-evaluate nil)
+    ;; Babel
+    (setq org-confirm-babel-evaluate nil
+          org-src-fontify-natively t
+          org-src-preserve-indentation nil
+          org-src-tab-acts-natively t)
     (org-babel-do-load-languages
      'org-babel-load-languages
      '((shell . t)
@@ -573,6 +818,9 @@ lsp-workspace-restart= 命令来重启语言服务器。
        (python . t)
        (dot . t)
        (css . t))))
+  
+  ;; Add gfm/md backends
+  (add-to-list 'org-export-backends 'md)
   
   ;; set-face-attribute 配置的 org-document-title 字体大小不生效，这里再次调整。
   (defun my/org-faces ()
@@ -609,13 +857,9 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (add-hook 'dired-mode-hook 'org-download-enable)
     (org-download-enable))
   
-  (use-package ox-reveal :ensure :after (org))
+  (use-package htmlize)
   
-  (use-package htmlize :ensure)
-  
-  (use-package org-make-toc
-    :ensure :after org
-    :hook (org-mode . org-make-toc-mode))
+  (use-package toc-org :after (org) :hook (org-mode . toc-org-mode))
   
   (use-package org-tree-slide
     :ensure :after org
@@ -625,12 +869,23 @@ lsp-workspace-restart= 命令来重启语言服务器。
           org-tree-slide-activate-message "Presentation started."
           org-tree-slide-deactivate-message "Presentation ended."
           org-tree-slide-header t)
-    (with-eval-after-load "org-tree-slide"
-      (define-key org-mode-map (kbd "<f8>") 'org-tree-slide-mode)
-      (define-key org-mode-map (kbd "S-<f8>") 'org-tree-slide-skip-done-toggle)
-      (define-key org-tree-slide-mode-map (kbd "<f9>") 'org-tree-slide-move-previous-tree)
-      (define-key org-tree-slide-mode-map (kbd "<f10>") 'org-tree-slide-move-next-tree)
-      (define-key org-tree-slide-mode-map (kbd "<f11>") 'org-tree-slide-content)))
+    :bind (:map org-mode-map
+                ("<f8>" . org-tree-slide-mode)
+                :map org-tree-slide-mode-map
+                ("<left>" . org-tree-slide-move-previous-tree)
+                ("<right>" . org-tree-slide-move-next-tree)
+                ("S-SPC" . org-tree-slide-move-previous-tree)
+                ("SPC" . org-tree-slide-move-next-tree))
+    :hook ((org-tree-slide-play . (lambda ()
+                                    (text-scale-increase 3)
+                                    (beacon-mode -1)
+                                    (org-display-inline-images)
+                                    (read-only-mode 1)))
+           (org-tree-slide-stop . (lambda ()
+                                    (text-scale-increase 0)
+                                    (org-remove-inline-images)
+                                    (beacon-mode +1)
+                                    (read-only-mode -1)))))
   
   (defun my/org-mode-visual-fill ()
     (setq
@@ -739,74 +994,6 @@ ediff:
    ediff-split-window-function 'split-window-horizontally)
 #+end_src
 
-* 自动补全
-
-company 为 emacs 提供了自动补全框架, 它使用可插拔的前端和后端显示候选信息。
-
-内置后端：Elisp, Clang, Semantic, Eclim, Ropemacs, Ispell, CMake, BBDB,
-Yasnippet, dabbrev, etags, gtags, files, keywords 和 CAPF 等。
-
-=CAPF= 是一个通用后端，它使用 Emacs 标准的 =completion-at-point-functions= 获取补全
-信息，与使用该机制的 lsp-mode, emacs-lisp-mode, css-mode, nxml-mode 等 major
-mode 能很好协作：
-
-#+begin_src emacs-lisp
-  (use-package company
-    :ensure :demand
-    :bind
-    (:map company-mode-map
-          ([remap completion-at-point] . company-complete)
-          :map company-active-map
-          ([escape] . company-abort)
-          ("C-p"     . company-select-previous)
-          ("C-n"     . company-select-next)
-          ("C-s"     . company-filter-candidates)
-          ([tab]     . company-complete-common-or-cycle)
-          ([backtab] . company-select-previous-or-abort)
-          :map company-search-map
-          ([escape] . company-search-abort)
-          ("C-p"    . company-select-previous)
-          ("C-n"    . company-select-next))
-    :custom
-    ;; trigger completion immediately.
-    (company-idle-delay 0)
-    (company-echo-delay 0)
-    ;; allow input string that do not match candidate words
-    ;;(company-require-match nil)
-    ;; number the candidates (use M-1, M-2 etc to select completions).
-    (company-show-numbers t)
-    ;; pop up a completion menu by tapping a character
-    (company-minimum-prefix-length 1)
-    (company-tooltip-limit 14)
-    (company-tooltip-align-annotations t)
-    ;; 大小写不敏感
-    (company-dabbrev-ignore-case nil)
-    ;; Don't downcase the returned candidates.
-    (company-dabbrev-downcase nil)
-    (company-backends '(company-capf
-                        company-dabbrev
-                        company-files
-                        company-keywords))
-    :config
-    (global-company-mode t))
-  
-  (use-package company-prescient
-    :ensure :demand :after prescient
-    :init (company-prescient-mode +1))
-#+end_src  
-+ =dabbrev-expand= is essentially a form of completion where you first type a
-  couple of letters of a word and press =M-/= . Emacs tries to complete the word
-  by first looking at all the words in the current buffer, then in all other
-  open buffers.
-
-company-quickhelp 用于显示候选者帮助文档：
-#+begin_src emacs-lisp
-(use-package company-quickhelp
-  :ensure :demand :after (company)
-  :config
-  (company-quickhelp-mode 1))
-#+end_src
-
 * 编程开发
 ** lsp
 
@@ -827,7 +1014,7 @@ company-quickhelp 用于显示候选者帮助文档：
     :custom
     ;; 调试时开启，极大影响性能
     (lsp-log-io nil)
-    (lsp-enable-folding nil)
+    (lsp-enable-folding t)
     ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
     ;; https://github.com/hlissner/doom-emacs/issues/2911
     ;; https://github.com/Alexander-Miller/treemacs/issues/626
@@ -885,7 +1072,31 @@ company-quickhelp 用于显示候选者帮助文档：
           ("C-c r" . lsp-rename)))
 #+end_src
 
-consult-lsp 提供了两个非常有用的命令：consult-lsp-symbols 和  consult-lsp-diagnostics
+origami 提供代码折叠功能：
+#+begin_src emacs-lisp
+  (use-package origami
+    :demand
+    :config
+    (define-prefix-command 'origami-mode-map)
+    (global-set-key (kbd "C-x C-z") 'origami-mode-map)
+    (global-origami-mode)
+    :bind
+    (:map origami-mode-map
+          ("o" . origami-open-node)
+          ("O" . origami-open-node-recursively)
+          ("c" . origami-close-node)
+          ("C" . origami-close-node-recursively)
+          ("a" . origami-toggle-node)
+          ("A" . origami-recursively-toggle-node)
+          ("R" . origami-open-all-nodes)
+          ("M" . origami-close-all-nodes)
+          ("v" . origami-show-only-node)
+          ("k" . origami-previous-fold)
+          ("j" . origami-forward-fold)
+          ("x" . origami-reset)))
+#+end_src
+
+consult-lsp 提供两个非常有用的命令：consult-lsp-symbols 和 consult-lsp-diagnostics：
   #+begin_src emacs-lisp
   (use-package consult-lsp
     :ensure :demand :after (lsp-mode consult)
@@ -908,14 +1119,6 @@ lsp-ui 用于显示帮助信息：
     (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 #+end_src
 + lsp-mode 和 lsp-ui 的特性可以[[https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/][参考这个页面]]来进行选择性的打开和关闭；
-
-lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
-#+begin_src  emacs-lisp
-  (use-package lsp-treemacs
-    :ensure :disabled :after (lsp-mode treemacs)
-    :config
-    (lsp-treemacs-sync-mode 1))
-#+end_src
 
 ** python
 *** pyenv
@@ -1008,12 +1211,24 @@ pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pye
 lsp-python-ms 和 pyls，转向使用 lsp-pyright。
 
 #+begin_src emacs-lisp
-;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
-(use-package lsp-pyright
-  :ensure :demand :after (python)
-  :hook (python-mode . (lambda () (require 'lsp-pyright) (lsp))))
+  ;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
+  (use-package lsp-pyright
+    :ensure :demand :after (python)
+    :preface
+         ;; Use yapf to format
+         (defun lsp-pyright-format-buffer ()
+           (interactive)
+           (when (and (executable-find "yapf") buffer-file-name)
+             (call-process "yapf" nil nil nil "-i" buffer-file-name)))
+    :hook
+    (python-mode . (lambda ()
+                     (require 'lsp-pyright)
+                     (add-hook 'after-save-hook #'lsp-pyright-format-buffer t t)))
+    :init (when (executable-find "python3")
+            (setq lsp-pyright-python-executable-cmd "python3")))
 #+end_src
 + 更新 pyright 到最新版本: =sudo npm update -g pyright=
++ 使用 yapf 来格式化 python 代码: =pip install yapf=
 
 pyright _不使用_ pyenv 的 ~.python-version~ 指定的 python 版本或 venv，而是需要在项
 目的 pyrightconfig.json 文件中配置 venv 和 venvPath 参数来指定 python 环境：
@@ -1157,7 +1372,48 @@ pip install grip
      ("\\.markdown\\'" . markdown-mode))
     :init
     (when (executable-find "multimarkdown")
-      (setq markdown-command "multimarkdown")))
+      (setq markdown-command "multimarkdown"))
+    (setq markdown-enable-wiki-links t
+          markdown-italic-underscore t
+          markdown-asymmetric-header t
+          markdown-make-gfm-checkboxes-buttons t
+          markdown-gfm-uppercase-checkbox t
+          markdown-fontify-code-blocks-natively t
+          markdown-content-type "application/xhtml+xml"
+          markdown-css-paths '("https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css"
+                               "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github.min.css")
+          markdown-xhtml-header-content "
+  <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+  <style>
+  body {
+    box-sizing: border-box;
+    max-width: 740px;
+    width: 100%;
+    margin: 40px auto;
+    padding: 0 10px;
+  }
+  </style>
+  <link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/default.min.css'>
+  <script src='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js'></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.classList.add('markdown-body');
+    document.querySelectorAll('pre code').forEach((code) => {
+      if (code.className != 'mermaid') {
+        hljs.highlightBlock(code);
+      }
+    });
+  });
+  </script>
+  <script src='https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js'></script>
+  <script>
+  mermaid.initialize({
+    theme: 'default',  // default, forest, dark, neutral
+    startOnLoad: true
+  });
+  </script>
+  "
+          markdown-gfm-additional-languages "Mermaid"))
 #+end_src
 
 使用 grip 来预览 markdown 文件，它调用 github markdown API 来渲染文件，从而确保
@@ -1175,8 +1431,6 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
 + M-x grip-restart-preview
 + M-x grip-browse-preview 使用浏览器来预览
 #+begin_src emacs-lisp  
-  ;; Preview via `grip'
-  ;; Install: pip install grip
   (use-package grip-mode
     :bind (:map markdown-mode-command-map
                 ("g" . grip-mode))
@@ -1191,6 +1445,14 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
     (let ((credential (auth-source-user-and-password "api.github.com")))
                (setq grip-github-user (car credential)
                      grip-github-password (cadr credential))))
+#+end_src
++ 安装 grip： =pip install grip=
+
+#+begin_src emacs-lisp
+  (use-package markdown-toc
+    :ensure :demand :after(markdown-mode)
+    :bind (:map markdown-mode-command-map
+           ("r" . markdown-toc-generate-or-refresh-toc)))
 #+end_src
 
 ** dockerfile
@@ -1489,6 +1751,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 #+end_src
 
 * 树形浏览
+
 #+begin_src emacs-lisp
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
@@ -1563,62 +1826,89 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   :after (treemacs persp-mode)
   :config
   (treemacs-set-scope-type 'Perspectives))
+
+;;lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
+(use-package lsp-treemacs
+  :ensure :disabled :after (lsp-mode treemacs)
+  :config
+  (lsp-treemacs-sync-mode 1))
 #+end_src
 
 * 主题界面
 
-#+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
-  ;; emacs 28
-  ;; (when (fboundp 'native-compile-async)
-  ;;   (setenv "LIBRARY_PATH" 
-  ;;           (concat (getenv "LIBRARY_PATH") 
-  ;;                   "/usr/local/opt/gcc/lib/gcc/10:/usr/local/opt/gcc/lib/gcc/10/gcc/x86_64-apple-darwin20/10.2.0"))
-  ;;   (setq comp-speed 3
-  ;;         comp-async-jobs-number 4 
-  ;;         comp-deferred-compilation nil
-  ;;         comp-deferred-compilation-black-list '()
-  ;;         ))
-  ;; (setq package-native-compile t)
-  
-  (tool-bar-mode -1)
-  (menu-bar-no-scroll-bar)
-  (menu-bar-mode nil)
-  (global-font-lock-mode t)
-  (transient-mark-mode t)
-  
-  ;; 默认先最大化。
-  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-  
-  ;; 在Mac平台, Emacs不能进入Mac原生的全屏模式,否则会导致 `make-frame' 创建时也集
-  ;; 成原生全屏属性后造成白屏和左右滑动现象. 所以先设置 `ns-use-native-fullscreen'
-  ;; 和 `ns-use-fullscreen-animation' 禁止Emacs使用Mac原生的全屏模式. 而是采用传统
-  ;; 的全屏模式, 传统的全屏模式, 只会在当前工作区全屏,而不是切换到Mac那种单独的全
-  ;; 屏工作区,这样执行 `make-frame' 先关代码或插件时,就不会因为Mac单独工作区左右滑
-  ;; 动产生的bug.
-  ;;
-  ;; Mac平台下,不能直接使用 `set-frame-parameter' 和 `fullboth' 来设置全屏,那样也
-  ;; 会导致Mac窗口管理器直接把Emacs窗口扔到单独的工作区, 从而对 `make-frame' 产生
-  ;; 同样的Bug. 所以, 启动的时候通过 `set-frame-parameter' 和 `maximized' 先设置
-  ;; Emacs为最大化窗口状态, 启动5秒以后再设置成全屏状态, Mac就不会移动Emacs窗口到
-  ;; 单独的工作区, 最终解决Mac平台下原生全屏窗口导致 `make-frame' 左右滑动闪烁的问
-  ;; 题.
-  ;; (when (eq system-type 'darwin)
-  ;;   (setq ns-use-native-fullscreen nil
-  ;;         ns-use-fullscreen-animation nil))
-  
-  (add-hook 'after-init-hook #'toggle-frame-fullscreen)
-  ;;(add-hook 'after-init-hook #'toggle-frame-maximized)
-#+end_src
-
 #+begin_src emacs-lisp
+  ;; Make certain buffers grossly incandescent
+  (display-battery-mode t)
+  (column-number-mode t)
+  (size-indication-mode -1)
+  (display-time-mode t)
+  (setq display-time-24hr-format t
+        display-time-default-load-average nil
+        display-time-load-average-threshold 5
+        display-time-format "%m/%d[%u]%H:%M"
+        display-time-day-and-date t)
+  (setq indicate-buffer-boundaries (quote left))
+  
+  (show-paren-mode t)
+  (setq show-paren-style 'parentheses)
+  
+  ;; Line numbers are not displayed when large files are used.
+  (setq line-number-display-limit large-file-warning-threshold)
+  (setq line-number-display-limit-width 1000)
+  (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 1))))
+  (dolist (mode '(org-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+  
+  (setq-default indicate-empty-lines t)
+  (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
+  
+  (setq inhibit-startup-screen t
+        inhibit-startup-message t
+        inhibit-startup-echo-area-message t
+        initial-scratch-message nil)
+  
+  ;; 按照中文折行
+  (setq word-wrap-by-category t)
+  
+  ;; Optimization
+  (setq idle-update-delay 1.0)
+  
+  (when (and sys/mac-ns-p sys/mac-x-p)
+    (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+    (add-to-list 'default-frame-alist '(ns-appearance . dark))
+    (add-hook 'after-load-theme-hook
+              (lambda ()
+                (let ((bg (frame-parameter nil 'background-mode)))
+                  (set-frame-parameter nil 'ns-appearance bg)
+                  (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
+  
+  ;; Inhibit resizing frame
+  ;;(setq frame-inhibit-implied-resize t
+  ;;      frame-resize-pixelwise t)
+  
+  (setq-default cursor-in-non-selected-windows nil)
+  (setq highlight-nonselected-windows nil)
+  
+  (setq fast-but-imprecise-scrolling t)
+  (setq redisplay-skip-fontification-on-input t)
+  
+  (use-package solaire-mode
+    :ensure :demand
+    :hook (after-load-theme . solaire-global-mode))
+  
   ;; preview theme: https://emacsthemes.com/
   (use-package doom-themes
     :ensure :demand
+    :custom-face
+    (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+    :custom
+    (doom-themes-enable-bold t)
+    (doom-themes-enable-italic t)
+    (doom-themes-treemacs-theme "doom-colors")
     :config
-    (setq doom-themes-enable-bold t
-          doom-themes-enable-italic t
-          doom-themes-treemacs-theme "doom-colors")
     (load-theme 'doom-gruvbox t)
+    ;; Enable flashing mode-line on errors
     (doom-themes-visual-bell-config)
     (doom-themes-treemacs-config)
     (doom-themes-org-config))
@@ -1635,37 +1925,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
     (doom-modeline-github nil)
     :init
     (doom-modeline-mode 1))
-  
-  (display-battery-mode t)
-  (column-number-mode t)
-  (display-time-mode t)
-  (setq display-time-24hr-format t
-        display-time-default-load-average nil
-        display-time-load-average-threshold 5
-        display-time-format "%m/%d[%u]%H:%M"
-        display-time-day-and-date t)
-  ;; 不显示文件大小
-  (size-indication-mode -1)
-  (setq indicate-buffer-boundaries (quote left))
-  
-  ;; Line numbers are not displayed when large files are used.
-  (setq line-number-display-limit large-file-warning-threshold)
-  (setq line-number-display-limit-width 1000)
-  (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 1))))
-  (dolist (mode '(org-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 0))))
-  
-  (show-paren-mode t)
-  (setq show-paren-style 'parentheses)
-  
-  (setq-default indicate-empty-lines t)
-  (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
-  
-  (setq inhibit-startup-screen t
-        inhibit-startup-message t
-        inhibit-startup-echo-area-message t
-        initial-scratch-message nil)
   
   (use-package diredfl :ensure :demand :config (diredfl-global-mode))
   
@@ -1718,15 +1977,12 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   ;; 更新字体：M-x all-the-icons-install-fonts
   (use-package all-the-icons :ensure)
   
-  ;; 按照中文折行
-  (setq word-wrap-by-category t)
-  
   (use-package ns-auto-titlebar
     :ensure :demand
     :config
     (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
   
-    ;; 显示光标位置
+  ;; 显示光标位置
   (use-package beacon :ensure :config (beacon-mode 1))
 #+end_src
 
@@ -1935,149 +2191,196 @@ fi
 
 * 其它
 #+begin_src emacs-lisp
-  (setq
-   ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
-   bookmark-save-flag 1
-   ;; pdf 转为 png 时使用更高分辨率（默认 90）
-   doc-view-resolution 144
-   ;; 关闭烦人的出错时的提示声
-   ring-bell-function 'ignore
-   byte-compile-warnings '(cl-functions)
-   confirm-kill-emacs #'y-or-n-p
-   ad-redefinition-action 'accept
-   vc-follow-symlinks t
-   large-file-warning-threshold nil
-   ;; 自动根据 window 大小显示图片
-   image-transform-resize t
-   grep-highlight-matches t
-   ns-pop-up-frames nil)
+    (setq
+     ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
+     bookmark-save-flag 1
+     ;; pdf 转为 png 时使用更高分辨率（默认 90）
+     doc-view-resolution 144
+     ;; 关闭烦人的出错时的提示声
+     ring-bell-function 'ignore
+     byte-compile-warnings '(cl-functions)
+     confirm-kill-emacs #'y-or-n-p
+     ad-redefinition-action 'accept
+     vc-follow-symlinks t
+     large-file-warning-threshold nil
+     ;; 自动根据 window 大小显示图片
+     image-transform-resize t
+     grep-highlight-matches t
+     ns-pop-up-frames nil)
+    
+    (setq-default  
+     line-spacing 1
+     ;; fill-column 的值应该小于 visual-fill-column-width，
+     ;; 否则居中显示时行内容会过长而被隐藏；
+     fill-column 80
+     comment-fill-column 0
+     recentf-max-menu-items 100
+     recentf-max-saved-items 100
+     recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
+     tab-width 4
+     indent-tabs-mode nil
+     debug-on-error nil
+     message-log-max t
+     load-prefer-newer t
+     ad-redefinition-action 'accept)
+    
+    (recentf-mode +1)
+    (fset 'yes-or-no-p 'y-or-n-p)
+    (auto-image-file-mode t)
+    (winner-mode t)
+    
+    ;; Mac 的 Command 键当做 meta 使用
+    (setq mac-option-key-is-meta nil
+          mac-command-key-is-meta t
+          mac-command-modifier 'meta
+          mac-option-modifier 'none)
+    
+    ;; Garbage Collector Magic Hack
+    (setq gc-cons-threshold most-positive-fixnum)
+    (defvar hidden-minor-modes '(whitespace-mode))
+    (use-package gcmh
+      :demand
+      :init
+      (setq gcmh-idle-delay 5
+            gcmh-high-cons-threshold #x1000000) ; 16MB
+      (gcmh-mode))
+    
+    ;; Mouse & Smooth Scroll
+    ;; Scroll one line at a time (less "jumpy" than defaults)
+    (when (display-graphic-p)
+      (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
+            mouse-wheel-scroll-amount-horizontal 1
+            mouse-wheel-progressive-speed nil))
+    (setq scroll-step 1
+          scroll-margin 0
+          scroll-conservatively 100000
+          auto-window-vscroll nil
+          scroll-preserve-screen-position t)
+    
+    (unless window-system
+      (xterm-mouse-mode t)
+      (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
+      (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
+      (setq 
+       use-file-dialog nil
+       use-dialog-box nil
+       next-screen-context-lines 5
+       ;; Emacs 和外部程序的粘贴
+       x-select-enable-clipboard t
+       select-enable-primary t
+       select-enable-clipboard t
+       ;; 粘贴于光标处,而不是鼠标指针处
+       mouse-yank-at-point t))
+    
+    (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
+    (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
+    (global-set-key (kbd "S-C-<down>") 'shrink-window)
+    (global-set-key (kbd "S-C-<up>") 'enlarge-window)
+    
+    ;;(shell-command "mkdir -p ~/.emacs.d/backup")
+    (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
+    (setq backup-by-copying t
+          backup-directory-alist (list (cons ".*" backup-dir))
+          delete-old-versions t
+          kept-new-versions 6
+          kept-old-versions 2
+          version-control t)
+    
+    ;;(shell-command "mkdir -p ~/.emacs.d/autosave")
+    (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
+    (setq auto-save-list-file-prefix autosave-dir
+          auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+    
+    (global-set-key (kbd "C-x C-b") 'ibuffer)
+    (setq dired-recursive-deletes t
+          dired-recursive-copies t)
+    (put 'dired-find-alternate-file 'disabled nil)
+    
+    (prefer-coding-system 'utf-8)
+    (setq locale-coding-system 'utf-8
+          default-buffer-file-coding-system 'utf-8)
+    (set-buffer-file-coding-system 'utf-8)
+    (set-language-environment "UTF-8")
+    (set-default buffer-file-coding-system 'utf8)
+    (set-default-coding-systems 'utf-8)
+    (setenv "LANG" "zh_CN.UTF-8")
+    (setenv "LC_ALL" "zh_CN.UTF-8")
+    (setenv "LC_CTYPE" "zh_CN.UTF-8")
+    
+    ;;(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+    ;; (defvar xwidget-webkit-bookmark-jump-new-session)
+    ;; (defvar xwidget-webkit-last-session-buffer)
+    ;; (add-hook 'pre-command-hook
+    ;;           (lambda ()
+    ;;             (if (eq this-command #'bookmark-bmenu-list)
+    ;;                 (if (not (eq major-mode 'xwidget-webkit-mode))
+    ;;                     (setq xwidget-webkit-bookmark-jump-new-session t)
+    ;;                   (setq xwidget-webkit-bookmark-jump-new-session nil)
+    ;;                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+    
+    ;;(shell-command "trash -v || brew install trash")
+    (use-package osx-trash
+      :config
+      (when (eq system-type 'darwin)
+        (osx-trash-setup))
+      (setq delete-by-moving-to-trash t))
+    
+    ;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
+    (use-package which-key
+      :demand
+      :init (which-key-mode)
+      :diminish which-key-mode
+      :config
+      (setq which-key-idle-delay 1.1))
+    
+    ;; Emacs startup profiler
+    (use-package esup)
+    
+    (use-package pomidor
+      :bind ("<f12>" . pomidor)
+      :config
+      (setq pomidor-sound-tick nil
+            pomidor-sound-tack nil)
+      :init
+      (setq alert-default-style 'mode-line)
+      (setq pomidor-seconds (* 25 60)) ; 25 minutes for the work period
+      (setq pomidor-break-seconds (* 5 60)) ; 5 minutes break time
+      (setq pomidor-breaks-before-long 4) ; wait 4 short breaks before long break
+      (setq pomidor-long-break-seconds (* 20 60)) ; 20 minutes long break time
+      (with-eval-after-load 'all-the-icons
+        (setq alert-severity-faces
+              '((urgent   . all-the-icons-red)
+                (high     . all-the-icons-orange)
+                (moderate . all-the-icons-yellow)
+                (normal   . all-the-icons-green)
+                (low      . all-the-icons-blue)
+                (trivial  . all-the-icons-purple))
+              alert-severity-colors
+              `((urgent   . ,(face-foreground 'all-the-icons-red))
+                (high     . ,(face-foreground 'all-the-icons-orange))
+                (moderate . ,(face-foreground 'all-the-icons-yellow))
+                (normal   . ,(face-foreground 'all-the-icons-green))
+                (low      . ,(face-foreground 'all-the-icons-blue))
+                (trivial  . ,(face-foreground 'all-the-icons-purple)))))
+      
+      (when sys/macp
+        (setq pomidor-play-sound-file
+              (lambda (file)
+                (when (executable-find "afplay")
+                  (start-process "pomidor-play-sound" nil "afplay" file))))))
+    
+    ;; REST
+    (use-package restclient
+      :mode ("\\.http\\'" . restclient-mode)
+      :config
+      (use-package restclient-test
+        :diminish
+        :hook (restclient-mode . restclient-test-mode))
+    
+      (with-eval-after-load 'company
+        (use-package company-restclient
+          :defines company-backends
+          :init (add-to-list 'company-backends 'company-restclient))))
   
-  (recentf-mode +1)
-  (setq-default  
-   line-spacing 1
-   ;; fill-column 的值应该小于 visual-fill-column-width，
-   ;; 否则居中显示时行内容会过长而被隐藏；
-   fill-column 80
-   comment-fill-column 0
-   recentf-max-menu-items 100
-   recentf-max-saved-items 100
-   recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
-   tab-width 4
-   indent-tabs-mode nil
-   debug-on-error nil
-   message-log-max t
-   load-prefer-newer t
-   ad-redefinition-action 'accept)
-  
-  (fset 'yes-or-no-p 'y-or-n-p)
-  (auto-image-file-mode t)
-  (winner-mode t)
-  
-  ;; Mac 的 Command 键当做 meta 使用
-  (setq mac-option-key-is-meta nil
-        mac-command-key-is-meta t
-        mac-command-modifier 'meta
-        mac-option-modifier 'none)
-  
-  ;; Garbage Collector Magic Hack
-  (setq gc-cons-threshold most-positive-fixnum)
-  (defvar hidden-minor-modes '(whitespace-mode))
-  (use-package gcmh :ensure :demand :init (gcmh-mode))
-  
-  (unless window-system
-    (require 'mouse)
-    (xterm-mouse-mode t)
-    (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
-    (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
-    (setq mouse-sel-mode t
-          mouse-wheel-scroll-amount '(1 ((shift) . 1))
-          mouse-wheel-progressive-speed nil
-          mouse-wheel-follow-mouse 't)
-    (mouse-avoidance-mode 'animate)
-    (setq use-file-dialog nil
-          use-dialog-box nil)
-  
-    (setq 
-     ;; 平滑滚动
-     scroll-step 1
-     scroll-margin 3
-     next-screen-context-lines 5
-     scroll-preserve-screen-position t
-     scroll-conservatively 10000
-     ;; Emacs 和外部程序的粘贴
-     x-select-enable-clipboard t
-     select-enable-primary t
-     select-enable-clipboard t
-     ;; 粘贴于光标处,而不是鼠标指针处
-     mouse-yank-at-point t
-     ;; 设置缩放的模式, 避免 Mac 平台最大化窗口以后右边和下边有空隙
-     frame-resize-pixelwise t))
-  
-  (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
-  (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
-  (global-set-key (kbd "S-C-<down>") 'shrink-window)
-  (global-set-key (kbd "S-C-<up>") 'enlarge-window)
-  
-  ;;(shell-command "mkdir -p ~/.emacs.d/backup")
-  (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
-  (setq backup-by-copying t
-        backup-directory-alist (list (cons ".*" backup-dir))
-        delete-old-versions t
-        kept-new-versions 6
-        kept-old-versions 2
-        version-control t)
-  
-  ;;(shell-command "mkdir -p ~/.emacs.d/autosave")
-  (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
-  (setq auto-save-list-file-prefix autosave-dir
-        auto-save-file-name-transforms `((".*" ,autosave-dir t)))
-  
-  (global-set-key (kbd "C-x C-b") 'ibuffer)
-  (setq dired-recursive-deletes t
-        dired-recursive-copies t)
-  (put 'dired-find-alternate-file 'disabled nil)
-  
-  (prefer-coding-system 'utf-8)
-  (setq locale-coding-system 'utf-8
-        default-buffer-file-coding-system 'utf-8)
-  (set-buffer-file-coding-system 'utf-8)
-  (set-language-environment "UTF-8")
-  (set-default buffer-file-coding-system 'utf8)
-  (set-default-coding-systems 'utf-8)
-  (setenv "LANG" "zh_CN.UTF-8")
-  (setenv "LC_ALL" "zh_CN.UTF-8")
-  (setenv "LC_CTYPE" "zh_CN.UTF-8")
-  
-  ;;(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-  ;; (defvar xwidget-webkit-bookmark-jump-new-session)
-  ;; (defvar xwidget-webkit-last-session-buffer)
-  ;; (add-hook 'pre-command-hook
-  ;;           (lambda ()
-  ;;             (if (eq this-command #'bookmark-bmenu-list)
-  ;;                 (if (not (eq major-mode 'xwidget-webkit-mode))
-  ;;                     (setq xwidget-webkit-bookmark-jump-new-session t)
-  ;;                   (setq xwidget-webkit-bookmark-jump-new-session nil)
-  ;;                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
-  
-  ;;(shell-command "trash -v || brew install trash")
-  (use-package osx-trash
-    :ensure :demand
-    :config
-    (when (eq system-type 'darwin)
-      (osx-trash-setup))
-    (setq delete-by-moving-to-trash t))
-  
-  ;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
-  (use-package which-key
-    :ensure :demand
-    :init (which-key-mode)
-    :diminish which-key-mode
-    :config
-    (setq which-key-idle-delay 0.5))
-  
-  (server-start)
+    (server-start)
 #+end_src
-
-
-
-
