@@ -21,7 +21,6 @@
 - [[#自动补全][自动补全]]
 - [[#编程开发][编程开发]]
   - [[#lsp][lsp]]
-  - [[#lsp-treemacs][lsp-treemacs]]
   - [[#python][python]]
     - [[#pyenv][pyenv]]
     - [[#python-mode][python-mode]]
@@ -39,7 +38,6 @@
     - [[#dap-mode][dap-mode]]
   - [[#yaml][yaml]]
   - [[#flycheck][flycheck]]
-  - [[#flycheck-pos-tip][flycheck-pos-tip]]
 - [[#项目管理][项目管理]]
 - [[#树形浏览][树形浏览]]
 - [[#主题界面][主题界面]]
@@ -149,7 +147,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 brew install direnv
 #+end_src
 
-[[https://direnv.net/docs/hook.html][将 direnv hook 到 shell 启动文件中]], 重新登录 shell：
+[[https://direnv.net/docs/hook.html][将 direnv hook 到 shell 启动文件中]]：
 #+begin_src shell :results none
 eval "$(direnv hook bash)"
 #+end_src
@@ -195,17 +193,13 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (prescient-persist-mode +1))
   
   (use-package selectrum-prescient
-    :ensure :demand :after selectrum
+    :ensure :demand :after (selectrum)
     :init
     (selectrum-prescient-mode +1)
     (prescient-persist-mode +1))
   
-  (use-package company-prescient
-    :ensure :demand :after prescient
-    :init (company-prescient-mode +1))
-  
   (use-package consult
-    :ensure :demand :after projectile
+    :ensure :demand :after (projectile)
     :bind
     (;; C-c bindings (mode-specific-map)
      ("C-c h" . consult-history)
@@ -272,16 +266,6 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (setq consult-narrow-key "<")
     (autoload 'projectile-project-root "projectile")
     (setq consult-project-root-function #'projectile-project-root))
-  
-  (use-package consult-flycheck
-    :ensure :demand :after (consult flycheck)
-    :bind
-    (:map flycheck-command-map ("!" . consult-flycheck)))
-  
-  (use-package consult-lsp
-    :ensure :demand :after (lsp-mode consult)
-    :config
-    (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
   
   (use-package marginalia
     :ensure :demand :after (selectrum)
@@ -404,7 +388,7 @@ lsp-workspace-restart= 命令来重启语言服务器。
 
 #+begin_src emacs-lisp
   ;; 多光标编辑
-  (use-package iedit :ensure :demand)
+  (use-package iedit :ensure :disabled :demand)
   
   ;; 直接在 minibuffer 中编辑 query
   (use-package isearch-mb
@@ -448,12 +432,12 @@ lsp-workspace-restart= 命令来重启语言服务器。
   
   ;; 高亮变化的区域
   (use-package volatile-highlights
-    :ensure
+    :ensure :disabled
     :init (volatile-highlights-mode))
   
   ;; 在 modeline 显示匹配的总数和当前序号
   (use-package anzu
-    :ensure
+    :ensure :disabled
     :init
     (setq anzu-mode-lighter "")
     (global-set-key [remap query-replace] 'anzu-query-replace)
@@ -462,6 +446,7 @@ lsp-workspace-restart= 命令来重启语言服务器。
     (define-key isearch-mode-map [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp)
     (global-anzu-mode))
   
+  ;; 快速跳转当前 symbol
   (use-package symbol-overlay
     :ensure
     :config
@@ -486,6 +471,8 @@ lsp-workspace-restart= 命令来重启语言服务器。
     :ensure :demand :after (lsp-mode company)
     :commands yas-minor-mode
     :config
+    ;; 手动触发补全
+    (global-set-key (kbd "C-c y") 'company-yasnippet)
     (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
     (yas-global-mode 1))
 #+end_src
@@ -728,9 +715,10 @@ magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有�
       :custom
       ;; 在当前 window 中显示 magit buffer
       (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-      :config
-      ;; 自动 revert buff，确保 modeline 上的分支名正确
-      (setq auto-revert-check-vc-info t)
+      ;;:config
+      ;; 自动 revert buff，确保 modeline 上的分支名正确。
+      ;; CPU profile 显示比较影响性能，暂不开启。
+      ;;(setq auto-revert-check-vc-info nil)
   )
 #+end_src
 
@@ -784,54 +772,27 @@ mode 能很好协作：
     (company-idle-delay 0)
     (company-echo-delay 0)
     ;; allow input string that do not match candidate words
-    ( company-require-match nil) 
+    ;;(company-require-match nil)
     ;; number the candidates (use M-1, M-2 etc to select completions).
     (company-show-numbers t)
     ;; pop up a completion menu by tapping a character
     (company-minimum-prefix-length 1)
     (company-tooltip-limit 14)
     (company-tooltip-align-annotations t)
-    ;; 为 code 启用 dabbrev
-    (company-dabbrev-code-everywhere t)
-    ;; 不启用其它 buffer 作为来源
-    (company-dabbrev-other-buffers nil)
-    ;; 除代码外，大小写不敏感
-    (company-dabbrev-ignore-case t)
-    (company-dabbrev-code-ignore-case nil)
+    ;; 大小写不敏感
+    (company-dabbrev-ignore-case nil)
     ;; Don't downcase the returned candidates.
     (company-dabbrev-downcase nil)
-    (company-frontends '(company-pseudo-tooltip-frontend
-                         company-echo-metadata-frontend))
     (company-backends '(company-capf
-                        company-files
-                        (company-dabbrev-code company-keywords)
                         company-dabbrev
-                        company-yasnippet))
-    (company-global-modes '(not erc-mode
-                                message-mode
-                                help-mode
-                                gud-mode
-                                shell-mode
-                                eshell-mode))
+                        company-files
+                        company-keywords))
     :config
-    ;; Add yasnippet support for all company backends.
-    (defvar company-mode/enable-yas t
-      "Enable yasnippet for all backends.")
-  
-    (defun company-mode/backend-with-yas (backend)
-      (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
-          backend
-        (append (if (consp backend) backend (list backend))
-                '(:with company-yasnippet))))
-  
-    (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends))
-  
-    ;; Add `company-elisp' backend for elisp.
-    (add-hook 'emacs-lisp-mode-hook
-              #'(lambda ()
-                  (require 'company-elisp)
-                  (push 'company-elisp company-backends)))
     (global-company-mode t))
+  
+  (use-package company-prescient
+    :ensure :demand :after prescient
+    :init (company-prescient-mode +1))
 #+end_src  
 + =dabbrev-expand= is essentially a form of completion where you first type a
   couple of letters of a word and press =M-/= . Emacs tries to complete the word
@@ -879,26 +840,25 @@ company-quickhelp 用于显示候选者帮助文档：
     (lsp-diagnostics-flycheck-default-level 'warning)
     (lsp-completion-provider :capf)
     ;; Turn off for better performance
-    (setq lsp-enable-symbol-highlighting nil)
-    ;; 关闭 snippet
-    (lsp-enable-snippet nil)
+    (lsp-enable-symbol-highlighting nil)
+    ;; 不显示面包屑
+    (lsp-headerline-breadcrumb-enable nil)
+    (lsp-enable-snippet t)
     ;; 不显示所有文档，否则 minibuffer 占用太多屏幕空间
     (lsp-eldoc-render-all nil)
     ;; lsp 使用 eldoc 在 minibuffer 显示函数签名， 设置显示的文档行数
-    (lsp-signature-doc-lines 2)
+    (lsp-signature-doc-lines 3)
     ;; 增加 IO 性能
     (process-adaptive-read-buffering nil)
     ;; 增大同 LSP 服务器交互时读取的文件大小
     (read-process-output-max (* 1024 1024))
     (lsp-idle-delay 0.1)
-    (lsp-keep-workspace-alive nil)
-    (lsp-enable-file-watchers nil)
-    (lsp-headerline-breadcrumb-enable nil)
+    (lsp-keep-workspace-alive t)
+    (lsp-enable-file-watchers t)
     ;; Auto restart LSP.
     (lsp-restart 'auto-restart)
     :config
     (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
-    (setq lsp-completion-enable-additional-text-edit nil)
     (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                    "[/\\\\]resources/META-INF\\'"
                    "[/\\\\]node_modules\\'"
@@ -917,14 +877,6 @@ company-quickhelp 用于显示候选者帮助文档：
                    "[/\\\\]_build"
                    "[/\\\\]\\.clwb$"))
       (push dir lsp-file-watch-ignored-directories))
-    ;; Don't ping LSP lanaguage server too frequently.
-    (defvar lsp-on-touch-time 0)
-    (defadvice lsp-on-change (around lsp-on-change-hack activate)
-      ;; don't run `lsp-on-change' too frequently
-      (when (> (- (float-time (current-time))
-                  lsp-on-touch-time) 30) ;; 30 seconds
-        (setq lsp-on-touch-time (float-time (current-time)))
-        ad-do-it))
     :bind
     (:map lsp-mode-map
           ("C-c f" . lsp-format-region)
@@ -932,6 +884,14 @@ company-quickhelp 用于显示候选者帮助文档：
           ("C-c a" . lsp-execute-code-action)
           ("C-c r" . lsp-rename)))
 #+end_src
+
+consult-lsp 提供了两个非常有用的命令：consult-lsp-symbols 和  consult-lsp-diagnostics
+  #+begin_src emacs-lisp
+  (use-package consult-lsp
+    :ensure :demand :after (lsp-mode consult)
+    :config
+    (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
+  #+end_src
 
 lsp-ui 用于显示帮助信息：
 #+begin_src emacs-lisp
@@ -949,10 +909,10 @@ lsp-ui 用于显示帮助信息：
 #+end_src
 + lsp-mode 和 lsp-ui 的特性可以[[https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/][参考这个页面]]来进行选择性的打开和关闭；
 
-** lsp-treemacs
+lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
 #+begin_src  emacs-lisp
   (use-package lsp-treemacs
-    :ensure :after (lsp-mode treemacs)
+    :ensure :disabled :after (lsp-mode treemacs)
     :config
     (lsp-treemacs-sync-mode 1))
 #+end_src
@@ -989,23 +949,23 @@ pyenv 使用方法：
 
 pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pyenv 环境的目的：
 #+begin_src emacs-lisp
-(use-package pyenv-mode
-  :ensure :demand :after (projectile)
-  :init
-  (add-to-list 'exec-path "~/.pyenv/shims")
-  (setenv "WORKON_HOME" "~/.pyenv/versions/")
-  :config
-  (pyenv-mode)
-  (defun projectile-pyenv-mode-set ()
-    (let ((project (projectile-project-name)))
-      (if (member project (pyenv-mode-versions))
-          (pyenv-mode-set project)
-        (pyenv-mode-unset))))
-  (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
-  :bind
-  ;; 防止和 org-mode 快捷键冲突
-  (:map pyenv-mode-map ("C-c C-u") . nil)
-  (:map pyenv-mode-map ("C-c C-s") . nil))  
+  (use-package pyenv-mode
+    :ensure :demand :disabled :after (projectile)
+    :init
+    (add-to-list 'exec-path "~/.pyenv/shims")
+    (setenv "WORKON_HOME" "~/.pyenv/versions/")
+    :config
+    (pyenv-mode)
+    (defun projectile-pyenv-mode-set ()
+      (let ((project (projectile-project-name)))
+        (if (member project (pyenv-mode-versions))
+            (pyenv-mode-set project)
+          (pyenv-mode-unset))))
+    (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
+    :bind
+    ;; 防止和 org-mode 快捷键冲突
+    (:map pyenv-mode-map ("C-c C-u") . nil)
+    (:map pyenv-mode-map ("C-c C-s") . nil))  
 #+end_src
 
 *** python-mode
@@ -1122,7 +1082,7 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 
 #+begin_src emacs-lisp
 (use-package lsp-java
-  :ensure :demand :after (lsp-mode company)
+  :ensure :demand :disabled t :after (lsp-mode company)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -1139,15 +1099,15 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
               (concat "-javaagent:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar"))))
   :hook (java-mode . lsp)
   :config
-  (use-package dap-mode :ensure :disabled :after (lsp-java) :config (dap-auto-configure-mode))
-  (use-package dap-java :ensure :disabled))
+  (use-package dap-mode :ensure :disabled t :after (lsp-java) :config (dap-auto-configure-mode))
+  (use-package dap-java :ensure :disabled t))
 #+end_src
 
 ** go
 
 安装最新的 gopls:
 #+begin_src shell :results none
-gopls version &>/dev/null || GO111MODULE=on go get golang.org/x/tools/gopls@latest
+go get golang.org/x/tools/gopls@latest
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1183,7 +1143,7 @@ multimarkdown 实现将 markdown 转换为 html 进行 preview，可以结合 xw
 或 grip 实时预览：
 
 #+begin_src shell :results none
-multimarkdown --version &>/dev/null || brew install multimarkdown
+brew install multimarkdown
 pip install grip
 #+end_src
 
@@ -1271,7 +1231,6 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
 #+end_src
 
 ** web
-
 *** typescript
 
 #+begin_src emacs-lisp  
@@ -1399,7 +1358,7 @@ js/jsx/ts/tsx 等类型文件。
 
 #+begin_src  emacs-lisp
   (use-package dap-mode
-    :ensure :demand
+    :ensure :demand :disabled
     :config
     (dap-auto-configure-mode 1)
     (require 'dap-chrome))
@@ -1447,9 +1406,12 @@ flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flym
   
     :hook
     (prog-mode . flycheck-mode))
+  
+  (use-package consult-flycheck
+    :ensure :demand :after (consult flycheck)
+    :bind
+    (:map flycheck-command-map ("!" . consult-flycheck)))
 #+end_src
-
-** flycheck-pos-tip
 
 flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 #+begin_src emacs-lisp
@@ -1603,9 +1565,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   (treemacs-set-scope-type 'Perspectives))
 #+end_src
 
-
-Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
-
 * 主题界面
 
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
@@ -1643,9 +1602,9 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
   ;; Emacs为最大化窗口状态, 启动5秒以后再设置成全屏状态, Mac就不会移动Emacs窗口到
   ;; 单独的工作区, 最终解决Mac平台下原生全屏窗口导致 `make-frame' 左右滑动闪烁的问
   ;; 题.
-  (when (eq system-type 'darwin)
-    (setq ns-use-native-fullscreen nil
-          ns-use-fullscreen-animation nil))
+  ;; (when (eq system-type 'darwin)
+  ;;   (setq ns-use-native-fullscreen nil
+  ;;         ns-use-fullscreen-animation nil))
   
   (add-hook 'after-init-hook #'toggle-frame-fullscreen)
   ;;(add-hook 'after-init-hook #'toggle-frame-maximized)
@@ -1682,10 +1641,11 @@ Last exported:  {{{modification-time(%Y-%m-%d %H:%M)}}}
   (display-time-mode t)
   (setq display-time-24hr-format t
         display-time-default-load-average nil
-        display-time-format "%Y%m%d-%u-%H:%M"
+        display-time-load-average-threshold 5
+        display-time-format "%m/%d[%u]%H:%M"
         display-time-day-and-date t)
-  
-  (size-indication-mode t)
+  ;; 不显示文件大小
+  (size-indication-mode -1)
   (setq indicate-buffer-boundaries (quote left))
   
   ;; Line numbers are not displayed when large files are used.
@@ -2013,6 +1973,12 @@ fi
   (auto-image-file-mode t)
   (winner-mode t)
   
+  ;; Mac 的 Command 键当做 meta 使用
+  (setq mac-option-key-is-meta nil
+        mac-command-key-is-meta t
+        mac-command-modifier 'meta
+        mac-option-modifier 'none)
+  
   ;; Garbage Collector Magic Hack
   (setq gc-cons-threshold most-positive-fixnum)
   (defvar hidden-minor-modes '(whitespace-mode))
@@ -2107,9 +2073,11 @@ fi
     :init (which-key-mode)
     :diminish which-key-mode
     :config
-    (setq which-key-idle-delay 1.1))
+    (setq which-key-idle-delay 0.5))
   
   (server-start)
 #+end_src
+
+
 
 
