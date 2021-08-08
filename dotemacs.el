@@ -6,9 +6,10 @@
 (package-initialize)
 (unless package-archive-contents (package-refresh-contents))
 
-;; use-package 默认添加 ensure 和 demand 参数
-(setq use-package-always-ensure t)
-(setq use-package-always-demand t)
+;; 为 use-package 默认添加 ensure 和 demand 参数
+(setq use-package-always-ensure t
+      use-package-always-demand t)
+
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -17,22 +18,153 @@
   :ensure
   :custom
   (exec-path-from-shell-check-startup-files nil)
-  ;; 指定拷贝到 Emacs 的 shell 环境变量列表
   (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
   :config
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
+(defconst sys/macp
+  (eq system-type 'darwin)
+  "Are we running on a Mac system?")
+
+(defconst sys/mac-x-p
+  (and (display-graphic-p) sys/macp)
+  "Are we running under X on a Mac system?")
+
+(defconst sys/mac-ns-p
+  (eq window-system 'ns)
+  "Are we running on a GNUstep or Macintosh Cocoa display?")
+
+(defconst sys/mac-cocoa-p
+  (featurep 'cocoa)
+  "Are we running with Cocoa on a Mac system?")
+
+(defconst sys/mac-port-p
+  (eq window-system 'mac)
+  "Are we running a macport build on a Mac system?")
+
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(menu-bar-mode -1)
+
+(setq inhibit-startup-screen t
+      inhibit-startup-message t
+      inhibit-startup-echo-area-message t
+      initial-scratch-message nil)
+
+;; Inhibit resizing frame
+;;(setq frame-inhibit-implied-resize t
+;;      frame-resize-pixelwise t)
+(setq frame-resize-pixelwise t)
+
+(global-font-lock-mode t)
+(transient-mark-mode t)
+
+(show-paren-mode t)
+(setq show-paren-style 'parentheses)
+
+;; Line numbers are not displayed when large files are used.
+(setq line-number-display-limit large-file-warning-threshold)
+(setq line-number-display-limit-width 1000)
+(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+(dolist (mode '(org-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+(setq-default indicate-empty-lines t)
+(when (not indicate-empty-lines) (toggle-indicate-empty-lines))
+
+;; 增强各 window 背景对比度
+(use-package solaire-mode :hook (after-load-theme . solaire-global-mode))
+(setq-default cursor-in-non-selected-windows nil)
+(setq highlight-nonselected-windows nil)
+
+;; preview theme: https://emacsthemes.com/
+(use-package doom-themes
+  :custom-face (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  (doom-themes-treemacs-theme "doom-colors")
+  :config
+  (load-theme 'doom-gruvbox t)
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
+
+(display-battery-mode t)
+(column-number-mode t)
+(size-indication-mode -1)
+(display-time-mode t)
+(setq display-time-24hr-format t
+      display-time-default-load-average nil
+      display-time-load-average-threshold 5
+      display-time-format "%m/%d[%u]%H:%M"
+      display-time-day-and-date t)
+(setq indicate-buffer-boundaries (quote left))
+
+(use-package doom-modeline
+  :custom
+  ;; 不显示换行和编码，节省空间
+  (doom-modeline-buffer-encoding nil)
+  ;; 显示语言版本（go、python 等）
+  (doom-modeline-env-version t)
+  ;; 分支名称长度
+  (doom-modeline-vcs-max-length 20)
+  (doom-modeline-github nil)
+  :init (doom-modeline-mode 1))
+
+(use-package dashboard
+  :config
+  (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
+  (setq dashboard-center-content t)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
+  (dashboard-setup-startup-hook))
+
+;; 字体
+;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
+;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
+(use-package cnfonts
+  :init
+  (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Gothic SC" "Source Han Mono SC") ("HanaMinB")))
+  :config
+  (setq cnfonts-use-face-font-rescale t)
+  (cnfonts-enable))
+
+;; 使用字体缓存，避免 GC 卡顿
+(setq inhibit-compacting-font-caches t)
+
+;; 更新字体：M-x fira-code-mode-install-fonts
+(use-package fira-code-mode
+  :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+  :hook prog-mode)
+
+(use-package emojify
+  :hook (erc-mode . emojify-mode)
+  :commands emojify-mode)
+
+;; Emoji 字体
+(set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
+
+;; 更新字体：M-x all-the-icons-install-fonts
+(use-package all-the-icons)
+
+(use-package ns-auto-titlebar
+  :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+
+;; 显示光标位置
+(use-package beacon :config (beacon-mode 1))
+
 ;; 目录变量（.envrc)  
 (use-package direnv :ensure :config (direnv-mode))
 
-(use-package selectrum
-  :init
-  (selectrum-mode +1))
+(use-package selectrum :init (selectrum-mode +1))
 
-(use-package prescient
-  :config
-  (prescient-persist-mode +1))
+(use-package prescient :config (prescient-persist-mode +1))
 
 (use-package selectrum-prescient
   :after (selectrum)
@@ -88,8 +220,7 @@
    ("M-e" . consult-isearch)
    ("M-s e" . consult-isearch)
    ("M-s l" . consult-line))
-  :hook
-  (completion-list-mode . consult-preview-at-point-mode)
+  :hook (completion-list-mode . consult-preview-at-point-mode)
   :init
   ;; 预览 register
   (setq register-preview-delay 0.1
@@ -364,10 +495,11 @@
   :after (lsp-mode company)
   :commands yas-minor-mode
   :config
-  ;; 手动触发补全
   ;; (global-set-key (kbd "C-c y") 'company-yasnippet)
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   (yas-global-mode 1))
+(use-package yasnippet-snippets)
+(use-package yasnippet-classic-snippets)
 
 ;; Youdao Dictionary
 (use-package youdao-dictionary
@@ -454,6 +586,9 @@
         org-html-self-link-headlines t
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
+        ;; SRC 代码块不自动缩进
+        org-src-preserve-indentation t
+        org-edit-src-content-indentation 0
         org-startup-indented t)
   ;; 使用 later.org 和 gtd.org 作为 refile target.
   (setq org-refile-targets '(("~/docs/orgs/later.org" :level . 1)
@@ -553,7 +688,6 @@
   (org-download-enable))
 
 (use-package htmlize)
-
 (use-package toc-org :after (org) :hook (org-mode . toc-org-mode))
 
 (use-package org-tree-slide
@@ -656,14 +790,14 @@
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
 (use-package magit
-    :custom
-    ;; 在当前 window 中显示 magit buffer
-    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-    ;;:config
-    ;; 自动 revert buff，确保 modeline 上的分支名正确。
-    ;; CPU profile 显示比较影响性能，暂不开启。
-    ;;(setq auto-revert-check-vc-info nil)
-)
+  :custom
+  ;; 在当前 window 中显示 magit buffer
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+  ;;:config
+  ;; 自动 revert buff，确保 modeline 上的分支名正确。
+  ;; CPU profile 显示比较影响性能，暂不开启。
+  ;;(setq auto-revert-check-vc-info nil)
+  )
 
 (use-package git-link
   :config
@@ -719,7 +853,7 @@
   ;; refresh the highlights, lenses, links
   (lsp-idle-delay 0.1)
   (lsp-keep-workspace-alive t)
-  (lsp-enable-file-watchers t)
+  (lsp-enable-file-watchers nil)
   ;; Auto restart LSP.
   (lsp-restart 'auto-restart)
   :config
@@ -956,7 +1090,7 @@ mermaid.initialize({
 (use-package markdown-toc
   :after(markdown-mode)
   :bind (:map markdown-mode-command-map
-         ("r" . markdown-toc-generate-or-refresh-toc)))
+              ("r" . markdown-toc-generate-or-refresh-toc)))
 
 (use-package dockerfile-mode
   :config
@@ -1252,147 +1386,6 @@ mermaid.initialize({
   :config
   (lsp-treemacs-sync-mode 1))
 
-;; Make certain buffers grossly incandescent
-(display-battery-mode t)
-(column-number-mode t)
-(size-indication-mode -1)
-(display-time-mode t)
-(setq display-time-24hr-format t
-      display-time-default-load-average nil
-      display-time-load-average-threshold 5
-      display-time-format "%m/%d[%u]%H:%M"
-      display-time-day-and-date t)
-(setq indicate-buffer-boundaries (quote left))
-
-(show-paren-mode t)
-(setq show-paren-style 'parentheses)
-
-;; Line numbers are not displayed when large files are used.
-(setq line-number-display-limit large-file-warning-threshold)
-(setq line-number-display-limit-width 1000)
-(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 1))))
-(dolist (mode '(org-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
-(setq-default indicate-empty-lines t)
-(when (not indicate-empty-lines) (toggle-indicate-empty-lines))
-
-(setq inhibit-startup-screen t
-      inhibit-startup-message t
-      inhibit-startup-echo-area-message t
-      initial-scratch-message nil)
-
-;; 按照中文折行
-(setq word-wrap-by-category t)
-
-;; Optimization
-(setq idle-update-delay 1.0)
-
-(when (and sys/mac-ns-p sys/mac-x-p)
-  (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-  (add-to-list 'default-frame-alist '(ns-appearance . dark))
-  (add-hook 'after-load-theme-hook
-            (lambda ()
-              (let ((bg (frame-parameter nil 'background-mode)))
-                (set-frame-parameter nil 'ns-appearance bg)
-                (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
-
-;; Inhibit resizing frame
-;;(setq frame-inhibit-implied-resize t
-;;      frame-resize-pixelwise t)
-
-(setq-default cursor-in-non-selected-windows nil)
-(setq highlight-nonselected-windows nil)
-
-(setq fast-but-imprecise-scrolling t)
-(setq redisplay-skip-fontification-on-input t)
-
-(use-package solaire-mode
-  :ensure :demand
-  :hook (after-load-theme . solaire-global-mode))
-
-;; preview theme: https://emacsthemes.com/
-(use-package doom-themes
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  (doom-themes-treemacs-theme "doom-colors")
-  :config
-  (load-theme 'doom-gruvbox t)
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-  (doom-themes-treemacs-config)
-  (doom-themes-org-config))
-
-(use-package doom-modeline
-  :custom
-  ;; 不显示换行和编码，节省空间
-  (doom-modeline-buffer-encoding nil)
-  ;; 显示语言版本（go、python 等）
-  (doom-modeline-env-version t)
-  ;; 分支名称长度
-  (doom-modeline-vcs-max-length 20)
-  (doom-modeline-github nil)
-  :init
-  (doom-modeline-mode 1))
-
-(use-package diredfl :config (diredfl-global-mode))
-
-(use-package dashboard
-  :config
-  (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
-  (setq dashboard-center-content t)
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-navigator t)
-  (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents  . 5)
-                          (projects . 5)
-                          (bookmarks . 3)
-                          (agenda . 3)))
-  (dashboard-setup-startup-hook))
-
-;; 字体
-;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
-;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
-(use-package cnfonts
-  :init
-  (setq cnfonts-personal-fontnames
-        '(("Iosevka SS14" "Fira Code")
-          ("Sarasa Gothic SC" "Source Han Mono SC")
-          ("HanaMinB")))
-  :config
-  (setq cnfonts-use-face-font-rescale t)
-  (cnfonts-enable))
-
-;; 使用字体缓存，避免卡顿
-(setq inhibit-compacting-font-caches t)
-
-;; 更新字体：M-x fira-code-mode-install-fonts
-(use-package fira-code-mode
-  :custom
-  (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-  :hook prog-mode)
-
-(use-package emojify
-  :hook (erc-mode . emojify-mode)
-  :commands emojify-mode)
-
-;; Emoji 字体
-(set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
-
-;; 更新字体：M-x all-the-icons-install-fonts
-(use-package all-the-icons)
-
-(use-package ns-auto-titlebar
-  :config
-  (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
-
-;; 显示光标位置
-(use-package beacon :config (beacon-mode 1))
-
 ;;(shell-command "which cmake &>/dev/null || brew install cmake")
 ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
 (use-package vterm
@@ -1472,7 +1465,7 @@ mermaid.initialize({
        "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=600 -o ServerAliveCountMax=60 -o ServerAliveInterval=10"
        vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
        ;; 远程文件名不过期
-       ;;remote-file-name-inhibit-cache nil
+       ;;(region-end)mote-file-name-inhibit-cache nil
        ;;tramp-completion-reread-directory-timeout nil
        ;;tramp-verbose 1
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
@@ -1484,6 +1477,12 @@ mermaid.initialize({
        ;; 始化文件中对 tramp 登录情况做特殊处理，如设置 zsh 的 PS1。
        tramp-terminal-type "tramp"
        tramp-completion-reread-directory-timeout t)
+
+(recentf-mode +1)
+(fset 'yes-or-no-p 'y-or-n-p)
+(auto-image-file-mode t)
+(winner-mode t)
+(server-mode +1)
 
 (setq
  ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
@@ -1518,45 +1517,19 @@ mermaid.initialize({
  load-prefer-newer t
  ad-redefinition-action 'accept)
 
-(recentf-mode +1)
-(fset 'yes-or-no-p 'y-or-n-p)
-(auto-image-file-mode t)
-(winner-mode t)
-
-;; Mac 的 Command 键当做 meta 使用
-(setq mac-option-key-is-meta nil
-      mac-command-key-is-meta t
-      mac-command-modifier 'meta
-      mac-option-modifier 'none)
-
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            "Recover GC values after startup."
-            (setq gc-cons-threshold 16777216 ;; 16MB
-                  gc-cons-percentage 0.1)))
-
-;; Garbage Collector Magic Hack
-(defvar hidden-minor-modes '(whitespace-mode))
-(use-package gcmh
-  :init
-  (setq gcmh-idle-delay 5
-        gcmh-high-cons-threshold #x1000000) ;; 16MB
-  (gcmh-mode))
-
 ;; Mouse & Smooth Scroll
-;; Scroll one line at a time (less "jumpy" than defaults)
-(when (display-graphic-p)
-  (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
-        mouse-wheel-scroll-amount-horizontal 1
-        mouse-wheel-progressive-speed nil))
-
+(setq fast-but-imprecise-scrolling t)
+(setq redisplay-skip-fontification-on-input t)
 (setq scroll-step 1
       scroll-margin 0
       scroll-conservatively 100000
       auto-window-vscroll nil
       scroll-preserve-screen-position t)
-
 (unless window-system
+  ;; Scroll one line at a time (less "jumpy" than defaults)
+  (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
+        mouse-wheel-scroll-amount-horizontal 1
+        mouse-wheel-progressive-speed nil)
   (xterm-mouse-mode t)
   (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
   (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
@@ -1571,10 +1544,24 @@ mermaid.initialize({
    ;; 粘贴于光标处,而不是鼠标指针处
    mouse-yank-at-point t))
 
+;; Mac 的 Command 键当做 meta 使用
+(setq mac-command-modifier 'meta
+      mac-option-modifier 'super)
+
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
+
+;; buffer 智能分组（取代 ibuffer）
+(use-package bufler
+  :config
+  (global-set-key (kbd "C-x C-b") 'bufler))
+
+(setq dired-recursive-deletes t
+      dired-recursive-copies t)
+(put 'dired-find-alternate-file 'disabled nil)
+(use-package diredfl :config (diredfl-global-mode))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
@@ -1590,11 +1577,6 @@ mermaid.initialize({
 (setq auto-save-list-file-prefix autosave-dir
       auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(setq dired-recursive-deletes t
-      dired-recursive-copies t)
-(put 'dired-find-alternate-file 'disabled nil)
-
 (prefer-coding-system 'utf-8)
 (setq locale-coding-system 'utf-8
       default-buffer-file-coding-system 'utf-8)
@@ -1606,16 +1588,16 @@ mermaid.initialize({
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
 
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-(defvar xwidget-webkit-bookmark-jump-new-session)
-(defvar xwidget-webkit-last-session-buffer)
-(add-hook 'pre-command-hook
-          (lambda ()
-            (if (eq this-command #'bookmark-bmenu-list)
-                (if (not (eq major-mode 'xwidget-webkit-mode))
-                    (setq xwidget-webkit-bookmark-jump-new-session t)
-                  (setq xwidget-webkit-bookmark-jump-new-session nil)
-                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+;; 按照中文折行
+(setq word-wrap-by-category t)
+
+;; Garbage Collector Magic Hack
+(defvar hidden-minor-modes '(whitespace-mode))
+(use-package gcmh
+  :init
+  (setq gcmh-idle-delay 5
+        gcmh-high-cons-threshold 33554432) ;; 32MB
+  (gcmh-mode))
 
 ;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
@@ -1678,4 +1660,13 @@ mermaid.initialize({
       :defines company-backends
       :init (add-to-list 'company-backends 'company-restclient))))
 
-(server-start)
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+(defvar xwidget-webkit-bookmark-jump-new-session)
+(defvar xwidget-webkit-last-session-buffer)
+(add-hook 'pre-command-hook
+          (lambda ()
+            (if (eq this-command #'bookmark-bmenu-list)
+                (if (not (eq major-mode 'xwidget-webkit-mode))
+                    (setq xwidget-webkit-bookmark-jump-new-session t)
+                  (setq xwidget-webkit-bookmark-jump-new-session nil)
+                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
