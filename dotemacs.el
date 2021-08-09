@@ -159,6 +159,13 @@
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 
+;; minibuffer 自动补全时显示图标
+(use-package all-the-icons-completion
+  :after (marginalia)
+  :config 
+  (all-the-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
+
 ;; 目录变量（.envrc)  
 (use-package direnv :ensure :config (direnv-mode))
 
@@ -672,12 +679,11 @@
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
 
-;; 拖拽保持图片或 F2 保存剪贴板中图片。
+;; 拖拽保持图片或 F6 保存剪贴板中图片。
 ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
 (use-package org-download
-  :after (posframe)
   :bind
-  ("<f2>" . org-download-screenshot)
+  ("<f6>" . org-download-screenshot)
   :config
   (setq-default org-download-image-dir "./images/")
   (setq org-download-method 'directory
