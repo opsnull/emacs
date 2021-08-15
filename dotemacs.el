@@ -1,7 +1,6 @@
 (require 'package)
 (setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
                          ("melpa" . "https://melpa.org/packages/")
-                         ("melpa-stable" . "https://mirrors.ustc.edu.cn/elpa/melpa-stable/")
                          ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
 (package-initialize)
 (unless package-archive-contents (package-refresh-contents))
@@ -15,7 +14,6 @@
   (package-install 'use-package))
 
 (use-package exec-path-from-shell
-  :ensure
   :custom
   (exec-path-from-shell-check-startup-files nil)
   (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
@@ -23,38 +21,17 @@
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
-(defconst sys/macp
-  (eq system-type 'darwin)
-  "Are we running on a Mac system?")
-
-(defconst sys/mac-x-p
-  (and (display-graphic-p) sys/macp)
-  "Are we running under X on a Mac system?")
-
-(defconst sys/mac-ns-p
-  (eq window-system 'ns)
-  "Are we running on a GNUstep or Macintosh Cocoa display?")
-
-(defconst sys/mac-cocoa-p
-  (featurep 'cocoa)
-  "Are we running with Cocoa on a Mac system?")
-
-(defconst sys/mac-port-p
-  (eq window-system 'mac)
-  "Are we running a macport build on a Mac system?")
-
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
+
+(use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
 (setq inhibit-startup-screen t
       inhibit-startup-message t
       inhibit-startup-echo-area-message t
       initial-scratch-message nil)
 
-;; Inhibit resizing frame
-;;(setq frame-inhibit-implied-resize t
-;;      frame-resize-pixelwise t)
 (setq frame-resize-pixelwise t)
 
 (global-font-lock-mode t)
@@ -63,7 +40,7 @@
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
 
-;; Line numbers are not displayed when large files are used.
+;; 大文件不显示行号
 (setq line-number-display-limit large-file-warning-threshold)
 (setq line-number-display-limit-width 1000)
 (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
@@ -74,12 +51,12 @@
 (setq-default indicate-empty-lines t)
 (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
 
-;; 增强各 window 背景对比度
+;; 增强窗口背景对比度
 (use-package solaire-mode :hook (after-load-theme . solaire-global-mode))
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
-;; preview theme: https://emacsthemes.com/
+;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
   :custom-face (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
   :custom
@@ -92,6 +69,25 @@
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
+
+(defun my/load-light-theme ()
+  (interactive)
+  (load-theme 'doom-one-light t))
+
+(defun my/load-dark-theme ()
+  (interactive)
+  (load-theme 'doom-monokai-pro t))
+
+(add-hook 'after-init-hook
+          (lambda () (load-theme 'doom-monokai-pro t))
+          'append)
+
+;; 跟随 Mac 变化主题
+(add-hook 'ns-system-appearance-change-functions
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
 
 (display-battery-mode t)
 (column-number-mode t)
@@ -110,6 +106,8 @@
   (doom-modeline-buffer-encoding nil)
   ;; 显示语言版本（go、python 等）
   (doom-modeline-env-version t)
+  ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
+  (doom-modeline-buffer-file-name-style 'file-name)
   ;; 分支名称长度
   (doom-modeline-vcs-max-length 20)
   (doom-modeline-github nil)
@@ -125,7 +123,6 @@
   (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
-;; 字体
 ;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
 (use-package cnfonts
@@ -143,9 +140,7 @@
   :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode)
 
-(use-package emojify
-  :hook (erc-mode . emojify-mode)
-  :commands emojify-mode)
+(use-package emojify :hook (erc-mode . emojify-mode) :commands emojify-mode)
 
 ;; Emoji 字体
 (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
@@ -153,18 +148,8 @@
 ;; 更新字体：M-x all-the-icons-install-fonts
 (use-package all-the-icons)
 
-(use-package ns-auto-titlebar
-  :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
-
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
-
-;; minibuffer 自动补全时显示图标
-(use-package all-the-icons-completion
-  :after (marginalia)
-  :config 
-  (all-the-icons-completion-mode)
-  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 ;; 目录变量（.envrc)  
 (use-package direnv :ensure :config (direnv-mode))
@@ -180,7 +165,6 @@
   (prescient-persist-mode +1))
 
 (use-package consult
-  :after (projectile)
   :bind
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
@@ -236,13 +220,6 @@
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
-  ;; 下面的 preview-key 在 minibuff 中不生效，暂时关闭。
-  ;; (consult-customize
-  ;;  consult-ripgrep consult-git-grep consult-grep consult-bookmark consult-recent-file
-  ;;  consult--source-file consult--source-project-file consult--source-bookmark
-  ;;  :preview-key (kbd "M-."))
-  ;; 选中候选者后，按 C-l 来预览，解决预览 TRAMP bookmark hang 的问题。
-  (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function #'projectile-project-root))
@@ -258,6 +235,13 @@
   (("M-A" . marginalia-cycle)
    :map minibuffer-local-map
    ("M-A" . marginalia-cycle)))
+
+;; minibuffer 自动补全时显示图标会导致 TRAMP 变慢，故关闭
+(use-package all-the-icons-completion
+  :disabled :after (marginalia)
+  :config 
+  (all-the-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 (use-package embark
   :after (selectrum which-key)
@@ -321,37 +305,23 @@
   ;; 候选框宽度
   (company-tooltip-minimum-width 70)
   (company-tooltip-maximum-width 100)
-  (company-backends '((company-capf :with company-yasnippet)
+  ;; 补全后端
+  (company-backends '(company-capf
                       (company-dabbrev-code company-keywords company-files)
                       company-dabbrev))
   :config
-  (global-company-mode t)
+  (global-company-mode t))
 
-  ;; 修复与 lsp 不兼容的情况
-  (defun my-lsp-fix-company-capf ()
-    "Remove redundant `comapny-capf'."
-    (setq company-backends
-          (remove 'company-backends (remq 'company-capf company-backends))))
-  (advice-add #'lsp-completion--enable :after #'my-lsp-fix-company-capf)
-
-  ;; 不在前缀的候选列表里 snippets
-  (defun my-company-yasnippet-disable-inline (fn cmd &optional arg &rest _ignore)
-    "Enable yasnippet but disable it inline."
-    (if (eq cmd  'prefix)
-        (when-let ((prefix (funcall fn 'prefix)))
-          (unless (memq (char-before (- (point) (length prefix)))
-                        '(?. ?< ?> ?\( ?\) ?\[ ?{ ?} ?\" ?' ?`))
-            prefix))
-      (progn
-        (when (and (bound-and-true-p lsp-mode)
-                   arg (not (get-text-property 0 'yas-annotation-patch arg)))
-          (let* ((name (get-text-property 0 'yas-annotation arg))
-                 (snip (format "%s (Snippet)" name))
-                 (len (length arg)))
-            (put-text-property 0 len 'yas-annotation snip arg)
-            (put-text-property 0 len 'yas-annotation-patch t arg)))
-        (funcall fn cmd  arg))))
-  (advice-add #'company-yasnippet :around #'my-company-yasnippet-disable-inline))
+;;(shell-command "mkdir -p ~/.emacs.d/snippets")
+(use-package yasnippet
+  :after (lsp-mode company)
+  :commands yas-minor-mode
+  :config
+  (global-set-key (kbd "C-c s") 'company-yasnippet)
+  (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
+  (yas-global-mode 1))
+(use-package yasnippet-snippets)
+(use-package yasnippet-classic-snippets)
 
 (use-package company-box
   :after (company all-the-icons)
@@ -361,15 +331,8 @@
   :hook (company-mode . company-box-mode))
 
 (use-package company-prescient
-  :after prescient
+  :after (prescient)
   :init (company-prescient-mode +1))
-
-;; (use-package company-quickhelp ;
-;;   :ensure :demand :disabled  :after (company)
-;;   :init
-;;   (setq company-quickhelp-delay 0.3)
-;;   :config
-;;   (company-quickhelp-mode 1))
 
 (use-package goto-chg
   :config
@@ -406,21 +369,6 @@
   (sis-global-context-mode nil)
   (sis-global-respect-mode t)
   (global-set-key (kbd "C-\\") 'sis-switch)
-  ;; (add-to-list sis-respect-minibuffer-triggers (cons 'org-roam-find-file (lambda () 'other)))
-  ;; (add-to-list sis-respect-minibuffer-triggers (cons 'org-roam-insert (lambda () 'other)))
-  ;; (add-to-list sis-respect-minibuffer-triggers (cons 'org-roam-capture (lambda () 'other)))
-  ;; (add-to-list sis-respect-minibuffer-triggers (cons 'counsel-rg (lambda () 'other))
-             ;; (setq sis-prefix-override-buffer-disable-predicates
-             ;;       (list 'minibufferp
-             ;;             (lambda (buffer)
-             ;;               (sis--string-match-p "^magit-revision:" (buffer-name buffer)))
-             ;;             (lambda (buffer)
-             ;;               (and (sis--string-match-p "^\*" (buffer-name buffer))
-             ;;                    (not (sis--string-match-p "^\*About GNU Emacs" (buffer-name buffer)))
-             ;;                    (not (sis--string-match-p "^\*New" (buffer-name buffer)))
-             ;;                    (not (sis--string-match-p "^\*Scratch" (buffer-name buffer)))
-             ;;                    (not (sis--string-match-p "^\*doom:scra" (buffer-name buffer)))))))
-
 )
 
 ;; 多光标编辑
@@ -463,23 +411,7 @@
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; 高亮变化的区域
-(use-package volatile-highlights
-  :disabled
-  :init (volatile-highlights-mode))
-
-;; 在 modeline 显示匹配的总数和当前序号
-(use-package anzu
-  :disabled
-  :init
-  (setq anzu-mode-lighter "")
-  (global-set-key [remap query-replace] 'anzu-query-replace)
-  (global-set-key [remap query-replace-regexp] 'anzu-query-replace-regexp)
-  (define-key isearch-mode-map [remap isearch-query-replace] #'anzu-isearch-query-replace)
-  (define-key isearch-mode-map [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp)
-  (global-anzu-mode))
-
-;; 快速跳转当前 symbol
+;; 快速跳转当前标记符
 (use-package symbol-overlay
   :config
   (global-set-key (kbd "M-i") 'symbol-overlay-put)
@@ -492,23 +424,7 @@
 ;; brew install ripgrep
 (use-package deadgrep :bind  ("<f5>" . deadgrep))
 
-(use-package xref
-  :config
-  ;; C-x p g (project-find-regexp)
-  (setq xref-search-program 'ripgrep))
-
-;;(shell-command "mkdir -p ~/.emacs.d/snippets")
-(use-package yasnippet
-  :after (lsp-mode company)
-  :commands yas-minor-mode
-  :config
-  ;; (global-set-key (kbd "C-c y") 'company-yasnippet)
-  (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
-  (yas-global-mode 1))
-(use-package yasnippet-snippets)
-(use-package yasnippet-classic-snippets)
-
-;; Youdao Dictionary
+;; 有道词典
 (use-package youdao-dictionary
   :commands youdao-dictionary-play-voice-of-current-word
   :bind (("C-c y" . my-youdao-dictionary-search-at-point)
@@ -558,6 +474,7 @@
                   (posframe-hide youdao-dictionary-buffer-name)
                   (other-frame 0))))
           (message "Nothing to look up"))))
+    
     (advice-add #'youdao-dictionary--posframe-tip
                 :override #'my-youdao-dictionary--posframe-tip)))
 
@@ -799,6 +716,7 @@
   :custom
   ;; 在当前 window 中显示 magit buffer
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+  (magit-auto-revert-mode nil)
   ;;:config
   ;; 自动 revert buff，确保 modeline 上的分支名正确。
   ;; CPU profile 显示比较影响性能，暂不开启。
@@ -1257,9 +1175,6 @@ mermaid.initialize({
   (projectile-mode +1)
   ;; selectrum 使用 'default，可选：'ivy、'helm、'ido、'auto
   (setq projectile-completion-system 'default)
-  ;; 开启 cache 后，提高性能，也可以解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
-  (setq projectile-enable-caching t)
-  (setq projectile-sort-order 'recently-active)
   (add-hook 'projectile-after-switch-project-hook
             (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
@@ -1308,7 +1223,16 @@ mermaid.initialize({
                   "\\.bak\\'"
                   "\\.log\\'"
                   "~\\'"))
-    (add-to-list 'projectile-globally-ignored-file-suffixes list)))
+    (add-to-list 'projectile-globally-ignored-file-suffixes list))
+  ;; Disable projectile on remote buffers
+  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
+  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
+  (defadvice projectile-project-root (around ignore-remote first activate)
+    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+  ;; 开启 cache 后，提高性能，也可以解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
+  (setq projectile-enable-caching t)
+  (setq projectile-file-exists-remote-cache-expire (* 10 60))
+  (setq projectile-dynamic-mode-line nil))
 
 ;; C-c p s r (projectile-ripgrep)
 (use-package ripgrep :after (projectile))
@@ -1388,7 +1312,7 @@ mermaid.initialize({
 
 ;;lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
 (use-package lsp-treemacs
-  :disabled :after (lsp-mode treemacs)
+  :after (lsp-mode treemacs)
   :config
   (lsp-treemacs-sync-mode 1))
 
@@ -1398,7 +1322,7 @@ mermaid.initialize({
   :config
   (setq vterm-max-scrollback 100000)
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND。）。
-  (setq vterm-buffer-name-string "vterm %s")
+  (setq vterm-buffer-name-string "vterm: %s")
   :bind
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止输入法切换冲突。
@@ -1468,27 +1392,41 @@ mermaid.initialize({
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
 
 (setq  tramp-ssh-controlmaster-options
-       "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=600 -o ServerAliveCountMax=60 -o ServerAliveInterval=10"
+       (concat "-o ControlMaster=auto "
+               "-o ControlPath='tramp.%%C' "
+               "-o ControlPersist=600 "
+               "-o ServerAliveCountMax=60 "
+               "-o ServerAliveInterval=10 ")
+       ;; Disable version control on tramp buffers to avoid freezes.
        vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
+       ;; Don’t clean up recentf tramp buffers.
+       recentf-auto-cleanup 'never
        ;; 远程文件名不过期
-       ;;(region-end)mote-file-name-inhibit-cache nil
-       ;;tramp-completion-reread-directory-timeout nil
+       ;;remote-file-name-inhibit-cache nil
        ;;tramp-verbose 1
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 1024 1)
+       ;; Store TRAMP auto-save files locally.
+       tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
+       ;; A more representative name for this file.
+       tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory)
+       ;; Cache SSH passwords during the whole Emacs session.
+       password-cache-expiry nil
        tramp-copy-size-limit nil
        tramp-default-method "ssh"
        tramp-default-user "root"
        ;; 在登录远程终端时设置 TERM 环境变量为 tramp，这样可以在远程 shell 的初
        ;; 始化文件中对 tramp 登录情况做特殊处理，如设置 zsh 的 PS1。
-       tramp-terminal-type "tramp"
-       tramp-completion-reread-directory-timeout t)
+       tramp-terminal-type "tramp")
 
 (recentf-mode +1)
 (fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
 (winner-mode t)
-(server-mode +1)
+
+(require 'server)
+(unless (server-running-p)
+  (server-start))
 
 (setq
  ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
@@ -1524,6 +1462,11 @@ mermaid.initialize({
  ad-redefinition-action 'accept)
 
 ;; Mouse & Smooth Scroll
+;; Make cursor movement an order of magnitude faster
+;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag/28746
+(setq auto-window-vscroll nil)
+(setq fast-but-imprecise-scrolling 't)
+(setq jit-lock-defer-time 0.25)
 (setq fast-but-imprecise-scrolling t)
 (setq redisplay-skip-fontification-on-input t)
 (setq scroll-step 1
@@ -1551,8 +1494,9 @@ mermaid.initialize({
    mouse-yank-at-point t))
 
 ;; Mac 的 Command 键当做 meta 使用
-(setq mac-command-modifier 'meta
-      mac-option-modifier 'super)
+(when (display-graphic-p)
+  (setq mac-command-modifier 'meta)
+  (setq mac-option-modifier 'super))
 
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
@@ -1561,6 +1505,7 @@ mermaid.initialize({
 
 ;; buffer 智能分组（取代 ibuffer）
 (use-package bufler
+  :disabled
   :config
   (global-set-key (kbd "C-x C-b") 'bufler))
 
@@ -1617,42 +1562,6 @@ mermaid.initialize({
   :init (which-key-mode)
   :diminish which-key-mode
   :config (setq which-key-idle-delay 0.8))
-
-;; Emacs startup profiler
-(use-package esup)
-
-(use-package pomidor
-  :bind ("<f12>" . pomidor)
-  :config
-  ;;(setq pomidor-sound-tick nil
-  ;;      pomidor-sound-tack nil)
-  :init
-  (setq alert-default-style 'mode-line)
-  (setq pomidor-seconds (* 25 60)) ;; 25 minutes for the work period
-  (setq pomidor-break-seconds (* 5 60)) ;; 5 minutes break time
-  (setq pomidor-breaks-before-long 4) ;; wait 4 short breaks before long break
-  (setq pomidor-long-break-seconds (* 20 60)) ;; 20 minutes long break time
-  (with-eval-after-load 'all-the-icons
-    (setq alert-severity-faces
-          '((urgent   . all-the-icons-red)
-            (high     . all-the-icons-orange)
-            (moderate . all-the-icons-yellow)
-            (normal   . all-the-icons-green)
-            (low      . all-the-icons-blue)
-            (trivial  . all-the-icons-purple))
-          alert-severity-colors
-          `((urgent   . ,(face-foreground 'all-the-icons-red))
-            (high     . ,(face-foreground 'all-the-icons-orange))
-            (moderate . ,(face-foreground 'all-the-icons-yellow))
-            (normal   . ,(face-foreground 'all-the-icons-green))
-            (low      . ,(face-foreground 'all-the-icons-blue))
-            (trivial  . ,(face-foreground 'all-the-icons-purple)))))
-
-  (when sys/macp
-    (setq pomidor-play-sound-file
-          (lambda (file)
-            (when (executable-find "afplay")
-              (start-process "pomidor-play-sound" nil "afplay" file))))))
 
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
