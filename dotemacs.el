@@ -220,6 +220,8 @@
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
+  ;; 按 C-l 手动预览，否则 buffer 列表中有大文件或远程文件时会 hang。
+  (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function #'projectile-project-root))
@@ -1336,32 +1338,48 @@ mermaid.initialize({
 (use-package vterm-toggle
   :after (vterm)
   :custom
-  ;; project scope 表示整个 project 的 buffers 都使用同一个 vterm buffer。
+  ;; project 的 vterm buffers 都使用同一个 window。
   (vterm-toggle-scope 'project)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
   (define-key vterm-mode-map (kbd "C-RET") #'vterm-toggle-insert-cd)
-  ;; 避免执行 ns-print-buffer 命令
+  ;; 避免执行 ns-print-buffer 命令。
   (global-unset-key (kbd "s-p"))
+  ;; 避免执行 ns-open-file-using-panel 命令。
+  (global-unset-key (kbd "s-o"))
+  (global-unset-key (kbd "s-t"))
+  ;; Switch to an idle vterm buffer and insert a cd command
+  ;; Or create 1 new vterm buffer
+  (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
-  ;; 在 frame 底部显示终端窗口，https://github.com/jixiuf/vterm-toggle。
+  ;; 远程登录后自动执行的命令，用于确保远程终端执行了 vterm 初始化代码。
+  ;; https://github.com/jixiuf/vterm-toggle/issues/7
+  (defun vterm-toggle-after-ssh-login (method user host port localdir)
+    (when (string-equal "ssh" method)
+      (vterm-send-string "export VTERM_TRAMP=true; source ~/.emacs_bashrc &>/dev/null || source ~/.bashrc; clear")
+      (vterm-send-return)))
+  (add-hook 'vterm-toggle-after-remote-login-function 'vterm-toggle-after-ssh-login)
+
+  ;; 在 side-window 显示窗口，side-window 会一直显示，为 vterm mode 专用（不能最大化），
+  ;; vterm-toggle-forward 和  'vterm-toggle-backward 也都显示在这个 side-window 中。
   (setq vterm-toggle-fullscreen-p nil)
-  (add-to-list
-   'display-buffer-alist
-   '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
-     (display-buffer-reuse-window display-buffer-in-direction)
-     (direction . bottom)
-     (dedicated . t)
-     (reusable-frames . visible)
-     (window-height . 0.3))))
+  (add-to-list 'display-buffer-alist
+               '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
+                 (display-buffer-reuse-window display-buffer-in-side-window)
+                 (side . bottom)
+                 (dedicated . t)
+                 (reusable-frames . visible)
+                 (window-height . 0.3)))
+  )
 
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "bash")
 (setq shell-command-prompt-show-cwd t)
 (setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
 (setenv "SHELL" shell-file-name)
+(setenv "ESHELL" "bash")
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
 ;;(global-set-key [f1] 'shell)
 
@@ -1403,7 +1421,7 @@ mermaid.initialize({
        recentf-auto-cleanup 'never
        ;; 远程文件名不过期
        ;;remote-file-name-inhibit-cache nil
-       ;;tramp-verbose 1
+       ;;tramp-verbose 10
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 1024 1)
        ;; Store TRAMP auto-save files locally.
@@ -1418,6 +1436,11 @@ mermaid.initialize({
        ;; 在登录远程终端时设置 TERM 环境变量为 tramp，这样可以在远程 shell 的初
        ;; 始化文件中对 tramp 登录情况做特殊处理，如设置 zsh 的 PS1。
        tramp-terminal-type "tramp")
+;; 自定义远程 shell 环境变量
+(let ((process-environment tramp-remote-process-environment))
+  ;; 设置环境变量 VTERM_TRAMP=true，确保远程机器 ~/.bashrc 中调用的 ~/.emacs_bashrc 能被执行。
+  (setenv "VTERM_TRAMP" "true")
+  (setq tramp-remote-process-environment process-environment))
 
 (recentf-mode +1)
 (fset 'yes-or-no-p 'y-or-n-p)
