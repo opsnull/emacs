@@ -480,6 +480,8 @@ lsp-workspace-restart= 命令来重启语言服务器。
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
+  ;; 按 C-l 手动预览，否则 buffer 列表中有大文件或远程文件时会 hang。
+  (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function #'projectile-project-root))
@@ -1926,37 +1928,56 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 (use-package vterm-toggle
   :after (vterm)
   :custom
-  ;; project scope 表示整个 project 的 buffers 都使用同一个 vterm buffer。
+  ;; project 的 vterm buffers 都使用同一个 window。
   (vterm-toggle-scope 'project)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
   (define-key vterm-mode-map (kbd "C-RET") #'vterm-toggle-insert-cd)
-  ;; 避免执行 ns-print-buffer 命令
+  ;; 避免执行 ns-print-buffer 命令。
   (global-unset-key (kbd "s-p"))
+  ;; 避免执行 ns-open-file-using-panel 命令。
+  (global-unset-key (kbd "s-o"))
+  (global-unset-key (kbd "s-t"))
+  ;; Switch to an idle vterm buffer and insert a cd command
+  ;; Or create 1 new vterm buffer
+  (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
-  ;; 在 frame 底部显示终端窗口，https://github.com/jixiuf/vterm-toggle。
+  ;; 远程登录后自动执行的命令，用于确保远程终端执行了 vterm 初始化代码。
+  ;; https://github.com/jixiuf/vterm-toggle/issues/7
+  (defun vterm-toggle-after-ssh-login (method user host port localdir)
+    (when (string-equal "ssh" method)
+      (vterm-send-string "export VTERM_TRAMP=true; source ~/.emacs_bashrc &>/dev/null || source ~/.bashrc; clear")
+      (vterm-send-return)))
+  (add-hook 'vterm-toggle-after-remote-login-function 'vterm-toggle-after-ssh-login)
+
+  ;; 在 side-window 显示窗口，side-window 会一直显示，为 vterm mode 专用（不能最大化），
+  ;; vterm-toggle-forward 和  'vterm-toggle-backward 也都显示在这个 side-window 中。
   (setq vterm-toggle-fullscreen-p nil)
-  (add-to-list
-   'display-buffer-alist
-   '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
-     (display-buffer-reuse-window display-buffer-in-direction)
-     (direction . bottom)
-     (dedicated . t)
-     (reusable-frames . visible)
-     (window-height . 0.3))))
+  (add-to-list 'display-buffer-alist
+               '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
+                 (display-buffer-reuse-window display-buffer-in-side-window)
+                 (side . bottom)
+                 (dedicated . t)
+                 (reusable-frames . visible)
+                 (window-height . 0.3)))
+  )
 #+end_src
 + vterm-toggle 如果报错 "tcsetattr: Interrupted system call"，则解决办法[[https://github.com/jixiuf/vterm-toggle/pull/28][参考]],
-  sleep 时间可能需要增加，直到不再报错即可。
+  sleep 时间可能需要增加，直到不再报错即可；
 
 除了 emacs 的配置外，需要在本地或远程 shell 也做配置，这样才能实现目录和命令提示
-符追踪，[[https://github.com/akermu/emacs-libvterm/tree/master/etc][bash、zsh 的配置可以参考 vterm 的 github 文件]]。
+符追踪，[[https://github.com/akermu/emacs-libvterm/tree/master/etc][bash、zsh 的配置可以参考 vterm 的 github 文件]]。 
 
-对于 bash：
+对于 bash，创建 =~/.emacs_bashrc= 文件，内容如下：
 #+begin_src shell :results none
-if [[ "$INSIDE_EMACS" =~ vterm.* ]]; then
-    PS1="[\u@\h \W]\$"
+if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
+    echo '. ~/.emacs_bashrc' >> ~/.bashrc
+fi
+    
+if [[ "$VTERM_TRAMP" == "true" ]]; then
+    PS1="[\u@$(hostname -i) \W]\$"
     vterm_printf(){
         if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
             # Tell tmux to pass the escape sequences through
@@ -1976,50 +1997,22 @@ if [[ "$INSIDE_EMACS" =~ vterm.* ]]; then
     }
 
     # vterm-buffer-name-string
-    PROMPT_COMMAND='echo -ne "\033]0;${HOSTNAME}:${PWD}\007"'
+    PROMPT_COMMAND='echo -ne "\033]0;$(hostname -i):${PWD}\007"'
 
     # Directory tracking and Prompt tracking
     vterm_prompt_end(){
-        vterm_printf "51;A$(whoami)@$(hostname):$(pwd)"
+        vterm_printf "51;A$(whoami)@$(hostname -i):$(pwd)"
     }
     PS1=$PS1'\[$(vterm_prompt_end)\]'  
 fi
 #+end_src
 + 重置 PS1 为标准的 unix 提示符，防止 tramp 判断失败；
++ 如果 PS1 中使用 IP 来代替 hostname，否则 TRAMP 会因 hostname 无法解析而失败。
+  需要在 /etc/hosts 中添加 hostname 和 ip 的映射，而且只能返回一个 IP，否则 PS1
+  显示不对；
 + ~$(hostname)~ 和 =${HOSTNAME}= 返回的必须是 PS1 显示的主机名，否则[[https://github.com/akermu/emacs-libvterm/issues/369][可能匹配失败]]，这
   时可以可以手动主机名；
-
-对于 zsh：
-#+begin_src shell :results none
-if [[ "$INSIDE_EMACS" =~ vterm.* ]]; then
-    PS1="[\u@\h \W]\$"
-     vterm_printf(){
-         if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
-             # Tell tmux to pass the escape sequences through
-             printf "\ePtmux;\e\e]%s\007\e\\" "$1"
-         elif [ "${TERM%%-*}" = "screen" ]; then
-             # GNU screen (screen, screen-256color, screen-256color-bce)
-             printf "\eP\e]%s\007\e\\" "$1"
-         else
-             printf "\e]%s\e\\" "$1"
-         fi
-     }
-
-    # vterm-clear-scrollback
-    alias clear='vterm_printf "51;Evterm-clear-scrollback";tput clear'
-
-    #vterm-buffer-name-string
-    autoload -U add-zsh-hook
-    add-zsh-hook -Uz chpwd (){ print -Pn "\e]2;%m:%2~\a" }
-    
-    # Directory tracking and Prompt tracking
-    vterm_prompt_end() {
-        vterm_printf "51;A$(whoami)@$(hostname):$(pwd)";
-    }
-    setopt PROMPT_SUBST
-    PROMPT=$PROMPT'%{$(vterm_prompt_end)%}'
-fi
-#+end_src
++ 以上脚本保存到登录机器的 =~/.emacs_bashrc= 文件中，vterm 会自动执行；
 
 ** eshell
 
@@ -2029,6 +2022,7 @@ fi
 (setq shell-command-prompt-show-cwd t)
 (setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
 (setenv "SHELL" shell-file-name)
+(setenv "ESHELL" "bash")
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
 ;;(global-set-key [f1] 'shell)
 
@@ -2074,7 +2068,7 @@ fi
        recentf-auto-cleanup 'never
        ;; 远程文件名不过期
        ;;remote-file-name-inhibit-cache nil
-       ;;tramp-verbose 1
+       ;;tramp-verbose 10
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 1024 1)
        ;; Store TRAMP auto-save files locally.
@@ -2089,6 +2083,11 @@ fi
        ;; 在登录远程终端时设置 TERM 环境变量为 tramp，这样可以在远程 shell 的初
        ;; 始化文件中对 tramp 登录情况做特殊处理，如设置 zsh 的 PS1。
        tramp-terminal-type "tramp")
+;; 自定义远程 shell 环境变量
+(let ((process-environment tramp-remote-process-environment))
+  ;; 设置环境变量 VTERM_TRAMP=true，确保远程机器 ~/.bashrc 中调用的 ~/.emacs_bashrc 能被执行。
+  (setenv "VTERM_TRAMP" "true")
+  (setq tramp-remote-process-environment process-environment))
 #+end_src
 + 配置 tramp-terminal-type 为 "tramp"，这时远程 shell 中 $TERM 值为 tramp。如果
   是通过 vterm 登录远程 shell，则远程 shell 中 $INSIDE_EMACS 值为 vterm。（如果
@@ -2096,12 +2095,6 @@ fi
   ‘version,comint’。
 + tramp 通过 ~shell-prompt-pattern~ 和 ~tramp-shell-prompt-pattern~ 来匹配远程 shell，
   如果匹配不上可能会一直 hang，这时可以在远程 shell 的启动文件中重新定义 PS1。
-
-#+begin_src shell :results none
-if [[ "$INSIDE_EMACS" =~ vterm.* ]]; then
-    PS1="[\u@\h \W]\$"
-fi
-#+end_src
 
 * 其它
 #+begin_src emacs-lisp
