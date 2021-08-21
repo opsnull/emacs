@@ -1,0 +1,48 @@
+if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
+    echo '. ~/.emacs_bashrc' >> ~/.bashrc
+fi
+
+arch="$(uname -m)"
+for f in fd rg fzf; do
+  bin="${HOME}/${arch}-${f}"
+  if [ -f "${bin}" ] ; then
+    mv -f "${bin}" /usr/local/bin/"${f}"
+  fi
+done
+
+if [[ "$VTERM_TRAMP" == "true" ]]; then
+    PS1="[\u@$(hostname -i) \W]\$ "
+    vterm_printf(){
+        if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
+            # Tell tmux to pass the escape sequences through
+            printf "\ePtmux;\e\e]%s\007\e\\" "$1"
+        elif [ "${TERM%%-*}" = "screen" ]; then
+            # GNU screen (screen, screen-256color, screen-256color-bce)
+            printf "\eP\e]%s\007\e\\" "$1"
+        else
+            printf "\e]%s\e\\" "$1"
+        fi
+    }
+
+    # vterm-clear-scrollback
+    function clear(){
+        vterm_printf "51;Evterm-clear-scrollback";
+        tput clear;
+    }
+
+    # vterm-buffer-name-string
+    PROMPT_COMMAND='echo -ne "\033]0;$(hostname -i):${PWD}\007"'
+
+    # Directory tracking and Prompt tracking
+    vterm_prompt_end(){
+        vterm_printf "51;A$(whoami)@$(hostname -i):$(pwd)"
+    }
+    PS1=$PS1'\[$(vterm_prompt_end)\]'  
+fi
+
+# fzf shell 配置，来源：https://github.com/junegunn/fzf/tree/master/shell
+if which fzf &>/dev/null ; then
+    [[ $- == *i* ]] && source ~/.fzf_completion.bash
+    source ~/.fzf_key-bindings.bash
+    source ~/.fzf.bash
+fi
