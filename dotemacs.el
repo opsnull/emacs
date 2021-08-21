@@ -72,7 +72,7 @@
 
 (defun my/load-light-theme ()
   (interactive)
-  (load-theme 'doom-one-light t))
+  (load-theme 'doom-solarized-dark-high-contrast t))
 
 (defun my/load-dark-theme ()
   (interactive)
@@ -1239,6 +1239,10 @@ mermaid.initialize({
 ;; C-c p s r (projectile-ripgrep)
 (use-package ripgrep :after (projectile))
 
+(use-package find-file-in-project
+  :config
+  (setq ffip-use-rust-fd t))
+
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
   :init
@@ -1574,6 +1578,7 @@ mermaid.initialize({
   (gcmh-mode))
 
 ;;(shell-command "trash -v || brew install trash")
+;; trash 不支持 tramp 删除远程文件
 (use-package osx-trash
   :config
   (when (eq system-type 'darwin)

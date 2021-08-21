@@ -290,7 +290,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 
 (defun my/load-light-theme ()
   (interactive)
-  (load-theme 'doom-one-light t))
+  (load-theme 'doom-solarized-dark-high-contrast t))
 
 (defun my/load-dark-theme ()
   (interactive)
@@ -1819,6 +1819,10 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 
 ;; C-c p s r (projectile-ripgrep)
 (use-package ripgrep :after (projectile))
+
+(use-package find-file-in-project
+  :config
+  (setq ffip-use-rust-fd t))
 #+end_src
 
 * 树形浏览
@@ -2230,6 +2234,7 @@ fi
   (gcmh-mode))
 
 ;;(shell-command "trash -v || brew install trash")
+;; trash 不支持 tramp 删除远程文件
 (use-package osx-trash
   :config
   (when (eq system-type 'darwin)
