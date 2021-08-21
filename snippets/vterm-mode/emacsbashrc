@@ -4,9 +4,18 @@
 # --
 
 # ~/.emacs_bashrc
+
 if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
     echo '. ~/.emacs_bashrc' >> ~/.bashrc
 fi
+
+arch="$(uname -m)"
+for f in fd rg fzf; do
+  bin="${HOME}/${arch}-${f}"
+  if [ -f "${bin}" ] ; then
+    mv "${bin}" /usr/local/bin/"${f}"
+  fi
+done
 
 if [[ "$VTERM_TRAMP" == "true" ]]; then
     PS1="[\u@$(hostname -i) \W]\$ "
@@ -36,4 +45,10 @@ if [[ "$VTERM_TRAMP" == "true" ]]; then
         vterm_printf "51;A$(whoami)@$(hostname -i):$(pwd)"
     }
     PS1=$PS1'\[$(vterm_prompt_end)\]'  
+fi
+
+# fzf shell 配置，来源：https://github.com/junegunn/fzf/tree/master/shell
+if which fzf &>/dev/null ; then
+    [[ $- == *i* ]] && source ~/.fzf_completion.bash
+    source ~/.fzf_key-bindings.bash
 fi

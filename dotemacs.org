@@ -1923,7 +1923,12 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止输入法切换冲突。
   (:map vterm-mode-map ("C-\\" . nil)) )
+#+end_src
++ 在 TRAMP 模式下，执行 M-x vterm 命令，会打开一个远程 VTERM Buffer，而且
+  INSIDE_EMACS 等环境变量都能正确配置。如果要打开本地 VTERM，需要先切换到本地
+  Buffer。
 
+#+begin_src  emacs-lisp
 (use-package multi-vterm
   :after (vterm)
   :config
@@ -1979,9 +1984,17 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
     echo '. ~/.emacs_bashrc' >> ~/.bashrc
 fi
-    
+
+arch="$(uname -m)"
+for f in fd rg fzf; do
+  bin="${HOME}/${arch}-${f}"
+  if [ -f "${bin}" ] ; then
+    mv "${bin}" /usr/local/bin/"${f}"
+  fi
+done
+
 if [[ "$VTERM_TRAMP" == "true" ]]; then
-    PS1="[\u@$(hostname -i) \W]\$"
+    PS1="[\u@$(hostname -i) \W]\$ "
     vterm_printf(){
         if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
             # Tell tmux to pass the escape sequences through
@@ -2008,6 +2021,12 @@ if [[ "$VTERM_TRAMP" == "true" ]]; then
         vterm_printf "51;A$(whoami)@$(hostname -i):$(pwd)"
     }
     PS1=$PS1'\[$(vterm_prompt_end)\]'  
+fi
+
+# fzf shell 配置，来源：https://github.com/junegunn/fzf/tree/master/shell
+if which fzf &>/dev/null ; then
+    [[ $- == *i* ]] && source ~/.fzf_completion.bash
+    source ~/.fzf_key-bindings.bash
 fi
 #+end_src
 + 重置 PS1 为标准的 unix 提示符，防止 tramp 判断失败；
