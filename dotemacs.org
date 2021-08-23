@@ -341,12 +341,14 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
-;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
-;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
+;; 中文：Sarasa Mono SC(中英文2:1对齐): https://github.com/be5invis/Sarasa-Gothic
+;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
+;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 (use-package cnfonts
   :init
-  (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Gothic SC" "Source Han Mono SC") ("HanaMinB")))
+  (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
   :config
+  ;; 设置不同标题中文字体大小不同(如 lenven 主题)
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
@@ -369,6 +371,8 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 #+end_src
++ 等距更纱黑体 SC（Sarasa Mono SC) 是极少数做到中文和英文 2:1 严格对齐的字体，适
+  合用来写代码, 以及 org mode 里中英文混合的表格对齐等。
 
 * 目录变量
 
@@ -685,6 +689,14 @@ company-prescient 精准排序：
 * 编辑辅助
 
 #+begin_src emacs-lisp
+;; 中英文之间自动加空格
+(use-package pangu-spacing
+  :config
+  ;; 只是在中英文之间显示空格
+  (global-pangu-spacing-mode 1)
+  ;; 保存时真正插入空格
+  (setq pangu-spacing-real-insert-separtor t))
+
 ;; 多光标编辑
 (use-package iedit :disabled)
 
@@ -1217,7 +1229,7 @@ pyenv 使用方法：
    =.python-version= 文件。
 5. 如果虚拟环境中没有 pip 命令，执行安装命令： =python -m ensurepip=
 
-在做了上面的 shell集成后，cd 到该目录及子目录时，python 会自动切换到指定版本或激
+在做了上面的 shell 集成后，cd 到该目录及子目录时，python 会自动切换到指定版本或激
 活指定的 virtualenv；
 
 pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pyenv 环境的目的：
@@ -1317,8 +1329,8 @@ git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins
 2. 使用 =pyenv pyright= 命令配置 pyrightconfig.json 使用上一步指定的 pyenv virtualenv；
   
 pyright 假设源代码 py 源文件是位于项目 scr 目录下，但实际可能会在多个其它子目录
-（还有嵌套情况）中放置项目源码，也就是所谓的 multi-root 模式（对应于vscode 中的
-多 worksapce 目录)，这时可能出现大量 import 错误，可以通过在项目 root目录配置
+（还有嵌套情况）中放置项目源码，也就是所谓的 multi-root 模式（对应于 vscode 中的
+多 worksapce 目录)，这时可能出现大量 import 错误，可以通过在项目 root 目录配置
 =pyrightconfig.json= 文件来解决，示例如下（python module 查找过程 [[https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md][Import
 Resolution]]）：
 #+begin_src json :results none
@@ -1593,9 +1605,9 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
 #+end_src
 
 tide 是 typescript/javascript 交互式开发环境，支持 js-mode（Emacs 27 内置）、
-js2-mode、web-mode（编辑模板文件，如 HTML、Go Template等）、typescript-mode。
+js2-mode、web-mode（编辑模板文件，如 HTML、Go Template 等）、typescript-mode。
 
-通过调用 ts-ls(npm install -g typescript-language-server)语言服务器，结合company
+通过调用 ts-ls(npm install -g typescript-language-server)语言服务器，结合 company
 和 lsp 为 js/ts 提供代码补全和导航。
 
 jsts-ls(javascript-typescript-stdio) 不再维护了：

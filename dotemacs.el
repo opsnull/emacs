@@ -123,12 +123,14 @@
   (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
-;; 中文：Sarasa Gothic: https://github.com/be5invis/Sarasa-Gothic
-;; 英文：Iosevka SS14(Monospace, JetBrains Mono Style): https://github.com/be5invis/Iosevka/releases
+;; 中文：Sarasa Mono SC(中英文2:1对齐): https://github.com/be5invis/Sarasa-Gothic
+;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
+;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 (use-package cnfonts
   :init
-  (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Gothic SC" "Source Han Mono SC") ("HanaMinB")))
+  (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
   :config
+  ;; 设置不同标题中文字体大小不同(如 lenven 主题)
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
@@ -372,6 +374,14 @@
   (sis-global-respect-mode t)
   (global-set-key (kbd "C-\\") 'sis-switch)
 )
+
+;; 中英文之间自动加空格
+(use-package pangu-spacing
+  :config
+  ;; 只是在中英文之间显示空格
+  (global-pangu-spacing-mode 1)
+  ;; 保存时真正插入空格
+  (setq pangu-spacing-real-insert-separtor t))
 
 ;; 多光标编辑
 (use-package iedit :disabled)
