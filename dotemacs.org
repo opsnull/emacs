@@ -2093,18 +2093,18 @@ fi
        ;;remote-file-name-inhibit-cache nil
        ;;tramp-verbose 10
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
-       tramp-inline-compress-start-size (* 1024 1024 1)
+       tramp-inline-compress-start-size (* 1024 8)
+       ;; 当文件大小超过 tramp-copy-size-limit 时，会用 external methods(如 scp）
+       ;; 来传输，从而大大提高拷贝效率。
+       tramp-copy-size-limit (* 1024 1024 2)
        ;; Store TRAMP auto-save files locally.
        tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
        ;; A more representative name for this file.
        tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory)
        ;; Cache SSH passwords during the whole Emacs session.
        password-cache-expiry nil
-       tramp-copy-size-limit nil
-       tramp-default-method "ssh"
+       tramp-default-remote-shell "/bin/bash"
        tramp-default-user "root"
-       ;; 在登录远程终端时设置 TERM 环境变量为 tramp，这样可以在远程 shell 的初
-       ;; 始化文件中对 tramp 登录情况做特殊处理，如设置 zsh 的 PS1。
        tramp-terminal-type "tramp")
 ;; 自定义远程 shell 环境变量
 (let ((process-environment tramp-remote-process-environment))
@@ -2118,7 +2118,12 @@ fi
   ‘version,comint’。
 + tramp 通过 ~shell-prompt-pattern~ 和 ~tramp-shell-prompt-pattern~ 来匹配远程 shell，
   如果匹配不上可能会一直 hang，这时可以在远程 shell 的启动文件中重新定义 PS1。
-
++ tramp-default-method 定义传输文件的方法，默认为 scp，如果设置为 ssh，则无论文
+  件大小都用 ssh，会影响大文件传输效率。
++ 当不涉及多 hop 来 Dired 远程机器时，建议使用 /scp: 而非 /ssh: ，这样可以大大提
+  高文件传输效率。特别是使用 =M-x copy-file= 和 =M-x dired-async-do-copy= 来拷贝文件
+  时，使用 /scp: 会大大提高效率。
+  
 * 其它
 #+begin_src emacs-lisp
 (recentf-mode +1)
@@ -2212,6 +2217,8 @@ fi
   (global-set-key (kbd "C-x C-b") 'bufler))
 
 (setq dired-recursive-deletes t
+      ;; 打开两个 Dired 窗口（如本地和远程），方便相互 Copy。
+      dired-dwim-target t
       dired-recursive-copies t)
 (put 'dired-find-alternate-file 'disabled nil)
 (use-package diredfl :config (diredfl-global-mode))
@@ -2253,7 +2260,6 @@ fi
   (gcmh-mode))
 
 ;;(shell-command "trash -v || brew install trash")
-;; trash 不支持 tramp 删除远程文件
 (use-package osx-trash
   :config
   (when (eq system-type 'darwin)
@@ -2289,4 +2295,5 @@ fi
                   (setq xwidget-webkit-bookmark-jump-new-session nil)
                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
 #+end_src
-
++ osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行
+  rm 命令。

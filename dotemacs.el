@@ -1427,18 +1427,18 @@ mermaid.initialize({
        ;;remote-file-name-inhibit-cache nil
        ;;tramp-verbose 10
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
-       tramp-inline-compress-start-size (* 1024 1024 1)
+       tramp-inline-compress-start-size (* 1024 8)
+       ;; 当文件大小超过 tramp-copy-size-limit 时，会用 external methods(如 scp）
+       ;; 来传输，从而大大提高拷贝效率。
+       tramp-copy-size-limit (* 1024 1024 2)
        ;; Store TRAMP auto-save files locally.
        tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
        ;; A more representative name for this file.
        tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory)
        ;; Cache SSH passwords during the whole Emacs session.
        password-cache-expiry nil
-       tramp-copy-size-limit nil
-       tramp-default-method "ssh"
+       tramp-default-remote-shell "/bin/bash"
        tramp-default-user "root"
-       ;; 在登录远程终端时设置 TERM 环境变量为 tramp，这样可以在远程 shell 的初
-       ;; 始化文件中对 tramp 登录情况做特殊处理，如设置 zsh 的 PS1。
        tramp-terminal-type "tramp")
 ;; 自定义远程 shell 环境变量
 (let ((process-environment tramp-remote-process-environment))
@@ -1537,6 +1537,8 @@ mermaid.initialize({
   (global-set-key (kbd "C-x C-b") 'bufler))
 
 (setq dired-recursive-deletes t
+      ;; 打开两个 Dired 窗口（如本地和远程），方便相互 Copy。
+      dired-dwim-target t
       dired-recursive-copies t)
 (put 'dired-find-alternate-file 'disabled nil)
 (use-package diredfl :config (diredfl-global-mode))
@@ -1578,7 +1580,6 @@ mermaid.initialize({
   (gcmh-mode))
 
 ;;(shell-command "trash -v || brew install trash")
-;; trash 不支持 tramp 删除远程文件
 (use-package osx-trash
   :config
   (when (eq system-type 'darwin)

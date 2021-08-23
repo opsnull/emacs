@@ -2,13 +2,11 @@ if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
     echo '. ~/.emacs_bashrc' >> ~/.bashrc
 fi
 
-arch="$(uname -m)"
-for f in fd rg fzf; do
-  bin="${HOME}/${arch}-${f}"
-  if [ -f "${bin}" ] ; then
-    mv -f "${bin}" /usr/local/bin/"${f}"
-  fi
-done
+tarball="${HOME}/$(uname -m).tar.bz2"
+if [ -f "${tarball}" ]; then
+  tar -xvf "${tarball}" -C /usr/local/bin/
+  rm -rf "${tarball}"
+fi
 
 if [[ "$VTERM_TRAMP" == "true" ]]; then
     PS1="[\u@$(hostname -i) \W]\$ "
