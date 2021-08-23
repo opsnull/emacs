@@ -377,6 +377,7 @@
 
 ;; 中英文之间自动加空格
 (use-package pangu-spacing
+  :disabled
   :config
   ;; 只是在中英文之间显示空格
   (global-pangu-spacing-mode 1)
@@ -1249,9 +1250,7 @@ mermaid.initialize({
 ;; C-c p s r (projectile-ripgrep)
 (use-package ripgrep :after (projectile))
 
-(use-package find-file-in-project
-  :config
-  (setq ffip-use-rust-fd t))
+(use-package find-file-in-project)
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs

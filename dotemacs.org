@@ -691,6 +691,7 @@ company-prescient 精准排序：
 #+begin_src emacs-lisp
 ;; 中英文之间自动加空格
 (use-package pangu-spacing
+  :disabled
   :config
   ;; 只是在中英文之间显示空格
   (global-pangu-spacing-mode 1)
@@ -1832,9 +1833,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 ;; C-c p s r (projectile-ripgrep)
 (use-package ripgrep :after (projectile))
 
-(use-package find-file-in-project
-  :config
-  (setq ffip-use-rust-fd t))
+(use-package find-file-in-project)
 #+end_src
 
 * 树形浏览
