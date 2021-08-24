@@ -728,13 +728,7 @@
 (use-package magit
   :custom
   ;; 在当前 window 中显示 magit buffer
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-  (magit-auto-revert-mode nil)
-  ;;:config
-  ;; 自动 revert buff，确保 modeline 上的分支名正确。
-  ;; CPU profile 显示比较影响性能，暂不开启。
-  ;;(setq auto-revert-check-vc-info nil)
-  )
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (use-package git-link
   :config
@@ -1541,7 +1535,6 @@ mermaid.initialize({
 
 ;; buffer 智能分组（取代 ibuffer）
 (use-package bufler
-  :disabled
   :config
   (global-set-key (kbd "C-x C-b") 'bufler))
 

@@ -1051,14 +1051,10 @@ magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有�
 (use-package magit
   :custom
   ;; 在当前 window 中显示 magit buffer
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-  (magit-auto-revert-mode nil)
-  ;;:config
-  ;; 自动 revert buff，确保 modeline 上的分支名正确。
-  ;; CPU profile 显示比较影响性能，暂不开启。
-  ;;(setq auto-revert-check-vc-info nil)
-  )
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 #+end_src
++ =(setq auto-revert-check-vc-info t)= 可以自动 revert buffer，确保 modeline 上的
+  分支名正确，但是 CPU Profile 显示比较影响性能，故暂不开启。
 
 git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
 #+begin_src emacs-lisp
@@ -2223,7 +2219,6 @@ fi
 
 ;; buffer 智能分组（取代 ibuffer）
 (use-package bufler
-  :disabled
   :config
   (global-set-key (kbd "C-x C-b") 'bufler))
 
