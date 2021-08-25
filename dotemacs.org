@@ -1944,8 +1944,8 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 (use-package vterm-toggle
   :after (vterm)
   :custom
-  ;; project 的 vterm buffers 都使用同一个 window。
-  (vterm-toggle-scope 'project)
+  ;; 由于 TRAMP 模式下关闭了 projectile，scope 不能设置为 'project。
+  (vterm-toggle-scope 'dedicated)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
@@ -1977,8 +1977,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
                  (side . bottom)
                  (dedicated . t)
                  (reusable-frames . visible)
-                 (window-height . 0.3)))
-  )
+                 (window-height . 0.3))))
 #+end_src
 + vterm-toggle 如果报错 "tcsetattr: Interrupted system call"，则解决办法[[https://github.com/jixiuf/vterm-toggle/pull/28][参考]],
   sleep 时间可能需要增加，直到不再报错即可；
@@ -1986,56 +1985,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 除了 emacs 的配置外，需要在本地或远程 shell 也做配置，这样才能实现目录和命令提示
 符追踪，[[https://github.com/akermu/emacs-libvterm/tree/master/etc][bash、zsh 的配置可以参考 vterm 的 github 文件]]。 
 
-对于 bash，创建 =~/.emacs_bashrc= 文件，内容如下：
-#+begin_src shell :results none
-if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
-    echo '. ~/.emacs_bashrc' >> ~/.bashrc
-fi
-
-arch="$(uname -m)"
-for f in fd rg fzf; do
-  bin="${HOME}/${arch}-${f}"
-  if [ -f "${bin}" ] ; then
-    mv "${bin}" /usr/local/bin/"${f}"
-  fi
-done
-
-if [[ "$VTERM_TRAMP" == "true" ]]; then
-    PS1="[\u@$(hostname -i) \W]\$ "
-    vterm_printf(){
-        if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
-            # Tell tmux to pass the escape sequences through
-            printf "\ePtmux;\e\e]%s\007\e\\" "$1"
-        elif [ "${TERM%%-*}" = "screen" ]; then
-            # GNU screen (screen, screen-256color, screen-256color-bce)
-            printf "\eP\e]%s\007\e\\" "$1"
-        else
-            printf "\e]%s\e\\" "$1"
-        fi
-    }
-
-    # vterm-clear-scrollback
-    function clear(){
-        vterm_printf "51;Evterm-clear-scrollback";
-        tput clear;
-    }
-
-    # vterm-buffer-name-string
-    PROMPT_COMMAND='echo -ne "\033]0;$(hostname -i):${PWD}\007"'
-
-    # Directory tracking and Prompt tracking
-    vterm_prompt_end(){
-        vterm_printf "51;A$(whoami)@$(hostname -i):$(pwd)"
-    }
-    PS1=$PS1'\[$(vterm_prompt_end)\]'  
-fi
-
-# fzf shell 配置，来源：https://github.com/junegunn/fzf/tree/master/shell
-if which fzf &>/dev/null ; then
-    [[ $- == *i* ]] && source ~/.fzf_completion.bash
-    source ~/.fzf_key-bindings.bash
-fi
-#+end_src
+对于 bash，创建 =~/.emacs_bashrc= 文件，内容参考：[[file:bin/.emacs_bashrc][.emacs_bashrc]]。
 + 重置 PS1 为标准的 unix 提示符，防止 tramp 判断失败；
 + 如果 PS1 中使用 IP 来代替 hostname，否则 TRAMP 会因 hostname 无法解析而失败。
   需要在 /etc/hosts 中添加 hostname 和 ip 的映射，而且只能返回一个 IP，否则 PS1
