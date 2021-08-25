@@ -1345,8 +1345,8 @@ mermaid.initialize({
 (use-package vterm-toggle
   :after (vterm)
   :custom
-  ;; project 的 vterm buffers 都使用同一个 window。
-  (vterm-toggle-scope 'project)
+  ;; 由于 TRAMP 模式下关闭了 projectile，scope 不能设置为 'project。
+  (vterm-toggle-scope 'dedicated)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
@@ -1378,8 +1378,7 @@ mermaid.initialize({
                  (side . bottom)
                  (dedicated . t)
                  (reusable-frames . visible)
-                 (window-height . 0.3)))
-  )
+                 (window-height . 0.3))))
 
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "bash")
@@ -1442,6 +1441,7 @@ mermaid.initialize({
        password-cache-expiry nil
        tramp-default-remote-shell "/bin/bash"
        tramp-default-user "root"
+       tramp-default-method "ssh"
        tramp-terminal-type "tramp")
 ;; 自定义远程 shell 环境变量
 (let ((process-environment tramp-remote-process-environment))
