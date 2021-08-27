@@ -1,5 +1,9 @@
 if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
     echo '. ~/.emacs_bashrc' >> ~/.bashrc
+    touch /{etc,home,root,tmp,usr}/.projectile
+    if [ -d "/apsara" ]; then
+      touch /{apsara,apsarapangu,cloud}/.projectile
+    fi
 fi
 
 tarball="${HOME}/$(uname -m).tar.bz2"
