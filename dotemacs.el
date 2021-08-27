@@ -72,7 +72,7 @@
 
 (defun my/load-light-theme ()
   (interactive)
-  (load-theme 'doom-solarized-dark-high-contrast t))
+  (load-theme 'doom-dracula t))
 
 (defun my/load-dark-theme ()
   (interactive)
@@ -145,7 +145,7 @@
 (use-package emojify :hook (erc-mode . emojify-mode) :commands emojify-mode)
 
 ;; Emoji 字体
-(set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
+(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend)
 
 ;; 更新字体：M-x all-the-icons-install-fonts
 (use-package all-the-icons)
@@ -1239,7 +1239,10 @@ mermaid.initialize({
   ;; 开启 cache 后，提高性能，也可以解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
   (setq projectile-file-exists-remote-cache-expire (* 10 60))
-  (setq projectile-dynamic-mode-line nil))
+  (setq projectile-dynamic-mode-line nil)
+  ;; Make projectile to be usable in every directory (even without the presence
+  ;; of project file):
+  (setq projectile-require-project-root nil))
 
 ;; C-c p s r (projectile-ripgrep)
 (use-package ripgrep :after (projectile))
@@ -1441,7 +1444,6 @@ mermaid.initialize({
        password-cache-expiry nil
        tramp-default-remote-shell "/bin/bash"
        tramp-default-user "root"
-       tramp-default-method "ssh"
        tramp-terminal-type "tramp")
 ;; 自定义远程 shell 环境变量
 (let ((process-environment tramp-remote-process-environment))
