@@ -34,18 +34,8 @@
 (setq debug-on-error t)
 (add-hook 'after-init-hook (lambda () (setq debug-on-error nil)))
 
-;; Defer garbage collection further back in the startup process
-;; (setq gc-cons-threshold most-positive-fixnum
-;;       gc-cons-percentage 0.5)
-;; (add-hook 'emacs-startup-hook
-;;           (lambda ()
-;;             "Recover GC values after startup."
-;;             (setq gc-cons-threshold 16777216 ;; 16MB
-;;                   gc-cons-percentage 0.1)))
-
 ;; Increase how much is read from processes in a single chunk (default is 4kb).
-;; This is further increased elsewhere, where needed (like our LSP module).
-(setq read-process-output-max (* 1024 1024))  ;; 1mb
+(setq read-process-output-max (* 1024 1024))  ;; 1MB
 
 ;; Don't ping things that look like domain names.
 (setq ffap-machine-p-known 'reject)
