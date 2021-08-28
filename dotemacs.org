@@ -421,15 +421,44 @@ lsp-workspace-restart= 命令来重启语言服务器。
 * 增量补全
 
 #+begin_src emacs-lisp
-(use-package selectrum :init (selectrum-mode +1))
+(use-package selectrum :disabled :init (selectrum-mode +1))
+(use-package prescient :disabled :config (prescient-persist-mode +1))
+(use-package selectrum-prescient :disabled :init (selectrum-prescient-mode +1))
 
-(use-package prescient :config (prescient-persist-mode +1))
+(use-package vertico
+  :config
+  (setq completion-in-region-function
+        (lambda (&rest args)
+          (apply (if vertico-mode
+                     #'consult-completion-in-region
+                   #'completion--in-region)
+                 args)))
+  (vertico-mode 1))
 
-(use-package selectrum-prescient
-  :after (selectrum)
+(use-package orderless
   :init
-  (selectrum-prescient-mode +1)
-  (prescient-persist-mode +1))
+  (setq completion-styles '(orderless)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles basic partial-completion)))))
+
+;; Editing of grep buffers, can be used together with consult-grep via embark-export.
+(use-package wgrep)
+
+(use-package savehist :init (savehist-mode))
+
+(use-package emacs
+  :init
+  ;; Do not allow the cursor in the minibuffer prompt
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+
+  ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
+  ;; Vertico commands are hidden in normal buffers.
+  (setq read-extended-command-predicate
+        #'command-completion-default-include-p)
+
+  ;; Enable recursive minibuffers
+  (setq enable-recursive-minibuffers t))
 
 (use-package consult
   :bind
@@ -480,6 +509,8 @@ lsp-workspace-restart= 命令来重启语言服务器。
    ("M-s l" . consult-line))
   :hook (completion-list-mode . consult-preview-at-point-mode)
   :init
+  ;; 如果搜索字符少于 5，可以添加后缀#开始搜索，如 #gr#。
+  (setq consult-async-min-input 5)
   ;; 预览 register
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
@@ -490,6 +521,9 @@ lsp-workspace-restart= 命令来重启语言服务器。
   ;; 按 C-l 手动预览，否则 buffer 列表中有大文件或远程文件时会 hang。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
+  (setq consult-ripgrep-args "rg --line-buffered --color=never --max-columns=1000 --path-separator / --hidden --smart-case --no-heading --line-number --with-filename .")
+  (advice-add #'completing-read-multiple
+              :override #'consult-completing-read-multiple)
 
   ;; (autoload 'projectile-project-root "projectile")
   ;; (setq consult-project-root-function #'projectile-project-root)
@@ -503,18 +537,17 @@ lsp-workspace-restart= 命令来重启语言服务器。
               (car (project-roots project)))))))
 
 (use-package marginalia
-  :after (selectrum)
   :init (marginalia-mode)
   :config
-  (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light))
-  (advice-add #'marginalia-cycle
-              :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit 'keep-selected))))
+  (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
+  ;; (advice-add #'marginalia-cycle
+  ;;             :after (lambda () (when (bound-and-true-p selectrum-mode) (selectrum-exhibit 'keep-selected))))
   :bind
   (("M-A" . marginalia-cycle)
    :map minibuffer-local-map
    ("M-A" . marginalia-cycle)))
 
-;; minibuffer 自动补全时显示图标会导致 TRAMP 变慢，故关闭
+;; minibuffer 自动补全时显示图标会导致 TRAMP 变慢，故关闭。
 (use-package all-the-icons-completion
   :disabled :after (marginalia)
   :config 
@@ -522,31 +555,29 @@ lsp-workspace-restart= 命令来重启语言服务器。
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 (use-package embark
-  :after (selectrum which-key)
+  :init
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
-
-  (defun refresh-selectrum ()
-    (setq selectrum--previous-input-string nil))
-  (add-hook 'embark-pre-action-hook #'refresh-selectrum)
-
-  (defun embark-act-noquit ()
-    (interactive)
-    (let ((embark-quit-after-action nil)) (embark-act)))
-
   (setq embark-action-indicator
-        (lambda (map &optional _target)
+        (lambda (map _target)
           (which-key--show-keymap "Embark" map nil nil 'no-paging)
           #'which-key--hide-popup-ignore-command)
         embark-become-indicator embark-action-indicator)
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none))))
   :bind
-  (("C-;" . embark-act-noquit)
-   :map embark-variable-map ("l" . edit-list)))
+  (("C-;" . embark-act)
+   ("C-h B" . embark-bindings)))
 
 (use-package embark-consult
   :after (embark consult)
   :hook
-  (embark-collect-mode . embark-consult-preview-minor-mode))
+  (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
 * 自动补全
@@ -864,6 +895,7 @@ company-prescient 精准排序：
   (unless (package-installed-p package)
     (package-install package)))
 
+;; 使用 M-x package-install org 命令来安装，否则使用系统自带的老版本。
 (use-package org
   :config
   (setq org-todo-keywords
@@ -2004,9 +2036,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
                              (setf truncate-lines nil)
                              (setq-local show-paren-mode nil)
                              (yas-minor-mode -1)
-                             (flycheck-mode -1)
-                             (treemacs -1)
-                             ))
+                             (flycheck-mode -1)))
   :bind
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止输入法切换冲突。
@@ -2176,6 +2206,8 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
 (unless (server-running-p)
   (server-start))
 
+;; 记录最近 1000 次按键，可以通过 M-x view-lossage 来查看输入的内容。
+(lossage-size 1000)
 
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
