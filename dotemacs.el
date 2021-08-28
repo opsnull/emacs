@@ -40,14 +40,6 @@
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
 
-;; 大文件不显示行号
-(setq line-number-display-limit large-file-warning-threshold)
-(setq line-number-display-limit-width 1000)
-(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 1))))
-(dolist (mode '(org-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
 (setq-default indicate-empty-lines t)
 (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
 
@@ -81,16 +73,16 @@
   (interactive)
   (load-theme 'doom-monokai-pro t))
 
-(add-hook 'after-init-hook
-          (lambda () (load-theme 'doom-monokai-pro t))
-          'append)
-
 ;; 跟随 Mac 变化主题
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
               ('light (my/load-light-theme))
               ('dark (my/load-dark-theme)))))
+
+;; (add-hook 'after-init-hook
+;;           (lambda () (load-theme 'doom-dracula t))
+;;           'append)
 
 (display-battery-mode t)
 (column-number-mode t)
@@ -118,11 +110,11 @@
 
 (with-eval-after-load "doom-modeline"
   (doom-modeline-def-modeline 'main
-  ;; left-hand segment list, 去掉 remote-host
+  ;; left-hand segment list
+  ;; 去掉 remote-host，避免编辑远程文件时卡住。
   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
   ;; right-hand segment list
   '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker)))
-
 
 (use-package dashboard
   :config
@@ -145,7 +137,6 @@
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
-;; 使用字体缓存，避免 GC 卡顿
 ;; Font compacting can be terribly expensive, especially for rendering icon
 ;; fonts on Windows. Whether disabling it has a notable affect on Linux and Mac
 ;; hasn't been determined, but do it there anyway, just in case. This increases
@@ -157,8 +148,6 @@
   :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode)
 
-(use-package emojify :hook (erc-mode . emojify-mode) :commands emojify-mode)
-
 ;; Emoji 字体
 (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend)
 
@@ -167,9 +156,6 @@
 
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
-
-;; 目录变量（.envrc)  
-(use-package direnv :disabled :config (direnv-mode))
 
 (use-package envrc
   :hook (after-init . envrc-global-mode)
@@ -246,8 +232,17 @@
   ;; 按 C-l 手动预览，否则 buffer 列表中有大文件或远程文件时会 hang。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
-  (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function #'projectile-project-root))
+
+  ;; (autoload 'projectile-project-root "projectile")
+  ;; (setq consult-project-root-function #'projectile-project-root)
+
+  ;; 如果是远程目录文件，直接返回 nil（使用 default-directory)
+  ;; 提升远程编辑性能；
+  (setq consult-project-root-function
+        (lambda ()
+          (unless (file-remote-p default-directory) 
+            (when-let (project (project-current))
+              (car (project-roots project)))))))
 
 (use-package marginalia
   :after (selectrum)
@@ -447,7 +442,6 @@
 
 ;; 显示缩进
 (use-package highlight-indent-guides
-  :after (python yaml-mode web-mode)
   :custom
   (highlight-indent-guides-method 'character)
   (highlight-indent-guides-responsive 'stack)
@@ -455,6 +449,7 @@
   :config
   (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
 ;; 快速跳转当前标记符
@@ -469,6 +464,33 @@
 
 ;; brew install ripgrep
 (use-package deadgrep :bind  ("<f5>" . deadgrep))
+
+;; 打开特定后缀大文件时，优化性能；
+(defun my-large-file-hook ()
+  "If a file is over a given size, make the buffer read only."
+  (when (and (> (buffer-size) (* 1024 1024))
+             (or (string-equal (file-name-extension (buffer-file-name)) "json")
+                 (string-equal (file-name-extension (buffer-file-name)) "js")
+                 (string-equal (file-name-extension (buffer-file-name)) "yaml")
+                 (string-equal (file-name-extension (buffer-file-name)) "yml")
+                 (string-equal (file-name-extension (buffer-file-name)) "log")))
+    (fundamental-mode)
+    (setq buffer-read-only t)
+    (buffer-disable-undo)
+    (font-lock-mode -1)
+    (rainbow-delimiters-mode -1)
+    (smartparens-global-mode -1)
+    (show-smartparens-mode -1)
+    (smartparens-mode -1)))
+(add-hook 'find-file-hook 'my-large-file-hook)
+
+;; 大文件不显示行号
+(setq line-number-display-limit large-file-warning-threshold)
+(setq line-number-display-limit-width 1000)
+(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+(dolist (mode '(org-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 ;; 有道词典
 (use-package youdao-dictionary
@@ -1127,15 +1149,9 @@ mermaid.initialize({
   (add-hook 'js-mode-hook 'js2-minor-mode)
   ;; 为 js/jsx 文件启动 tide.
   (add-hook 'js-mode-hook 'my/setup-tide-mode)
-  ;; web-mode  处理大 JSON 文件非常慢，使用 js2-mode 性能更好。
+  ;; web-mode 处理大 JSON 文件非常慢，使用 js2-mode 性能更好。
   ;; 另外 tree-sitter 目前也不支持 web-mode（变量 tree-sitter-major-mode-language-alist)
   (add-to-list 'auto-mode-alist '("\\.json\\'" . js2-mode))
-  ;; 浏览大 json 文件时关闭 smartparents，否则非常慢。
-  (add-hook 'js-mode-hook (lambda ()
-                            (rainbow-delimiters-mode -1)
-                            (smartparens-global-mode -1)
-                            (show-smartparens-mode -1)
-                            (smartparens-mode -1)))
   ;; disable jshint since we prefer eslint checking
   (setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(javascript-jshint)))
   (flycheck-add-mode 'javascript-eslint 'js-mode)
@@ -1521,6 +1537,7 @@ mermaid.initialize({
 (unless (server-running-p)
   (server-start))
 
+
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 
@@ -1670,9 +1687,9 @@ mermaid.initialize({
 (use-package gcmh
   :init
   ;; Show garbage collections in minibuffer
-  (setq garbage-collection-messages t)
+  ;;(setq garbage-collection-messages t)
+  ;;(setq gcmh-verbose t)
   (setq gcmh-idle-delay 0.5
-        gcmh-verbose t
         gcmh-high-cons-threshold (* 32 1024 1024))
   (gcmh-mode)
   (gcmh-set-high-threshold))
