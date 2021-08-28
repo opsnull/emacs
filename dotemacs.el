@@ -5,7 +5,6 @@
 (package-initialize)
 (unless package-archive-contents (package-refresh-contents))
 
-;; 为 use-package 默认添加 ensure 和 demand 参数
 (setq use-package-always-ensure t
       use-package-always-demand t)
 
@@ -29,6 +28,7 @@
 
 (setq inhibit-startup-screen t
       inhibit-startup-message t
+      initial-major-mode 'fundamental-mode
       inhibit-startup-echo-area-message t
       initial-scratch-message nil)
 
@@ -53,6 +53,9 @@
 
 ;; 增强窗口背景对比度
 (use-package solaire-mode :hook (after-load-theme . solaire-global-mode))
+
+;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
+;; in non-focused windows.
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
@@ -113,6 +116,14 @@
   (doom-modeline-github nil)
   :init (doom-modeline-mode 1))
 
+(with-eval-after-load "doom-modeline"
+  (doom-modeline-def-modeline 'main
+  ;; left-hand segment list, 去掉 remote-host
+  '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+  ;; right-hand segment list
+  '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker)))
+
+
 (use-package dashboard
   :config
   (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
@@ -135,6 +146,10 @@
   (cnfonts-enable))
 
 ;; 使用字体缓存，避免 GC 卡顿
+;; Font compacting can be terribly expensive, especially for rendering icon
+;; fonts on Windows. Whether disabling it has a notable affect on Linux and Mac
+;; hasn't been determined, but do it there anyway, just in case. This increases
+;; memory usage, however!
 (setq inhibit-compacting-font-caches t)
 
 ;; 更新字体：M-x fira-code-mode-install-fonts
@@ -154,7 +169,13 @@
 (use-package beacon :config (beacon-mode 1))
 
 ;; 目录变量（.envrc)  
-(use-package direnv :ensure :config (direnv-mode))
+(use-package direnv :disabled :config (direnv-mode))
+
+(use-package envrc
+  :hook (after-init . envrc-global-mode)
+  :config
+  (with-eval-after-load 'envrc
+    (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map)))
 
 (use-package selectrum :init (selectrum-mode +1))
 
@@ -302,13 +323,25 @@
   (company-minimum-prefix-length 1)
   (company-tooltip-limit 14)
   (company-tooltip-align-annotations t)
-  ;; 大小写不敏感
+  ;; Only search the current buffer for `company-dabbrev' (a backend that
+  ;; suggests text your open buffers). This prevents Company from causing
+  ;; lag once you have a lot of buffers open.
+  (company-dabbrev-other-buffers nil)
+  ;; Make `company-dabbrev' fully case-sensitive, to improve UX with
+  ;; domain-specific words with particular casing.
   (company-dabbrev-ignore-case nil)
   ;; Don't downcase the returned candidates.
   (company-dabbrev-downcase nil)
   ;; 候选框宽度
   (company-tooltip-minimum-width 70)
   (company-tooltip-maximum-width 100)
+  (company-global-modes '(not erc-mode
+                              message-mode
+                              help-mode
+                              gud-mode
+                              vterm-mode))
+  (company-frontends '(company-pseudo-tooltip-frontend  ; always show candidates in overlay tooltip
+                       company-echo-metadata-frontend))  ; show selected candidate docs in echo area
   ;; 补全后端
   (company-backends '(company-capf
                       (company-dabbrev-code company-keywords company-files)
@@ -318,7 +351,7 @@
 
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
-  :after (lsp-mode company)
+  :after (company)
   :commands yas-minor-mode
   :config
   (global-set-key (kbd "C-c s") 'company-yasnippet)
@@ -335,7 +368,7 @@
   :hook (company-mode . company-box-mode))
 
 (use-package company-prescient
-  :after (prescient)
+  :after (company prescient)
   :init (company-prescient-mode +1))
 
 (use-package goto-chg
@@ -1094,6 +1127,15 @@ mermaid.initialize({
   (add-hook 'js-mode-hook 'js2-minor-mode)
   ;; 为 js/jsx 文件启动 tide.
   (add-hook 'js-mode-hook 'my/setup-tide-mode)
+  ;; web-mode  处理大 JSON 文件非常慢，使用 js2-mode 性能更好。
+  ;; 另外 tree-sitter 目前也不支持 web-mode（变量 tree-sitter-major-mode-language-alist)
+  (add-to-list 'auto-mode-alist '("\\.json\\'" . js2-mode))
+  ;; 浏览大 json 文件时关闭 smartparents，否则非常慢。
+  (add-hook 'js-mode-hook (lambda ()
+                            (rainbow-delimiters-mode -1)
+                            (smartparens-global-mode -1)
+                            (show-smartparens-mode -1)
+                            (smartparens-mode -1)))
   ;; disable jshint since we prefer eslint checking
   (setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(javascript-jshint)))
   (flycheck-add-mode 'javascript-eslint 'js-mode)
@@ -1118,7 +1160,6 @@ mermaid.initialize({
   (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.tmpl\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.json\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)))
 
 (use-package emmet-mode 
@@ -1173,6 +1214,16 @@ mermaid.initialize({
   :after (flycheck)
   :config
   (flycheck-pos-tip-mode))
+
+(use-package tree-sitter
+  :config
+  (global-tree-sitter-mode)
+  
+  ;; 对于支持的语言（查看变量 tree-sitter-major-mode-language-alist）使用
+  ;; tree-sitter提供的 tree-base 的高亮来取代内置的基于 font-lock 正则的低效模式:
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package tree-sitter-langs)
 
 (use-package projectile
   :after (treemacs)
@@ -1335,6 +1386,13 @@ mermaid.initialize({
   (setq vterm-max-scrollback 100000)
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND。）。
   (setq vterm-buffer-name-string "vterm: %s")
+  (add-hook 'vterm-mode-hook (lambda ()
+                             (setf truncate-lines nil)
+                             (setq-local show-paren-mode nil)
+                             (yas-minor-mode -1)
+                             (flycheck-mode -1)
+                             (treemacs -1)
+                             ))
   :bind
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止输入法切换冲突。
@@ -1393,6 +1451,7 @@ mermaid.initialize({
 ;;(global-set-key [f1] 'shell)
 
 (use-package eshell-toggle
+  :disabled
   :custom
   (eshell-toggle-size-fraction 3)
   (eshell-toggle-use-projectile-root t)
@@ -1402,11 +1461,13 @@ mermaid.initialize({
   ("s-`" . eshell-toggle))
 
 (use-package native-complete
+  :disabled
   :custom
   (with-eval-after-load 'shell
     (native-complete-setup-bash)))
 
 (use-package company-native-complete
+  :disabled
   :after (company)
   :custom
   (add-to-list 'company-backends 'company-native-complete))
@@ -1460,6 +1521,21 @@ mermaid.initialize({
 (unless (server-running-p)
   (server-start))
 
+;; 使用单独文件保存自定义配置
+(setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
+
+;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
+(setq idle-update-delay 1.0)  ; default is 0.5
+
+;; Disable bidirectional text scanning for a modest performance boost.
+(setq-default bidi-display-reordering 'left-to-right
+              bidi-paragraph-direction 'left-to-right)
+
+;; Disabling the BPA makes redisplay faster, but might produce incorrect display
+;; reordering of bidirectional text with embedded parentheses and other bracket
+;; characters whose 'paired-bracket' Unicode property is non-nil.
+(setq bidi-inhibit-bpa t)  ; Emacs 27 only
+
 (setq
  ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
  bookmark-save-flag 1
@@ -1476,6 +1552,11 @@ mermaid.initialize({
  image-transform-resize t
  grep-highlight-matches t
  ns-pop-up-frames nil)
+
+;; Resizing the Emacs frame can be a terribly expensive part of changing the
+;; font. By inhibiting this, we halve startup times, particularly when we use
+;; fonts that are larger than the system default (which would resize the frame).
+(setq frame-inhibit-implied-resize t)
 
 (setq-default  
  line-spacing 1
@@ -1500,6 +1581,8 @@ mermaid.initialize({
 (setq fast-but-imprecise-scrolling 't)
 (setq jit-lock-defer-time 0.25)
 (setq fast-but-imprecise-scrolling t)
+;; Introduced in Emacs HEAD (b2f8c9f), this inhibits fontification while
+;; receiving input, which should help a little with scrolling performance.
 (setq redisplay-skip-fontification-on-input t)
 (setq scroll-step 1
       scroll-margin 0
@@ -1545,7 +1628,11 @@ mermaid.initialize({
       dired-dwim-target t
       dired-recursive-copies t)
 (put 'dired-find-alternate-file 'disabled nil)
+;; dired 显示高亮增强
 (use-package diredfl :config (diredfl-global-mode))
+
+;; 管理 minior mode
+(use-package manage-minor-mode)
 
 ;;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
@@ -1576,12 +1663,19 @@ mermaid.initialize({
 (setq word-wrap-by-category t)
 
 ;; Garbage Collector Magic Hack
+;; The GC introduces annoying pauses and stuttering into our Emacs experience,
+;; so we use `gcmh' to stave off the GC while we're using Emacs, and provoke it
+;; when it's idle.
 (defvar hidden-minor-modes '(whitespace-mode))
 (use-package gcmh
   :init
-  (setq gcmh-idle-delay 5
-        gcmh-high-cons-threshold 33554432) ;; 32MB
-  (gcmh-mode))
+  ;; Show garbage collections in minibuffer
+  (setq garbage-collection-messages t)
+  (setq gcmh-idle-delay 0.5
+        gcmh-verbose t
+        gcmh-high-cons-threshold (* 32 1024 1024))
+  (gcmh-mode)
+  (gcmh-set-high-threshold))
 
 ;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash

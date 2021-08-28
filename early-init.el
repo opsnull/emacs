@@ -32,23 +32,19 @@
 (setq package-native-compile t)
 
 (setq debug-on-error t)
-(add-hook 'after-init-hook
-          (lambda ()
-            (setq debug-on-error nil)))
+(add-hook 'after-init-hook (lambda () (setq debug-on-error nil)))
 
 ;; Defer garbage collection further back in the startup process
-(setq gc-cons-threshold most-positive-fixnum
-      gc-cons-percentage 0.5)
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            "Recover GC values after startup."
-            (setq gc-cons-threshold 16777216 ;; 16MB
-                  gc-cons-percentage 0.1)))
+;; (setq gc-cons-threshold most-positive-fixnum
+;;       gc-cons-percentage 0.5)
+;; (add-hook 'emacs-startup-hook
+;;           (lambda ()
+;;             "Recover GC values after startup."
+;;             (setq gc-cons-threshold 16777216 ;; 16MB
+;;                   gc-cons-percentage 0.1)))
 
-;; Show garbage collections in minibuffer
-(setq garbage-collection-messages t)
-
-;; Increase how much is read from processes in a single chunk (default is 4kb)
+;; Increase how much is read from processes in a single chunk (default is 4kb).
+;; This is further increased elsewhere, where needed (like our LSP module).
 (setq read-process-output-max (* 1024 1024))  ;; 1mb
 
 ;; Don't ping things that look like domain names.
@@ -56,7 +52,12 @@
 
 ;; Speed up startup
 (setq auto-mode-case-fold nil)  
-(setq idle-update-delay 1.0)
+
+;; Get rid of "For information about GNU Emacs..." message at startup, unless
+;; we're in a daemon session where it'll say "Starting Emacs daemon." instead,
+;; which isn't so bad.
+(unless (daemonp)
+  (advice-add #'display-startup-echo-area-message :override #'ignore))
 
 ;; Mac 的 native fullscreen 会导致白屏和左右滑动问题，故使用传统全屏模式。
 (when (eq system-type 'darwin)
