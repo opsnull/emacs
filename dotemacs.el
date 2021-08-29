@@ -4,6 +4,7 @@
                          ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
 (package-initialize)
 (unless package-archive-contents (package-refresh-contents))
+(setq package-native-compile t)
 
 (setq use-package-always-ensure t
       use-package-always-demand t)
@@ -11,6 +12,52 @@
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
+
+;; Increase how much is read from processes in a single chunk (default is 4kb).
+(setq read-process-output-max (* 1024 1024))  ;; 1MB
+
+;; Don't ping things that look like domain names.
+(setq ffap-machine-p-known 'reject)
+
+;; Speed up startup
+(setq auto-mode-case-fold nil)  
+
+;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
+(setq idle-update-delay 1.0)  ; default is 0.5
+
+;; Disable bidirectional text scanning for a modest performance boost.
+(setq-default bidi-display-reordering 'left-to-right
+              bidi-paragraph-direction 'left-to-right)
+
+;; Disabling the BPA makes redisplay faster, but might produce incorrect display
+;; reordering of bidirectional text with embedded parentheses and other bracket
+;; characters whose 'paired-bracket' Unicode property is non-nil.
+(setq bidi-inhibit-bpa t)  ; Emacs 27 only
+
+;; Resizing the Emacs frame can be a terribly expensive part of changing the
+;; font. By inhibiting this, we halve startup times, particularly when we use
+;; fonts that are larger than the system default (which would resize the frame).
+(setq frame-inhibit-implied-resize t)
+
+(setq jit-lock-defer-time 0.25)
+
+;; Introduced in Emacs HEAD (b2f8c9f), this inhibits fontification while
+;; receiving input, which should help a little with scrolling performance.
+(setq redisplay-skip-fontification-on-input t)
+
+;; Garbage Collector Magic Hack
+;; The GC introduces annoying pauses and stuttering into our Emacs experience,
+;; so we use `gcmh' to stave off the GC while we're using Emacs, and provoke it
+;; when it's idle.
+(use-package gcmh
+  :init
+  ;; Debug：Show garbage collections in minibuffer
+  ;;(setq garbage-collection-messages t)
+  ;;(setq gcmh-verbose t)
+  (setq gcmh-idle-delay 0.5
+        gcmh-high-cons-threshold (* 64 1024 1024))
+  (gcmh-mode)
+  (gcmh-set-high-threshold))
 
 (use-package exec-path-from-shell
   :custom
@@ -27,14 +74,13 @@
 (use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
 (setq inhibit-startup-screen t
-      inhibit-startup-message t
-      initial-major-mode 'fundamental-mode
-      inhibit-startup-echo-area-message t
-      initial-scratch-message nil)
+  inhibit-startup-message t
+  initial-major-mode 'fundamental-mode
+  inhibit-startup-echo-area-message t
+  initial-scratch-message nil)
 
 (setq frame-resize-pixelwise t)
 
-(global-font-lock-mode t)
 (transient-mark-mode t)
 
 (show-paren-mode t)
@@ -44,7 +90,7 @@
 (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
 
 ;; 增强窗口背景对比度
-(use-package solaire-mode :hook (after-load-theme . solaire-global-mode))
+(use-package solaire-mode :config (solaire-global-mode +1))
 
 ;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
 ;; in non-focused windows.
@@ -52,6 +98,34 @@
 (setq highlight-nonselected-windows nil)
 
 ;; 主题预览: https://emacsthemes.com/
+(use-package material-theme :defer t)
+(use-package monokai-theme :defer t)
+(use-package github-theme :defer t)
+(use-package srcery-theme :defer t)
+(use-package nimbus-theme :defer t)
+(use-package espresso-theme :defer t)
+(use-package twilight-bright-theme :defer t)
+(use-package modus-themes
+  :defer t
+  :init
+  (setq modus-themes-italic-constructs t
+	modus-themes-bold-constructs nil
+	modus-themes-region '(bg-only no-extend)
+	modus-themes-variable-pitch-ui t
+	modus-themes-variable-pitch-headings t
+	modus-themes-scale-headings t
+	modus-themes-scale-1 1.1
+	modus-themes-scale-2 1.15
+	modus-themes-scale-3 1.21
+	modus-themes-scale-4 1.27
+	modus-themes-scale-title 1.33)
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
+  :config
+  ;;(modus-themes-load-operandi)
+  ;;(modus-themes-load-vivendi)
+  (add-hook 'modus-themes-after-load-theme-hook #'my/faces))
+
 (use-package doom-themes
   :custom-face (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
   :custom
@@ -65,20 +139,14 @@
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
-(defun my/load-light-theme ()
-  (interactive)
-  (load-theme 'doom-dracula t))
-
-(defun my/load-dark-theme ()
-  (interactive)
-  (load-theme 'doom-monokai-pro t))
-
 ;; 跟随 Mac 变化主题
+(defun my/load-light-theme () (interactive) (load-theme 'doom-dracula t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-monokai-pro t))
 (add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
+	  (lambda (appearance)
+	    (pcase appearance
+	  ('light (my/load-light-theme))
+	  ('dark (my/load-dark-theme)))))
 
 ;; (add-hook 'after-init-hook
 ;;           (lambda () (load-theme 'doom-dracula t))
@@ -89,10 +157,10 @@
 (size-indication-mode -1)
 (display-time-mode t)
 (setq display-time-24hr-format t
-      display-time-default-load-average nil
-      display-time-load-average-threshold 5
-      display-time-format "%m/%d[%u]%H:%M"
-      display-time-day-and-date t)
+  display-time-default-load-average nil
+  display-time-load-average-threshold 5
+  display-time-format "%m/%d[%u]%H:%M"
+  display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
 (use-package doom-modeline
@@ -106,15 +174,23 @@
   ;; 分支名称长度
   (doom-modeline-vcs-max-length 20)
   (doom-modeline-github nil)
-  :init (doom-modeline-mode 1))
+  :init
+  (doom-modeline-mode 1)
+  :config
+  (setq doom-modeline-height 1)
+  ;;(set-face-attribute 'mode-line nil :height 100)
+  ;;(set-face-attribute 'mode-line-inactive nil :height 100)
+  ;;(set-face-attribute 'mode-line nil :font "Iosevka SS14-14")
+  ;;(set-face-attribute 'mode-line-inactive nil :font "Iosevka SS14-14")
+  )
 
 (with-eval-after-load "doom-modeline"
   (doom-modeline-def-modeline 'main
-  ;; left-hand segment list
-  ;; 去掉 remote-host，避免编辑远程文件时卡住。
-  '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-  ;; right-hand segment list
-  '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker)))
+    ;; left-hand segment list
+    ;; 去掉 remote-host，避免编辑远程文件时卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list
+    '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker)))
 
 (use-package dashboard
   :config
@@ -125,6 +201,28 @@
   (setq dashboard-set-file-icons t)
   (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
+
+;; 显示光标位置
+(use-package beacon :config (beacon-mode 1))
+
+(defun my/faces  (&optional theme &rest _)
+  ;; Main typeface
+  (set-face-attribute 'default nil :font "Iosevka SS14-14")
+  
+  ;; Proportionately spaced typeface
+  (set-face-attribute 'variable-pitch nil :family "Iosevka SS14")
+  
+  ;; Monospaced typeface
+  (set-face-attribute 'fixed-pitch nil :family "Iosevka SS14")
+
+  (dolist (charset '(kana han symbol cjk-misc bopomofo))
+    (set-fontset-font 
+     (frame-parameter nil 'font)
+     charset
+     (font-spec :name "Sarasa Mono SC" :weight 'normal :slant 'normal :size 15.0))))
+
+(add-hook 'after-init-hook #'my/faces)
+(advice-add #'load-theme :after #'my/faces)
 
 ;; 中文：Sarasa Mono SC(中英文2:1对齐): https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
@@ -154,18 +252,13 @@
 ;; 更新字体：M-x all-the-icons-install-fonts
 (use-package all-the-icons)
 
-;; 显示光标位置
-(use-package beacon :config (beacon-mode 1))
+(global-font-lock-mode t)
 
 (use-package envrc
   :hook (after-init . envrc-global-mode)
   :config
   (with-eval-after-load 'envrc
     (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map)))
-
-(use-package selectrum :disabled :init (selectrum-mode +1))
-(use-package prescient :disabled :config (prescient-persist-mode +1))
-(use-package selectrum-prescient :disabled :init (selectrum-prescient-mode +1))
 
 (use-package vertico
   :config
@@ -182,11 +275,6 @@
   (setq completion-styles '(orderless)
         completion-category-defaults nil
         completion-category-overrides '((file (styles basic partial-completion)))))
-
-;; Editing of grep buffers, can be used together with consult-grep via embark-export.
-(use-package wgrep)
-
-(use-package savehist :init (savehist-mode))
 
 (use-package emacs
   :init
@@ -263,15 +351,14 @@
   ;; 按 C-l 手动预览，否则 buffer 列表中有大文件或远程文件时会 hang。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
+  ;; 搜索隐藏文件
   (setq consult-ripgrep-args "rg --line-buffered --color=never --max-columns=1000 --path-separator / --hidden --smart-case --no-heading --line-number --with-filename .")
-  (advice-add #'completing-read-multiple
-              :override #'consult-completing-read-multiple)
+  (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
 
   ;; (autoload 'projectile-project-root "projectile")
   ;; (setq consult-project-root-function #'projectile-project-root)
 
-  ;; 如果是远程目录文件，直接返回 nil（使用 default-directory)
-  ;; 提升远程编辑性能；
+  ;; 如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
   (setq consult-project-root-function
         (lambda ()
           (unless (file-remote-p default-directory) 
@@ -288,13 +375,6 @@
   (("M-A" . marginalia-cycle)
    :map minibuffer-local-map
    ("M-A" . marginalia-cycle)))
-
-;; minibuffer 自动补全时显示图标会导致 TRAMP 变慢，故关闭。
-(use-package all-the-icons-completion
-  :disabled :after (marginalia)
-  :config 
-  (all-the-icons-completion-mode)
-  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 (use-package embark
   :init
@@ -358,6 +438,9 @@
   (company-dabbrev-ignore-case nil)
   ;; Don't downcase the returned candidates.
   (company-dabbrev-downcase nil)
+  (company-auto-commit t)
+  ;; characters "/ ) . , ;"to trigger auto commit
+  (company-auto-commit-chars '(92  41 46 44 59))
   ;; 候选框宽度
   (company-tooltip-minimum-width 70)
   (company-tooltip-maximum-width 100)
@@ -365,7 +448,10 @@
                               message-mode
                               help-mode
                               gud-mode
-                              vterm-mode))
+                              eshell-mode
+                              vterm-mode
+                              comint-mode
+                              minibuffer-inactive-mode))
   (company-frontends '(company-pseudo-tooltip-frontend  ; always show candidates in overlay tooltip
                        company-echo-metadata-frontend))  ; show selected candidate docs in echo area
   ;; 补全后端
@@ -434,17 +520,11 @@
   (global-set-key (kbd "C-\\") 'sis-switch)
 )
 
-;; 中英文之间自动加空格
-(use-package pangu-spacing
-  :disabled
-  :config
-  ;; 只是在中英文之间显示空格
-  (global-pangu-spacing-mode 1)
-  ;; 保存时真正插入空格
-  (setq pangu-spacing-real-insert-separtor t))
-
 ;; 多光标编辑
 (use-package iedit :disabled)
+
+;; Editing of grep buffers, can be used together with consult-grep via embark-export.
+(use-package wgrep)
 
 ;; 直接在 minibuffer 中编辑 query
 (use-package isearch-mb
@@ -493,10 +573,10 @@
   (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all)
   :hook (prog-mode . symbol-overlay-mode))
 
-;; brew install ripgrep
-(use-package deadgrep :bind  ("<f5>" . deadgrep))
+;; 按照中文折行
+(setq word-wrap-by-category t)
 
-;; 打开特定后缀大文件时，优化性能；
+;; 打开特定类型大文件时，使用 fundamental-mode。
 (defun my-large-file-hook ()
   "If a file is over a given size, make the buffer read only."
   (when (and (> (buffer-size) (* 1024 1024))
@@ -522,6 +602,8 @@
   (add-hook mode (lambda () (display-line-numbers-mode 1))))
 (dolist (mode '(org-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+(setq large-file-warning-threshold nil)
 
 ;; 有道词典
 (use-package youdao-dictionary
@@ -577,11 +659,31 @@
     (advice-add #'youdao-dictionary--posframe-tip
                 :override #'my-youdao-dictionary--posframe-tip)))
 
+(use-package origami
+  :config
+  (define-prefix-command 'origami-mode-map)
+  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
+  (global-origami-mode)
+  :bind
+  (:map origami-mode-map
+        ("o" . origami-open-node)
+        ("O" . origami-open-node-recursively)
+        ("c" . origami-close-node)
+        ("C" . origami-close-node-recursively)
+        ("a" . origami-toggle-node)
+        ("A" . origami-recursively-toggle-node)
+        ("R" . origami-open-all-nodes)
+        ("M" . origami-close-all-nodes)
+        ("v" . origami-show-only-node)
+        ("k" . origami-previous-fold)
+        ("j" . origami-forward-fold)
+        ("x" . origami-reset)))
+
 (dolist (package '(org org-plus-contrib ob-go ox-reveal ox-gfm))
   (unless (package-installed-p package)
     (package-install package)))
 
-;; 使用 M-x package-install org 命令来安装，否则使用系统自带的老版本。
+;; 使用 M-x package-install org 命令来安装最新版本（否则使用系统自带的老版本）
 (use-package org
   :config
   (setq org-todo-keywords
@@ -817,31 +919,27 @@
   ;; 在当前 window 中显示 magit buffer
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
+(setq vc-follow-symlinks t)
+
 (use-package git-link
   :config
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
 
-(setq
- ;; 忽略空格
- ediff-diff-options "-w" 
- ediff-split-window-function 'split-window-horizontally)
-
 (use-package lsp-mode
-  :after (flycheck)
   :hook
   (java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
   ;;(yaml-mode . lsp)
-  (web-mode . lsp)
   ;;(js-mode . lsp)
+  (web-mode . lsp)
   (tide-mode . lsp)
   (typescript-mode . lsp)
   (dockerfile-mode . lsp)
   (lsp-mode . lsp-enable-which-key-integration)
   :custom
-  ;; 调试时开启，极大影响性能
+  ;; 调试模式（开启极大影响性能）
   (lsp-log-io nil)
   (lsp-enable-folding t)
   ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
@@ -866,8 +964,6 @@
   (lsp-signature-doc-lines 3)
   ;; 增加 IO 性能
   (process-adaptive-read-buffering nil)
-  ;; 增大同 LSP 服务器交互时读取的文件大小
-  (read-process-output-max (* 1024 1024))
   ;; refresh the highlights, lenses, links
   (lsp-idle-delay 0.1)
   (lsp-keep-workspace-alive t)
@@ -894,32 +990,36 @@
                  "[/\\\\]_build"
                  "[/\\\\]\\.clwb$"))
     (push dir lsp-file-watch-ignored-directories))
-  :bind
-  (:map lsp-mode-map
-        ("C-c f" . lsp-format-region)
-        ("C-c d" . lsp-describe-thing-at-point)
-        ("C-c a" . lsp-execute-code-action)
-        ("C-c r" . lsp-rename)))
-
-(use-package origami
-  :config
-  (define-prefix-command 'origami-mode-map)
-  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
-  (global-origami-mode)
-  :bind
-  (:map origami-mode-map
-        ("o" . origami-open-node)
-        ("O" . origami-open-node-recursively)
-        ("c" . origami-close-node)
-        ("C" . origami-close-node-recursively)
-        ("a" . origami-toggle-node)
-        ("A" . origami-recursively-toggle-node)
-        ("R" . origami-open-all-nodes)
-        ("M" . origami-close-all-nodes)
-        ("v" . origami-show-only-node)
-        ("k" . origami-previous-fold)
-        ("j" . origami-forward-fold)
-        ("x" . origami-reset)))
+  ;; https://github.com/blahgeek/emacs.d/blob/master/init.el#L954
+  ;; https://github.com/emacs-lsp/lsp-mode/issues/3062
+  ;; try to fix memory leak
+  (defun my/lsp-client-clear-leak-handlers (lsp-client)
+    "Clear leaking handlers in LSP-CLIENT."
+    (let ((response-handlers (lsp--client-response-handlers lsp-client))
+          to-delete-keys)
+      (maphash (lambda (key value)
+                 (when (> (time-convert (time-since (nth 3 value)) 'integer)
+                          (* 2 lsp-response-timeout))
+                   (push key to-delete-keys)))
+               response-handlers)
+      (when to-delete-keys
+        (message "Deleting %d handlers in %s lsp-client..."
+                 (length to-delete-keys)
+                 (lsp--client-server-id lsp-client))
+        (mapc (lambda (k) (remhash k response-handlers))
+              to-delete-keys))))
+  (defun my/lsp-clear-leak ()
+    "Clear all leaks"
+    (maphash (lambda (_ client)
+               (my/lsp-client-clear-leak-handlers client))
+             lsp-clients))
+  (setq my/lsp-clear-leak-timer (run-with-timer 5 5 #'my/lsp-clear-leak))
+:bind
+(:map lsp-mode-map
+      ("C-c f" . lsp-format-region)
+      ("C-c d" . lsp-describe-thing-at-point)
+      ("C-c a" . lsp-execute-code-action)
+      ("C-c r" . lsp-rename)))
 
 (use-package consult-lsp
   :after (lsp-mode consult)
@@ -937,24 +1037,6 @@
   :config
   (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
-
-(use-package pyenv-mode
-  :disabled :after (projectile)
-  :init
-  (add-to-list 'exec-path "~/.pyenv/shims")
-  (setenv "WORKON_HOME" "~/.pyenv/versions/")
-  :config
-  (pyenv-mode)
-  (defun projectile-pyenv-mode-set ()
-    (let ((project (projectile-project-name)))
-      (if (member project (pyenv-mode-versions))
-          (pyenv-mode-set project)
-        (pyenv-mode-unset))))
-  (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
-  :bind
-  ;; 防止和 org-mode 快捷键冲突
-  (:map pyenv-mode-map ("C-c C-u") . nil)
-  (:map pyenv-mode-map ("C-c C-s") . nil))
 
 (defun my/python-setup-shell (&rest args)
   "Set up python shell"
@@ -977,7 +1059,6 @@
         (flycheck-set-checker-executable "python-flake8" flake8)))))
 
 (use-package python
-  :after(flycheck)
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
@@ -999,8 +1080,9 @@
   (python-mode . (lambda ()
                    (require 'lsp-pyright)
                    (add-hook 'after-save-hook #'lsp-pyright-format-buffer t t)))
-  :init (when (executable-find "python3")
-          (setq lsp-pyright-python-executable-cmd "python3")))
+  :init
+  (when (executable-find "python3")
+    (setq lsp-pyright-python-executable-cmd "python3")))
 
 (use-package lsp-java
   :disabled t :after (lsp-mode company)
@@ -1092,7 +1174,8 @@ mermaid.initialize({
         markdown-gfm-additional-languages "Mermaid"))
 
 (use-package grip-mode
-  :bind (:map markdown-mode-command-map ("g" . grip-mode))
+  :bind
+  (:map markdown-mode-command-map ("g" . grip-mode))
   :config
   (setq grip-preview-use-webkit nil)
   ;; 支持网络访问（默认 localhost）
@@ -1250,7 +1333,7 @@ mermaid.initialize({
                  (side            . bottom)
                  (reusable-frames . visible)
                  (window-height   . 0.33)))
-    :hook
+  :hook
   (prog-mode . flycheck-mode))
 
 (use-package consult-flycheck
@@ -1266,87 +1349,11 @@ mermaid.initialize({
 (use-package tree-sitter
   :config
   (global-tree-sitter-mode)
-  
   ;; 对于支持的语言（查看变量 tree-sitter-major-mode-language-alist）使用
-  ;; tree-sitter提供的 tree-base 的高亮来取代内置的基于 font-lock 正则的低效模式:
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
   (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
 
 (use-package tree-sitter-langs)
-
-(use-package projectile
-  :after (treemacs)
-  :config
-  (projectile-global-mode)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-  (projectile-mode +1)
-  ;; selectrum 使用 'default，可选：'ivy、'helm、'ido、'auto
-  (setq projectile-completion-system 'default)
-  (add-hook 'projectile-after-switch-project-hook
-            (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
-  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
-  (dolist (dirs '(".cache"
-                  ".dropbox"
-                  ".git"
-                  ".hg"
-                  ".svn"
-                  ".nx"
-                  "elpa"
-                  "auto"
-                  "bak"
-                  "__pycache__"
-                  "vendor"
-                  "node_modules"
-                  "logs"
-                  "target"
-                  ".idea"
-                  "build"
-                  ".devcontainer"
-                  ".settings"
-                  ".gradle"
-                  ".vscode"))
-    (add-to-list 'projectile-globally-ignored-directories dirs))
-  (dolist (item '("GPATH"
-                  "GRTAGS"
-                  "GTAGS"
-                  "GSYMS"
-                  "TAGS"
-                  ".tags"
-                  ".classpath"
-                  ".project"
-                  ".DS_Store"
-                  "__init__.py"))
-    (add-to-list 'projectile-globally-ignored-files item))
-  (dolist (list '("\\.elc\\'"
-                  "\\.o\\'"
-                  "\\.class\\'"
-                  "\\.out\\'"
-                  "\\.pdf\\'"
-                  "\\.pyc\\'"
-                  "\\.rel\\'"
-                  "\\.rip\\'"
-                  "\\.swp\\'"
-                  "\\.iml\\'"
-                  "\\.bak\\'"
-                  "\\.log\\'"
-                  "~\\'"))
-    (add-to-list 'projectile-globally-ignored-file-suffixes list))
-  ;; Disable projectile on remote buffers
-  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
-  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
-  (defadvice projectile-project-root (around ignore-remote first activate)
-    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
-  ;; 开启 cache 后，提高性能，也可以解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
-  (setq projectile-enable-caching t)
-  (setq projectile-file-exists-remote-cache-expire (* 10 60))
-  (setq projectile-dynamic-mode-line nil)
-  ;; Make projectile to be usable in every directory (even without the presence
-  ;; of project file):
-  (setq projectile-require-project-root nil))
-
-;; C-c p s r (projectile-ripgrep)
-(use-package ripgrep :after (projectile))
-
-(use-package find-file-in-project)
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
@@ -1397,35 +1404,103 @@ mermaid.initialize({
       (`(t . t) (treemacs-git-mode 'deferred))
       (`(t . _) (treemacs-git-mode 'simple))))
   :bind
-  (:map
-   global-map
-   ("M-0"       . treemacs-select-window)
-   ("C-x t 1"   . treemacs-delete-other-windows)
-   ("C-x t t"   . treemacs)
-   ("C-x t B"   . treemacs-bookmark)
-   ("C-x t C-t" . treemacs-find-file)
-   ("C-x t M-t" . treemacs-find-tag)))
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
 
 (use-package treemacs-projectile :after (treemacs projectile))
 (use-package treemacs-magit :after (treemacs magit))
-(use-package persp-mode
-  :disabled
-  :custom
-  (persp-keymap-prefix (kbd "C-x p"))
-  :config
-  (persp-mode))
 
-(use-package treemacs-persp 
-  :disabled
-  :after (treemacs persp-mode)
-  :config
-  (treemacs-set-scope-type 'Perspectives))
+;; C-c p s r (projectile-ripgrep)
+(use-package ripgrep)
 
-;;lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
-(use-package lsp-treemacs
-  :after (lsp-mode treemacs)
+(use-package find-file-in-project
   :config
-  (lsp-treemacs-sync-mode 1))
+  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy
+  ;; slow on TRAMP buffers.
+  ;; https://github.com/mpereira/.emacs.d/#find-file-in-project
+  (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
+
+;; brew install ripgrep
+(use-package deadgrep :bind  ("<f5>" . deadgrep))
+
+(setq grep-highlight-matches t)
+
+(use-package projectile
+  :after (treemacs)
+  :config
+  (projectile-global-mode)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+  (projectile-mode +1)
+  ;; selectrum/vertico 使用 'default，可选：'ivy、'helm、'ido、'auto
+  (setq projectile-completion-system 'default)
+  (add-hook 'projectile-after-switch-project-hook
+            (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
+  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
+  (dolist (dirs '(".cache"
+                  ".dropbox"
+                  ".git"
+                  ".hg"
+                  ".svn"
+                  ".nx"
+                  "elpa"
+                  "auto"
+                  "bak"
+                  "__pycache__"
+                  "vendor"
+                  "node_modules"
+                  "logs"
+                  "target"
+                  ".idea"
+                  "build"
+                  ".devcontainer"
+                  ".settings"
+                  ".gradle"
+                  ".vscode"))
+    (add-to-list 'projectile-globally-ignored-directories dirs))
+  (dolist (item '("GPATH"
+                  "GRTAGS"
+                  "GTAGS"
+                  "GSYMS"
+                  "TAGS"
+                  ".tags"
+                  ".classpath"
+                  ".project"
+                  ".DS_Store"
+                  "__init__.py"))
+    (add-to-list 'projectile-globally-ignored-files item))
+  (dolist (list '("\\.elc\\'"
+                  "\\.o\\'"
+                  "\\.class\\'"
+                  "\\.out\\'"
+                  "\\.pdf\\'"
+                  "\\.pyc\\'"
+                  "\\.rel\\'"
+                  "\\.rip\\'"
+                  "\\.swp\\'"
+                  "\\.iml\\'"
+                  "\\.bak\\'"
+                  "\\.log\\'"
+                  "~\\'"))
+    (add-to-list 'projectile-globally-ignored-file-suffixes list))
+  
+  ;; Disable projectile on remote buffers
+  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
+  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
+  (defadvice projectile-project-root (around ignore-remote first activate)
+    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+  
+  ;; 开启 cache 解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
+  (setq projectile-enable-caching t)
+  (setq projectile-file-exists-remote-cache-expire (* 10 60))
+  (setq projectile-dynamic-mode-line nil)
+  ;; Make projectile to be usable in every directory (even without the presence
+  ;; of project file):
+  (setq projectile-require-project-root nil))
 
 ;;(shell-command "which cmake &>/dev/null || brew install cmake")
 ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
@@ -1496,32 +1571,10 @@ mermaid.initialize({
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
 ;;(global-set-key [f1] 'shell)
 
-(use-package eshell-toggle
-  :disabled
-  :custom
-  (eshell-toggle-size-fraction 3)
-  (eshell-toggle-use-projectile-root t)
-  (eshell-toggle-run-command nil)
-  (eshell-toggle-init-function #'eshell-toggle-init-ansi-term)
-  :bind
-  ("s-`" . eshell-toggle))
-
-(use-package native-complete
-  :disabled
-  :custom
-  (with-eval-after-load 'shell
-    (native-complete-setup-bash)))
-
-(use-package company-native-complete
-  :disabled
-  :after (company)
-  :custom
-  (add-to-list 'company-backends 'company-native-complete))
-
 (setq comint-prompt-read-only t)        ;;提示符只读
 (setq shell-command-completion-mode t)     ;;开启命令补全模式
 
-;; eshell 高亮模式
+;; 高亮模式
 (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
 
@@ -1558,86 +1611,109 @@ mermaid.initialize({
   (setenv "VTERM_TRAMP" "true")
   (setq tramp-remote-process-environment process-environment))
 
-(recentf-mode +1)
-(fset 'yes-or-no-p 'y-or-n-p)
 (auto-image-file-mode t)
+
+;; 自动根据 window 大小显示图片
+(setq image-transform-resize t)
+
+;; pdf 转为 png 时使用更高分辨率（默认 90）
+(setq doc-view-resolution 144)
+
+;; Provide undo/redo commands for window changes.
 (winner-mode t)
 
+;; Don't lock files.
+(setq create-lockfiles nil)
+
+;; Avoid loading old bytecode instead of newer source.
+(setq load-prefer-newer t)
+
+;; macOS modifiers.
+(when (display-graphic-p)
+  (setq mac-command-modifier 'meta)
+  (setq mac-option-modifier 'super))
+
+;; Switch to help buffer when it's opened.
+(setq help-window-select t)
+
 (require 'server)
-(unless (server-running-p)
-  (server-start))
+(unless (server-running-p) (server-start))
+
+;; 忽略空格
+(setq ediff-diff-options "-w")
+(setq ediff-split-window-function 'split-window-horizontally)
 
 ;; 记录最近 1000 次按键，可以通过 M-x view-lossage 来查看输入的内容。
 (lossage-size 1000)
 
-;; 使用单独文件保存自定义配置
-(setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
+;; Highlight current line.
+;;(global-hl-line-mode t)
 
-;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
-(setq idle-update-delay 1.0)  ; default is 0.5
+;; Keep cursor position when scrolling.
+(setq scroll-preserve-screen-position 1)
 
-;; Disable bidirectional text scanning for a modest performance boost.
-(setq-default bidi-display-reordering 'left-to-right
-              bidi-paragraph-direction 'left-to-right)
+;; Don't recenter buffer point when point goes outside window. This prevents
+;; centering the buffer when scrolling down its last line.
+(setq scroll-conservatively 100)
 
-;; Disabling the BPA makes redisplay faster, but might produce incorrect display
-;; reordering of bidirectional text with embedded parentheses and other bracket
-;; characters whose 'paired-bracket' Unicode property is non-nil.
-(setq bidi-inhibit-bpa t)  ; Emacs 27 only
-
-(setq
- ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
- bookmark-save-flag 1
- ;; pdf 转为 png 时使用更高分辨率（默认 90）
- doc-view-resolution 144
- ;; 关闭烦人的出错时的提示声
- ring-bell-function 'ignore
- byte-compile-warnings '(cl-functions)
- confirm-kill-emacs #'y-or-n-p
- ad-redefinition-action 'accept
- vc-follow-symlinks t
- large-file-warning-threshold nil
- ;; 自动根据 window 大小显示图片
- image-transform-resize t
- grep-highlight-matches t
- ns-pop-up-frames nil)
-
-;; Resizing the Emacs frame can be a terribly expensive part of changing the
-;; font. By inhibiting this, we halve startup times, particularly when we use
-;; fonts that are larger than the system default (which would resize the frame).
-(setq frame-inhibit-implied-resize t)
-
-(setq-default  
- line-spacing 1
- ;; fill-column 的值应该小于 visual-fill-column-width，
- ;; 否则居中显示时行内容会过长而被隐藏；
- fill-column 80
- comment-fill-column 0
- recentf-max-menu-items 100
- recentf-max-saved-items 100
- recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
- tab-width 4
- indent-tabs-mode nil
- debug-on-error nil
- message-log-max t
- load-prefer-newer t
- ad-redefinition-action 'accept)
-
-;; Mouse & Smooth Scroll
 ;; Make cursor movement an order of magnitude faster
 ;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag/28746
 (setq auto-window-vscroll nil)
 (setq fast-but-imprecise-scrolling 't)
-(setq jit-lock-defer-time 0.25)
-(setq fast-but-imprecise-scrolling t)
-;; Introduced in Emacs HEAD (b2f8c9f), this inhibits fontification while
-;; receiving input, which should help a little with scrolling performance.
-(setq redisplay-skip-fontification-on-input t)
 (setq scroll-step 1
       scroll-margin 0
-      scroll-conservatively 100000
-      auto-window-vscroll nil
-      scroll-preserve-screen-position t)
+      auto-window-vscroll nil)
+
+;; Remember point position between sessions.
+(require 'saveplace)
+(save-place-mode t)
+
+;; Better unique buffer names for files with the same base name.
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'forward)
+
+(fset 'yes-or-no-p 'y-or-n-p)
+(setq confirm-kill-emacs #'y-or-n-p)
+
+;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
+(setq bookmark-save-flag 1)
+
+;; 关闭出错提示声
+(setq ring-bell-function 'ignore)
+
+(setq ad-redefinition-action 'accept)
+
+;; Make Finder's "Open with Emacs" create a buffer in the existing Emacs frame.
+(setq ns-pop-up-frames nil)
+
+(recentf-mode +1)
+(use-package savehist :init (savehist-mode))
+
+(setq-default line-spacing 1
+              ;; fill-column 的值应该小于 visual-fill-column-width，
+              ;; 否则居中显示时行内容会过长而被隐藏；
+              fill-column 80
+              comment-fill-column 0
+              recentf-max-menu-items 100
+              recentf-max-saved-items 100
+              recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
+              tab-width 4
+              ;; Make it impossible to insert tabs.
+              indent-tabs-mode nil
+              debug-on-error nil
+              message-log-max t
+              load-prefer-newer t
+              ad-redefinition-action 'accept)
+
+;; 使用系统剪贴板，这样可以和其它程序相互粘贴。
+(setq x-select-enable-clipboard t)
+(setq select-enable-clipboard t)
+(setq x-select-enable-primary t)
+(setq select-enable-primary t)
+
+;; 粘贴于光标处,而不是鼠标指针处。
+(setq mouse-yank-at-point t)
+
 (unless window-system
   ;; Scroll one line at a time (less "jumpy" than defaults)
   (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
@@ -1646,21 +1722,9 @@ mermaid.initialize({
   (xterm-mouse-mode t)
   (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
   (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
-  (setq 
-   use-file-dialog nil
-   use-dialog-box nil
-   next-screen-context-lines 5
-   ;; Emacs 和外部程序的粘贴
-   x-select-enable-clipboard t
-   select-enable-primary t
-   select-enable-clipboard t
-   ;; 粘贴于光标处,而不是鼠标指针处
-   mouse-yank-at-point t))
-
-;; Mac 的 Command 键当做 meta 使用
-(when (display-graphic-p)
-  (setq mac-command-modifier 'meta)
-  (setq mac-option-modifier 'super))
+  (setq use-file-dialog nil
+        use-dialog-box nil
+        next-screen-context-lines 5))
 
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
@@ -1668,20 +1732,31 @@ mermaid.initialize({
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
 ;; buffer 智能分组（取代 ibuffer）
-(use-package bufler
-  :config
-  (global-set-key (kbd "C-x C-b") 'bufler))
+(use-package bufler :config (global-set-key (kbd "C-x C-b") 'bufler))
 
-(setq dired-recursive-deletes t
-      ;; 打开两个 Dired 窗口（如本地和远程），方便相互 Copy。
-      dired-dwim-target t
-      dired-recursive-copies t)
-(put 'dired-find-alternate-file 'disabled nil)
+(with-eval-after-load 'dired
+  ;; re-use dired buffer, available in Emacs 28
+  ;; @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
+  (setq dired-kill-when-opening-new-dired-buffer t)
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
+   ;; search file name only when focus is over file
+  (setq dired-isearch-filenames 'dwim)
+  ;; when there is two dired buffer, Emacs will select another buffer
+  ;; as target buffer (target for copying files, for example).
+  ;; It's similar to windows commander.
+  (setq dired-dwim-target t)
+  ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
+  (setq dired-listing-switches "-laGh1v --group-directories-first")
+  (dired-async-mode 1)
+  (put 'dired-find-alternate-file 'disabled nil))
+
 ;; dired 显示高亮增强
 (use-package diredfl :config (diredfl-global-mode))
 
 ;; 管理 minior mode
 (use-package manage-minor-mode)
+(defvar hidden-minor-modes '(whitespace-mode))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
@@ -1697,6 +1772,7 @@ mermaid.initialize({
 (setq auto-save-list-file-prefix autosave-dir
       auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 
+;; UTF8 stuff.
 (prefer-coding-system 'utf-8)
 (setq locale-coding-system 'utf-8
       default-buffer-file-coding-system 'utf-8)
@@ -1707,24 +1783,6 @@ mermaid.initialize({
 (setenv "LANG" "zh_CN.UTF-8")
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
-
-;; 按照中文折行
-(setq word-wrap-by-category t)
-
-;; Garbage Collector Magic Hack
-;; The GC introduces annoying pauses and stuttering into our Emacs experience,
-;; so we use `gcmh' to stave off the GC while we're using Emacs, and provoke it
-;; when it's idle.
-(defvar hidden-minor-modes '(whitespace-mode))
-(use-package gcmh
-  :init
-  ;; Show garbage collections in minibuffer
-  ;;(setq garbage-collection-messages t)
-  ;;(setq gcmh-verbose t)
-  (setq gcmh-idle-delay 0.5
-        gcmh-high-cons-threshold (* 32 1024 1024))
-  (gcmh-mode)
-  (gcmh-set-high-threshold))
 
 ;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
@@ -1761,3 +1819,83 @@ mermaid.initialize({
                     (setq xwidget-webkit-bookmark-jump-new-session t)
                   (setq xwidget-webkit-bookmark-jump-new-session nil)
                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+
+;; 中英文之间自动加空格
+(use-package pangu-spacing
+  :disabled
+  :config
+  ;; 只是在中英文之间显示空格
+  (global-pangu-spacing-mode 1)
+  ;; 保存时真正插入空格
+  (setq pangu-spacing-real-insert-separtor t))
+
+(use-package eshell-toggle
+  :disabled
+  :custom
+  (eshell-toggle-size-fraction 3)
+  (eshell-toggle-use-projectile-root t)
+  (eshell-toggle-run-command nil)
+  (eshell-toggle-init-function #'eshell-toggle-init-ansi-term)
+  :bind
+  ("s-`" . eshell-toggle))
+
+(use-package native-complete
+  :disabled
+  :custom
+  (with-eval-after-load 'shell
+    (native-complete-setup-bash)))
+
+(use-package company-native-complete
+  :disabled
+  :after (company)
+  :custom
+  (add-to-list 'company-backends 'company-native-complete))
+
+(use-package persp-mode
+  :disabled
+  :custom
+  (persp-keymap-prefix (kbd "C-x p"))
+  :config
+  (persp-mode))
+
+(use-package treemacs-persp 
+  :disabled
+  :after (treemacs persp-mode)
+  :config
+  (treemacs-set-scope-type 'Perspectives))
+
+;;lsp-treemacs 在 treemacs 显示文件的 symbol、errors 和 hierarchy：
+(use-package lsp-treemacs
+  :after (lsp-mode treemacs)
+  :disabled
+  :config
+  (lsp-treemacs-sync-mode 1))
+
+;; minibuffer 自动补全时显示图标会导致 TRAMP 变慢，故关闭。
+(use-package all-the-icons-completion
+  :disabled :after (marginalia)
+  :config 
+  (all-the-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
+
+(use-package pyenv-mode
+  :disabled :after (projectile)
+  :init
+  (add-to-list 'exec-path "~/.pyenv/shims")
+  (setenv "WORKON_HOME" "~/.pyenv/versions/")
+  :config
+  (pyenv-mode)
+  (defun projectile-pyenv-mode-set ()
+    (let ((project (projectile-project-name)))
+      (if (member project (pyenv-mode-versions))
+          (pyenv-mode-set project)
+        (pyenv-mode-unset))))
+  (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
+  :bind
+  ;; 防止和 org-mode 快捷键冲突
+  (:map pyenv-mode-map ("C-c C-u") . nil)
+  (:map pyenv-mode-map ("C-c C-s") . nil))
+
+(use-package selectrum :disabled :init (selectrum-mode +1))
+(use-package prescient :disabled :config (prescient-persist-mode +1))
+(use-package selectrum-prescient :disabled :init (selectrum-prescient-mode +1))
