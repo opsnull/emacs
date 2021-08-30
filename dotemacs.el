@@ -190,7 +190,7 @@
     ;; 去掉 remote-host，避免编辑远程文件时卡住。
     '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
     ;; right-hand segment list
-    '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker)))
+    '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker "    ")))
 
 (use-package dashboard
   :config
@@ -205,16 +205,17 @@
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 
+;; https://protesilaos.com/codelog/2020-09-05-emacs-note-mixed-font-heights/
+;; https://www.emacswiki.org/emacs/SetFonts
 (defun my/faces  (&optional theme &rest _)
+  ;; 英文字体
   ;; Main typeface
   (set-face-attribute 'default nil :font "Iosevka SS14-14")
-  
-  ;; Proportionately spaced typeface
+    ;; Proportionately spaced typeface
   (set-face-attribute 'variable-pitch nil :family "Iosevka SS14")
-  
-  ;; Monospaced typeface
+    ;; Monospaced typeface
   (set-face-attribute 'fixed-pitch nil :family "Iosevka SS14")
-
+  ;; 中文字体
   (dolist (charset '(kana han symbol cjk-misc bopomofo))
     (set-fontset-font 
      (frame-parameter nil 'font)
@@ -228,12 +229,16 @@
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 (use-package cnfonts
+  :after (doom-themes doom-modeline)
   :init
   (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
   :config
   ;; 设置不同标题中文字体大小不同(如 lenven 主题)
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
+
+;; 更新字体：M-x all-the-icons-install-fonts
+(use-package all-the-icons :after (doom-themes doom-modeline cnfonts))
 
 ;; Font compacting can be terribly expensive, especially for rendering icon
 ;; fonts on Windows. Whether disabling it has a notable affect on Linux and Mac
@@ -248,9 +253,6 @@
 
 ;; Emoji 字体
 (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend)
-
-;; 更新字体：M-x all-the-icons-install-fonts
-(use-package all-the-icons)
 
 (global-font-lock-mode t)
 
