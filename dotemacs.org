@@ -404,7 +404,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
       ;; 去掉 remote-host，避免编辑远程文件时卡住。
       '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
       ;; right-hand segment list，尾部增加空格，避免溢出。
-      '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "    ")))
+      '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  ")))
   
   (use-package dashboard
     :config
@@ -543,7 +543,8 @@ lsp-workspace-restart= 命令来重启语言服务器。
   :init
   (setq completion-styles '(orderless)
         completion-category-defaults nil
-        completion-category-overrides '((file (styles basic partial-completion)))))
+        completion-category-overrides '((file (styles basic partial-completion)))
+        orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex )))
 
 (use-package emacs
   :init

@@ -189,8 +189,8 @@
     ;; left-hand segment list
     ;; 去掉 remote-host，避免编辑远程文件时卡住。
     '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list
-    '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker "    ")))
+    ;; right-hand segment list，尾部增加空格，避免溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  ")))
 
 (use-package dashboard
   :config
@@ -276,7 +276,8 @@
   :init
   (setq completion-styles '(orderless)
         completion-category-defaults nil
-        completion-category-overrides '((file (styles basic partial-completion)))))
+        completion-category-overrides '((file (styles basic partial-completion)))
+        orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex )))
 
 (use-package emacs
   :init
