@@ -281,143 +281,157 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 ** 主题
 
 #+begin_src emacs-lisp
-  (tool-bar-mode -1)
-  (scroll-bar-mode -1)
-  (menu-bar-mode -1)
-  
-  (use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
-  
-  (setq inhibit-startup-screen t
-	inhibit-startup-message t
-	initial-major-mode 'fundamental-mode
-	inhibit-startup-echo-area-message t
-	initial-scratch-message nil)
-  
-  (setq frame-resize-pixelwise t)
-  
-  (transient-mark-mode t)
-  
-  (show-paren-mode t)
-  (setq show-paren-style 'parentheses)
-  
-  (setq-default indicate-empty-lines t)
-  (when (not indicate-empty-lines) (toggle-indicate-empty-lines))
-  
-  ;; 增强窗口背景对比度
-  (use-package solaire-mode :config (solaire-global-mode +1))
-  
-  ;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
-  ;; in non-focused windows.
-  (setq-default cursor-in-non-selected-windows nil)
-  (setq highlight-nonselected-windows nil)
-  
-  ;; 主题预览: https://emacsthemes.com/
-  (use-package material-theme :defer t)
-  (use-package monokai-theme :defer t)
-  (use-package github-theme :defer t)
-  (use-package srcery-theme :defer t)
-  (use-package nimbus-theme :defer t)
-  (use-package espresso-theme :defer t)
-  (use-package twilight-bright-theme :defer t)
-  (use-package modus-themes
-    :defer t
-    :init
-    (setq modus-themes-italic-constructs t
-	  modus-themes-bold-constructs nil
-	  modus-themes-region '(bg-only no-extend)
-	  modus-themes-variable-pitch-ui t
-	  modus-themes-variable-pitch-headings t
-	  modus-themes-scale-headings t
-	  modus-themes-scale-1 1.1
-	  modus-themes-scale-2 1.15
-	  modus-themes-scale-3 1.21
-	  modus-themes-scale-4 1.27
-	  modus-themes-scale-title 1.33)
-    ;; Load the theme files before enabling a theme
-    (modus-themes-load-themes)
-    :config
-    ;;(modus-themes-load-operandi)
-    ;;(modus-themes-load-vivendi)
-    (add-hook 'modus-themes-after-load-theme-hook #'my/faces))
-  
-  (use-package doom-themes
-    :custom-face (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-    :custom
-    (doom-themes-enable-bold t)
-    (doom-themes-enable-italic t)
-    (doom-themes-treemacs-theme "doom-colors")
-    :config
-    (load-theme 'doom-gruvbox t)
-    ;; Enable flashing mode-line on errors
-    (doom-themes-visual-bell-config)
-    (doom-themes-treemacs-config)
-    (doom-themes-org-config))
-  
-  ;; 跟随 Mac 变化主题
-  (defun my/load-light-theme () (interactive) (load-theme 'doom-dracula t))
-  (defun my/load-dark-theme () (interactive) (load-theme 'doom-monokai-pro t))
-  (add-hook 'ns-system-appearance-change-functions
-	    (lambda (appearance)
-	      (pcase appearance
-		('light (my/load-light-theme))
-		('dark (my/load-dark-theme)))))
-  
-  ;; (add-hook 'after-init-hook
-  ;;           (lambda () (load-theme 'doom-dracula t))
-  ;;           'append)
-  
-  (display-battery-mode t)
-  (column-number-mode t)
-  (size-indication-mode -1)
-  (display-time-mode t)
-  (setq display-time-24hr-format t
-	display-time-default-load-average nil
-	display-time-load-average-threshold 5
-	display-time-format "%m/%d[%u]%H:%M"
-	display-time-day-and-date t)
-  (setq indicate-buffer-boundaries (quote left))
-  
-  (use-package doom-modeline
-    :custom
-    ;; 不显示换行和编码，节省空间
-    (doom-modeline-buffer-encoding nil)
-    ;; 显示语言版本（go、python 等）
-    (doom-modeline-env-version t)
-    ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
-    (doom-modeline-buffer-file-name-style 'file-name)
-    ;; 分支名称长度
-    (doom-modeline-vcs-max-length 20)
-    (doom-modeline-github nil)
-    :init
-    (doom-modeline-mode 1)
-    :config
-    (setq doom-modeline-height 1)
-    ;;(set-face-attribute 'mode-line nil :height 100)
-    ;;(set-face-attribute 'mode-line-inactive nil :height 100)
-    ;;(set-face-attribute 'mode-line nil :font "Iosevka SS14-14")
-    ;;(set-face-attribute 'mode-line-inactive nil :font "Iosevka SS14-14")
-    )
-  
-  (with-eval-after-load "doom-modeline"
-    (doom-modeline-def-modeline 'main
-      ;; left-hand segment list
-      ;; 去掉 remote-host，避免编辑远程文件时卡住。
-      '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-      ;; right-hand segment list，尾部增加空格，避免溢出。
-      '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  ")))
-  
-  (use-package dashboard
-    :config
-    (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
-    (setq dashboard-center-content t)
-    (setq dashboard-set-heading-icons t)
-    (setq dashboard-set-navigator t)
-    (setq dashboard-set-file-icons t)
-    (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
-    (dashboard-setup-startup-hook))
-  
-  ;; 显示光标位置
-  (use-package beacon :config (beacon-mode 1))
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(menu-bar-mode -1)
+
+(use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+
+(setq inhibit-startup-screen t
+      inhibit-startup-message t
+      initial-major-mode 'fundamental-mode
+      inhibit-startup-echo-area-message t
+      initial-scratch-message nil)
+
+(setq frame-resize-pixelwise t)
+
+(transient-mark-mode t)
+
+(show-paren-mode t)
+(setq show-paren-style 'parentheses)
+
+(setq-default indicate-empty-lines t)
+(when (not indicate-empty-lines) (toggle-indicate-empty-lines))
+
+;; 增强窗口背景对比度
+(use-package solaire-mode :config (solaire-global-mode +1))
+
+;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
+;; in non-focused windows.
+(setq-default cursor-in-non-selected-windows nil)
+(setq highlight-nonselected-windows nil)
+
+;; 主题预览: https://emacsthemes.com/
+(use-package material-theme :defer t)
+(use-package monokai-theme :defer t)
+(use-package github-theme :defer t)
+(use-package srcery-theme :defer t)
+(use-package nimbus-theme :defer t)
+(use-package espresso-theme :defer t)
+(use-package twilight-bright-theme :defer t)
+(use-package modus-themes
+  :defer t
+  :init
+  (setq modus-themes-italic-constructs t
+	    modus-themes-bold-constructs nil
+	    modus-themes-region '(bg-only no-extend)
+	    modus-themes-variable-pitch-ui t
+	    modus-themes-variable-pitch-headings t
+	    modus-themes-scale-headings t
+	    modus-themes-scale-1 1.1
+	    modus-themes-scale-2 1.15
+	    modus-themes-scale-3 1.21
+	    modus-themes-scale-4 1.27
+	    modus-themes-scale-title 1.33)
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
+  :config
+  ;;(modus-themes-load-operandi)
+  ;;(modus-themes-load-vivendi)
+  (add-hook 'modus-themes-after-load-theme-hook #'my/faces))
+
+(use-package doom-themes
+  :custom-face (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  (doom-themes-treemacs-theme "doom-colors")
+  :config
+  (load-theme 'doom-gruvbox t)
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
+
+;; 跟随 Mac 变化主题
+(defun my/load-light-theme () (interactive) (load-theme 'doom-dracula t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-monokai-pro t))
+(add-hook 'ns-system-appearance-change-functions
+	      (lambda (appearance)
+	        (pcase appearance
+	          ('light (my/load-light-theme))
+	          ('dark (my/load-dark-theme)))))
+
+;; (add-hook 'after-init-hook
+;;           (lambda () (load-theme 'doom-dracula t))
+;;           'append)
+
+(display-battery-mode t)
+(column-number-mode t)
+(size-indication-mode -1)
+(display-time-mode t)
+(setq display-time-24hr-format t
+      display-time-default-load-average nil
+      display-time-load-average-threshold 5
+      display-time-format "%m/%d[%u]%H:%M"
+      display-time-day-and-date t)
+(setq indicate-buffer-boundaries (quote left))
+
+(use-package doom-modeline
+  :custom
+  ;; 不显示换行和编码，节省空间
+  (doom-modeline-buffer-encoding nil)
+  ;; 显示语言版本（go、python 等）
+  (doom-modeline-env-version t)
+  ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
+  (doom-modeline-buffer-file-name-style 'file-name)
+  ;; 分支名称长度
+  (doom-modeline-vcs-max-length 20)
+  (doom-modeline-github nil)
+  :init
+  (doom-modeline-mode 1)
+  :config
+  (setq doom-modeline-height 1)
+  ;;(set-face-attribute 'mode-line nil :height 100)
+  ;;(set-face-attribute 'mode-line-inactive nil :height 100)
+  ;;(set-face-attribute 'mode-line nil :font "Iosevka SS14-14")
+  ;;(set-face-attribute 'mode-line-inactive nil :font "Iosevka SS14-14")
+  )
+
+(with-eval-after-load "doom-modeline"
+  (doom-modeline-def-modeline 'main
+    ;; left-hand segment list
+    ;; 去掉 remote-host，避免编辑远程文件时卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  ")))
+
+(use-package dashboard
+  :config
+  (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
+  (setq dashboard-center-content t)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
+  (dashboard-setup-startup-hook))
+
+;; 显示光标位置
+(use-package beacon :config (beacon-mode 1))
+
+(use-package mini-frame
+  :config
+  ;; 根据光标位置显示 frame 。
+    (setq mini-frame-show-parameters                                        
+        (lambda ()                                                                
+          (let* ((info (posframe-poshandler-argbuilder))
+                 (posn (posframe-poshandler-point-bottom-left-corner info))
+                 (left (car posn))
+                 (top (cdr posn)))
+            `((left . ,left)
+              (top . ,top)))))
+  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
+  (mini-frame-mode))
 #+end_src
 
 ** 字体
