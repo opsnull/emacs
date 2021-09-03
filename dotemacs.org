@@ -543,8 +543,21 @@ lsp-workspace-restart= 命令来重启语言服务器。
   :init
   (setq completion-styles '(orderless)
         completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
+
+(use-package orderless
+  :config
+  (setq completion-styles '(orderless)
         completion-category-overrides '((file (styles basic partial-completion)))
-        orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex )))
+        ;;orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex)
+        ;; 按空格和& 时自动选择
+        orderless-component-separator "[ &]"))
+
+;; 对 company 候选者添加高亮
+(defun just-one-face (fn &rest args)
+  (let ((orderless-match-faces [completions-common-part]))
+    (apply fn args)))
+(advice-add 'company-capf--candidates :around #'just-one-face)
 
 (use-package emacs
   :init
@@ -721,9 +734,6 @@ mode 能很好协作：
   (company-dabbrev-ignore-case nil)
   ;; Don't downcase the returned candidates.
   (company-dabbrev-downcase nil)
-  (company-auto-commit t)
-  ;; characters "/ ) . , ;"to trigger auto commit
-  (company-auto-commit-chars '(92  41 46 44 59))
   ;; 候选框宽度
   (company-tooltip-minimum-width 70)
   (company-tooltip-maximum-width 100)
@@ -731,12 +741,7 @@ mode 能很好协作：
                               message-mode
                               help-mode
                               gud-mode
-                              eshell-mode
-                              vterm-mode
-                              comint-mode
-                              minibuffer-inactive-mode))
-  (company-frontends '(company-pseudo-tooltip-frontend  ; always show candidates in overlay tooltip
-                       company-echo-metadata-frontend))  ; show selected candidate docs in echo area
+                              eshell-mode))
   ;; 补全后端
   (company-backends '(company-capf
                       (company-dabbrev-code company-keywords company-files)
@@ -752,7 +757,6 @@ mode 能很好协作：
 #+begin_src emacs-lisp
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
-  :after (company)
   :commands yas-minor-mode
   :config
   (global-set-key (kbd "C-c s") 'company-yasnippet)
@@ -773,13 +777,6 @@ company-box 为候选者显示图标和帮助文档：
   ;;(setq company-box-doc-enable nil)
   (setq company-box-doc-delay 0.1)
   :hook (company-mode . company-box-mode))
-#+end_src
-
-company-prescient 精准排序：
-#+begin_src emacs-lisp
-(use-package company-prescient
-  :after (company prescient)
-  :init (company-prescient-mode +1))
 #+end_src
 
 * 快速跳转
@@ -2157,14 +2154,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
-  ;; 远程登录后自动执行的命令，用于确保远程终端执行了 vterm 初始化代码。
-  ;; https://github.com/jixiuf/vterm-toggle/issues/7
-  (defun vterm-toggle-after-ssh-login (method user host port localdir)
-    (when (string-equal "ssh" method)
-      (vterm-send-string "export VTERM_TRAMP=true; source ~/.emacs_bashrc &>/dev/null || source ~/.bashrc; clear")
-      (vterm-send-return)))
-  (add-hook 'vterm-toggle-after-remote-login-function 'vterm-toggle-after-ssh-login)
-
   ;; 在 side-window 显示窗口，side-window 会一直显示，为 vterm mode 专用（不能最大化），
   ;; vterm-toggle-forward 和  'vterm-toggle-backward 也都显示在这个 side-window 中。
   (setq vterm-toggle-fullscreen-p nil)
@@ -2190,7 +2179,6 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
 + ~$(hostname)~ 和 =${HOSTNAME}= 返回的必须是 PS1 显示的主机名，否则[[https://github.com/akermu/emacs-libvterm/issues/369][可能匹配失败]]，这
   时可以可以手动主机名；
 + 以上脚本保存到登录机器的 =~/.emacs_bashrc= 文件中，vterm 会自动执行；
-
 ** eshell
 
 #+begin_src emacs-lisp
@@ -2559,5 +2547,9 @@ pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pye
 (use-package selectrum :disabled :init (selectrum-mode +1))
 (use-package prescient :disabled :config (prescient-persist-mode +1))
 (use-package selectrum-prescient :disabled :init (selectrum-prescient-mode +1))
-#+end_src
 
+;;company-prescient 精准排序：
+(use-package company-prescient
+  :after (company prescient)
+  :init (company-prescient-mode +1))
+#+end_src

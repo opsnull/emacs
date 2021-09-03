@@ -276,8 +276,21 @@
   :init
   (setq completion-styles '(orderless)
         completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
+
+(use-package orderless
+  :config
+  (setq completion-styles '(orderless)
         completion-category-overrides '((file (styles basic partial-completion)))
-        orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex )))
+        ;;orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex)
+        ;; 按空格和& 时自动选择
+        orderless-component-separator "[ &]"))
+
+;; 对 company 候选者添加高亮
+(defun just-one-face (fn &rest args)
+  (let ((orderless-match-faces [completions-common-part]))
+    (apply fn args)))
+(advice-add 'company-capf--candidates :around #'just-one-face)
 
 (use-package emacs
   :init
@@ -441,9 +454,6 @@
   (company-dabbrev-ignore-case nil)
   ;; Don't downcase the returned candidates.
   (company-dabbrev-downcase nil)
-  (company-auto-commit t)
-  ;; characters "/ ) . , ;"to trigger auto commit
-  (company-auto-commit-chars '(92  41 46 44 59))
   ;; 候选框宽度
   (company-tooltip-minimum-width 70)
   (company-tooltip-maximum-width 100)
@@ -451,12 +461,7 @@
                               message-mode
                               help-mode
                               gud-mode
-                              eshell-mode
-                              vterm-mode
-                              comint-mode
-                              minibuffer-inactive-mode))
-  (company-frontends '(company-pseudo-tooltip-frontend  ; always show candidates in overlay tooltip
-                       company-echo-metadata-frontend))  ; show selected candidate docs in echo area
+                              eshell-mode))
   ;; 补全后端
   (company-backends '(company-capf
                       (company-dabbrev-code company-keywords company-files)
@@ -466,7 +471,6 @@
 
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
-  :after (company)
   :commands yas-minor-mode
   :config
   (global-set-key (kbd "C-c s") 'company-yasnippet)
@@ -481,10 +485,6 @@
   ;;(setq company-box-doc-enable nil)
   (setq company-box-doc-delay 0.1)
   :hook (company-mode . company-box-mode))
-
-(use-package company-prescient
-  :after (company prescient)
-  :init (company-prescient-mode +1))
 
 (use-package goto-chg
   :config
@@ -1546,14 +1546,6 @@ mermaid.initialize({
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
-  ;; 远程登录后自动执行的命令，用于确保远程终端执行了 vterm 初始化代码。
-  ;; https://github.com/jixiuf/vterm-toggle/issues/7
-  (defun vterm-toggle-after-ssh-login (method user host port localdir)
-    (when (string-equal "ssh" method)
-      (vterm-send-string "export VTERM_TRAMP=true; source ~/.emacs_bashrc &>/dev/null || source ~/.bashrc; clear")
-      (vterm-send-return)))
-  (add-hook 'vterm-toggle-after-remote-login-function 'vterm-toggle-after-ssh-login)
-
   ;; 在 side-window 显示窗口，side-window 会一直显示，为 vterm mode 专用（不能最大化），
   ;; vterm-toggle-forward 和  'vterm-toggle-backward 也都显示在这个 side-window 中。
   (setq vterm-toggle-fullscreen-p nil)
@@ -1902,3 +1894,8 @@ mermaid.initialize({
 (use-package selectrum :disabled :init (selectrum-mode +1))
 (use-package prescient :disabled :config (prescient-persist-mode +1))
 (use-package selectrum-prescient :disabled :init (selectrum-prescient-mode +1))
+
+;;company-prescient 精准排序：
+(use-package company-prescient
+  :after (company prescient)
+  :init (company-prescient-mode +1))
