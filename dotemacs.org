@@ -68,27 +68,10 @@ brew link --overwrite emacs-plus@28
 ln -sf /usr/local/opt/emacs-plus@28/Emacs.app /Applications
 #+end_src
 
-如果通过下载的 Emacs dmg 包来安装，可以在 ~/.bashrc 中添加如下配置：
-#+begin_src shell :results none
-if [ -f "/Applications/Emacs.app/Contents/MacOS/Emacs" ]; then
-    export EMACS="/Applications/Emacs.app/Contents/MacOS/Emacs"
-    alias emacs="$EMACS -nw"
-fi
-if [ -f "/Applications/Emacs.app/Contents/MacOS/bin/emacsclient" ]; then
-    alias emacsclient="/Applications/Emacs.app/Contents/MacOS/bin/emacsclient"
-    alias ec="/Applications/Emacs.app/Contents/MacOS/bin/emacsclient --create-frame"
-fi
-#+end_src
-+ 如果是 brew 安装的 Emacs，则 emacsclient 位于 /usr/local/bin/emacsclient。
-
-终端里启动 GUI Emacs 和传入命令行参数：
-#+begin_src shell :results none
-$ /Applications/Emacs.app/Contents/MacOS/Emacs -Q
-#+end_src
-
 * 外部依赖
 
-本 Emacs 配置依赖如下外部工具命令或软件包：
+需要安装如下命令或工具：
+
 #+begin_src shell :results none
 mkdir -p ~/.emacs.d/backup 
 mkdir -p ~/.emacs.d/autosave
@@ -102,14 +85,14 @@ which rg || brew install ripgrep
 which fzf || brew install fzf
 
 brew tap laishulu/macism
-brew install macism
+which macism || brew install macism
 
 pip install -q -i https://pypi.douban.com/simple/ ipython ansible
 
 go get golang.org/x/tools/gopls@latest
 
 # 关于 npm/node/yarn 等虚拟环境，参考：https://www.yuque.com/zhangjun-ibwli/iec7qs/ndvyyx#F61Lj
-brew install npm
+which npm || brew install npm
 npm install -g vscode-json-languageserver
 npm install -g yaml-language-server
 npm install -g dockerfile-language-server-nodejs
@@ -135,9 +118,8 @@ which mutool || brew install mupdf # 将 pdf 转换为 png
 which pdftotext || brew install poppler
 brew install terminal-notifier # org notify
 #+end_src
-+ =dap-chrome= 依赖 =VSCode Chrome Debug Extension，可以通过 =M-x dap-chrome-setup= 安装。
-+ 安装完 eslint npm 包后，需要在 emacs 中安装语言服务器 =M-x lsp-install-server
-  RET eslint RET= 。
++ 安装完 eslint npm 包后，需要再安装语言服务器 =M-x lsp-install-server RET eslint
+  RET= 。
 
 * 初始配置
 
@@ -312,13 +294,6 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 (setq highlight-nonselected-windows nil)
 
 ;; 主题预览: https://emacsthemes.com/
-(use-package material-theme :defer t)
-(use-package monokai-theme :defer t)
-(use-package github-theme :defer t)
-(use-package srcery-theme :defer t)
-(use-package nimbus-theme :defer t)
-(use-package espresso-theme :defer t)
-(use-package twilight-bright-theme :defer t)
 (use-package modus-themes
   :defer t
   :init
@@ -391,12 +366,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   :init
   (doom-modeline-mode 1)
   :config
-  (setq doom-modeline-height 1)
-  ;;(set-face-attribute 'mode-line nil :height 100)
-  ;;(set-face-attribute 'mode-line-inactive nil :height 100)
-  ;;(set-face-attribute 'mode-line nil :font "Iosevka SS14-14")
-  ;;(set-face-attribute 'mode-line-inactive nil :font "Iosevka SS14-14")
-  )
+  (setq doom-modeline-height 1))
 
 (with-eval-after-load "doom-modeline"
   (doom-modeline-def-modeline 'main
@@ -421,7 +391,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 
 (use-package mini-frame
   :config
-  ;; 根据光标位置显示 frame 。
+  ;; 在光标位置显示 frame 。
     (setq mini-frame-show-parameters                                        
         (lambda ()                                                                
           (let* ((info (posframe-poshandler-argbuilder))
@@ -529,19 +499,8 @@ eval "$(direnv hook bash)"
 2. 向 .envrc 文件添加 shell 环境变量;
 3. 执行 =direnv allow .= 生效环境变量;
    
-#+begin_src shell :results none
-$ echo export BAR=bar >>.envrc
-direnv: error /Users/zhangjun/codes/github/operator/.envrc is blocked. Run `direnv allow` to approve its content
-
-$ direnv allow .
-direnv: loading ~/codes/github/operator/.envrc
-direnv: export +BAR +FOO +GO111MODULE
-
-$ cd ..
-direnv: unloading
-#+end_src
-+ 如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
-lsp-workspace-restart= 命令来重启语言服务器。
+如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
+lsp-workspace-restart= 来重启语言服务器。
 
 * 增量补全
 
@@ -567,7 +526,6 @@ lsp-workspace-restart= 命令来重启语言服务器。
   (setq completion-styles '(orderless)
         ;;orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex)
         completion-category-overrides '((file (styles basic partial-completion)))))
-
 
 ;; 对 company 候选者添加高亮
 (defun just-one-face (fn &rest args)
@@ -831,29 +789,6 @@ company-box 为候选者显示图标和帮助文档：
 #+end_src
 
 * 输入法
-** SIS
-
-安装外置输入法切换工具 [[https://github.com/laishulu/macism#install][macism]]，解决 Mac 切换输入法后必须输入一个字符才能生效的问
-题。同时系统的 “快捷键”->“选择上一个输入法” 快捷键必须要开启，否则 macism [[https://github.com/laishulu/macism/issues/2][会切换
-失败]]。
-
-#+begin_src emacs-lisp
-(use-package sis
-  :disabled
-  :config
-  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  ;; 自动切换到英文的前缀快捷键
-  (push "C-;" sis-prefix-override-keys)
-  (push "M-o" sis-prefix-override-keys)
-  (push "M-g" sis-prefix-override-keys)
-  (push "M-s" sis-prefix-override-keys)
-  (sis-global-context-mode nil)
-  (sis-global-respect-mode t)
-  (global-set-key (kbd "C-\\") 'sis-switch)
-)
-#+end_src
-+ 必须在启用 =respect-mode= 之前设置 =sis-prefix-override-keys= 变量，否则变量不生效。
-
 ** RIME
 
 Mac 系统安装 RIME 输入法：
@@ -1419,12 +1354,11 @@ origami 提供代码折叠功能：
 
 magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有之一！
 #+begin_src emacs-lisp
+(setq vc-follow-symlinks t)
 (use-package magit
   :custom
   ;; 在当前 window 中显示 magit buffer
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
-
-(setq vc-follow-symlinks t)
 #+end_src
 + =(setq auto-revert-check-vc-info t)= 可以自动 revert buffer，确保 modeline 上的
   分支名正确，但是 CPU Profile 显示比较影响性能，故暂不开启。
@@ -1435,6 +1369,58 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
   :config
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
+#+end_src
+
+* 搜索比较
+** ediff
+
+ediff 时自动展开对应 org-mode section:
+#+begin_src emacs-lisp
+(use-package ediff
+  ;; Restore window config after quitting ediff
+  ;; :hook ((ediff-before-setup . ediff-save-window-conf)
+  ;;        (ediff-quit         . ediff-restore-window-conf))
+  :config
+  ;; 忽略空格
+  (setq ediff-diff-options "-w")
+  (setq ediff-split-window-function 'split-window-horizontally)
+  ;; 不创建新的 frame 来显示 Control-Panel
+  (setq ediff-window-setup-function #'ediff-setup-windows-plain)
+
+  (add-hook 'ediff-load-hook
+		    (lambda ()
+			  (add-hook 'ediff-before-setup-hook
+				        (lambda ()
+				          (setq ediff-saved-window-configuration (current-window-configuration))))
+
+			  (let ((restore-window-configuration
+				     (lambda ()
+				       (set-window-configuration ediff-saved-window-configuration))))
+			    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
+
+  ;; https://dotemacs.readthedocs.io/en/latest/#ediff
+  ;; Check for org mode and existence of buffer
+  (defun f-ediff-org-showhide (buf command &rest cmdargs)
+	"If buffer exists and is orgmode then execute command"
+	(when buf
+	  (when (eq (buffer-local-value 'major-mode (get-buffer buf)) 'org-mode)
+		(save-excursion (set-buffer buf) (apply command cmdargs)))))
+
+  (defun f-ediff-org-unfold-tree-element ()
+	"Unfold tree at diff location"
+	(f-ediff-org-showhide ediff-buffer-A 'org-reveal)
+	(f-ediff-org-showhide ediff-buffer-B 'org-reveal)
+	(f-ediff-org-showhide ediff-buffer-C 'org-reveal))
+
+  (defun f-ediff-org-fold-tree ()
+	"Fold tree back to top level"
+	(f-ediff-org-showhide ediff-buffer-A 'hide-sublevels 1)
+	(f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
+	(f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
+
+  (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
+  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)  
+  )
 #+end_src
 
 * 编程开发
@@ -2050,8 +2036,8 @@ js/jsx/ts/tsx 等类型文件。
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
 #+end_src
-+  执行 M-x dap-chrome-setup 安装 VSCode Chrome Debug Extension.
-  
++  需要执行 M-x dap-chrome-setup 安装 VSCode Chrome Debug Extension.
+
 ** yaml
 
 #+begin_src shell :results none
@@ -2451,10 +2437,6 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
 (require 'server)
 (unless (server-running-p) (server-start))
 
-;; 忽略空格
-(setq ediff-diff-options "-w")
-(setq ediff-split-window-function 'split-window-horizontally)
-
 ;; 记录最近 1000 次按键，可以通过 M-x view-lossage 来查看输入的内容。
 (lossage-size 1000)
 
@@ -2631,6 +2613,12 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
                     (setq xwidget-webkit-bookmark-jump-new-session t)
                   (setq xwidget-webkit-bookmark-jump-new-session nil)
                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
+
+;; 在帮助文档底部显示 lisp demo
+(use-package elisp-demos
+  :config
+  (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
+  (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
 #+end_src
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行
   rm 命令。
@@ -2722,7 +2710,28 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
 (use-package company-prescient
   :disabled :after (company prescient)
   :init (company-prescient-mode +1))
-
-
 #+end_src
+
+** SIS
+
+安装外置输入法切换工具 [[https://github.com/laishulu/macism#install][macism]]，解决 Mac 切换输入法后必须输入一个字符才能生效的问
+题。同时系统的 “快捷键”->“选择上一个输入法” 快捷键必须要开启，否则 macism [[https://github.com/laishulu/macism/issues/2][会切换
+失败]]。
+
+#+begin_src emacs-lisp
+(use-package sis
+  :disabled
+  :config
+  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+  ;; 自动切换到英文的前缀快捷键
+  (push "C-;" sis-prefix-override-keys)
+  (push "M-o" sis-prefix-override-keys)
+  (push "M-g" sis-prefix-override-keys)
+  (push "M-s" sis-prefix-override-keys)
+  (sis-global-context-mode nil)
+  (sis-global-respect-mode t)
+  (global-set-key (kbd "C-\\") 'sis-switch)
+)
+#+end_src
++ 必须在启用 =respect-mode= 之前设置 =sis-prefix-override-keys= 变量，否则变量不生效。
 
