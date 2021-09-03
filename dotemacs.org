@@ -440,6 +440,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 ;; https://protesilaos.com/codelog/2020-09-05-emacs-note-mixed-font-heights/
 ;; https://www.emacswiki.org/emacs/SetFonts
 (defun my/faces  (&optional theme &rest _)
+  (interactive)
   ;; 英文字体
   ;; Main typeface
   (set-face-attribute 'default nil :font "Iosevka SS14-14")
@@ -448,14 +449,24 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
     ;; Monospaced typeface
   (set-face-attribute 'fixed-pitch nil :family "Iosevka SS14")
   ;; 中文字体
-  (dolist (charset '(kana han symbol cjk-misc bopomofo))
-    (set-fontset-font 
-     (frame-parameter nil 'font)
-     charset
-     (font-spec :name "Sarasa Mono SC" :weight 'normal :slant 'normal :size 15.0))))
+  (when (display-graphic-p)
+    (dolist (charset '(kana han symbol cjk-misc bopomofo))
+      (set-fontset-font 
+       (frame-parameter nil 'font)
+       charset
+       (font-spec :name "Sarasa Mono SC" :weight 'normal :slant 'normal :size 15.0)))))
 
 (add-hook 'after-init-hook #'my/faces)
 (advice-add #'load-theme :after #'my/faces)
+
+(when (display-graphic-p)
+  ;; 更新字体：M-x fira-code-mode-install-fonts
+  (use-package fira-code-mode
+    :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+    :hook prog-mode)
+
+  ;; Emoji 字体
+  (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))  
 
 ;; 中文：Sarasa Mono SC(中英文2:1对齐): https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
@@ -477,14 +488,6 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 ;; hasn't been determined, but do it there anyway, just in case. This increases
 ;; memory usage, however!
 (setq inhibit-compacting-font-caches t)
-
-;; 更新字体：M-x fira-code-mode-install-fonts
-(use-package fira-code-mode
-  :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-  :hook prog-mode)
-
-;; Emoji 字体
-(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend)
 
 (global-font-lock-mode t)
 #+end_src
