@@ -98,13 +98,6 @@
 (setq highlight-nonselected-windows nil)
 
 ;; 主题预览: https://emacsthemes.com/
-(use-package material-theme :defer t)
-(use-package monokai-theme :defer t)
-(use-package github-theme :defer t)
-(use-package srcery-theme :defer t)
-(use-package nimbus-theme :defer t)
-(use-package espresso-theme :defer t)
-(use-package twilight-bright-theme :defer t)
 (use-package modus-themes
   :defer t
   :init
@@ -177,12 +170,7 @@
   :init
   (doom-modeline-mode 1)
   :config
-  (setq doom-modeline-height 1)
-  ;;(set-face-attribute 'mode-line nil :height 100)
-  ;;(set-face-attribute 'mode-line-inactive nil :height 100)
-  ;;(set-face-attribute 'mode-line nil :font "Iosevka SS14-14")
-  ;;(set-face-attribute 'mode-line-inactive nil :font "Iosevka SS14-14")
-  )
+  (setq doom-modeline-height 1))
 
 (with-eval-after-load "doom-modeline"
   (doom-modeline-def-modeline 'main
@@ -207,7 +195,7 @@
 
 (use-package mini-frame
   :config
-  ;; 根据光标位置显示 frame 。
+  ;; 在光标位置显示 frame 。
     (setq mini-frame-show-parameters                                        
         (lambda ()                                                                
           (let* ((info (posframe-poshandler-argbuilder))
@@ -300,7 +288,6 @@
   (setq completion-styles '(orderless)
         ;;orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex)
         completion-category-overrides '((file (styles basic partial-completion)))))
-
 
 ;; 对 company 候选者添加高亮
 (defun just-one-face (fn &rest args)
@@ -525,20 +512,6 @@
   ;; modeline 显示窗口编号
   ;;(ace-window-display-mode +1)
   (global-set-key (kbd "M-o") 'ace-window))
-
-(use-package sis
-  :disabled
-  :config
-  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  ;; 自动切换到英文的前缀快捷键
-  (push "C-;" sis-prefix-override-keys)
-  (push "M-o" sis-prefix-override-keys)
-  (push "M-g" sis-prefix-override-keys)
-  (push "M-s" sis-prefix-override-keys)
-  (sis-global-context-mode nil)
-  (sis-global-respect-mode t)
-  (global-set-key (kbd "C-\\") 'sis-switch)
-)
 
 (use-package rime
   :demand :after (which-key)
@@ -985,17 +958,62 @@
 ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
+(setq vc-follow-symlinks t)
 (use-package magit
   :custom
   ;; 在当前 window 中显示 magit buffer
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
-(setq vc-follow-symlinks t)
-
 (use-package git-link
   :config
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
+
+(use-package ediff
+  ;; Restore window config after quitting ediff
+  ;; :hook ((ediff-before-setup . ediff-save-window-conf)
+  ;;        (ediff-quit         . ediff-restore-window-conf))
+  :config
+  ;; 忽略空格
+  (setq ediff-diff-options "-w")
+  (setq ediff-split-window-function 'split-window-horizontally)
+  ;; 不创建新的 frame 来显示 Control-Panel
+  (setq ediff-window-setup-function #'ediff-setup-windows-plain)
+
+  (add-hook 'ediff-load-hook
+		    (lambda ()
+			  (add-hook 'ediff-before-setup-hook
+				        (lambda ()
+				          (setq ediff-saved-window-configuration (current-window-configuration))))
+
+			  (let ((restore-window-configuration
+				     (lambda ()
+				       (set-window-configuration ediff-saved-window-configuration))))
+			    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
+
+  ;; https://dotemacs.readthedocs.io/en/latest/#ediff
+  ;; Check for org mode and existence of buffer
+  (defun f-ediff-org-showhide (buf command &rest cmdargs)
+	"If buffer exists and is orgmode then execute command"
+	(when buf
+	  (when (eq (buffer-local-value 'major-mode (get-buffer buf)) 'org-mode)
+		(save-excursion (set-buffer buf) (apply command cmdargs)))))
+
+  (defun f-ediff-org-unfold-tree-element ()
+	"Unfold tree at diff location"
+	(f-ediff-org-showhide ediff-buffer-A 'org-reveal)
+	(f-ediff-org-showhide ediff-buffer-B 'org-reveal)
+	(f-ediff-org-showhide ediff-buffer-C 'org-reveal))
+
+  (defun f-ediff-org-fold-tree ()
+	"Fold tree back to top level"
+	(f-ediff-org-showhide ediff-buffer-A 'hide-sublevels 1)
+	(f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
+	(f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
+
+  (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
+  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)  
+  )
 
 (use-package lsp-mode
   :hook
@@ -1701,10 +1719,6 @@ mermaid.initialize({
 (require 'server)
 (unless (server-running-p) (server-start))
 
-;; 忽略空格
-(setq ediff-diff-options "-w")
-(setq ediff-split-window-function 'split-window-horizontally)
-
 ;; 记录最近 1000 次按键，可以通过 M-x view-lossage 来查看输入的内容。
 (lossage-size 1000)
 
@@ -1882,6 +1896,12 @@ mermaid.initialize({
                   (setq xwidget-webkit-bookmark-jump-new-session nil)
                   (setq xwidget-webkit-last-session-buffer (current-buffer))))))
 
+;; 在帮助文档底部显示 lisp demo
+(use-package elisp-demos
+  :config
+  (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
+  (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
+
 ;; 中英文之间自动加空格
 (use-package pangu-spacing
   :disabled
@@ -1967,3 +1987,17 @@ mermaid.initialize({
 (use-package company-prescient
   :disabled :after (company prescient)
   :init (company-prescient-mode +1))
+
+(use-package sis
+  :disabled
+  :config
+  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+  ;; 自动切换到英文的前缀快捷键
+  (push "C-;" sis-prefix-override-keys)
+  (push "M-o" sis-prefix-override-keys)
+  (push "M-g" sis-prefix-override-keys)
+  (push "M-s" sis-prefix-override-keys)
+  (sis-global-context-mode nil)
+  (sis-global-respect-mode t)
+  (global-set-key (kbd "C-\\") 'sis-switch)
+)
