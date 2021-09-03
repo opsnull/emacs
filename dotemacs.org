@@ -2442,9 +2442,8 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
 (setq load-prefer-newer t)
 
 ;; macOS modifiers.
-(when (display-graphic-p)
-  (setq mac-command-modifier 'meta)
-  (setq mac-option-modifier 'super))
+(setq mac-command-modifier 'meta)
+(setq mac-option-modifier 'super)
 
 ;; Switch to help buffer when it's opened.
 (setq help-window-select t)
@@ -2637,7 +2636,7 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
   rm 命令。
 * 归档
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :results none
 ;; 中英文之间自动加空格
 (use-package pangu-spacing
   :disabled
@@ -2696,10 +2695,7 @@ zsh 的配置可以参考 vterm 的 github 文件]]。
   (all-the-icons-completion-mode)
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
-#+end_src
-
-pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pyenv 环境的目的：
-#+begin_src emacs-lisp
+;; pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pyenv 环境的目的：
 (use-package pyenv-mode
   :disabled :after (projectile)
   :init
@@ -2724,6 +2720,9 @@ pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pye
 
 ;;company-prescient 精准排序：
 (use-package company-prescient
-  :after (company prescient)
+  :disabled :after (company prescient)
   :init (company-prescient-mode +1))
+
+
 #+end_src
+
