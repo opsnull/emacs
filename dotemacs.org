@@ -565,10 +565,9 @@ lsp-workspace-restart= 命令来重启语言服务器。
 (use-package orderless
   :config
   (setq completion-styles '(orderless)
-        completion-category-overrides '((file (styles basic partial-completion)))
         ;;orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex)
-        ;; 按空格和& 时自动选择
-        orderless-component-separator "[ &]"))
+        completion-category-overrides '((file (styles basic partial-completion)))))
+
 
 ;; 对 company 候选者添加高亮
 (defun just-one-face (fn &rest args)
@@ -832,6 +831,7 @@ company-box 为候选者显示图标和帮助文档：
 #+end_src
 
 * 输入法
+** SIS
 
 安装外置输入法切换工具 [[https://github.com/laishulu/macism#install][macism]]，解决 Mac 切换输入法后必须输入一个字符才能生效的问
 题。同时系统的 “快捷键”->“选择上一个输入法” 快捷键必须要开启，否则 macism [[https://github.com/laishulu/macism/issues/2][会切换
@@ -839,6 +839,7 @@ company-box 为候选者显示图标和帮助文档：
 
 #+begin_src emacs-lisp
 (use-package sis
+  :disabled
   :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
   ;; 自动切换到英文的前缀快捷键
@@ -852,6 +853,162 @@ company-box 为候选者显示图标和帮助文档：
 )
 #+end_src
 + 必须在启用 =respect-mode= 之前设置 =sis-prefix-override-keys= 变量，否则变量不生效。
+
+** RIME
+
+Mac 系统安装 RIME 输入法：
+1. 下载 鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
+2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
+3. 重新登录用户，然后就可以使用 =Control+`= 来触发 RIME 输入法了。
+4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
+5. 部署生效,:
+  + 如果修改了 ~/Library/Rime 中的配置，则必须点击鼠须管的 “重新部署” 才能生效。
+  + 对于 emacs-rime，如果也修改了 /Library/Rime 的配置，则需要执行 =M-x
+    rime-deploy= 生效； 
+
+下载 librime 库, emacs rime 使用它与系统的 rime 输入法交互：
+#+Begin_src bash :results none
+curl -L -O https://github.com/rime/librime/releases/download/1.7.2/rime-1.7.2-osx.zip
+unzip rime-1.7.2-osx.zip -d ~/.emacs.d/librime
+rm -rf rime-1.7.2-osx.zip
+# 如果MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
+sudo spctl --master-disable
+# later: sudo spctl --master-enable
+#+end_src
+
+从 [[https://github.com/fkxxyz/rime-cloverpinyin][rime-cloverpinyin]] 下载最新的词库方案安装包（文件名不包含 build), 解压后配置拷
+贝到 ~/Library/Rime 目录。另外一份比较好的词库方案是 [[https://github.com/placeless/squirrel_config][squirrel_config]] 。
+
+配置 Emacs: 
+#+begin_src emacs-lisp
+(use-package rime
+  :demand :after (which-key)
+  :custom
+  (rime-user-data-dir "~/Library/Rime/")
+  (rime-librime-root "~/.emacs.d/librime/dist")
+  (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
+  :bind
+  ( :map rime-active-mode-map
+         ;; 强制切换到英文模式，直到按回车。
+         ("M-j" . 'rime-inline-ascii)
+         :map rime-mode-map
+         ;; 中英文切换
+         ("C-$" . 'rime-send-keybinding)
+         ;; 中英文标点切换
+         ("C-." . 'rime-send-keybinding)
+         ;; 全半角切换
+         ("C-," . 'rime-send-keybinding)
+         ;; 输入法菜单
+         ("C-!" . 'rime-send-keybinding)
+         ;; 强制切换到中文模式
+         ("M-j" . 'rime-force-enable))
+  :config
+  ;; Emacs will automatically set default-input-method to rfc1345 if locale is
+  ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
+  (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
+  ;; modline 输入法图标高亮, 用来区分中英文输入状态
+  (setq mode-line-mule-info '((:eval (rime-lighter))))
+  ;; support shift-l, shift-r, control-l, control-r
+  ;; 只有当使用系统 RIME 输入法时才有效。
+  (setq rime-inline-ascii-trigger 'shift-l)
+  ;; 临时英文模式
+  (setq rime-disable-predicates '(rime-predicate-ace-window-p
+                                  rime-predicate-evil-mode-p
+                                  rime-predicate-hydra-p
+                                  rime-predicate-which-key-activate-p
+                                  rime-predicate-current-uppercase-letter-p
+                                  rime-predicate-after-alphabet-char-p
+                                  rime-predicate-space-after-cc-p
+                                  rime-predicate-punctuation-after-space-cc-p
+                                  rime-predicate-prog-in-code-p
+                                  rime-predicate-after-ascii-char-p))
+  (defun rime-predicate-which-key-activate-p () which-key--automatic-display)
+  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 10))
+  (setq rime-show-candidate 'posframe))
+#+end_src
+
+isearch 与 rime [[https://github.com/DogLooksGood/emacs-rime/issues/21][不兼容]]，会导致输入的中文不能候选，可以使用 phi-search 解决：
+#+begin_src emacs-lisp
+(use-package phi-search
+  :after (rime)
+  :config
+  (global-set-key (kbd "C-s") 'phi-search)
+  (global-set-key (kbd "C-r") 'phi-search-backward))
+#+end_src
+
+RIME 输入法自定义缺省配置：
+#+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
+patch:
+  schema_list:
+    - schema: clover  # 使用 clover 输入法方案
+  menu/page_size: 9
+  ascii_composer/good_old_caps_lock: true
+  ascii_composer/switch_key:
+    Caps_Lock: commit_code                    
+    Shift_L: inline_ascii
+    Shift_R: commit
+    Control_L: commit_code
+    Control_R: commit_code
+  switcher/hotkeys:
+    - "Control+grave"
+    - "Control+Shift+grave"
+    - F4
+    - "Control+exclam"  # 增加使用 C-! 快捷键来调出输入法菜单
+  key_binder/bindings:
+    - { when: composing, accept: ISO_Left_Tab, send: Page_Up }
+    - { when: composing, accept: Shift+Tab, send: Page_Up }
+    - { when: composing, accept: Tab, send: Page_Down }     
+    - { when: paging, accept: minus, send: Page_Up }
+    - { when: has_menu, accept: equal, send: Page_Down }
+    - { when: paging, accept: bracketleft, send: Page_Up }
+    - { when: has_menu, accept: bracketright, send: Page_Down }
+    - { when: always, accept: "Control+dollar", toggle: ascii_mode}  # 中英文切换
+    - { when: always, accept: "Control+period", toggle: ascii_punct} # 中英文标点切换
+    - { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
+    # 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
+#+end_src
+
+三叶草输入方案(clover) 配置:
+#+begin_src yaml :tangle ~/Library/Rime/clover.custom.yaml
+patch:
+  switches:
+  - name: zh_simp_s2t
+    reset: 0
+    states: [ 简, 繁 ]
+  - name: emoji_suggestion
+    reset: 0   # 不提示输出 emoji 符号
+    states: [ "🈚️️\uFE0E", "🈶️️\uFE0F" ]
+  - name: symbol_support
+    reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后，emacs 卡死
+    states: [ "无符", "符" ]
+  - name: ascii_punct
+    reset: 0
+    states: [ 。，, ．， ]
+  - name: full_shape
+    reset: 0
+    states: [ 半, 全 ]
+  - name: ascii_mode
+    reset: 0
+    states: [ 中, 英 ]
+  speller:
+    algebra:
+    - erase/^xx$/                      # 第一行保留
+    - derive/^([zcs])h/$1/             # zh, ch, sh => z, c, s
+    - derive/^([zcs])([^h])/$1h$2/     # z, c, s => zh, ch, sh
+    - derive/^n/l/                     # n => l
+    - derive/^l/n/                     # l => n
+    - derive/([ei])n$/$1ng/            # en => eng, in => ing
+    - derive/([ei])ng$/$1n/            # eng => en, ing => in
+    - derive/ao$/oa/       # oa = ao
+    - derive/([iu])a(o|ng?)$/a$1$2/    # aio = iao; aing = iang; aung = uang
+    - derive/([aeiou])ng$/$1gn/   # gn = ng
+    - derive/un$/uen/    # uen = un
+    - derive/ui$/uei/    # uei = ui
+    - derive/iu$/iou/    # iou = ui
+    - derive/tie$/tei/   # tei = tie
+    - derive/i$/ii/      # ii = i
+    - derive/u$/uu/      # ui = u
+#+end_src
 
 * 编辑辅助
 
