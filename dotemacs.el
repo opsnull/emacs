@@ -74,10 +74,10 @@
 (use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
 
 (setq inhibit-startup-screen t
-  inhibit-startup-message t
-  initial-major-mode 'fundamental-mode
-  inhibit-startup-echo-area-message t
-  initial-scratch-message nil)
+      inhibit-startup-message t
+      initial-major-mode 'fundamental-mode
+      inhibit-startup-echo-area-message t
+      initial-scratch-message nil)
 
 (setq frame-resize-pixelwise t)
 
@@ -109,16 +109,16 @@
   :defer t
   :init
   (setq modus-themes-italic-constructs t
-	modus-themes-bold-constructs nil
-	modus-themes-region '(bg-only no-extend)
-	modus-themes-variable-pitch-ui t
-	modus-themes-variable-pitch-headings t
-	modus-themes-scale-headings t
-	modus-themes-scale-1 1.1
-	modus-themes-scale-2 1.15
-	modus-themes-scale-3 1.21
-	modus-themes-scale-4 1.27
-	modus-themes-scale-title 1.33)
+	    modus-themes-bold-constructs nil
+	    modus-themes-region '(bg-only no-extend)
+	    modus-themes-variable-pitch-ui t
+	    modus-themes-variable-pitch-headings t
+	    modus-themes-scale-headings t
+	    modus-themes-scale-1 1.1
+	    modus-themes-scale-2 1.15
+	    modus-themes-scale-3 1.21
+	    modus-themes-scale-4 1.27
+	    modus-themes-scale-title 1.33)
   ;; Load the theme files before enabling a theme
   (modus-themes-load-themes)
   :config
@@ -143,10 +143,10 @@
 (defun my/load-light-theme () (interactive) (load-theme 'doom-dracula t))
 (defun my/load-dark-theme () (interactive) (load-theme 'doom-monokai-pro t))
 (add-hook 'ns-system-appearance-change-functions
-	  (lambda (appearance)
-	    (pcase appearance
-	  ('light (my/load-light-theme))
-	  ('dark (my/load-dark-theme)))))
+	      (lambda (appearance)
+	        (pcase appearance
+	          ('light (my/load-light-theme))
+	          ('dark (my/load-dark-theme)))))
 
 ;; (add-hook 'after-init-hook
 ;;           (lambda () (load-theme 'doom-dracula t))
@@ -157,10 +157,10 @@
 (size-indication-mode -1)
 (display-time-mode t)
 (setq display-time-24hr-format t
-  display-time-default-load-average nil
-  display-time-load-average-threshold 5
-  display-time-format "%m/%d[%u]%H:%M"
-  display-time-day-and-date t)
+      display-time-default-load-average nil
+      display-time-load-average-threshold 5
+      display-time-format "%m/%d[%u]%H:%M"
+      display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
 (use-package doom-modeline
@@ -205,9 +205,24 @@
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 
+(use-package mini-frame
+  :config
+  ;; 根据光标位置显示 frame 。
+    (setq mini-frame-show-parameters                                        
+        (lambda ()                                                                
+          (let* ((info (posframe-poshandler-argbuilder))
+                 (posn (posframe-poshandler-point-bottom-left-corner info))
+                 (left (car posn))
+                 (top (cdr posn)))
+            `((left . ,left)
+              (top . ,top)))))
+  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
+  (mini-frame-mode))
+
 ;; https://protesilaos.com/codelog/2020-09-05-emacs-note-mixed-font-heights/
 ;; https://www.emacswiki.org/emacs/SetFonts
 (defun my/faces  (&optional theme &rest _)
+  (interactive)
   ;; 英文字体
   ;; Main typeface
   (set-face-attribute 'default nil :font "Iosevka SS14-14")
@@ -216,14 +231,24 @@
     ;; Monospaced typeface
   (set-face-attribute 'fixed-pitch nil :family "Iosevka SS14")
   ;; 中文字体
-  (dolist (charset '(kana han symbol cjk-misc bopomofo))
-    (set-fontset-font 
-     (frame-parameter nil 'font)
-     charset
-     (font-spec :name "Sarasa Mono SC" :weight 'normal :slant 'normal :size 15.0))))
+  (when (display-graphic-p)
+    (dolist (charset '(kana han symbol cjk-misc bopomofo))
+      (set-fontset-font 
+       (frame-parameter nil 'font)
+       charset
+       (font-spec :name "Sarasa Mono SC" :weight 'normal :slant 'normal :size 15.0)))))
 
 (add-hook 'after-init-hook #'my/faces)
 (advice-add #'load-theme :after #'my/faces)
+
+(when (display-graphic-p)
+  ;; 更新字体：M-x fira-code-mode-install-fonts
+  (use-package fira-code-mode
+    :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+    :hook prog-mode)
+
+  ;; Emoji 字体
+  (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))  
 
 ;; 中文：Sarasa Mono SC(中英文2:1对齐): https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
@@ -245,14 +270,6 @@
 ;; hasn't been determined, but do it there anyway, just in case. This increases
 ;; memory usage, however!
 (setq inhibit-compacting-font-caches t)
-
-;; 更新字体：M-x fira-code-mode-install-fonts
-(use-package fira-code-mode
-  :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-  :hook prog-mode)
-
-;; Emoji 字体
-(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend)
 
 (global-font-lock-mode t)
 
@@ -281,10 +298,9 @@
 (use-package orderless
   :config
   (setq completion-styles '(orderless)
-        completion-category-overrides '((file (styles basic partial-completion)))
         ;;orderless-matching-styles '(orderless-literal orderless-regexp orderless-flex)
-        ;; 按空格和& 时自动选择
-        orderless-component-separator "[ &]"))
+        completion-category-overrides '((file (styles basic partial-completion)))))
+
 
 ;; 对 company 候选者添加高亮
 (defun just-one-face (fn &rest args)
@@ -511,6 +527,7 @@
   (global-set-key (kbd "M-o") 'ace-window))
 
 (use-package sis
+  :disabled
   :config
   (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
   ;; 自动切换到英文的前缀快捷键
@@ -522,6 +539,57 @@
   (sis-global-respect-mode t)
   (global-set-key (kbd "C-\\") 'sis-switch)
 )
+
+(use-package rime
+  :demand :after (which-key)
+  :custom
+  (rime-user-data-dir "~/Library/Rime/")
+  (rime-librime-root "~/.emacs.d/librime/dist")
+  (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
+  :bind
+  ( :map rime-active-mode-map
+         ;; 强制切换到英文模式，直到按回车。
+         ("M-j" . 'rime-inline-ascii)
+         :map rime-mode-map
+         ;; 中英文切换
+         ("C-$" . 'rime-send-keybinding)
+         ;; 中英文标点切换
+         ("C-." . 'rime-send-keybinding)
+         ;; 全半角切换
+         ("C-," . 'rime-send-keybinding)
+         ;; 输入法菜单
+         ("C-!" . 'rime-send-keybinding)
+         ;; 强制切换到中文模式
+         ("M-j" . 'rime-force-enable))
+  :config
+  ;; Emacs will automatically set default-input-method to rfc1345 if locale is
+  ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
+  (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
+  ;; modline 输入法图标高亮, 用来区分中英文输入状态
+  (setq mode-line-mule-info '((:eval (rime-lighter))))
+  ;; support shift-l, shift-r, control-l, control-r
+  ;; 只有当使用系统 RIME 输入法时才有效。
+  (setq rime-inline-ascii-trigger 'shift-l)
+  ;; 临时英文模式
+  (setq rime-disable-predicates '(rime-predicate-ace-window-p
+                                  rime-predicate-evil-mode-p
+                                  rime-predicate-hydra-p
+                                  rime-predicate-which-key-activate-p
+                                  rime-predicate-current-uppercase-letter-p
+                                  rime-predicate-after-alphabet-char-p
+                                  rime-predicate-space-after-cc-p
+                                  rime-predicate-punctuation-after-space-cc-p
+                                  rime-predicate-prog-in-code-p
+                                  rime-predicate-after-ascii-char-p))
+  (defun rime-predicate-which-key-activate-p () which-key--automatic-display)
+  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 10))
+  (setq rime-show-candidate 'posframe))
+
+(use-package phi-search
+  :after (rime)
+  :config
+  (global-set-key (kbd "C-s") 'phi-search)
+  (global-set-key (kbd "C-r") 'phi-search-backward))
 
 ;; 多光标编辑
 (use-package iedit :disabled)
@@ -1624,9 +1692,8 @@ mermaid.initialize({
 (setq load-prefer-newer t)
 
 ;; macOS modifiers.
-(when (display-graphic-p)
-  (setq mac-command-modifier 'meta)
-  (setq mac-option-modifier 'super))
+(setq mac-command-modifier 'meta)
+(setq mac-option-modifier 'super)
 
 ;; Switch to help buffer when it's opened.
 (setq help-window-select t)
@@ -1873,6 +1940,7 @@ mermaid.initialize({
   (all-the-icons-completion-mode)
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
+;; pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pyenv 环境的目的：
 (use-package pyenv-mode
   :disabled :after (projectile)
   :init
@@ -1897,5 +1965,5 @@ mermaid.initialize({
 
 ;;company-prescient 精准排序：
 (use-package company-prescient
-  :after (company prescient)
+  :disabled :after (company prescient)
   :init (company-prescient-mode +1))
