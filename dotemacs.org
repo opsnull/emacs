@@ -2232,6 +2232,13 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
                  (dedicated . t)
                  (reusable-frames . visible)
                  (window-height . 0.3))))
+
+;; https://github.com/kweizh/posframe-project-term
+(use-package posframe-project-term
+  :ensure nil
+  :load-path "/Users/zhangjun/.emacs.d/posframe-project-term"
+  :bind
+  (("C-c t" . posframe-project-term-toggle)))
 #+end_src
   
 ** eshell
@@ -2328,7 +2335,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 (lossage-size 1000)
 
 ;; Highlight current line.
-(global-hl-line-mode t)
+;;(global-hl-line-mode t)
 
 ;; Keep cursor position when scrolling.
 (setq scroll-preserve-screen-position 1)
@@ -2510,6 +2517,17 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行
   rm 命令。
   
+* 推荐
+
+本配置参考了以下仓库代码, 感谢 + 推荐!
+
+1. [[https://github.com/seagle0128/.emacs.d][seagle0128/.emacs.d]]
+2. [[https://gitlab.com/protesilaos/dotfiles][protesilaos/dotfiles]]
+3. [[https://github.com/bbatsov/prelude][bbatsov/prelude]]
+4. [[https://github.com/MatthewZMD/.emacs.d][MatthewZMD/.emacs.d]]
+5. [[https://github.com/condy0919/.emacs.d][condy0919/.emacs.d]]
+6. [[https://github.com/manateelazycat/lazycat-emacs][manateelazycat/lazycat-emacs]]
+
 * 归档
 
 #+begin_src emacs-lisp :tangle no
