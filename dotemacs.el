@@ -1562,6 +1562,13 @@ mermaid.initialize({
                  (reusable-frames . visible)
                  (window-height . 0.3))))
 
+;; https://github.com/kweizh/posframe-project-term
+(use-package posframe-project-term
+  :ensure nil
+  :load-path "/Users/zhangjun/.emacs.d/posframe-project-term"
+  :bind
+  (("C-c t" . posframe-project-term-toggle)))
+
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "bash")
 (setq shell-command-prompt-show-cwd t)
@@ -1645,7 +1652,7 @@ mermaid.initialize({
 (lossage-size 1000)
 
 ;; Highlight current line.
-(global-hl-line-mode t)
+;;(global-hl-line-mode t)
 
 ;; Keep cursor position when scrolling.
 (setq scroll-preserve-screen-position 1)
