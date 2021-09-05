@@ -865,6 +865,40 @@ patch:
     - derive/u$/uu/      # ui = u
 #+end_src
 
+下载[[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases][肥猫中文维基百万大词库（felixonmars/fcitx5-pinyin-zhwiki)]], 放到
+~/Library/Rime 目录：
+#+begin_src shell :tangle no
+cd ~/Library/Rime
+wget https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.2.3/zhwiki-20210823.dict.yaml
+#+end_src
+
+修改文件 ~/Library/Rime/clover.dict.yaml, 内容如下：
+#+begin_src yaml :tangle ~/Library/Rime/clover.dict.yaml
+name: clover
+version: "1"
+sort: by_weight
+
+import_tables:
+  - clover.base
+  - clover.phrase
+  - zhwiki-20210823
+  - THUOCL_animal
+  - THUOCL_caijing
+  - THUOCL_car
+  - THUOCL_chengyu
+  - THUOCL_diming
+  - THUOCL_food
+  - THUOCL_IT
+  - THUOCL_law
+  - THUOCL_lishimingren
+  - THUOCL_medical
+  - THUOCL_poem
+  - sogou_new_words
+#+end_src
+
+然后执行命令 =M-x rime-deploy= 生效。输入 =weiyamu=, 如果内容是 =鳚亚目= 则证明导入成
+功。
+
 * 编辑辅助
 
 #+begin_src emacs-lisp
