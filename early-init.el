@@ -20,10 +20,10 @@
         ns-use-fullscreen-animation nil))
 
 ;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-;;(add-hook 'emacs-startup-hook #'toggle-frame-fullscreen)
+;;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
 
 (set-frame-parameter (selected-frame) 'maximized 'fullscreen)
-(add-hook 'emacs-startup-hook #'toggle-frame-maximized)
+(add-hook 'after-init-hook #'toggle-frame-maximized)
 
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))

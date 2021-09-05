@@ -79,18 +79,33 @@ mkdir -p ~/.emacs.d/.cache
 mkdir -p ~/.emacs.d/snippets
 mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib
 
+go get golang.org/x/tools/gopls@latest
 
 which fd || brew install fd 
 which ag || brew install the_silver_searcher
 which rg || brew install ripgrep
 which fzf || brew install fzf
-
+which direnv || brew install direnv
+which trash || brew install trash
+which pngpaste || brew install pngpaste
+which cmake || brew install cmake
+which glibtool || brew install libtool
+which exiftran || brew install exiftran
+which multimarkdown || brew install multimarkdown
+which mutool || brew install mupdf # 将 pdf 转换为 png
+which pdftotext || brew install poppler
+which terminal-notifier || brew install terminal-notifier # org notify
 brew tap laishulu/macism
 which macism || brew install macism
+brew install --HEAD pyenv
+brew install --HEAD pyenv-virtualenv
 
-pip install -q -i https://pypi.douban.com/simple/ ipython ansible
-
-go get golang.org/x/tools/gopls@latest
+# 使用 pyenv shell VERSION 切换到对应版本环境, 然后执行如下命令:
+pip install ipython ansible
+pip install grip  # markdown 预览
+pip install yapf  # python 文件格式化
+pip install jieba # youdao 词典使用的中文分词
+pip3 install buku # 浏览器书签管理程序
 
 which npm || brew install npm
 npm install -g vscode-json-languageserver
@@ -98,25 +113,6 @@ npm install -g yaml-language-server
 npm install -g dockerfile-language-server-nodejs
 npm install -g eslint babel-eslint eslint-plugin-react
 npm install -g pyright
-pip install yapf
-
-brew install --HEAD pyenv
-brew install --HEAD pyenv-virtualenv
-
-brew install direnv
-
-trash -v || brew install trash
-pngpaste -v || brew install pngpaste
-which cmake || brew install cmake
-which glibtool || brew install libtool
-which exiftran || brew install exiftran
-
-which multimarkdown || brew install multimarkdown
-pip install grip
-
-which mutool || brew install mupdf # 将 pdf 转换为 png
-which pdftotext || brew install poppler
-brew install terminal-notifier # org notify
 #+end_src
 + 安装完 eslint npm 包后，再安装语言服务器 =M-x lsp-install-server RET eslint RET= 。
 
@@ -145,10 +141,10 @@ brew install terminal-notifier # org notify
         ns-use-fullscreen-animation nil))
 
 ;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-;;(add-hook 'emacs-startup-hook #'toggle-frame-fullscreen)
+;;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
 
 (set-frame-parameter (selected-frame) 'maximized 'fullscreen)
-(add-hook 'emacs-startup-hook #'toggle-frame-maximized)
+(add-hook 'after-init-hook #'toggle-frame-maximized)
 
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
@@ -374,7 +370,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
   (mini-frame-mode))
 
-;; 中文：Sarasa Mono SC(中英文2:1对齐): https://github.com/be5invis/Sarasa-Gothic
+;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 (use-package cnfonts
@@ -958,58 +954,15 @@ patch:
 
 #+BEGIN_SRC  emacs-lisp
 (use-package youdao-dictionary
-  :commands youdao-dictionary-play-voice-of-current-word
-  :bind (("C-c y" . my-youdao-dictionary-search-at-point)
-         ("C-c Y" . youdao-dictionary-search-at-point)
-         :map youdao-dictionary-mode-map
-         ("h" . youdao-dictionary-hydra/body)
-         ("?" . youdao-dictionary-hydra/body))
+  :bind ( ("C-c y" . youdao-dictionary-search-at-point))
   :init
   (setq url-automatic-caching t
         ;; 中文分词
-        youdao-dictionary-use-chinese-word-segmentation t) 
+        youdao-dictionary-use-chinese-word-segmentation t))
 
-  (defun my-youdao-dictionary-search-at-point ()
-    "Search word at point and display result with `posframe', `pos-tip', or buffer."
-    (interactive)
-    (if (display-graphic-p)
-        (youdao-dictionary-search-at-point-posframe)
-      (youdao-dictionary-search-at-point)))
-  :config
-  (with-no-warnings
-    (defun my-youdao-dictionary--posframe-tip (string)
-      "Show STRING using posframe-show."
-      (unless (and (require 'posframe nil t) (posframe-workable-p))
-        (error "Posframe not workable"))
-
-      (let ((word (youdao-dictionary--region-or-word)))
-        (if word
-            (progn
-              (with-current-buffer (get-buffer-create youdao-dictionary-buffer-name)
-                (let ((inhibit-read-only t))
-                  (erase-buffer)
-                  (youdao-dictionary-mode)
-                  (insert (propertize "\n" 'face '(:height 0.5)))
-                  (insert string)
-                  (insert (propertize "\n" 'face '(:height 0.5)))
-                  (set (make-local-variable 'youdao-dictionary-current-buffer-word) word)))
-              (posframe-show youdao-dictionary-buffer-name
-                             :position (point)
-                             :left-fringe 16
-                             :right-fringe 16
-                             :background-color (face-background 'tooltip nil t)
-                             :internal-border-color (face-foreground 'font-lock-comment-face nil t)
-                             :internal-border-width 1)
-              (unwind-protect
-                  (push (read-event) unread-command-events)
-                (progn
-                  (posframe-hide youdao-dictionary-buffer-name)
-                  (other-frame 0))))
-          (message "Nothing to look up"))))
-    
-    (advice-add #'youdao-dictionary--posframe-tip
-                :override #'my-youdao-dictionary--posframe-tip)))
+(use-package chinese-word-at-point)
 #+end_src
++ 有道词典需要额外安装中文分词软件才能正确分词，如结巴分词： =pip install jieba=
 
 * Org-mode
 
@@ -2112,8 +2065,8 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   (projectile-mode +1)
   ;; selectrum/vertico 使用 'default，可选：'ivy、'helm、'ido、'auto
   (setq projectile-completion-system 'default)
-  (add-hook 'projectile-after-switch-project-hook
-            (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
+  ;; 手动 M-0 打开 treemacs
+  ;;(add-hook 'projectile-after-switch-project-hook (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
   (dolist (dirs '(".cache"
                   ".dropbox"
@@ -2176,6 +2129,43 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
   ;; of project file):
   (setq projectile-require-project-root nil))
 #+end_src
+
+* 浏览器
+
+Emacs 浏览 URL 程序:
+#+begin_src emacs-lisp
+;; 执行 browser-url 时使用 Mac 默认浏览器
+(setq browse-url-browser-function 'browse-url-default-macosx-browser)
+
+;; 自定义浏览程序
+;; (setq browse-url-browser-function 'browse-url-generic
+;;       browse-url-generic-program "mychrome")
+;;(setq browse-url-chrome-program "mychrome")
+#+end_src
+
+上面引用的 mychrome 程序：
+#+begin_src bash  :tangle ~/go/bin/mychrome
+#!/bin/bash
+open -a 'Google Chrome' $*
+#+end_src
+
+Google 搜索(只支持单行内容搜索):
+#+begin_src emacs-lisp
+(setq xah-lookup-browser-function 'browse-url )
+(use-package xah-lookup )
+(global-set-key (kbd "<f9>") 'xah-lookup-google)
+#+end_src
+
+书签管理器:
+#+begin_src emacs-lisp
+;; 需要安装 buku 依赖: pip3 install buku 
+(use-package ebuku
+  :config
+  ;; 不限制结果
+  (setq ebuku-results-limit 0))
+#+end_src
++ 执行 =buku --ai= 命令自动将 Firefox/Chrome 的书签导入 buku, 然后使用 ebuku 浏览
+  和编辑。点击 URL 自动使用 Mac 浏览器打开。
 
 * 终端
 ** vterm
@@ -2305,6 +2295,13 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 
 #+begin_src emacs-lisp
 (auto-image-file-mode t)
+
+(global-set-key "\C-w" 'backward-kill-word)
+(global-set-key "\C-x\C-k" 'kill-region)
+(global-set-key "\C-c\C-k" 'kill-region)
+
+;; M-x qrr to run query-replace-regexp
+(defalias 'qrr 'query-replace-regexp)
 
 ;; 自动根据窗口大小显示图片
 (setq image-transform-resize t)
@@ -2497,17 +2494,6 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
       :defines company-backends
       :init (add-to-list 'company-backends 'company-restclient))))
 
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-(defvar xwidget-webkit-bookmark-jump-new-session)
-(defvar xwidget-webkit-last-session-buffer)
-(add-hook 'pre-command-hook
-          (lambda ()
-            (if (eq this-command #'bookmark-bmenu-list)
-                (if (not (eq major-mode 'xwidget-webkit-mode))
-                    (setq xwidget-webkit-bookmark-jump-new-session t)
-                  (setq xwidget-webkit-bookmark-jump-new-session nil)
-                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
-
 ;; 在帮助文档底部显示 lisp demo
 (use-package elisp-demos
   :config
@@ -2516,7 +2502,7 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 #+end_src
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行
   rm 命令。
-  
+
 * 推荐
 
 本配置参考了以下仓库代码, 感谢 + 推荐!
@@ -2697,25 +2683,25 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 origami 提供代码折叠功能, 但是用 M-s o / M-s l 以及 s-express 跳转等内置快捷键也
 可以快速跳转：
 #+begin_src emacs-lisp :tangle no
-  (use-package origami
-    :config
-    (define-prefix-command 'origami-mode-map)
-    (global-set-key (kbd "C-x C-z") 'origami-mode-map)
-    (global-origami-mode)
-    :bind
-    (:map origami-mode-map
-          ("o" . origami-open-node)
-          ("O" . origami-open-node-recursively)
-          ("c" . origami-close-node)
-          ("C" . origami-close-node-recursively)
-          ("a" . origami-toggle-node)
-          ("A" . origami-recursively-toggle-node)
-          ("R" . origami-open-all-nodes)
-          ("M" . origami-close-all-nodes)
-          ("v" . origami-show-only-node)
-          ("k" . origami-previous-fold)
-          ("j" . origami-forward-fold)
-          ("x" . origami-reset)))
+(use-package origami
+  :config
+  (define-prefix-command 'origami-mode-map)
+  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
+  (global-origami-mode)
+  :bind
+  (:map origami-mode-map
+        ("o" . origami-open-node)
+        ("O" . origami-open-node-recursively)
+        ("c" . origami-close-node)
+        ("C" . origami-close-node-recursively)
+        ("a" . origami-toggle-node)
+        ("A" . origami-recursively-toggle-node)
+        ("R" . origami-open-all-nodes)
+        ("M" . origami-close-all-nodes)
+        ("v" . origami-show-only-node)
+        ("k" . origami-previous-fold)
+        ("j" . origami-forward-fold)
+        ("x" . origami-reset)))
 #+end_src
 
 ** SIS
@@ -2755,3 +2741,47 @@ Buffer 语法高亮渲染变慢，暂时关闭。
 (use-package  tree-sitter-langs)
 #+end_src
   
+** youdao
+#+begin_src emacs-lisp :tangle no
+(defun my-youdao-dictionary-search-at-point ()
+  "Search word at point and display result with `posframe', `pos-tip', or buffer."
+  (interactive)
+  (if (display-graphic-p)
+      (youdao-dictionary-search-at-point-posframe)
+    (youdao-dictionary-search-at-point)))
+
+  (with-no-warnings
+    (defun my-youdao-dictionary--posframe-tip (string)
+      "Show STRING using posframe-show."
+      (unless (and (require 'posframe nil t) (posframe-workable-p))
+        (error "Posframe not workable"))
+
+      (let ((word (youdao-dictionary--region-or-word)))
+        (if word
+            (progn
+              (with-current-buffer (get-buffer-create youdao-dictionary-buffer-name)
+                (let ((inhibit-read-only t))
+                  (erase-buffer)
+                  (youdao-dictionary-mode)
+                  (insert (propertize "\n" 'face '(:height 0.5)))
+                  (insert string)
+                  (insert (propertize "\n" 'face '(:height 0.5)))
+                  (set (make-local-variable 'youdao-dictionary-current-buffer-word) word)))
+              (posframe-show youdao-dictionary-buffer-name
+                             :position (point)
+                             :left-fringe 16
+                             :right-fringe 16
+                             :posframe-width 100
+                             :background-color (face-background 'tooltip nil t)
+                             :internal-border-color (face-foreground 'font-lock-comment-face nil t)
+                             :internal-border-width 1)
+              (unwind-protect
+                  (push (read-event) unread-command-events)
+                (progn
+                  (posframe-hide youdao-dictionary-buffer-name)
+                  (other-frame 0))))
+          (message "Nothing to look up"))))
+    
+    (advice-add #'youdao-dictionary--posframe-tip
+                :override #'my-youdao-dictionary--posframe-tip))
+#+end_src

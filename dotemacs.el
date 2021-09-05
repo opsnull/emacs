@@ -192,7 +192,7 @@
   ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
   (mini-frame-mode))
 
-;; 中文：Sarasa Mono SC(中英文2:1对齐): https://github.com/be5invis/Sarasa-Gothic
+;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 (use-package cnfonts
@@ -599,57 +599,13 @@
 (setq large-file-warning-threshold nil)
 
 (use-package youdao-dictionary
-  :commands youdao-dictionary-play-voice-of-current-word
-  :bind (("C-c y" . my-youdao-dictionary-search-at-point)
-         ("C-c Y" . youdao-dictionary-search-at-point)
-         :map youdao-dictionary-mode-map
-         ("h" . youdao-dictionary-hydra/body)
-         ("?" . youdao-dictionary-hydra/body))
+  :bind ( ("C-c y" . youdao-dictionary-search-at-point))
   :init
   (setq url-automatic-caching t
         ;; 中文分词
-        youdao-dictionary-use-chinese-word-segmentation t) 
+        youdao-dictionary-use-chinese-word-segmentation t))
 
-  (defun my-youdao-dictionary-search-at-point ()
-    "Search word at point and display result with `posframe', `pos-tip', or buffer."
-    (interactive)
-    (if (display-graphic-p)
-        (youdao-dictionary-search-at-point-posframe)
-      (youdao-dictionary-search-at-point)))
-  :config
-  (with-no-warnings
-    (defun my-youdao-dictionary--posframe-tip (string)
-      "Show STRING using posframe-show."
-      (unless (and (require 'posframe nil t) (posframe-workable-p))
-        (error "Posframe not workable"))
-
-      (let ((word (youdao-dictionary--region-or-word)))
-        (if word
-            (progn
-              (with-current-buffer (get-buffer-create youdao-dictionary-buffer-name)
-                (let ((inhibit-read-only t))
-                  (erase-buffer)
-                  (youdao-dictionary-mode)
-                  (insert (propertize "\n" 'face '(:height 0.5)))
-                  (insert string)
-                  (insert (propertize "\n" 'face '(:height 0.5)))
-                  (set (make-local-variable 'youdao-dictionary-current-buffer-word) word)))
-              (posframe-show youdao-dictionary-buffer-name
-                             :position (point)
-                             :left-fringe 16
-                             :right-fringe 16
-                             :background-color (face-background 'tooltip nil t)
-                             :internal-border-color (face-foreground 'font-lock-comment-face nil t)
-                             :internal-border-width 1)
-              (unwind-protect
-                  (push (read-event) unread-command-events)
-                (progn
-                  (posframe-hide youdao-dictionary-buffer-name)
-                  (other-frame 0))))
-          (message "Nothing to look up"))))
-    
-    (advice-add #'youdao-dictionary--posframe-tip
-                :override #'my-youdao-dictionary--posframe-tip)))
+(use-package chinese-word-at-point)
 
 (dolist (package '(org org-plus-contrib ob-go ox-reveal ox-gfm))
   (unless (package-installed-p package)
@@ -1446,8 +1402,8 @@ mermaid.initialize({
   (projectile-mode +1)
   ;; selectrum/vertico 使用 'default，可选：'ivy、'helm、'ido、'auto
   (setq projectile-completion-system 'default)
-  (add-hook 'projectile-after-switch-project-hook
-            (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
+  ;; 手动 M-0 打开 treemacs
+  ;;(add-hook 'projectile-after-switch-project-hook (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
   (dolist (dirs '(".cache"
                   ".dropbox"
@@ -1509,6 +1465,24 @@ mermaid.initialize({
   ;; Make projectile to be usable in every directory (even without the presence
   ;; of project file):
   (setq projectile-require-project-root nil))
+
+;; 执行 browser-url 时使用 Mac 默认浏览器
+(setq browse-url-browser-function 'browse-url-default-macosx-browser)
+
+;; 自定义浏览程序
+;; (setq browse-url-browser-function 'browse-url-generic
+;;       browse-url-generic-program "mychrome")
+;;(setq browse-url-chrome-program "mychrome")
+
+(setq xah-lookup-browser-function 'browse-url )
+(use-package xah-lookup )
+(global-set-key (kbd "<f9>") 'xah-lookup-google)
+
+;; 需要安装 buku 依赖: pip3 install buku 
+(use-package ebuku
+  :config
+  ;; 不限制结果
+  (setq ebuku-results-limit 0))
 
 ;;(shell-command "which cmake &>/dev/null || brew install cmake")
 ;;(shell-command "which glibtool &>/dev/null || brew install libtool")
@@ -1622,6 +1596,13 @@ mermaid.initialize({
   (setq tramp-remote-process-environment process-environment))
 
 (auto-image-file-mode t)
+
+(global-set-key "\C-w" 'backward-kill-word)
+(global-set-key "\C-x\C-k" 'kill-region)
+(global-set-key "\C-c\C-k" 'kill-region)
+
+;; M-x qrr to run query-replace-regexp
+(defalias 'qrr 'query-replace-regexp)
 
 ;; 自动根据窗口大小显示图片
 (setq image-transform-resize t)
@@ -1813,17 +1794,6 @@ mermaid.initialize({
     (use-package company-restclient
       :defines company-backends
       :init (add-to-list 'company-backends 'company-restclient))))
-
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
-(defvar xwidget-webkit-bookmark-jump-new-session)
-(defvar xwidget-webkit-last-session-buffer)
-(add-hook 'pre-command-hook
-          (lambda ()
-            (if (eq this-command #'bookmark-bmenu-list)
-                (if (not (eq major-mode 'xwidget-webkit-mode))
-                    (setq xwidget-webkit-bookmark-jump-new-session t)
-                  (setq xwidget-webkit-bookmark-jump-new-session nil)
-                  (setq xwidget-webkit-last-session-buffer (current-buffer))))))
 
 ;; 在帮助文档底部显示 lisp demo
 (use-package elisp-demos
