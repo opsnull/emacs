@@ -144,11 +144,12 @@
   :custom
   ;; 不显示换行和编码，节省空间
   (doom-modeline-buffer-encoding nil)
-  ;; 显示语言版本（go、python 等）
+  ;; 使用 HUD 显式光标位置(默认是 bar)
+  (doom-modeline-hud t)
+  ;; 显示 go 等语言版本
   (doom-modeline-env-version t)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
   (doom-modeline-buffer-file-name-style 'file-name)
-  ;; 分支名称长度
   (doom-modeline-vcs-max-length 20)
   (doom-modeline-github nil)
   (doom-modeline-height 2)
@@ -178,7 +179,9 @@
 
 ;; 光标位置显示 minibuffer
 (use-package mini-frame
+  :disabled
   :config
+  (setq x-gtk-resize-child-frames 'resize-mode)
   ;; 在光标位置显示 frame 。
   (setq mini-frame-show-parameters                                        
         (lambda ()                                                                
@@ -188,8 +191,8 @@
                  (top (cdr posn)))
             `((left . ,left)
               (top . ,top)))))
-  ;; 固定在 frame 的顶部显式 frame 。
-  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
+  ;; 固定在 frame 顶部显式。
+  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)  (height . 10))))
   (mini-frame-mode))
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
@@ -492,7 +495,14 @@
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
+  ;; 使用开源的 [SwitchKey](https://github.com/itsuhane/SwitchKey) 程序可以实现
+  ;; 其它程序切换到 Emacs 时自动将系统输入法切换到英文，从而避免系统输入法干扰。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
+  ;; 切换到 vterm-mode 类型外的其它类型 buffer 时激活 rime 输入法。
+  (defadvice switch-to-buffer (after activate-input-method activate)
+    (if (string-match "vterm-mode" (symbol-name major-mode))
+        (activate-input-method nil)
+      (activate-input-method "rime")))
   ;; modline 输入法图标高亮, 用来区分中英文输入状态
   (setq mode-line-mule-info '((:eval (rime-lighter))))
   ;; support shift-l, shift-r, control-l, control-r
@@ -655,8 +665,11 @@
 
 (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
 (use-package htmlize)
-
-(use-package toc-org :after (org) :hook (org-mode . toc-org-mode))
+;; 自动创建和更新目录
+(use-package org-make-toc 
+  :after (org) 
+  :config 
+  (add-hook 'org-mode-hook #'org-make-toc-mode))
 
 (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
 (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
@@ -868,9 +881,6 @@
 (setq grep-highlight-matches t)
 
 (use-package ediff
-  ;; Restore window config after quitting ediff
-  ;; :hook ((ediff-before-setup . ediff-save-window-conf)
-  ;;        (ediff-quit         . ediff-restore-window-conf))
   :config
   ;; 忽略空格
   (setq ediff-diff-options "-w")
@@ -878,17 +888,25 @@
   ;; 不创建新的 frame 来显示 Control-Panel
   (setq ediff-window-setup-function #'ediff-setup-windows-plain)
 
-  (add-hook 'ediff-load-hook
-		    (lambda ()
-			  (add-hook 'ediff-before-setup-hook
-				        (lambda ()
-				          (setq ediff-saved-window-configuration (current-window-configuration))))
+  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显式的有问题
+  (add-hook 'ediff-before-setup-hook
+            (lambda ()
+              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                  (delete-window (treemacs-get-local-window)) ) ))
+            
+  ;; (add-hook 'ediff-load-hook
+  ;;   	    (lambda ()
+  ;;   		  (add-hook 'ediff-before-setup-hook
+  ;;   			        (lambda ()
+  ;;   			          (setq ediff-saved-window-configuration (current-window-configuration))))
 
-			  (let ((restore-window-configuration
-				     (lambda ()
-				       (set-window-configuration ediff-saved-window-configuration))))
-			    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
+  ;;   		  (let ((restore-window-configuration
+  ;;   			     (lambda ()
+  ;;   			       (set-window-configuration ediff-saved-window-configuration))))
+  ;;   		    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
 
+  
+  ;; ediff 时自动展开对应 org-mode section
   ;; https://dotemacs.readthedocs.io/en/latest/#ediff
   ;; Check for org mode and existence of buffer
   (defun f-ediff-org-showhide (buf command &rest cmdargs)
@@ -1188,7 +1206,7 @@ mermaid.initialize({
 (use-package ansible
   :after (yaml-mode)
   :config
-  (add-hook 'yaml-mode-hook '(lambda () (ansible 1))))
+  (add-hook 'yaml-mode-hook (lambda () (ansible 1))))
 
 (use-package company-ansible
   :after (ansible company)
@@ -1492,10 +1510,10 @@ mermaid.initialize({
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND）。
   (setq vterm-buffer-name-string "vterm: %s")
   (add-hook 'vterm-mode-hook (lambda ()
-                             (setf truncate-lines nil)
-                             (setq-local show-paren-mode nil)
-                             (yas-minor-mode -1)
-                             (flycheck-mode -1)))
+                               (setf truncate-lines nil)
+                               (setq-local show-paren-mode nil)
+                               (yas-minor-mode -1)
+                               (flycheck-mode -1)))
   :bind
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止输入法切换冲突。
@@ -1539,7 +1557,7 @@ mermaid.initialize({
 ;; https://github.com/kweizh/posframe-project-term
 (use-package posframe-project-term
   :ensure nil
-  :load-path "/Users/zhangjun/.emacs.d/posframe-project-term"
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp/posframe-project-term"
   :bind
   (("C-c t" . posframe-project-term-toggle)))
 
@@ -1597,9 +1615,9 @@ mermaid.initialize({
 
 (auto-image-file-mode t)
 
-(global-set-key "\C-w" 'backward-kill-word)
-(global-set-key "\C-x\C-k" 'kill-region)
-(global-set-key "\C-c\C-k" 'kill-region)
+;; (global-set-key "\C-w" 'backward-kill-word)
+;; (global-set-key "\C-x\C-k" 'kill-region)
+;; (global-set-key "\C-c\C-k" 'kill-region)
 
 ;; M-x qrr to run query-replace-regexp
 (defalias 'qrr 'query-replace-regexp)

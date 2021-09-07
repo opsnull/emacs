@@ -8,18 +8,23 @@
 :TOC:      :include all :ignore this
 :END:
 :CONTENTS:
+- [[#编译安装][编译安装]]
 - [[#外部依赖][外部依赖]]
+- [[#初始配置][初始配置]]
 - [[#软件源][软件源]]
+- [[#性能优化][性能优化]]
 - [[#环境变量][环境变量]]
+- [[#字体主题][字体主题]]
 - [[#目录变量][目录变量]]
-- [[#启动优化][启动优化]]
 - [[#增量补全][增量补全]]
 - [[#自动补全][自动补全]]
 - [[#快速跳转][快速跳转]]
 - [[#输入法][输入法]]
 - [[#编辑辅助][编辑辅助]]
-- [[#文档写作][文档写作]]
+- [[#有道词典][有道词典]]
+- [[#org-mode][Org-mode]]
 - [[#版本控制][版本控制]]
+- [[#搜索比较][搜索比较]]
 - [[#编程开发][编程开发]]
   - [[#lsp][lsp]]
   - [[#python][python]]
@@ -39,14 +44,19 @@
     - [[#dap-mode][dap-mode]]
   - [[#yaml][yaml]]
   - [[#flycheck][flycheck]]
-- [[#项目管理][项目管理]]
 - [[#树形浏览][树形浏览]]
-- [[#主题界面][主题界面]]
+- [[#项目管理][项目管理]]
+- [[#浏览器][浏览器]]
 - [[#终端][终端]]
   - [[#vterm][vterm]]
   - [[#eshell][eshell]]
   - [[#tramp][tramp]]
 - [[#其它][其它]]
+- [[#推荐][推荐]]
+- [[#归档][归档]]
+  - [[#sis][SIS]]
+  - [[#tree-sitter][tree-sitter]]
+  - [[#youdao][youdao]]
 :END:
 
 * 编译安装
@@ -99,6 +109,7 @@ brew tap laishulu/macism
 which macism || brew install macism
 brew install --HEAD pyenv
 brew install --HEAD pyenv-virtualenv
+brew install --cask switchkey # 程序默认输入法
 
 # 使用 pyenv shell VERSION 切换到对应版本环境, 然后执行如下命令:
 pip install ipython ansible
@@ -322,11 +333,12 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   :custom
   ;; 不显示换行和编码，节省空间
   (doom-modeline-buffer-encoding nil)
-  ;; 显示语言版本（go、python 等）
+  ;; 使用 HUD 显式光标位置(默认是 bar)
+  (doom-modeline-hud t)
+  ;; 显示 go 等语言版本
   (doom-modeline-env-version t)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
   (doom-modeline-buffer-file-name-style 'file-name)
-  ;; 分支名称长度
   (doom-modeline-vcs-max-length 20)
   (doom-modeline-github nil)
   (doom-modeline-height 2)
@@ -356,7 +368,9 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 
 ;; 光标位置显示 minibuffer
 (use-package mini-frame
+  :disabled
   :config
+  (setq x-gtk-resize-child-frames 'resize-mode)
   ;; 在光标位置显示 frame 。
   (setq mini-frame-show-parameters                                        
         (lambda ()                                                                
@@ -366,8 +380,8 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
                  (top (cdr posn)))
             `((left . ,left)
               (top . ,top)))))
-  ;; 固定在 frame 的顶部显式 frame 。
-  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
+  ;; 固定在 frame 顶部显式。
+  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)  (height . 10))))
   (mini-frame-mode))
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
@@ -717,7 +731,7 @@ Mac 系统安装 RIME 输入法：
 4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
 5. 部署生效,:
   + 如果修改了 ~/Library/Rime 中的配置，则必须点击鼠须管的 “重新部署” 才能生效。
-  + 对于 emacs-rime，如果也修改了 /Library/Rime 的配置，则需要执行 =M-x
+  + 对于 emacs-rime，如果也修改了 ~/Library/Rime 的配置，则需要执行 =M-x
     rime-deploy= 生效； 
 
 下载 librime 库, emacs rime 使用它与系统的 rime 输入法交互：
@@ -759,7 +773,14 @@ sudo spctl --master-disable
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
+  ;; 使用开源的 [SwitchKey](https://github.com/itsuhane/SwitchKey) 程序可以实现
+  ;; 其它程序切换到 Emacs 时自动将系统输入法切换到英文，从而避免系统输入法干扰。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
+  ;; 切换到 vterm-mode 类型外的其它类型 buffer 时激活 rime 输入法。
+  (defadvice switch-to-buffer (after activate-input-method activate)
+    (if (string-match "vterm-mode" (symbol-name major-mode))
+        (activate-input-method nil)
+      (activate-input-method "rime")))
   ;; modline 输入法图标高亮, 用来区分中英文输入状态
   (setq mode-line-mule-info '((:eval (rime-lighter))))
   ;; support shift-l, shift-r, control-l, control-r
@@ -1049,10 +1070,14 @@ import_tables:
 
 (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
 (use-package htmlize)
-
-(use-package toc-org :after (org) :hook (org-mode . toc-org-mode))
+;; 自动创建和更新目录
+(use-package org-make-toc 
+  :after (org) 
+  :config 
+  (add-hook 'org-mode-hook #'org-make-toc-mode))
 #+END_SRC
 + 使用 M-x package-install org 安装最新版本，否则使用系统自带的老版本。
++ org-make-toc 使用帮助, [[https://github.com/alphapapa/org-make-toc][参考官方文档]]。
 
 美化 org-mode: 
 #+begin_src emacs-lisp
@@ -1284,6 +1309,7 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
 
 * 搜索比较
 
+搜索:
 #+begin_src emacs-lisp
 ;; C-c p s r (projectile-ripgrep)
 (use-package ripgrep)
@@ -1301,14 +1327,9 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
 (setq grep-highlight-matches t)
 #+end_src
 
-** ediff
-
-ediff 时自动展开对应 org-mode section:
+ediff:
 #+begin_src emacs-lisp
 (use-package ediff
-  ;; Restore window config after quitting ediff
-  ;; :hook ((ediff-before-setup . ediff-save-window-conf)
-  ;;        (ediff-quit         . ediff-restore-window-conf))
   :config
   ;; 忽略空格
   (setq ediff-diff-options "-w")
@@ -1316,17 +1337,25 @@ ediff 时自动展开对应 org-mode section:
   ;; 不创建新的 frame 来显示 Control-Panel
   (setq ediff-window-setup-function #'ediff-setup-windows-plain)
 
-  (add-hook 'ediff-load-hook
-		    (lambda ()
-			  (add-hook 'ediff-before-setup-hook
-				        (lambda ()
-				          (setq ediff-saved-window-configuration (current-window-configuration))))
+  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显式的有问题
+  (add-hook 'ediff-before-setup-hook
+            (lambda ()
+              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                  (delete-window (treemacs-get-local-window)) ) ))
+            
+  ;; (add-hook 'ediff-load-hook
+  ;;   	    (lambda ()
+  ;;   		  (add-hook 'ediff-before-setup-hook
+  ;;   			        (lambda ()
+  ;;   			          (setq ediff-saved-window-configuration (current-window-configuration))))
 
-			  (let ((restore-window-configuration
-				     (lambda ()
-				       (set-window-configuration ediff-saved-window-configuration))))
-			    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
+  ;;   		  (let ((restore-window-configuration
+  ;;   			     (lambda ()
+  ;;   			       (set-window-configuration ediff-saved-window-configuration))))
+  ;;   		    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
 
+  
+  ;; ediff 时自动展开对应 org-mode section
   ;; https://dotemacs.readthedocs.io/en/latest/#ediff
   ;; Check for org mode and existence of buffer
   (defun f-ediff-org-showhide (buf command &rest cmdargs)
@@ -1351,8 +1380,6 @@ ediff 时自动展开对应 org-mode section:
   (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)  
   )
 #+end_src
-+ ediff 与 treemacs 有冲突, 执行 ediff 前需要先关闭 treemacs frame, 否则 ediff
-  control panel 不在 frame 的底部窗口中显式，而且会移动不好控制。
 
 * 编程开发
 ** lsp
@@ -1812,7 +1839,7 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
 (use-package ansible
   :after (yaml-mode)
   :config
-  (add-hook 'yaml-mode-hook '(lambda () (ansible 1))))
+  (add-hook 'yaml-mode-hook (lambda () (ansible 1))))
 
 (use-package company-ansible
   :after (ansible company)
@@ -2213,10 +2240,10 @@ Google 搜索(只支持单行内容搜索):
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND）。
   (setq vterm-buffer-name-string "vterm: %s")
   (add-hook 'vterm-mode-hook (lambda ()
-                             (setf truncate-lines nil)
-                             (setq-local show-paren-mode nil)
-                             (yas-minor-mode -1)
-                             (flycheck-mode -1)))
+                               (setf truncate-lines nil)
+                               (setq-local show-paren-mode nil)
+                               (yas-minor-mode -1)
+                               (flycheck-mode -1)))
   :bind
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止输入法切换冲突。
@@ -2260,7 +2287,7 @@ Google 搜索(只支持单行内容搜索):
 ;; https://github.com/kweizh/posframe-project-term
 (use-package posframe-project-term
   :ensure nil
-  :load-path "/Users/zhangjun/.emacs.d/posframe-project-term"
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp/posframe-project-term"
   :bind
   (("C-c t" . posframe-project-term-toggle)))
 #+end_src
@@ -2330,9 +2357,9 @@ Google 搜索(只支持单行内容搜索):
 #+begin_src emacs-lisp
 (auto-image-file-mode t)
 
-(global-set-key "\C-w" 'backward-kill-word)
-(global-set-key "\C-x\C-k" 'kill-region)
-(global-set-key "\C-c\C-k" 'kill-region)
+;; (global-set-key "\C-w" 'backward-kill-word)
+;; (global-set-key "\C-x\C-k" 'kill-region)
+;; (global-set-key "\C-c\C-k" 'kill-region)
 
 ;; M-x qrr to run query-replace-regexp
 (defalias 'qrr 'query-replace-regexp)
@@ -2712,6 +2739,30 @@ Google 搜索(只支持单行内容搜索):
                                                (select-frame new-frame)
                                                (if window-system
                                                    (my/faces))))))
+
+;; https://github.com/minad/mini-popup
+(use-package mini-popup
+  :ensure nil
+  :disabled
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp"
+  :config
+  ;; Configure a height function (Example for Vertico)
+  (defun mini-popup-height-resize ()
+    (* (1+ (min vertico--total vertico-count)) (default-line-height)))
+  (defun mini-popup-height-fixed ()
+    (* (1+ (if vertico--input vertico-count 0)) (default-line-height)))
+  (setq mini-popup--height-function #'mini-popup-height-resize)
+
+  ;; Disable the minibuffer resizing of Vertico (HACK)
+  (advice-add #'vertico--resize-window :around
+              (lambda (&rest args)
+                (unless mini-popup-mode
+                  (apply args))))
+
+  ;; Ensure that the popup is updated after refresh (Consult-specific)
+  (add-hook 'consult--completion-refresh-hook
+            (lambda (&rest _) (mini-popup--setup)) 99)
+  (mini-popup-mode t))
 #+end_src
 
 origami 提供代码折叠功能, 但是用 M-s o / M-s l 以及 s-express 跳转等内置快捷键也
