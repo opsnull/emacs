@@ -52,11 +52,14 @@
   - [[#eshell][eshell]]
   - [[#tramp][tramp]]
 - [[#其它][其它]]
+- [[#实验][实验]]
 - [[#推荐][推荐]]
 - [[#归档][归档]]
+  - [[#origami][origami]]
   - [[#sis][SIS]]
   - [[#tree-sitter][tree-sitter]]
   - [[#youdao][youdao]]
+  - [[#company-box][company-box]]
 :END:
 
 * 编译安装
@@ -83,7 +86,7 @@ ln -sf /usr/local/opt/emacs-plus@28/Emacs.app /Applications
 需要安装如下命令或工具：
 
 #+begin_src shell :tangle no
-mkdir -p ~/.emacs.d/backup 
+mkdir -p ~/.emacs.d/backup
 mkdir -p ~/.emacs.d/autosave
 mkdir -p ~/.emacs.d/.cache
 mkdir -p ~/.emacs.d/snippets
@@ -91,7 +94,7 @@ mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib
 
 go get golang.org/x/tools/gopls@latest
 
-which fd || brew install fd 
+which fd || brew install fd
 which ag || brew install the_silver_searcher
 which rg || brew install ripgrep
 which fzf || brew install fzf
@@ -110,6 +113,8 @@ which macism || brew install macism
 brew install --HEAD pyenv
 brew install --HEAD pyenv-virtualenv
 brew install --cask switchkey # 程序默认输入法
+brew tap homebrew/cask-fonts
+brew install --cask font-juliamono # 英文字体
 
 # 使用 pyenv shell VERSION 切换到对应版本环境, 然后执行如下命令:
 pip install ipython ansible
@@ -132,8 +137,8 @@ npm install -g pyright
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 ;; Emacs 28
 (when (fboundp 'native-compile-async)
-  (setenv "LIBRARY_PATH" 
-          (concat (getenv "LIBRARY_PATH") 
+  (setenv "LIBRARY_PATH"
+          (concat (getenv "LIBRARY_PATH")
                   "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin20/11.2.0"))
   (setq native-comp-speed 2
         native-comp-async-jobs-number 4
@@ -166,7 +171,8 @@ npm install -g pyright
 配置软件源仓库：
 #+begin_src emacs-lisp
 (require 'package)
-(setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+(setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
+                         ("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
                          ("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
 (package-initialize)
@@ -182,6 +188,10 @@ npm install -g pyright
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
+
+;; Avoid loading old bytecode instead of newer source.
+;; use the newest version available.
+(setq load-prefer-newer t)
 #+end_src
 + 为 use-package 默认添加 ensure 和 demand 参数。
 
@@ -197,7 +207,7 @@ npm install -g pyright
 (setq ffap-machine-p-known 'reject)
 
 ;; Speed up startup
-(setq auto-mode-case-fold nil)  
+(setq auto-mode-case-fold nil)
 
 ;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
 (setq idle-update-delay 1.0)  ; default is 0.5
@@ -241,7 +251,7 @@ npm install -g pyright
 
 GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境变量，如 =PATH= ，导
 致有些依赖的命令找不到。 =exec-path-from-shell= 包通过将指定的 shell 环境变量拷贝
-到 Emacs 环境中来解决这个问题：<<exec-path-from-shell>>
+到 Emacs 环境中来解决这个问题:
 
 #+begin_src emacs-lisp
 (use-package exec-path-from-shell
@@ -310,10 +320,10 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 (defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
 ;; 跟随 Mac 选择深浅主题
 (add-hook 'ns-system-appearance-change-functions
-	      (lambda (appearance)
-	        (pcase appearance
-	          ('light (my/load-light-theme))
-	          ('dark (my/load-dark-theme)))))
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
 
 (display-battery-mode t)
 (column-number-mode t)
@@ -372,8 +382,8 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   :config
   (setq x-gtk-resize-child-frames 'resize-mode)
   ;; 在光标位置显示 frame 。
-  (setq mini-frame-show-parameters                                        
-        (lambda ()                                                                
+  (setq mini-frame-show-parameters
+        (lambda ()
           (let* ((info (posframe-poshandler-argbuilder))
                  (posn (posframe-poshandler-point-bottom-left-corner info))
                  (left (car posn))
@@ -386,15 +396,17 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
+;; 英文: JuliaMono: https://juliamono.netlify.app/download/
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
+;; Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 (use-package cnfonts
   :after (doom-modeline)
   :init
-  (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
+  (setq cnfonts-personal-fontnames '(("JuliaMono" "Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
   :config
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
-  (cnfonts-enable)) 
+  (cnfonts-enable))
 
 (use-package all-the-icons :after (cnfonts))
 
@@ -446,12 +458,12 @@ eval "$(direnv hook bash)"
 + C-c e a: envrc-allow
 + C-c e d: envrc-deny
 + C-c e r: envrc-reload
-  
+
 使用步骤：
 1. 在对应目录创建 =.envrc= 文件;
 2. 向 .envrc 文件添加 shell 环境变量;
 3. 执行 =direnv allow .= 生效环境变量;
-   
+
 如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
 lsp-workspace-restart= 来重启语言服务器。
 
@@ -474,7 +486,7 @@ lsp-workspace-restart= 来重启语言服务器。
         completion-category-defaults nil
         completion-category-overrides '((file (styles partial-completion)))))
 
-;; 对 company 候选者添加高亮
+;; 高亮 company 候选者
 (defun just-one-face (fn &rest args)
   (let ((orderless-match-faces [completions-common-part]))
     (apply fn args)))
@@ -524,6 +536,7 @@ lsp-workspace-restart= 来重启语言服务器。
    ("M-g i" . consult-imenu)
    ("M-g I" . consult-project-imenu)
    ;; M-s bindings (search-map)
+   ;; consult-find 不支持预览
    ("M-s f" . consult-find)
    ("M-s L" . consult-locate)
    ("M-s F" . consult-locate)
@@ -553,7 +566,8 @@ lsp-workspace-restart= 来重启语言服务器。
         xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会 hang。
-  (setq consult-preview-key (kbd "C-l"))
+  ;;(setq consult-preview-key (kbd "C-l"))
+  (setq consult-preview-key 'any)
   (setq consult-narrow-key "<")
   ;; 搜索隐藏文件
   (setq consult-ripgrep-args "rg --line-buffered --color=never --max-columns=1000 --path-separator / --hidden --smart-case --no-heading --line-number --with-filename .")
@@ -565,7 +579,7 @@ lsp-workspace-restart= 来重启语言服务器。
   ;; 如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
   (setq consult-project-root-function
         (lambda ()
-          (unless (file-remote-p default-directory) 
+          (unless (file-remote-p default-directory)
             (when-let (project (project-current))
               (car (project-roots project)))))))
 
@@ -660,17 +674,7 @@ lsp-workspace-restart= 来重启语言服务器。
                       company-dabbrev))
   :config
   (global-company-mode t))
-  #+end_src  
-
-company-box 为候选者显示图标和帮助文档：
-#+begin_src emacs-lisp
-(use-package company-box
-  :after (company all-the-icons)
-  :init
-  ;;(setq company-box-doc-enable nil)
-  (setq company-box-doc-delay 0.1)
-  :hook (company-mode . company-box-mode))
-#+end_src
+  #+end_src
 
 #+begin_src emacs-lisp
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
@@ -706,20 +710,26 @@ company-box 为候选者显示图标和帮助文档：
     :bind
     ("M-g c" . avy-goto-char-2)
     ("M-g l" . avy-goto-line))
-#+end_src 
+#+end_src
 
 跳转到指定窗口：
-#+begin_src emacs-lisp  
-  (use-package ace-window
-    :init
-    ;; 使用字母而非数字标记窗口，便于跳转
-    (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-    :config
-    ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择
-    (setq aw-scope 'frame)
-    ;; modeline 显示窗口编号
-    ;;(ace-window-display-mode +1)
-    (global-set-key (kbd "M-o") 'ace-window))
+#+begin_src emacs-lisp
+(use-package ace-window
+  :init
+  ;; 使用字母而非数字标记窗口，便于跳转
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+  :config
+  ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择
+  (setq aw-scope 'frame)
+  ;; 总是提示窗口选择, 这样即使两个窗口也可以执行中间命令
+  (setq aw-dispatch-always t)
+  ;; modeline 显示窗口编号
+  ;;(ace-window-display-mode +1)
+  (global-set-key (kbd "M-o") 'ace-window)
+  ;; 调大窗口选择字符
+  (custom-set-faces
+   '(aw-leading-char-face
+     ((t (:inherit ace-jump-face-foreground :foreground "red" :height 2.0))))))
 #+end_src
 
 * 输入法
@@ -732,7 +742,7 @@ Mac 系统安装 RIME 输入法：
 5. 部署生效,:
   + 如果修改了 ~/Library/Rime 中的配置，则必须点击鼠须管的 “重新部署” 才能生效。
   + 对于 emacs-rime，如果也修改了 ~/Library/Rime 的配置，则需要执行 =M-x
-    rime-deploy= 生效； 
+    rime-deploy= 生效；
 
 下载 librime 库, emacs rime 使用它与系统的 rime 输入法交互：
 #+Begin_src bash :results no
@@ -747,7 +757,7 @@ sudo spctl --master-disable
 从 [[https://github.com/fkxxyz/rime-cloverpinyin][rime-cloverpinyin]] 下载最新的词库方案安装包（文件名不包含 build), 解压后配置拷
 贝到 ~/Library/Rime 目录。另外一份比较好的词库方案是 [[https://github.com/placeless/squirrel_config][squirrel_config]] 。
 
-配置 Emacs: 
+配置 Emacs:
 #+begin_src emacs-lisp
 (use-package rime
   :demand :after (which-key)
@@ -798,7 +808,7 @@ sudo spctl --master-disable
                                   rime-predicate-prog-in-code-p
                                   rime-predicate-after-ascii-char-p))
   (defun rime-predicate-which-key-activate-p () which-key--automatic-display)
-  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 10))
+  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 #+end_src
 
@@ -811,7 +821,7 @@ isearch 与 rime [[https://github.com/DogLooksGood/emacs-rime/issues/21][不兼�
   (global-set-key (kbd "C-r") 'phi-search-backward))
 #+end_src
 + occur 比 isearch 更好用，与 rime 兼容。
-  
+
 RIME 输入法自定义缺省配置：
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
 patch:
@@ -820,7 +830,7 @@ patch:
   menu/page_size: 9
   ascii_composer/good_old_caps_lock: true
   ascii_composer/switch_key:
-    Caps_Lock: commit_code                    
+    Caps_Lock: commit_code
     Shift_L: inline_ascii
     Shift_R: commit
     Control_L: commit_code
@@ -833,7 +843,7 @@ patch:
   key_binder/bindings:
     - { when: composing, accept: ISO_Left_Tab, send: Page_Up }
     - { when: composing, accept: Shift+Tab, send: Page_Up }
-    - { when: composing, accept: Tab, send: Page_Down }     
+    - { when: composing, accept: Tab, send: Page_Down }
     - { when: has_menu, accept: equal, send: Page_Down }
     - { when: has_menu, accept: bracketright, send: Page_Down }
     - { when: paging, accept: minus, send: Page_Up }                 # 上一页
@@ -859,7 +869,7 @@ patch:
     states: [ "无符", "符" ]
   - name: ascii_punct
     reset: 0
-    states: [ 。，, ．， ]
+    states: ["。，", ".,"]
   - name: full_shape
     reset: 0
     states: [ 半, 全 ]
@@ -886,8 +896,7 @@ patch:
     - derive/u$/uu/      # ui = u
 #+end_src
 
-下载[[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases][肥猫中文维基百万大词库（felixonmars/fcitx5-pinyin-zhwiki)]], 放到
-~/Library/Rime 目录：
+下载[[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases][肥猫中文维基百万大词库（felixonmars/fcitx5-pinyin-zhwiki)]], 放到 ~/Library/Rime 目录：
 #+begin_src shell :tangle no
 cd ~/Library/Rime
 wget https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.2.3/zhwiki-20210823.dict.yaml
@@ -1001,6 +1010,8 @@ import_tables:
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 (setq large-file-warning-threshold nil)
+
+
 #+END_SRC
 + fundamental-mode 打开的 json/yaml 文件，使用 M-s o(occur) 或 M-s
   l（consult-line) 来进行搜索跳转。
@@ -1053,7 +1064,9 @@ import_tables:
         ;; SRC 代码块不自动缩进
         org-src-preserve-indentation t
         org-edit-src-content-indentation 0
-        org-startup-indented t)
+        org-startup-indented t
+        ;; 在当前 window 编辑 SRC Block
+        org-src-window-setup 'current-window)
   (setq org-todo-keywords '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                                       "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
                             (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
@@ -1071,15 +1084,15 @@ import_tables:
 (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
 (use-package htmlize)
 ;; 自动创建和更新目录
-(use-package org-make-toc 
-  :after (org) 
-  :config 
+(use-package org-make-toc
+  :after (org)
+  :config
   (add-hook 'org-mode-hook #'org-make-toc-mode))
 #+END_SRC
 + 使用 M-x package-install org 安装最新版本，否则使用系统自带的老版本。
 + org-make-toc 使用帮助, [[https://github.com/alphapapa/org-make-toc][参考官方文档]]。
 
-美化 org-mode: 
+美化 org-mode:
 #+begin_src emacs-lisp
 (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
 (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
@@ -1242,7 +1255,7 @@ slide 演示:
       '(lambda ()
          (set-face-foreground 'diary-face   "skyblue")
          (set-face-background 'holiday-face "slate blue")
-         (set-face-foreground 'holiday-face "white"))) 
+         (set-face-foreground 'holiday-face "white")))
 #+end_src
 
 Babel:
@@ -1342,42 +1355,42 @@ ediff:
             (lambda ()
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window)) ) ))
-            
+
   ;; (add-hook 'ediff-load-hook
-  ;;   	    (lambda ()
-  ;;   		  (add-hook 'ediff-before-setup-hook
-  ;;   			        (lambda ()
-  ;;   			          (setq ediff-saved-window-configuration (current-window-configuration))))
+  ;;        (lambda ()
+  ;;          (add-hook 'ediff-before-setup-hook
+  ;;                    (lambda ()
+  ;;                      (setq ediff-saved-window-configuration (current-window-configuration))))
 
-  ;;   		  (let ((restore-window-configuration
-  ;;   			     (lambda ()
-  ;;   			       (set-window-configuration ediff-saved-window-configuration))))
-  ;;   		    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
+  ;;          (let ((restore-window-configuration
+  ;;                 (lambda ()
+  ;;                   (set-window-configuration ediff-saved-window-configuration))))
+  ;;            (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
 
-  
+
   ;; ediff 时自动展开对应 org-mode section
   ;; https://dotemacs.readthedocs.io/en/latest/#ediff
   ;; Check for org mode and existence of buffer
   (defun f-ediff-org-showhide (buf command &rest cmdargs)
-	"If buffer exists and is orgmode then execute command"
-	(when buf
-	  (when (eq (buffer-local-value 'major-mode (get-buffer buf)) 'org-mode)
-		(save-excursion (set-buffer buf) (apply command cmdargs)))))
+    "If buffer exists and is orgmode then execute command"
+    (when buf
+      (when (eq (buffer-local-value 'major-mode (get-buffer buf)) 'org-mode)
+        (save-excursion (set-buffer buf) (apply command cmdargs)))))
 
   (defun f-ediff-org-unfold-tree-element ()
-	"Unfold tree at diff location"
-	(f-ediff-org-showhide ediff-buffer-A 'org-reveal)
-	(f-ediff-org-showhide ediff-buffer-B 'org-reveal)
-	(f-ediff-org-showhide ediff-buffer-C 'org-reveal))
+    "Unfold tree at diff location"
+    (f-ediff-org-showhide ediff-buffer-A 'org-reveal)
+    (f-ediff-org-showhide ediff-buffer-B 'org-reveal)
+    (f-ediff-org-showhide ediff-buffer-C 'org-reveal))
 
   (defun f-ediff-org-fold-tree ()
-	"Fold tree back to top level"
-	(f-ediff-org-showhide ediff-buffer-A 'hide-sublevels 1)
-	(f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
-	(f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
+    "Fold tree back to top level"
+    (f-ediff-org-showhide ediff-buffer-A 'hide-sublevels 1)
+    (f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
+    (f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
 
   (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
-  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)  
+  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)
   )
 #+end_src
 
@@ -1434,46 +1447,14 @@ ediff:
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
-                 "[/\\\\]node_modules\\'"
                  "[/\\\\]vendor\\'"
-                 "[/\\\\]\\.fslckout\\'"
-                 "[/\\\\]\\.tox\\'"
-                 "[/\\\\]\\.stack-work\\'"
-                 "[/\\\\]\\.bloop\\'"
-                 "[/\\\\]\\.metals\\'"
-                 "[/\\\\]target\\'"
                  "[/\\\\]\\.settings\\'"
                  "[/\\\\]\\.project\\'"
                  "[/\\\\]\\.travis\\'"
                  "[/\\\\]bazel-*"
                  "[/\\\\]\\.cache"
-                 "[/\\\\]_build"
                  "[/\\\\]\\.clwb$"))
     (push dir lsp-file-watch-ignored-directories))
-  ;; https://github.com/blahgeek/emacs.d/blob/master/init.el#L954
-  ;; https://github.com/emacs-lsp/lsp-mode/issues/3062
-  ;; try to fix memory leak
-  (defun my/lsp-client-clear-leak-handlers (lsp-client)
-    "Clear leaking handlers in LSP-CLIENT."
-    (let ((response-handlers (lsp--client-response-handlers lsp-client))
-          to-delete-keys)
-      (maphash (lambda (key value)
-                 (when (> (time-convert (time-since (nth 3 value)) 'integer)
-                          (* 2 lsp-response-timeout))
-                   (push key to-delete-keys)))
-               response-handlers)
-      (when to-delete-keys
-        (message "Deleting %d handlers in %s lsp-client..."
-                 (length to-delete-keys)
-                 (lsp--client-server-id lsp-client))
-        (mapc (lambda (k) (remhash k response-handlers))
-              to-delete-keys))))
-  (defun my/lsp-clear-leak ()
-    "Clear all leaks"
-    (maphash (lambda (_ client)
-               (my/lsp-client-clear-leak-handlers client))
-             lsp-clients))
-  (setq my/lsp-clear-leak-timer (run-with-timer 5 5 #'my/lsp-clear-leak))
 :bind
 (:map lsp-mode-map
       ("C-c f" . lsp-format-region)
@@ -1528,7 +1509,7 @@ eval "$(jenv init -)"
 pyenv 使用方法：
 1. 列出可以安装的 python 版本： =pyenv install -l=
 2. 安装指定的 python 版本： =pyenv install <version>=
-3. 创建一个 pyenv virtualenv： =pyenv virtualenv [version] <virtualenv-name>= 
+3. 创建一个 pyenv virtualenv： =pyenv virtualenv [version] <virtualenv-name>=
 4. 为项目指定 python 版本或上一步创建的 virtualenv 名称：在项目根目录执行 =pyenv
    local <version1> <version2>= 命令，这会将版本信息写入项目根目录的
    =.python-version= 文件。
@@ -1611,7 +1592,7 @@ git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins
 使用方法：
 1. 先使用 =pyenv local= 为项目指定 pyenv virtualenv;
 2. 使用 =pyenv pyright= 命令配置 pyrightconfig.json 使用上一步指定的 pyenv virtualenv；
-  
+
 pyright 假设源代码 py 源文件是位于项目 scr 目录下，但实际可能会在多个其它子目录
 （还有嵌套情况）中放置项目源码，也就是所谓的 multi-root 模式（对应于 vscode 中的
 多 worksapce 目录)，这时可能出现大量 import 错误，可以通过在项目 root 目录配置
@@ -1628,7 +1609,7 @@ Resolution]]）：
             "root": "scripts",
             "extraPaths": [
                 ".",  // scripts 目录下 py 文件导入同级 py 文件的情况
-                "scripts/appinstance_apply" 
+                "scripts/appinstance_apply"
             ]
         }
     ]
@@ -1655,7 +1636,7 @@ executionEnvironments：
 
 默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
 
-手动安装 lombok: 
+手动安装 lombok:
 #+begin_src shell :results none
 mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
 #+end_src
@@ -1785,7 +1766,7 @@ mermaid.initialize({
 Access Token，然后将 username 和 token 保存到 =~/.authinfo= 文件中：
 
 #+begin_src bash :results none
-$ grep api.github  ~/.authinfo 
+$ grep api.github  ~/.authinfo
 machine api.github.com login geekard@qq.com password YOUR_TOKEN
 #+end_src
 
@@ -1796,7 +1777,7 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
 + M-x grip-stop-preview
 + M-x grip-restart-preview
 + M-x grip-browse-preview 使用浏览器来预览
-#+begin_src emacs-lisp  
+#+begin_src emacs-lisp
 (use-package grip-mode
   :bind
   (:map markdown-mode-command-map ("g" . grip-mode))
@@ -1835,7 +1816,7 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
 
 ** ansible
 
-#+begin_src emacs-lisp  
+#+begin_src emacs-lisp
 (use-package ansible
   :after (yaml-mode)
   :config
@@ -1862,7 +1843,7 @@ which dockerfile-language-server-nodejs &>/dev/null || npm install -g dockerfile
 ** web
 *** typescript
 
-#+begin_src emacs-lisp  
+#+begin_src emacs-lisp
 (defun my/use-eslint-from-node-modules ()
 ;; use local eslint from node_modules before global
 ;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
@@ -1969,11 +1950,11 @@ js/jsx/ts/tsx 等类型文件。
   (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)))
 #+end_src
 + 使用 js2-mode 打开 json 文件。
-  
+
 *** emmet
 
 #+begin_src emacs-lisp
-(use-package emmet-mode 
+(use-package emmet-mode
   :after(web-mode js2-mode)
   :config
   (add-hook 'sgml-mode-hook 'emmet-mode)
@@ -1986,7 +1967,7 @@ js/jsx/ts/tsx 等类型文件。
   (setq emmet-preview-default nil))
 #+end_src
 
-*** dap-mode  
+*** dap-mode
 
 #+begin_src  emacs-lisp
 (use-package dap-mode
@@ -2175,13 +2156,13 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
                   "\\.log\\'"
                   "~\\'"))
     (add-to-list 'projectile-globally-ignored-file-suffixes list))
-  
+
   ;; Disable projectile on remote buffers
   ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
   ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
   (defadvice projectile-project-root (around ignore-remote first activate)
     (unless (file-remote-p default-directory 'no-identification) ad-do-it))
-  
+
   ;; 开启 cache 解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
   (setq projectile-file-exists-remote-cache-expire (* 10 60))
@@ -2219,7 +2200,7 @@ Google 搜索(只支持单行内容搜索):
 
 书签管理器:
 #+begin_src emacs-lisp
-;; 需要安装 buku 依赖: pip3 install buku 
+;; 需要安装 buku 依赖: pip3 install buku
 (use-package ebuku
   :config
   ;; 不限制结果
@@ -2291,7 +2272,7 @@ Google 搜索(只支持单行内容搜索):
   :bind
   (("C-c t" . posframe-project-term-toggle)))
 #+end_src
-  
+
 ** eshell
 
 #+begin_src emacs-lisp
@@ -2305,9 +2286,9 @@ Google 搜索(只支持单行内容搜索):
 ;;(global-set-key [f1] 'shell)
 
 ;; 提示符只读
-(setq comint-prompt-read-only t)        
+(setq comint-prompt-read-only t)
 ;; 命令补全
-(setq shell-command-completion-mode t)     
+(setq shell-command-completion-mode t)
 
 ;; 高亮模式
 (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
@@ -2351,11 +2332,13 @@ Google 搜索(只支持单行内容搜索):
   (setenv "VTERM_TRAMP" "true")
   (setq tramp-remote-process-environment process-environment))
 #+end_src
-  
+
 * 其它
 
 #+begin_src emacs-lisp
 (auto-image-file-mode t)
+
+(add-hook 'before-save-hook 'whitespace-cleanup)
 
 ;; (global-set-key "\C-w" 'backward-kill-word)
 ;; (global-set-key "\C-x\C-k" 'kill-region)
@@ -2376,8 +2359,6 @@ Google 搜索(只支持单行内容搜索):
 ;; Don't lock files.
 (setq create-lockfiles nil)
 
-;; Avoid loading old bytecode instead of newer source.
-(setq load-prefer-newer t)
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
@@ -2486,7 +2467,7 @@ Google 搜索(只支持单行内容搜索):
   (setq dired-kill-when-opening-new-dired-buffer t)
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
-   ;; search file name only when focus is over file
+  ;; search file name only when focus is over file
   (setq dired-isearch-filenames 'dwim)
   ;; when there is two dired buffer, Emacs will select another buffer
   ;; as target buffer (target for copying files, for example).
@@ -2560,9 +2541,56 @@ Google 搜索(只支持单行内容搜索):
   :config
   (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
   (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
+
+;; 相比 Emacs 内置 Help, 提供更多上下文信息。
+(use-package helpful
+  :config
+  ;; Note that the built-in `describe-function' includes both functions
+  ;; and macros. `helpful-function' is functions only, so we provide
+  ;; `helpful-callable' as a drop-in replacement.
+  (global-set-key (kbd "C-h f") #'helpful-callable)
+  (global-set-key (kbd "C-h v") #'helpful-variable)
+  (global-set-key (kbd "C-h k") #'helpful-key)
+
+  ;; Lookup the current symbol at point. C-c C-d is a common keybinding
+  ;; for this in lisp modes.
+  (global-set-key (kbd "C-c C-d") #'helpful-at-point)
+
+  ;; Look up *F*unctions (excludes macros).
+  ;;
+  ;; By default, C-h F is bound to `Info-goto-emacs-command-node'. Helpful
+  ;; already links to the manual, if a function is referenced there.
+  (global-set-key (kbd "C-h F") #'helpful-function)
+
+  ;; Look up *C*ommands.
+  ;;
+  ;; By default, C-h C is bound to describe `describe-coding-system'. I
+  ;; don't find this very useful, but it's frequently useful to only
+  ;; look at interactive functions.
+  (global-set-key (kbd "C-h C") #'helpful-command)
+  )
 #+end_src
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行
   rm 命令。
+
+* 实验
+#+begin_src emacs-lisp
+(use-package svg
+  :ensure nil
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp")
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package zoom
+  :custom
+  (zoom-size '(0.618 . 0.618))
+  (zoom-ignored-major-modes '(dired-mode markdown-mode ediff-mode))
+  (zoom-ignored-buffer-names '("zoom.el" "init.el" "*Ediff Control Panel*"))
+  (zoom-ignored-buffer-name-regexps '("^\\*calc" "^\\*[eE]diff.*"))
+  (zoom-ignore-predicates (list (lambda () (< (count-lines (point-min) (point-max)) 20))))
+  :config
+  (zoom-mode t))
+#+end_src
 
 * 推荐
 
@@ -2637,7 +2665,7 @@ Google 搜索(只支持单行内容搜索):
   :config
   (persp-mode))
 
-(use-package treemacs-persp 
+(use-package treemacs-persp
   :after (treemacs persp-mode)
   :config
   (treemacs-set-scope-type 'Perspectives))
@@ -2651,7 +2679,7 @@ Google 搜索(只支持单行内容搜索):
 ;; minibuffer 自动补全时显示图标会导致 TRAMP 变慢，故关闭。
 (use-package all-the-icons-completion
   :after (marginalia)
-  :config 
+  :config
   (all-the-icons-completion-mode)
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
@@ -2687,16 +2715,16 @@ Google 搜索(只支持单行内容搜索):
   :defer t
   :init
   (setq modus-themes-italic-constructs t
-	    modus-themes-bold-constructs nil
-	    modus-themes-region '(bg-only no-extend)
-	    modus-themes-variable-pitch-ui t
-	    modus-themes-variable-pitch-headings t
-	    modus-themes-scale-headings t
-	    modus-themes-scale-1 1.1
-	    modus-themes-scale-2 1.15
-	    modus-themes-scale-3 1.21
-	    modus-themes-scale-4 1.27
-	    modus-themes-scale-title 1.33)
+        modus-themes-bold-constructs nil
+        modus-themes-region '(bg-only no-extend)
+        modus-themes-variable-pitch-ui t
+        modus-themes-variable-pitch-headings t
+        modus-themes-scale-headings t
+        modus-themes-scale-1 1.1
+        modus-themes-scale-2 1.15
+        modus-themes-scale-3 1.21
+        modus-themes-scale-4 1.27
+        modus-themes-scale-title 1.33)
   ;; Load the theme files before enabling a theme
   (modus-themes-load-themes)
   :config
@@ -2718,13 +2746,13 @@ Google 搜索(只支持单行内容搜索):
   (when (display-graphic-p)
     ;; 中文字体
     (dolist (charset '(kana han symbol cjk-misc bopomofo))
-      (set-fontset-font 
+      (set-fontset-font
        (frame-parameter nil 'font)
        charset
        (font-spec :name "Sarasa Mono SC" :weight 'normal :slant 'normal :size 15.0)))
     ;; 设置字体缩放比例, 使字体对齐。
     (setq face-font-rescale-alist '(("Iosevka SS14" . 1.0)
-                                    ("Sarasa Mono SC" . 1.0714285714285714) 
+                                    ("Sarasa Mono SC" . 1.0714285714285714)
                                     ("HanaMinB" . 1.1428571428571428)))))
 
 ;; cnfont 会自动设置字体和缩放，开启 cnfont 时不需要配置这个 hook 。而且这个只是
@@ -2763,10 +2791,17 @@ Google 搜索(只支持单行内容搜索):
   (add-hook 'consult--completion-refresh-hook
             (lambda (&rest _) (mini-popup--setup)) 99)
   (mini-popup-mode t))
+
+(use-package key-chord
+  :config
+  (key-chord-mode 1)
+  (key-chord-define-global ".." 'ebuku)
+  (key-chord-define-global ",," '(lamba ()(find-file "~/Downloads/history.json"))))
 #+end_src
 
-origami 提供代码折叠功能, 但是用 M-s o / M-s l 以及 s-express 跳转等内置快捷键也
-可以快速跳转：
+** origami
+
+origami 提供代码折叠功能，最新版本[[https://github.com/elp-revive/origami.el/issues/1][从 celpa 源安装]]：
 #+begin_src emacs-lisp :tangle no
 (use-package origami
   :config
@@ -2825,7 +2860,7 @@ Buffer 语法高亮渲染变慢，暂时关闭。
 
 (use-package  tree-sitter-langs)
 #+end_src
-  
+
 ** youdao
 #+begin_src emacs-lisp :tangle no
 (defun my-youdao-dictionary-search-at-point ()
@@ -2866,7 +2901,18 @@ Buffer 语法高亮渲染变慢，暂时关闭。
                   (posframe-hide youdao-dictionary-buffer-name)
                   (other-frame 0))))
           (message "Nothing to look up"))))
-    
+
     (advice-add #'youdao-dictionary--posframe-tip
                 :override #'my-youdao-dictionary--posframe-tip))
+#+end_src
+
+** company-box
+company-box 为候选者显示图标和帮助文档：
+#+begin_src emacs-lisp :tangle no
+(use-package company-box
+  :after (company all-the-icons)
+  :init
+  ;;(setq company-box-doc-enable nil)
+  (setq company-box-doc-delay 0.1)
+  :hook (company-mode . company-box-mode))
 #+end_src

@@ -1,5 +1,6 @@
 (require 'package)
-(setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+(setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
+                         ("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
                          ("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
 (package-initialize)
@@ -13,6 +14,10 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
+;; Avoid loading old bytecode instead of newer source.
+;; use the newest version available.
+(setq load-prefer-newer t)
+
 ;; Increase how much is read from processes in a single chunk (default is 4kb).
 (setq read-process-output-max (* 1024 1024))  ;; 1MB
 
@@ -20,7 +25,7 @@
 (setq ffap-machine-p-known 'reject)
 
 ;; Speed up startup
-(setq auto-mode-case-fold nil)  
+(setq auto-mode-case-fold nil)
 
 ;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
 (setq idle-update-delay 1.0)  ; default is 0.5
@@ -121,10 +126,10 @@
 (defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
 ;; 跟随 Mac 选择深浅主题
 (add-hook 'ns-system-appearance-change-functions
-	      (lambda (appearance)
-	        (pcase appearance
-	          ('light (my/load-light-theme))
-	          ('dark (my/load-dark-theme)))))
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
 
 (display-battery-mode t)
 (column-number-mode t)
@@ -183,8 +188,8 @@
   :config
   (setq x-gtk-resize-child-frames 'resize-mode)
   ;; 在光标位置显示 frame 。
-  (setq mini-frame-show-parameters                                        
-        (lambda ()                                                                
+  (setq mini-frame-show-parameters
+        (lambda ()
           (let* ((info (posframe-poshandler-argbuilder))
                  (posn (posframe-poshandler-point-bottom-left-corner info))
                  (left (car posn))
@@ -197,15 +202,17 @@
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
+;; 英文: JuliaMono: https://juliamono.netlify.app/download/
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
+;; Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 (use-package cnfonts
   :after (doom-modeline)
   :init
-  (setq cnfonts-personal-fontnames '(("Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
+  (setq cnfonts-personal-fontnames '(("JuliaMono" "Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
   :config
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
-  (cnfonts-enable)) 
+  (cnfonts-enable))
 
 (use-package all-the-icons :after (cnfonts))
 
@@ -247,7 +254,7 @@
         completion-category-defaults nil
         completion-category-overrides '((file (styles partial-completion)))))
 
-;; 对 company 候选者添加高亮
+;; 高亮 company 候选者
 (defun just-one-face (fn &rest args)
   (let ((orderless-match-faces [completions-common-part]))
     (apply fn args)))
@@ -297,6 +304,7 @@
    ("M-g i" . consult-imenu)
    ("M-g I" . consult-project-imenu)
    ;; M-s bindings (search-map)
+   ;; consult-find 不支持预览
    ("M-s f" . consult-find)
    ("M-s L" . consult-locate)
    ("M-s F" . consult-locate)
@@ -326,7 +334,8 @@
         xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会 hang。
-  (setq consult-preview-key (kbd "C-l"))
+  ;;(setq consult-preview-key (kbd "C-l"))
+  (setq consult-preview-key 'any)
   (setq consult-narrow-key "<")
   ;; 搜索隐藏文件
   (setq consult-ripgrep-args "rg --line-buffered --color=never --max-columns=1000 --path-separator / --hidden --smart-case --no-heading --line-number --with-filename .")
@@ -338,7 +347,7 @@
   ;; 如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
   (setq consult-project-root-function
         (lambda ()
-          (unless (file-remote-p default-directory) 
+          (unless (file-remote-p default-directory)
             (when-let (project (project-current))
               (car (project-roots project)))))))
 
@@ -430,13 +439,6 @@
   :config
   (global-company-mode t))
 
-(use-package company-box
-  :after (company all-the-icons)
-  :init
-  ;;(setq company-box-doc-enable nil)
-  (setq company-box-doc-delay 0.1)
-  :hook (company-mode . company-box-mode))
-
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
   :commands yas-minor-mode
@@ -467,9 +469,15 @@
   :config
   ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择
   (setq aw-scope 'frame)
+  ;; 总是提示窗口选择, 这样即使两个窗口也可以执行中间命令
+  (setq aw-dispatch-always t)
   ;; modeline 显示窗口编号
   ;;(ace-window-display-mode +1)
-  (global-set-key (kbd "M-o") 'ace-window))
+  (global-set-key (kbd "M-o") 'ace-window)
+  ;; 调大窗口选择字符
+  (custom-set-faces
+   '(aw-leading-char-face
+     ((t (:inherit ace-jump-face-foreground :foreground "red" :height 2.0))))))
 
 (use-package rime
   :demand :after (which-key)
@@ -520,7 +528,7 @@
                                   rime-predicate-prog-in-code-p
                                   rime-predicate-after-ascii-char-p))
   (defun rime-predicate-which-key-activate-p () which-key--automatic-display)
-  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 10))
+  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 
 (use-package phi-search
@@ -648,7 +656,9 @@
         ;; SRC 代码块不自动缩进
         org-src-preserve-indentation t
         org-edit-src-content-indentation 0
-        org-startup-indented t)
+        org-startup-indented t
+        ;; 在当前 window 编辑 SRC Block
+        org-src-window-setup 'current-window)
   (setq org-todo-keywords '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                                       "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
                             (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
@@ -666,9 +676,9 @@
 (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
 (use-package htmlize)
 ;; 自动创建和更新目录
-(use-package org-make-toc 
-  :after (org) 
-  :config 
+(use-package org-make-toc
+  :after (org)
+  :config
   (add-hook 'org-mode-hook #'org-make-toc-mode))
 
 (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
@@ -893,42 +903,42 @@
             (lambda ()
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window)) ) ))
-            
+
   ;; (add-hook 'ediff-load-hook
-  ;;   	    (lambda ()
-  ;;   		  (add-hook 'ediff-before-setup-hook
-  ;;   			        (lambda ()
-  ;;   			          (setq ediff-saved-window-configuration (current-window-configuration))))
+  ;;        (lambda ()
+  ;;          (add-hook 'ediff-before-setup-hook
+  ;;                    (lambda ()
+  ;;                      (setq ediff-saved-window-configuration (current-window-configuration))))
 
-  ;;   		  (let ((restore-window-configuration
-  ;;   			     (lambda ()
-  ;;   			       (set-window-configuration ediff-saved-window-configuration))))
-  ;;   		    (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
+  ;;          (let ((restore-window-configuration
+  ;;                 (lambda ()
+  ;;                   (set-window-configuration ediff-saved-window-configuration))))
+  ;;            (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
 
-  
+
   ;; ediff 时自动展开对应 org-mode section
   ;; https://dotemacs.readthedocs.io/en/latest/#ediff
   ;; Check for org mode and existence of buffer
   (defun f-ediff-org-showhide (buf command &rest cmdargs)
-	"If buffer exists and is orgmode then execute command"
-	(when buf
-	  (when (eq (buffer-local-value 'major-mode (get-buffer buf)) 'org-mode)
-		(save-excursion (set-buffer buf) (apply command cmdargs)))))
+    "If buffer exists and is orgmode then execute command"
+    (when buf
+      (when (eq (buffer-local-value 'major-mode (get-buffer buf)) 'org-mode)
+        (save-excursion (set-buffer buf) (apply command cmdargs)))))
 
   (defun f-ediff-org-unfold-tree-element ()
-	"Unfold tree at diff location"
-	(f-ediff-org-showhide ediff-buffer-A 'org-reveal)
-	(f-ediff-org-showhide ediff-buffer-B 'org-reveal)
-	(f-ediff-org-showhide ediff-buffer-C 'org-reveal))
+    "Unfold tree at diff location"
+    (f-ediff-org-showhide ediff-buffer-A 'org-reveal)
+    (f-ediff-org-showhide ediff-buffer-B 'org-reveal)
+    (f-ediff-org-showhide ediff-buffer-C 'org-reveal))
 
   (defun f-ediff-org-fold-tree ()
-	"Fold tree back to top level"
-	(f-ediff-org-showhide ediff-buffer-A 'hide-sublevels 1)
-	(f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
-	(f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
+    "Fold tree back to top level"
+    (f-ediff-org-showhide ediff-buffer-A 'hide-sublevels 1)
+    (f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
+    (f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
 
   (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
-  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)  
+  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)
   )
 
 (use-package lsp-mode
@@ -980,46 +990,14 @@
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
-                 "[/\\\\]node_modules\\'"
                  "[/\\\\]vendor\\'"
-                 "[/\\\\]\\.fslckout\\'"
-                 "[/\\\\]\\.tox\\'"
-                 "[/\\\\]\\.stack-work\\'"
-                 "[/\\\\]\\.bloop\\'"
-                 "[/\\\\]\\.metals\\'"
-                 "[/\\\\]target\\'"
                  "[/\\\\]\\.settings\\'"
                  "[/\\\\]\\.project\\'"
                  "[/\\\\]\\.travis\\'"
                  "[/\\\\]bazel-*"
                  "[/\\\\]\\.cache"
-                 "[/\\\\]_build"
                  "[/\\\\]\\.clwb$"))
     (push dir lsp-file-watch-ignored-directories))
-  ;; https://github.com/blahgeek/emacs.d/blob/master/init.el#L954
-  ;; https://github.com/emacs-lsp/lsp-mode/issues/3062
-  ;; try to fix memory leak
-  (defun my/lsp-client-clear-leak-handlers (lsp-client)
-    "Clear leaking handlers in LSP-CLIENT."
-    (let ((response-handlers (lsp--client-response-handlers lsp-client))
-          to-delete-keys)
-      (maphash (lambda (key value)
-                 (when (> (time-convert (time-since (nth 3 value)) 'integer)
-                          (* 2 lsp-response-timeout))
-                   (push key to-delete-keys)))
-               response-handlers)
-      (when to-delete-keys
-        (message "Deleting %d handlers in %s lsp-client..."
-                 (length to-delete-keys)
-                 (lsp--client-server-id lsp-client))
-        (mapc (lambda (k) (remhash k response-handlers))
-              to-delete-keys))))
-  (defun my/lsp-clear-leak ()
-    "Clear all leaks"
-    (maphash (lambda (_ client)
-               (my/lsp-client-clear-leak-handlers client))
-             lsp-clients))
-  (setq my/lsp-clear-leak-timer (run-with-timer 5 5 #'my/lsp-clear-leak))
 :bind
 (:map lsp-mode-map
       ("C-c f" . lsp-format-region)
@@ -1299,7 +1277,7 @@ mermaid.initialize({
   (add-to-list 'auto-mode-alist '("\\.tmpl\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode)))
 
-(use-package emmet-mode 
+(use-package emmet-mode
   :after(web-mode js2-mode)
   :config
   (add-hook 'sgml-mode-hook 'emmet-mode)
@@ -1469,13 +1447,13 @@ mermaid.initialize({
                   "\\.log\\'"
                   "~\\'"))
     (add-to-list 'projectile-globally-ignored-file-suffixes list))
-  
+
   ;; Disable projectile on remote buffers
   ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
   ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
   (defadvice projectile-project-root (around ignore-remote first activate)
     (unless (file-remote-p default-directory 'no-identification) ad-do-it))
-  
+
   ;; 开启 cache 解决 TRAMP 的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
   (setq projectile-file-exists-remote-cache-expire (* 10 60))
@@ -1496,7 +1474,7 @@ mermaid.initialize({
 (use-package xah-lookup )
 (global-set-key (kbd "<f9>") 'xah-lookup-google)
 
-;; 需要安装 buku 依赖: pip3 install buku 
+;; 需要安装 buku 依赖: pip3 install buku
 (use-package ebuku
   :config
   ;; 不限制结果
@@ -1571,9 +1549,9 @@ mermaid.initialize({
 ;;(global-set-key [f1] 'shell)
 
 ;; 提示符只读
-(setq comint-prompt-read-only t)        
+(setq comint-prompt-read-only t)
 ;; 命令补全
-(setq shell-command-completion-mode t)     
+(setq shell-command-completion-mode t)
 
 ;; 高亮模式
 (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
@@ -1615,6 +1593,8 @@ mermaid.initialize({
 
 (auto-image-file-mode t)
 
+(add-hook 'before-save-hook 'whitespace-cleanup)
+
 ;; (global-set-key "\C-w" 'backward-kill-word)
 ;; (global-set-key "\C-x\C-k" 'kill-region)
 ;; (global-set-key "\C-c\C-k" 'kill-region)
@@ -1634,8 +1614,6 @@ mermaid.initialize({
 ;; Don't lock files.
 (setq create-lockfiles nil)
 
-;; Avoid loading old bytecode instead of newer source.
-(setq load-prefer-newer t)
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
@@ -1744,7 +1722,7 @@ mermaid.initialize({
   (setq dired-kill-when-opening-new-dired-buffer t)
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
-   ;; search file name only when focus is over file
+  ;; search file name only when focus is over file
   (setq dired-isearch-filenames 'dwim)
   ;; when there is two dired buffer, Emacs will select another buffer
   ;; as target buffer (target for copying files, for example).
@@ -1818,3 +1796,45 @@ mermaid.initialize({
   :config
   (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
   (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
+
+;; 相比 Emacs 内置 Help, 提供更多上下文信息。
+(use-package helpful
+  :config
+  ;; Note that the built-in `describe-function' includes both functions
+  ;; and macros. `helpful-function' is functions only, so we provide
+  ;; `helpful-callable' as a drop-in replacement.
+  (global-set-key (kbd "C-h f") #'helpful-callable)
+  (global-set-key (kbd "C-h v") #'helpful-variable)
+  (global-set-key (kbd "C-h k") #'helpful-key)
+
+  ;; Lookup the current symbol at point. C-c C-d is a common keybinding
+  ;; for this in lisp modes.
+  (global-set-key (kbd "C-c C-d") #'helpful-at-point)
+
+  ;; Look up *F*unctions (excludes macros).
+  ;;
+  ;; By default, C-h F is bound to `Info-goto-emacs-command-node'. Helpful
+  ;; already links to the manual, if a function is referenced there.
+  (global-set-key (kbd "C-h F") #'helpful-function)
+
+  ;; Look up *C*ommands.
+  ;;
+  ;; By default, C-h C is bound to describe `describe-coding-system'. I
+  ;; don't find this very useful, but it's frequently useful to only
+  ;; look at interactive functions.
+  (global-set-key (kbd "C-h C") #'helpful-command)
+  )
+
+(use-package svg
+  :ensure nil
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp")
+
+(use-package zoom
+  :custom
+  (zoom-size '(0.618 . 0.618))
+  (zoom-ignored-major-modes '(dired-mode markdown-mode ediff-mode))
+  (zoom-ignored-buffer-names '("zoom.el" "init.el" "*Ediff Control Panel*"))
+  (zoom-ignored-buffer-name-regexps '("^\\*calc" "^\\*[eE]diff.*"))
+  (zoom-ignore-predicates (list (lambda () (< (count-lines (point-min) (point-max)) 20))))
+  :config
+  (zoom-mode t))
