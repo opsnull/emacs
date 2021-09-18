@@ -56,7 +56,7 @@
 - [[#推荐][推荐]]
 - [[#归档][归档]]
   - [[#origami][origami]]
-  - [[#sis][SIS]]
+  - [[#sis][sis]]
   - [[#tree-sitter][tree-sitter]]
   - [[#youdao][youdao]]
   - [[#company-box][company-box]]
@@ -365,7 +365,8 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 
 (use-package dashboard
   :config
-  (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
+  (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
+  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
@@ -376,13 +377,12 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 
-;; 光标位置显示 minibuffer
 (use-package mini-frame
   :disabled
   :config
   (setq x-gtk-resize-child-frames 'resize-mode)
-  ;; 在光标位置显示 frame 。
-  (setq mini-frame-show-parameters
+    ;; 光标位置显示 minibuffer
+    (setq mini-frame-show-parameters
         (lambda ()
           (let* ((info (posframe-poshandler-argbuilder))
                  (posn (posframe-poshandler-point-bottom-left-corner info))
@@ -395,8 +395,8 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   (mini-frame-mode))
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
-;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 英文: JuliaMono: https://juliamono.netlify.app/download/
+;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 ;; Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 (use-package cnfonts
@@ -566,8 +566,7 @@ lsp-workspace-restart= 来重启语言服务器。
         xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会 hang。
-  ;;(setq consult-preview-key (kbd "C-l"))
-  (setq consult-preview-key 'any)
+  (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   ;; 搜索隐藏文件
   (setq consult-ripgrep-args "rg --line-buffered --color=never --max-columns=1000 --path-separator / --hidden --smart-case --no-heading --line-number --with-filename .")
@@ -600,11 +599,6 @@ lsp-workspace-restart= 来重启语言服务器。
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
-  (setq embark-action-indicator
-        (lambda (map _target)
-          (which-key--show-keymap "Embark" map nil nil 'no-paging)
-          #'which-key--hide-popup-ignore-command)
-        embark-become-indicator embark-action-indicator)
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
@@ -616,7 +610,10 @@ lsp-workspace-restart= 来重启语言服务器。
 
 (use-package embark-consult
   :after (embark consult)
+  :demand t ;; only necessary if you have the hook below
   :hook
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
   (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
@@ -760,7 +757,7 @@ sudo spctl --master-disable
 配置 Emacs:
 #+begin_src emacs-lisp
 (use-package rime
-  :demand :after (which-key)
+  :demand
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
@@ -800,14 +797,12 @@ sudo spctl --master-disable
   (setq rime-disable-predicates '(rime-predicate-ace-window-p
                                   rime-predicate-evil-mode-p
                                   rime-predicate-hydra-p
-                                  rime-predicate-which-key-activate-p
                                   rime-predicate-current-uppercase-letter-p
                                   rime-predicate-after-alphabet-char-p
                                   rime-predicate-space-after-cc-p
                                   rime-predicate-punctuation-after-space-cc-p
                                   rime-predicate-prog-in-code-p
                                   rime-predicate-after-ascii-char-p))
-  (defun rime-predicate-which-key-activate-p () which-key--automatic-display)
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 #+end_src
@@ -899,7 +894,7 @@ patch:
 下载[[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases][肥猫中文维基百万大词库（felixonmars/fcitx5-pinyin-zhwiki)]], 放到 ~/Library/Rime 目录：
 #+begin_src shell :tangle no
 cd ~/Library/Rime
-wget https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.2.3/zhwiki-20210823.dict.yaml
+wget https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.2.3/zhwiki-20210911.dict.yaml
 #+end_src
 
 修改文件 ~/Library/Rime/clover.dict.yaml, 内容如下：
@@ -911,7 +906,7 @@ sort: by_weight
 import_tables:
   - clover.base
   - clover.phrase
-  - zhwiki-20210823
+  - zhwiki-20210911
   - THUOCL_animal
   - THUOCL_caijing
   - THUOCL_car
@@ -1304,10 +1299,25 @@ Babel:
 magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有之一！
 #+begin_src emacs-lisp
 (setq vc-follow-symlinks t)
+
 (use-package magit
+  :demand t
   :custom
   ;; 在当前 window 中显示 magit buffer
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+;; 自动 kill magit buffers
+(defun mu-magit-kill-buffers ()
+  "Restore window configuration and kill all Magit buffers."
+  (interactive)
+  (let ((buffers (magit-mode-get-buffers)))
+    (magit-restore-window-configuration)
+    (mapc #'kill-buffer buffers)))
+
+(bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
+(bind-key "q" #'mu-magit-kill-buffers magit-log-mode-map)
+(bind-key "q" #'mu-magit-kill-buffers magit-mode-map)
+
 #+end_src
 + =(setq auto-revert-check-vc-info t)= 可以自动 revert buffer，确保 modeline 上的
   分支名正确，但是 CPU Profile 显示比较影响性能，故暂不开启。
@@ -1409,7 +1419,6 @@ ediff:
   (tide-mode . lsp)
   (typescript-mode . lsp)
   (dockerfile-mode . lsp)
-  (lsp-mode . lsp-enable-which-key-integration)
   :custom
   ;; 调试模式（开启极大影响性能）
   (lsp-log-io nil)
@@ -2359,10 +2368,12 @@ Google 搜索(只支持单行内容搜索):
 ;; Don't lock files.
 (setq create-lockfiles nil)
 
-
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
+;; option 作为 Super 键(按键绑定用 s- 表示，S- 表示 Shift)
 (setq mac-option-modifier 'super)
+;; fn 作为 Hyper 键(按键绑定用 H- 表示)
+(setq ns-function-modifier 'hyper)
 
 ;; Switch to help buffer when it's opened.
 (setq help-window-select t)
@@ -2518,11 +2529,6 @@ Google 搜索(只支持单行内容搜索):
     (osx-trash-setup))
   (setq delete-by-moving-to-trash t))
 
-;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
-(use-package which-key
-  :init (which-key-mode)
-  :diminish which-key-mode
-  :config (setq which-key-idle-delay 0.8))
 
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
@@ -2569,29 +2575,17 @@ Google 搜索(只支持单行内容搜索):
   ;; look at interactive functions.
   (global-set-key (kbd "C-h C") #'helpful-command)
   )
+
+;; 在 Finder 中打开当前文件
+(use-package reveal-in-osx-finder
+  :ensure t
+  :commands
+  (reveal-in-osx-finder))
 #+end_src
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行
   rm 命令。
 
 * 实验
-#+begin_src emacs-lisp
-(use-package svg
-  :ensure nil
-  :load-path "/Users/zhangjun/.emacs.d/site-lisp")
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package zoom
-  :custom
-  (zoom-size '(0.618 . 0.618))
-  (zoom-ignored-major-modes '(dired-mode markdown-mode ediff-mode))
-  (zoom-ignored-buffer-names '("zoom.el" "init.el" "*Ediff Control Panel*"))
-  (zoom-ignored-buffer-name-regexps '("^\\*calc" "^\\*[eE]diff.*"))
-  (zoom-ignore-predicates (list (lambda () (< (count-lines (point-min) (point-max)) 20))))
-  :config
-  (zoom-mode t))
-#+end_src
-
 * 推荐
 
 本配置参考了以下仓库代码, 感谢 + 推荐!
@@ -2769,9 +2763,9 @@ Google 搜索(只支持单行内容搜索):
                                                    (my/faces))))))
 
 ;; https://github.com/minad/mini-popup
+;; https://raw.githubusercontent.com/minad/mini-popup/main/mini-popup.el
 (use-package mini-popup
   :ensure nil
-  :disabled
   :load-path "/Users/zhangjun/.emacs.d/site-lisp"
   :config
   ;; Configure a height function (Example for Vertico)
@@ -2792,11 +2786,36 @@ Google 搜索(只支持单行内容搜索):
             (lambda (&rest _) (mini-popup--setup)) 99)
   (mini-popup-mode t))
 
+;; 键盘黏滞键
 (use-package key-chord
   :config
   (key-chord-mode 1)
   (key-chord-define-global ".." 'ebuku)
   (key-chord-define-global ",," '(lamba ()(find-file "~/Downloads/history.json"))))
+
+;; 画图
+(use-package svg
+  :ensure nil
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp")
+
+;; 自动调整窗口大小
+(use-package zoom
+  :disabled
+  :custom
+  (zoom-size '(0.618 . 0.618))
+  (zoom-ignored-major-modes '(dired-mode markdown-mode ediff-mode))
+  (zoom-ignored-buffer-names '("zoom.el" "init.el" "*Ediff Control Panel*"))
+  (zoom-ignored-buffer-name-regexps '("^\\*calc" "^\\*[eE]diff.*"))
+  (zoom-ignore-predicates (list (lambda () (< (count-lines (point-min) (point-max)) 20))))
+  :config
+  (zoom-mode t))
+
+;; 使用 embark C-h 替换 which-key
+;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
+(use-package which-key
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config (setq which-key-idle-delay 0.8))
 #+end_src
 
 ** origami
@@ -2824,7 +2843,8 @@ origami 提供代码折叠功能，最新版本[[https://github.com/elp-revive/o
         ("x" . origami-reset)))
 #+end_src
 
-** SIS
+由于可以使用 consult-line 和 occur 来替代，所以不再使用。is
+** sis
 
 安装外置输入法切换工具 [[https://github.com/laishulu/macism#install][macism]]，解决 Mac 切换输入法后必须输入一个字符才能生效的问
 题。同时系统的 “快捷键”->“选择上一个输入法” 快捷键必须要开启，否则 macism [[https://github.com/laishulu/macism/issues/2][会切换
@@ -2907,7 +2927,8 @@ Buffer 语法高亮渲染变慢，暂时关闭。
 #+end_src
 
 ** company-box
-company-box 为候选者显示图标和帮助文档：
+
+company-box 为候选者显示图标和帮助文档, 会导致 RIME 输入法提示时 hang, 故关闭。
 #+begin_src emacs-lisp :tangle no
 (use-package company-box
   :after (company all-the-icons)
