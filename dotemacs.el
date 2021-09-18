@@ -171,7 +171,8 @@
 
 (use-package dashboard
   :config
-  (setq dashboard-banner-logo-title ";; Happy hacking, Zhang Jun - Emacs ♥ you!")
+  (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
+  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
@@ -182,13 +183,12 @@
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 
-;; 光标位置显示 minibuffer
 (use-package mini-frame
   :disabled
   :config
   (setq x-gtk-resize-child-frames 'resize-mode)
-  ;; 在光标位置显示 frame 。
-  (setq mini-frame-show-parameters
+    ;; 光标位置显示 minibuffer
+    (setq mini-frame-show-parameters
         (lambda ()
           (let* ((info (posframe-poshandler-argbuilder))
                  (posn (posframe-poshandler-point-bottom-left-corner info))
@@ -201,8 +201,8 @@
   (mini-frame-mode))
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
-;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 英文: JuliaMono: https://juliamono.netlify.app/download/
+;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 ;; Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 (use-package cnfonts
@@ -334,8 +334,7 @@
         xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会 hang。
-  ;;(setq consult-preview-key (kbd "C-l"))
-  (setq consult-preview-key 'any)
+  (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   ;; 搜索隐藏文件
   (setq consult-ripgrep-args "rg --line-buffered --color=never --max-columns=1000 --path-separator / --hidden --smart-case --no-heading --line-number --with-filename .")
@@ -368,11 +367,6 @@
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
-  (setq embark-action-indicator
-        (lambda (map _target)
-          (which-key--show-keymap "Embark" map nil nil 'no-paging)
-          #'which-key--hide-popup-ignore-command)
-        embark-become-indicator embark-action-indicator)
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
@@ -384,7 +378,10 @@
 
 (use-package embark-consult
   :after (embark consult)
+  :demand t ;; only necessary if you have the hook below
   :hook
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
   (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package company
@@ -480,7 +477,7 @@
      ((t (:inherit ace-jump-face-foreground :foreground "red" :height 2.0))))))
 
 (use-package rime
-  :demand :after (which-key)
+  :demand
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
@@ -520,14 +517,12 @@
   (setq rime-disable-predicates '(rime-predicate-ace-window-p
                                   rime-predicate-evil-mode-p
                                   rime-predicate-hydra-p
-                                  rime-predicate-which-key-activate-p
                                   rime-predicate-current-uppercase-letter-p
                                   rime-predicate-after-alphabet-char-p
                                   rime-predicate-space-after-cc-p
                                   rime-predicate-punctuation-after-space-cc-p
                                   rime-predicate-prog-in-code-p
                                   rime-predicate-after-ascii-char-p))
-  (defun rime-predicate-which-key-activate-p () which-key--automatic-display)
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 
@@ -865,10 +860,24 @@
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
 (setq vc-follow-symlinks t)
+
 (use-package magit
+  :demand t
   :custom
   ;; 在当前 window 中显示 magit buffer
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+;; 自动 kill magit buffers
+(defun mu-magit-kill-buffers ()
+  "Restore window configuration and kill all Magit buffers."
+  (interactive)
+  (let ((buffers (magit-mode-get-buffers)))
+    (magit-restore-window-configuration)
+    (mapc #'kill-buffer buffers)))
+
+(bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
+(bind-key "q" #'mu-magit-kill-buffers magit-log-mode-map)
+(bind-key "q" #'mu-magit-kill-buffers magit-mode-map)
 
 (use-package git-link
   :config
@@ -952,7 +961,6 @@
   (tide-mode . lsp)
   (typescript-mode . lsp)
   (dockerfile-mode . lsp)
-  (lsp-mode . lsp-enable-which-key-integration)
   :custom
   ;; 调试模式（开启极大影响性能）
   (lsp-log-io nil)
@@ -1614,10 +1622,12 @@ mermaid.initialize({
 ;; Don't lock files.
 (setq create-lockfiles nil)
 
-
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
+;; option 作为 Super 键(按键绑定用 s- 表示，S- 表示 Shift)
 (setq mac-option-modifier 'super)
+;; fn 作为 Hyper 键(按键绑定用 H- 表示)
+(setq ns-function-modifier 'hyper)
 
 ;; Switch to help buffer when it's opened.
 (setq help-window-select t)
@@ -1773,11 +1783,6 @@ mermaid.initialize({
     (osx-trash-setup))
   (setq delete-by-moving-to-trash t))
 
-;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
-(use-package which-key
-  :init (which-key-mode)
-  :diminish which-key-mode
-  :config (setq which-key-idle-delay 0.8))
 
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
@@ -1825,16 +1830,8 @@ mermaid.initialize({
   (global-set-key (kbd "C-h C") #'helpful-command)
   )
 
-(use-package svg
-  :ensure nil
-  :load-path "/Users/zhangjun/.emacs.d/site-lisp")
-
-(use-package zoom
-  :custom
-  (zoom-size '(0.618 . 0.618))
-  (zoom-ignored-major-modes '(dired-mode markdown-mode ediff-mode))
-  (zoom-ignored-buffer-names '("zoom.el" "init.el" "*Ediff Control Panel*"))
-  (zoom-ignored-buffer-name-regexps '("^\\*calc" "^\\*[eE]diff.*"))
-  (zoom-ignore-predicates (list (lambda () (< (count-lines (point-min) (point-max)) 20))))
-  :config
-  (zoom-mode t))
+;; 在 Finder 中打开当前文件
+(use-package reveal-in-osx-finder
+  :ensure t
+  :commands
+  (reveal-in-osx-finder))
