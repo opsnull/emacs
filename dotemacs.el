@@ -3,7 +3,9 @@
                          ("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
                          ("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
+;; activate all the packages (in particular autoloads)
 (package-initialize)
+;; fetch the list of packages available
 (unless package-archive-contents (package-refresh-contents))
 (setq package-native-compile t)
 
@@ -627,6 +629,7 @@
 (use-package org
   :config
   (setq org-ellipsis "▾"
+        org-highlight-latex-and-related '(latex)
         org-hide-emphasis-markers t
         org-edit-src-content-indentation 2
         org-hide-block-startup nil
@@ -859,6 +862,81 @@
 ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
+;;brew install poppler automake zlib
+(use-package pdf-tools
+  :init
+  ;; 使用 scaling 后，中文字体不模糊。
+  (setq pdf-view-use-scaling t
+        pdf-view-use-imagemagick nil
+        pdf-annot-activate-created-annotations t)
+  (setq pdf-view-resize-factor 1.1)
+  ;; open pdfs scaled to fit page
+  (setq-default pdf-view-display-size 'fit-page)
+  ;; automatically annotate highlights
+  (setq pdf-annot-activate-created-annotations t)
+  :bind (:map pdf-view-mode-map
+         ("\\" . hydra-pdftools/body))
+  :hook ((pdf-view-mode . pdf-view-themed-minor-mode)
+         (pdf-view-mode . pdf-isearch-minor-mode))
+  :config
+  ;; use normal isearch
+  (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+  (add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1)))
+  (setq pdf-info-epdfinfo-program "/usr/local/bin/epdfinfo")
+  (setenv "PKG_CONFIG_PATH" "/usr/local/opt/zlib/lib/pkgconfig:/usr/local/opt/pkgconfig:/usr/local/lib/pkgconfig")
+  (pdf-tools-install))
+
+;; https://www.reddit.com/r/emacs/comments/gm1c2p/pdftools_installation/
+(defhydra hydra-pdftools (:color blue :hint nil)
+        "
+                                                                      ╭───────────┐
+       Move  History   Scale/Fit     Annotations  Search/Link    Do   │ PDF Tools │
+   ╭──────────────────────────────────────────────────────────────────┴───────────╯
+         ^^_g_^^      _B_    ^↧^    _+_    ^ ^     [_al_] list    [_s_] search    [_u_] revert buffer
+         ^^^↑^^^      ^↑^    _H_    ^↑^  ↦ _W_ ↤   [_am_] markup  [_o_] outline   [_i_] info
+         ^^_p_^^      ^ ^    ^↥^    _0_    ^ ^     [_at_] text    [_F_] link      [_d_] dark mode
+         ^^^↑^^^      ^↓^  ╭─^─^─┐  ^↓^  ╭─^ ^─┐   [_ad_] delete  [_f_] search link
+    _h_ ←pag_e_→ _l_  _N_  │ _P_ │  _-_    _b_     [_aa_] dired
+         ^^^↓^^^      ^ ^  ╰─^─^─╯  ^ ^  ╰─^ ^─╯   [_y_]  yank
+         ^^_n_^^      ^ ^  _r_eset slice box
+         ^^^↓^^^
+         ^^_G_^^
+   --------------------------------------------------------------------------------
+        "
+        ;;("\\" hydra-master/body "back")
+        ("\\" nil "quit")
+        ("<ESC>" nil "quit")
+        ("al" pdf-annot-list-annotations)
+        ("ad" pdf-annot-delete)
+        ("aa" pdf-annot-attachment-dired)
+        ("am" pdf-annot-add-markup-annotation)
+        ("at" pdf-annot-add-text-annotation)
+        ("y"  pdf-view-kill-ring-save)
+        ("+" pdf-view-enlarge :color red)
+        ("-" pdf-view-shrink :color red)
+        ("0" pdf-view-scale-reset)
+        ("H" pdf-view-fit-height-to-window)
+        ("W" pdf-view-fit-width-to-window)
+        ("P" pdf-view-fit-page-to-window)
+        ("n" pdf-view-next-page-command :color red)
+        ("p" pdf-view-previous-page-command :color red)
+        ("d" pdf-view-dark-minor-mode)
+        ("b" pdf-view-set-slice-from-bounding-box)
+        ("r" pdf-view-reset-slice)
+        ("g" pdf-view-first-page)
+        ("G" pdf-view-last-page)
+        ("e" pdf-view-goto-page)
+        ("o" pdf-outline)
+        ("s" pdf-occur)
+        ("i" pdf-misc-display-metadata)
+        ("u" pdf-view-revert-buffer)
+        ("F" pdf-links-action-perfom)
+        ("f" pdf-links-isearch-link)
+        ("B" pdf-history-backward :color red)
+        ("N" pdf-history-forward :color red)
+        ("l" image-forward-hscroll :color red)
+        ("h" image-backward-hscroll :color red))
+
 (setq vc-follow-symlinks t)
 
 (use-package magit
@@ -912,18 +990,6 @@
             (lambda ()
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window)) ) ))
-
-  ;; (add-hook 'ediff-load-hook
-  ;;        (lambda ()
-  ;;          (add-hook 'ediff-before-setup-hook
-  ;;                    (lambda ()
-  ;;                      (setq ediff-saved-window-configuration (current-window-configuration))))
-
-  ;;          (let ((restore-window-configuration
-  ;;                 (lambda ()
-  ;;                   (set-window-configuration ediff-saved-window-configuration))))
-  ;;            (add-hook 'ediff-quit-hook restore-window-configuration 'append))))
-
 
   ;; ediff 时自动展开对应 org-mode section
   ;; https://dotemacs.readthedocs.io/en/latest/#ediff
@@ -1338,6 +1404,11 @@ mermaid.initialize({
   :config
   (flycheck-pos-tip-mode))
 
+(use-package devdocs
+  :bind ("C-c b" . devdocs-lookup)
+  :config
+  (add-to-list 'completion-category-defaults '(devdocs (styles . (flex)))))
+
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
   :init
@@ -1531,14 +1602,15 @@ mermaid.initialize({
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
   ;; 在 side-window 显示窗口，side-window 会一直显示，为 vterm mode 专用（不能最大化），
   ;; vterm-toggle-forward 和  'vterm-toggle-backward 也都显示在这个 side-window 中。
-  (setq vterm-toggle-fullscreen-p nil)
-  (add-to-list 'display-buffer-alist
-               '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
-                 (display-buffer-reuse-window display-buffer-in-side-window)
-                 (side . bottom)
-                 (dedicated . t)
-                 (reusable-frames . visible)
-                 (window-height . 0.3))))
+  ;; (setq vterm-toggle-fullscreen-p nil)
+  ;; (add-to-list 'display-buffer-alist
+  ;;              '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
+  ;;                (display-buffer-reuse-window display-buffer-in-side-window)
+  ;;                (side . bottom)
+  ;;                (dedicated . t)
+  ;;                (reusable-frames . visible)
+  ;;                (window-height . 0.3)))
+)
 
 ;; https://github.com/kweizh/posframe-project-term
 (use-package posframe-project-term
