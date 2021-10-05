@@ -1,8 +1,7 @@
 (require 'package)
 (setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
-                         ("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
-                         ("melpa" . "https://melpa.org/packages/")
-                         ("org" . "https://mirrors.ustc.edu.cn/elpa/org/")))
+                         ("elpa" . "https://elpa.gnu.org/packages/")
+                         ("melpa" . "https://melpa.org/packages/")))
 ;; activate all the packages (in particular autoloads)
 (package-initialize)
 ;; fetch the list of packages available
@@ -11,7 +10,7 @@
 
 (setq use-package-always-ensure t
       use-package-always-demand t)
-
+(setq use-package-verbose t)
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -103,6 +102,9 @@
 ;; in non-focused windows.
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
+
+;; Stretch cursor to the glyph width
+(setq-default x-stretch-cursor t)
 
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
@@ -469,7 +471,7 @@
   ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择
   (setq aw-scope 'frame)
   ;; 总是提示窗口选择, 这样即使两个窗口也可以执行中间命令
-  (setq aw-dispatch-always t)
+  ;;(setq aw-dispatch-always t)
   ;; modeline 显示窗口编号
   ;;(ace-window-display-mode +1)
   (global-set-key (kbd "M-o") 'ace-window)
@@ -655,6 +657,7 @@
         org-src-preserve-indentation t
         org-edit-src-content-indentation 0
         org-startup-indented t
+        org-link-file-path-type 'absolute
         ;; 在当前 window 编辑 SRC Block
         org-src-window-setup 'current-window)
   (setq org-todo-keywords '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
@@ -937,25 +940,182 @@
         ("l" image-forward-hscroll :color red)
         ("h" image-backward-hscroll :color red))
 
+(use-package mu4e
+  :load-path "/usr/local/share/emacs/site-lisp/mu/mu4e"
+  :config
+
+  ;; Run mu4e in the background to sync mail periodically
+  (mu4e t)
+
+  (setq shr-color-visible-luminance-min 80)
+
+  ;; View images inline in message view buffer
+  (setq mu4e-view-show-images t
+        mu4e-view-image-max-width 800)
+  (when (fboundp 'imagemagick-register-types)
+    (imagemagick-register-types))
+
+  ;; show full addresses in view message (instead of just names)
+  (setq mu4e-view-show-addresses t)
+
+  ;; Do not insert signature in sent emails
+  (setq mu4e-compose-signature-auto-include nil)
+
+  ;; every new email composition using current frame
+  (setq mu4e-compose-in-new-frame nil)
+  (setq mu4e-compose-format-flowed nil)
+
+  ;; It is OK to use non-ascii characters
+  (setq mu4e-use-fancy-chars t)
+  (setq mu4e-attachment-dir "~/.mail/attachments")
+
+  ;; This enabled the thread like viewing of email similar to gmail's UI.
+  (setq mu4e-headers-include-related t)
+  ;; Do not display duplicate messages
+  (setq mu4e-headers-skip-duplicates t)
+  (setq mu4e-headers-date-format "%Y/%m/%d")
+  (setq mu4e-headers-include-related nil)
+
+  (setq mu4e-change-filenames-when-moving t)
+  (setq mu4e-display-update-status-in-modeline t)
+  (setq mu4e-hide-index-messages t)
+  (setq mu4e-date-format "%y/%m/%d")
+
+  ;; Do not confirm on quit
+  (setq mu4e-confirm-quit nil)
+
+  ;; use mu4e as MUA in emacs
+  (setq mail-user-agent 'mu4e-user-agent)
+
+  ;; Kill message buffer after email is sent
+  (setq message-kill-buffer-on-exit t)
+
+  ;; 回复邮件时，插入邮件引用信息
+  (setq message-citation-line-function 'message-insert-formatted-citation-line)
+  (setq message-citation-line-format "On %a, %b %d %Y, %f wrote:\n")
+
+  (setq gnus-unbuttonized-mime-types nil)
+
+  ;; mu find 搜索任意单个中文字符。
+  (setenv "XAPIAN_CJK_NGRAM" "yes")
+
+  (add-hook 'mu4e-view-mode-hook
+            (lambda()
+              ;; try to emulate some of the eww key-bindings
+              (local-set-key (kbd "<tab>") 'shr-next-link)
+              (local-set-key (kbd "<backtab>") 'shr-previous-link)))
+
+  ;; 周期同步邮件
+  ;; 使用 proxychains4 进行 socks5 代理
+  (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
+  (setq mu4e-update-interval 120)
+
+  ;; 使用 gnus 发送邮件
+  (setq message-send-mail-function 'smtpmail-send-it)
+  (setq smtpmail-debug-info t)
+  (setq smtpmail-debug-verb t)
+
+  ;; root maildir
+  (setq mu4e-maildir "~/.mail")
+
+  (setq mu4e-contexts
+        `( ,(make-mu4e-context
+             :name "gmail"
+             :enter-func (lambda () (mu4e-message "Switch to the gmail context"))
+             :match-func (lambda (msg)
+                           (when msg
+                             (string-match-p "^/gmail" (mu4e-message-field msg :maildir))))
+             :leave-func (lambda () (mu4e-clear-caches))
+             :vars '((user-mail-address            . "geekard@gmail.com")
+                     (user-full-name               . "张俊(Jun Zhang)")
+                     (smtpmail-default-smtp-server . "smtp.gmail.com")
+                     (smtpmail-smtp-server         . "smtp.gmail.com")
+                     (smtpmail-smtp-user           . "geekard@gmail.com")
+                     (smtpmail-smtp-service        . 587)
+                     (smtpmail-stream-type         . starttls)
+                     (mu4e-compose-signature       . (concat "---\n zhangjun \n"))
+                     (mu4e-sent-folder      . "/gmail/Sent")
+                     (mu4e-drafts-folder    . "/gmail/Drafts")
+                     (mu4e-trash-folder     . "/gmail/Junk")
+                     (mu4e-refile-folder    . "/gmail/Archive")))
+           ,(make-mu4e-context
+             :name "qq"
+             :enter-func (lambda () (mu4e-message "Switch to the qq context"))
+             :match-func (lambda (msg)
+                           (when msg
+                             (string-match-p "^/qq" (mu4e-message-field msg :maildir))))
+             :leave-func (lambda () (mu4e-clear-caches))
+             :vars '(
+                     (user-mail-address            . "geekard@qq.com")
+                     (user-full-name               . "张俊(Jun Zhang)")
+                     (smtpmail-default-smtp-server . "smtp.qq.com")
+                     (smtpmail-smtp-server         . "smtp.qq.com")
+                     (smtpmail-smtp-user           . "geekard@qq.com")
+                     (smtpmail-smtp-service        . 465)
+                     (smtpmail-stream-type         . ssl)
+                     (mu4e-compose-signature       . (concat "---\n Zhang Jun \n"))
+                     (mu4e-sent-folder      . "/qq/Sent")
+                     (mu4e-drafts-folder    . "/qq/Drafts")
+                     (mu4e-trash-folder     . "/qq/Trash")
+                     (mu4e-refile-folder    . "/qq/Archive")
+                     )))))
+
+(use-package mu4e-alert
+  :after mu4e
+  :config
+  (mu4e-alert-set-default-style 'notifier)
+  ;; (mu4e-alert-set-default-style 'growl)
+  (add-hook 'after-init-hook #'mu4e-alert-enable-notifications)
+  ;; enable mode line display
+  (add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display)
+  (setq mu4e-alert-email-notification-types '(count)))
+
+(use-package mu4e-maildirs-extension
+  :after mu4e
+  :config
+  (mu4e-maildirs-extension))
+
+(use-package mu4e-views
+  :after mu4e
+  :bind (:map mu4e-headers-mode-map
+        ("v" . mu4e-views-mu4e-select-view-msg-method) ;; 切换展示类型
+        ("M-n" . mu4e-views-cursor-msg-view-window-down) ;; from headers window scroll the email view
+        ("M-p" . mu4e-views-cursor-msg-view-window-up) ;; from headers window scroll the email view
+        ("f" . mu4e-views-toggle-auto-view-selected-message) ;; toggle opening messages automatically when moving in the headers view
+        ("i" . mu4e-views-mu4e-view-as-nonblocked-html) ;; show currently selected email with all remote content
+        )
+  :config
+  (setq mu4e-views-completion-method 'default) ;; use ivy for completion
+  (setq mu4e-views-default-view-method "html") ;; make xwidgets default
+  (mu4e-views-mu4e-use-view-msg-method "html") ;; select the default
+  (setq mu4e-views-next-previous-message-behaviour 'stick-to-current-window) ;; when pressing n and p stay in the current window
+  (setq mu4e-views-auto-view-selected-message t)) ;; automatically open messages when moving in the headers view
+
+(use-package org-mime
+  :after mu4e
+  :config
+  (setq org-mime-export-options '(:section-numbers nil :with-author nil :with-toc nil))
+  ;; Prompt for confirmation if message has no HTML
+  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart)
+  )
+
 (setq vc-follow-symlinks t)
 
 (use-package magit
-  :demand t
   :custom
   ;; 在当前 window 中显示 magit buffer
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+  ;; 自动 kill magit buffers
+  (defun mu-magit-kill-buffers ()
+    "Restore window configuration and kill all Magit buffers."
+    (interactive)
+    (let ((buffers (magit-mode-get-buffers)))
+      (magit-restore-window-configuration)
+      (mapc #'kill-buffer buffers)))
 
-;; 自动 kill magit buffers
-(defun mu-magit-kill-buffers ()
-  "Restore window configuration and kill all Magit buffers."
-  (interactive)
-  (let ((buffers (magit-mode-get-buffers)))
-    (magit-restore-window-configuration)
-    (mapc #'kill-buffer buffers)))
-
-(bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
-(bind-key "q" #'mu-magit-kill-buffers magit-log-mode-map)
-(bind-key "q" #'mu-magit-kill-buffers magit-mode-map)
+  (bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
+  (bind-key "q" #'mu-magit-kill-buffers magit-log-mode-map)
+  (bind-key "q" #'mu-magit-kill-buffers magit-mode-map))
 
 (use-package git-link
   :config
@@ -1369,6 +1529,12 @@ mermaid.initialize({
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
 
+;; Install: npm -g install prettier
+(use-package prettier
+  :diminish
+  :hook (after-init . global-prettier-mode)
+  :init (setq prettier-mode-sync-config-flag nil))
+
 (use-package yaml-mode
   :hook
   (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent)))
@@ -1454,6 +1620,7 @@ mermaid.initialize({
     (treemacs-follow-mode t)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode t)
+    (treemacs-indent-guide-mode t)
     (pcase (cons (not (null (executable-find "git"))) (not (null treemacs-python-executable)))
       (`(t . t) (treemacs-git-mode 'deferred))
       (`(t . _) (treemacs-git-mode 'simple))))
@@ -1713,6 +1880,9 @@ mermaid.initialize({
 ;; Highlight current line.
 ;;(global-hl-line-mode t)
 
+;; It's nice to maintain a little margin
+(setq scroll-margin 2)
+
 ;; Keep cursor position when scrolling.
 (setq scroll-preserve-screen-position 1)
 
@@ -1853,7 +2023,8 @@ mermaid.initialize({
   :config
   (when (eq system-type 'darwin)
     (osx-trash-setup))
-  (setq delete-by-moving-to-trash t))
+  ;; Delete files to trash
+  (setq-default delete-by-moving-to-trash t))
 
 
 (use-package restclient
@@ -1899,11 +2070,47 @@ mermaid.initialize({
   ;; By default, C-h C is bound to describe `describe-coding-system'. I
   ;; don't find this very useful, but it's frequently useful to only
   ;; look at interactive functions.
-  (global-set-key (kbd "C-h C") #'helpful-command)
-  )
+  (global-set-key (kbd "C-h C") #'helpful-command))
 
 ;; 在 Finder 中打开当前文件
 (use-package reveal-in-osx-finder
   :ensure t
   :commands
   (reveal-in-osx-finder))
+
+(defun proxy-socks-show ()
+  "Show SOCKS proxy."
+  (interactive)
+  (when (fboundp 'cadddr)
+    (if (bound-and-true-p socks-noproxy)
+        (message "Current SOCKS%d proxy is %s:%d"
+                 (cadddr socks-server) (cadr socks-server) (caddr socks-server))
+      (message "No SOCKS proxy"))))
+
+(defun proxy-socks-enable ()
+  "Enable SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  ;; 使用 socks 代理 url 访问请求
+  (setq url-gateway-method 'socks
+        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*aliba-inc.com")
+        socks-server '("Default server" "127.0.0.1" 13659 5))
+  (setenv "all_proxy" "socks5://127.0.0.1:13659")
+  (proxy-socks-show))
+
+(defun proxy-socks-disable ()
+  "Disable SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'native
+        socks-noproxy nil)
+  (setenv "all_proxy" "")
+  (proxy-socks-show))
+
+(defun proxy-socks-toggle ()
+  "Toggle SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (if (bound-and-true-p socks-noproxy)
+      (proxy-socks-disable)
+    (proxy-socks-enable)))
