@@ -942,6 +942,8 @@
 
 (use-package mu4e
   :load-path "/usr/local/share/emacs/site-lisp/mu/mu4e"
+  :if (executable-find "mu")
+  :commands (mu4e)
   :config
 
   ;; Run mu4e in the background to sync mail periodically
@@ -999,6 +1001,7 @@
   ;; mu find 搜索任意单个中文字符。
   (setenv "XAPIAN_CJK_NGRAM" "yes")
 
+  (add-to-list 'mu4e-view-actions '("browser" . mu4e-action-view-in-browser) t)
   (add-hook 'mu4e-view-mode-hook
             (lambda()
               ;; try to emulate some of the eww key-bindings
@@ -1098,6 +1101,41 @@
   ;; Prompt for confirmation if message has no HTML
   (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart)
   )
+
+(use-package elfeed
+  :config
+  (global-set-key (kbd "C-x w") 'elfeed)
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
+          elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-timeout 600)
+  (setq elfeed-curl-extra-arguments '("--insecure"))
+  (setq elfeed-search-filter "@4-months-ago +unread")
+  (setq elfeed-show-unique-buffers t)
+  (setq line-spacing 0.3)
+  (add-hook 'elfeed-new-entry-hook
+            (elfeed-make-tagger :feed-url "emacs-china\\.org"
+                              :add '(emacs-china)))
+  (add-hook 'elfeed-new-entry-hook
+            (elfeed-make-tagger :feed-url "github\\.com"
+                              :add '(github)))
+  )
+
+(use-package elfeed-dashboard
+  :config
+  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
+  ;; update feed counts on elfeed-quit
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links)
+  )
+
+(use-package elfeed-org
+  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+  :hook (elfeed-dashboard-mode . elfeed-org)
+  :init
+  (progn
+    (defun my/reload-org-feeds ()
+      (interactive)
+      (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
+    (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
 
 (setq vc-follow-symlinks t)
 
@@ -2093,7 +2131,7 @@ mermaid.initialize({
   (require 'socks)
   ;; 使用 socks 代理 url 访问请求
   (setq url-gateway-method 'socks
-        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*aliba-inc.com")
+        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
         socks-server '("Default server" "127.0.0.1" 13659 5))
   (setenv "all_proxy" "socks5://127.0.0.1:13659")
   (proxy-socks-show))
