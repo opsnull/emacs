@@ -1112,6 +1112,8 @@
   (setq elfeed-search-filter "@4-months-ago +unread")
   (setq elfeed-show-unique-buffers t)
   (setq line-spacing 0.3)
+  (setq elfeed-search-title-max-width 100)
+  (setq elfeed-search-date-format '("%d/%m/%Y %H:%M" 11 :left)
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :feed-url "emacs-china\\.org"
                               :add '(emacs-china)))
