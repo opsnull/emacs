@@ -1113,21 +1113,19 @@
   (setq elfeed-show-unique-buffers t)
   (setq line-spacing 0.3)
   (setq elfeed-search-title-max-width 100)
-  (setq elfeed-search-date-format '("%d/%m/%Y %H:%M" 11 :left)
+  (setq elfeed-search-date-format '("%d/%m/%Y %H:%M" 11 :left))
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :feed-url "emacs-china\\.org"
                               :add '(emacs-china)))
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :feed-url "github\\.com"
-                              :add '(github)))
-  )
+                              :add '(github))))
 
 (use-package elfeed-dashboard
   :config
   (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
   ;; update feed counts on elfeed-quit
-  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links)
-  )
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
 
 (use-package elfeed-org
   :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
