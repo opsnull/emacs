@@ -21,8 +21,9 @@
 - [[#快速跳转][快速跳转]]
 - [[#输入法][输入法]]
 - [[#编辑辅助][编辑辅助]]
-- [[#有道词典][有道词典]]
+- [[#dict][dict]]
 - [[#org][org]]
+- [[#tex][tex]]
 - [[#pdf][pdf]]
 - [[#email][email]]
   - [[#安装软件包][安装软件包]]
@@ -117,34 +118,70 @@ which fzf || brew install fzf
 which direnv || brew install direnv
 which trash || brew install trash
 which pngpaste || brew install pngpaste
+
+# 编译 libvterm 依赖
 which cmake || brew install cmake
 which glibtool || brew install libtool
+
 which exiftran || brew install exiftran
 which multimarkdown || brew install multimarkdown
-which mutool || brew install mupdf # 将 pdf 转换为 png
+
+# 将 pdf 转换为 png
+which mutool || brew install mupdf
 which pdftotext || brew install poppler
-which terminal-notifier || brew install terminal-notifier # org notify
+
+# org notify
+which terminal-notifier || brew install terminal-notifier
 brew tap laishulu/macism
 which macism || brew install macism
+
 brew install --HEAD pyenv
 brew install --HEAD pyenv-virtualenv
-brew install --cask switchkey # 程序默认输入法
+
+# 程序默认输入法
+brew install --cask switchkey
+
+# 英文字体
 brew tap homebrew/cask-fonts
-brew install --cask font-juliamono # 英文字体
-brew install mu  # mu 用于索引邮件
-brew install isync # isync 提供了mbsync, 用于下载邮件
-brew install pass # 管理密码
-brew install gnupg # 签名加密
-brew install proxychains-ng # 命令行程序的 socks 代理
-brew install openssl@1.1 # 提供 isync 和 msmtp 所需的根证书
+brew install --cask font-juliamono
+
+# latext pdf 代码高亮
+brew install pygments
+
+# mu 用于索引邮件
+brew install mu
+# isync 提供了mbsync, 用于下载邮件
+brew install isync
+# 管理密码
+brew install pass
+# 签名加密
+brew install gnupg
+# 命令行程序的 socks 代理
+brew install proxychains-ng
+# 提供 isync 和 msmtp 所需的根证书
+brew install openssl@1.1
+
 brew install stardict sdcv # 星际词典(本地词典)
 
 # 使用 pyenv shell VERSION 切换到对应版本环境, 然后执行如下命令:
 pip install ipython ansible
-pip install grip  # markdown 预览
-pip install yapf  # python 文件格式化
-pip install jieba # youdao 词典使用的中文分词
-pip3 install buku # 浏览器书签管理程序
+
+# markdown 预览
+pip install grip
+
+# python 文件格式化
+pip install yapf
+
+# youdao 词典使用的中文分词
+pip install jieba
+
+# 浏览器书签管理程序
+pip3 install buku
+
+# latex 中文字体
+git clone https://github.com/googlefonts/noto-cjk.git
+
+# latex 英文字体
 
 which npm || brew install npm
 npm install -g vscode-json-languageserver
@@ -186,9 +223,6 @@ npm install -g prettier
 (set-frame-parameter (selected-frame) 'maximized 'fullscreen)
 (add-hook 'after-init-hook #'toggle-frame-maximized)
 
-(add-to-list 'default-frame-alist '(height . 600))
-(add-to-list 'default-frame-alist '(width . 600))
-
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
  (when (file-exists-p custom-file)
@@ -198,29 +232,24 @@ npm install -g prettier
 (setq user-full-name "zhangjun"
       user-mail-address "geekard@qq.com")
 
-;; 使用 emacs 自身的 password 提示而非外部的程序，如 gpg-agent
-;; 否则, emacs 处理 gpg 文件时报错。
+;; 使用自带的 password 提示而非外部的程序，如 gpg-agent, 否则, emacs 处理 gpg 文
+;; 件时报错。
 (setq epa-pinentry-mode 'loopback)
 
 ;; gnus 和 tramp 等认证信息文件
 (setq auth-sources '("~/.authinfo.gpg")
       auth-source-cache-expiry nil) ; default is 7200 (2h)
 ;;(setq auth-source-debug t)
-
-;; That tells auth-source (the package responsible for retrieving and storing
-;; passwords from the environment) to consult the keychain for your credentials
-;; - instead of putting them into ~/.authinfo in plaintext
-;; https://www.reddit.com/r/emacs/comments/ew75ib/comment/fg23tcj/?utm_source=share&utm_medium=web2x&context=3
-(eval-after-load 'auth-source
-  '(when (member window-system '(mac ns))
-     (add-to-list 'auth-sources 'macos-keychain-internet)
-     (add-to-list 'auth-sources 'macos-keychain-generic)))
 #+end_src
 
 * 软件源
 
 配置软件源仓库：
 #+begin_src emacs-lisp
+;; Avoid loading old bytecode instead of newer source.
+;; use the newest version available.
+(setq load-prefer-newer t)
+
 (require 'package)
 (setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
                          ("elpa" . "https://elpa.gnu.org/packages/")
@@ -240,10 +269,6 @@ npm install -g prettier
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
-
-;; Avoid loading old bytecode instead of newer source.
-;; use the newest version available.
-(setq load-prefer-newer t)
 #+end_src
 + 为 use-package 默认添加 ensure 和 demand 参数。
 
@@ -322,18 +347,17 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
 
-(use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
-
 (setq inhibit-startup-screen t
       inhibit-startup-message t
       initial-major-mode 'fundamental-mode
       inhibit-startup-echo-area-message t
       initial-scratch-message nil)
 
+(use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+
 (setq frame-resize-pixelwise t)
 
-(transient-mark-mode t)
-
+;; 高亮匹配的括号
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
 
@@ -1067,7 +1091,7 @@ import_tables:
 + fundamental-mode 打开的 json/yaml 文件，使用 M-s o(occur) 或 M-s
   l（consult-line) 来进行搜索跳转。
 
-* 有道词典
+* dict
 
 #+BEGIN_SRC  emacs-lisp
 (use-package youdao-dictionary
@@ -1078,9 +1102,19 @@ import_tables:
         youdao-dictionary-use-chinese-word-segmentation t))
 
 (use-package chinese-word-at-point)
+
+(use-package go-translate
+  :config
+  (setq gts-translate-list '(("en" "zh")))
+
+  (setq gts-default-translator
+        (gts-translator
+         :picker (gts-prompt-picker)
+         :engines (list (gts-google-engine) (gts-google-rpc-engine))
+         :render (gts-posframe-pin-render))))
 #+end_src
 + 有道词典需要额外安装中文分词软件才能正确分词，如结巴分词： =pip install jieba=
-
++ Google 翻译： =M-x gts-do-translate=;
 * org
 
 #+begin_src emacs-lisp
@@ -1090,6 +1124,7 @@ import_tables:
 
 (use-package org
   :config
+  (setq org-emphasis-alist '(("*" bold) ("=" org-verbatim verbatim) ("~" org-code  verbatim)))
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
         org-hide-emphasis-markers t
@@ -1351,6 +1386,201 @@ Babel:
 ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 #+end_src
+
+* tex
+
+#+begin_src emacs-lisp
+(use-package ox-latex
+  :ensure auctex
+  :defer t
+  :after org
+  :config
+  ;;https://yuchi.me/post/export-org-mode-in-chinese-to-pdf-with-custom-latex-class/
+  ;; http://orgmode.org/worg/org-faq.html#using-xelatex-for-pdf-export
+  ;; latexmk runs pdflatex/xelatex (whatever is specified) multiple times
+  ;; automatically to resolve the cross-references.
+  (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
+  ;; ;; Alist of packages to be inserted in every LaTeX header.
+  ;; (setq org-latex-packages-alist
+  ;;       (quote (("" "color" t)
+  ;;               ("" "xcolor" t)
+  ;;               ("" "listings" t)
+  ;;               ("" "fontspec" t)
+  ;;               ("" "parskip" t) ;; 增加正文段落的间距
+  ;;               ("AUTO" "inputenc" t))))
+  (add-to-list 'org-latex-classes
+               '("ctexart"
+                 "\\documentclass[lang=cn,11pt,a4paper]{ctexart}
+                 [NO-DEFAULT-PACKAGES]
+                 [PACKAGES]
+                 [EXTRA]"
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  ;; 自定义 latex 语言环境(基于 tcolorbox)
+  ;; 参考: https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
+  (setq org-latex-custom-lang-environments
+        '((c "\\begin{programlist}[label={%l}]{c}{: %c}\n%s\\end{programlist}")
+          (ditaa "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (emacs-lisp "\\begin{programlist}[label={%l}]{lisp}{: %c}\n%s\\end{programlist}")
+          (ruby "\\begin{programlist}[label={%l}]{ruby}{: %c}\n%s\\end{programlist}")
+          (latex "\\begin{programlist}[label={%l}]{latex}{: %c}\n%s\\end{programlist}")
+          (go "\\begin{programlist}[label={%l}]{go}{: %c}\n%s\\end{programlist}")
+          (lua "\\begin{programlist}[label={%l}]{lua}{: %c}\n%s\\end{programlist}")
+          (java "\\begin{programlist}[label={%l}]{java}{: %c}\n%s\\end{programlist}")
+          (javascript "\\begin{programlist}[label={%l}]{javascript}{: %c}\n%s\\end{programlist}")
+          (json "\\begin{programlist}[label={%l}]{json}{: %c}\n%s\\end{programlist}")
+          (plantuml "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (maxima "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (ipython "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
+          (python "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
+          (perl "\\begin{programlist}[label={%l}]{perl}{: %c}\n%s\\end{programlist}")
+          (html "\\begin{programlist}[label={%l}]{html}{: %c}\n%s\\end{programlist}")
+          (org "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (typescript "\\begin{programlist}[label={%l}]{typescript}{: %c}\n%s\\end{programlist}")
+          (scss "\\begin{programlist}[label={%l}]{scss}{: %c}\n%s\\end{programlist}")
+          (sh "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
+          (shell "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
+          (shellinput "\\begin{shellinput}[%c]\n%s\\end{shellinput}")
+          (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}")))
+  (setq org-latex-listings 'listings))
+#+end_src
++ minted 提供 tex pdf 中代码块语法高亮的功能(TexLive 默认按照), 需按照依赖: =brew
+  install pygments=;
++ 变量 =org-latex-minted-langs= 列出 Emacs Major-Mode 与 minted 语言类型
+  （pygmentize -L lexers）的关系, 如果两者一致, 如 go-[mod] 和 go, 则不需要列出。
++ minted 的 fontfamily 只对预定义的 tt/courier/helvetica 有效（参考 minted 的手
+  册）。
+
+安装 noto-cjk 中文字体: =git clone https://github.com/googlefonts/noto-cjk.git=
+
+安装荧光笔效果的强调宏包 breakfbox:
++ 克隆 https://github.com/doraTeX/breakfbox 到
+  =/usr/local/texlive/texmf-local/tex/latex=
++ 刷新数据库: =sudo mktexlsr=
+
+自定义样式 mystyle.sty:
+#+begin_src latex :tangle  ~/.emacs.d/mystyle.sty
+% https://blog.shimanoke.com/ja/posts/change-latex-emph/
+% 克隆 https://github.com/doraTeX/breakfbox 到 /usr/local/texlive/texmf-local/tex/latex
+% 刷新数据库:  sudo mktexlsr
+
+% 黄色背景高亮强调
+\usepackage{uline--}
+\renewcommand{\emph}[1]{
+{\sffamily\bfseries\itshape
+  \uline[
+    background,
+    color={[rgb]{1,1,0.0}},
+    width=0.8em,position=1pt]{#1}}}
+
+% 自定义 programlist 语言环境
+% https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins,raster,external,listings,minted}
+\tcbEXTERNALIZE
+\newtcblisting[
+auto counter,
+number within=section]{programlist}[3][]{
+  listing engine=minted,
+  minted style=emacs,
+  minted language=#2,
+  minted options={autogobble,fontsize=\footnotesize,breaklines,breakanywhere,baselinestretch=1.2,linenos,numbersep=3mm},
+  title={\sffamily\bfseries 代码块 \thetcbcounter},
+  %title={\sffamily\bfseries 代码块 \thetcbcounter #3},
+  after,
+  breakable=true,
+  lowerbox=ignored,
+  hyphenationfix=true,
+  colback=blue!5!white,
+  colframe=blue!85!black,
+  listing only,
+  enhanced,
+  drop fuzzy shadow southeast,
+  left=5mm,
+  overlay={\begin{tcbclipinterior}\fill[red!20!blue!20!white] (frame.south west) rectangle ([xshift=5mm]frame.north west);\end{tcbclipinterior}},
+  #1
+}
+
+\usepackage{hyperref}
+\hypersetup{
+  pdfborder={0 0 0},
+  colorlinks=true,
+  linkcolor={winered},
+  urlcolor={winered},
+  filecolor={winered},
+  citecolor={winered},
+  linktoc=all}
+
+\usepackage{fontspec}
+\usepackage[utf8]{inputenc}
+\setmainfont{Sarasa Mono SC}
+\setsansfont{Sarasa Mono SC}[Scale=MatchLowercase]
+\setmonofont{Sarasa Mono SC}[Scale=MatchLowercase]
+% \setCJKmainfont[BoldFont={Adobe Heiti Std}, ItalicFont={Adobe Kaiti Std}]{Adobe Song Std}
+\setCJKmainfont[BoldFont = Noto Serif SC]{Noto Serif SC}
+\setCJKsansfont{Noto Sans SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+
+\XeTeXlinebreaklocale "zh"
+\XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt
+
+% add the email cmd
+\newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+
+\usepackage{color}
+% define the hyperref color
+\usepackage{xcolor}
+\definecolor{winered}{rgb}{0.5,0,0}
+\definecolor{lightgrey}{rgb}{0.95,0.95,0.95}
+\definecolor{commentcolor}{RGB}{0,100,0}
+\definecolor{frenchplum}{RGB}{190,20,83}
+% 代码块使用的背景
+\definecolor{LightGray}{gray}{0.9}
+
+\usepackage{parskip}
+\usepackage{etoolbox}
+\usepackage{calc}
+
+\usepackage[
+left=1in,
+right=1in]{geometry}
+%\setlength{\headsep}{5pt}
+
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{indentfirst}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{linegoal}
+\usepackage{graphicx}
+\usepackage{fancyvrb}
+\usepackage{abstract}
+\usepackage{hologo}
+
+\linespread{1.35}
+\graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
+
+\usepackage[font=small,labelfont={bf}]{caption}
+\captionsetup[table]{skip=3pt}
+\captionsetup[figure]{skip=3pt}
+
+\usepackage[shortlabels,inline]{enumitem}
+\setlist{nolistsep}
+
+#+end_src
+
+在 org 文档的头部添加参数：
+#+begin_verse :tangle no
+#+LATEX_COMPILER: xelatex
+#+LATEX_CLASS: ctexart
+#+LATEX_HEADER: \usepackage{mystyle}
+#+OPTIONS: prop:t ^:nil
+#+end_verse
 
 * pdf
 
@@ -1905,14 +2135,17 @@ mu4e-views 使用 xwdigets 来显示 html 格式的右键：
   :config
   (global-set-key (kbd "C-x w") 'elfeed)
   (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
-          elfeed-show-entry-switch 'display-buffer)
-  (setq elfeed-curl-timeout 600)
-  (setq elfeed-curl-extra-arguments '("--insecure"))
-  (setq elfeed-search-filter "@4-months-ago +unread")
-  (setq elfeed-show-unique-buffers t)
+        elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-timeout 30)
+  (setf url-queue-timeout 40)
+  (push "-k" elfeed-curl-extra-arguments)
+  (setq elfeed-search-filter "@1-months-ago +unread")
+  ;; 在同一个 buffer 中显示 entry
+  (setq elfeed-show-unique-buffers nil)
   (setq line-spacing 0.3)
-  (setq elfeed-search-title-max-width 100)
-  (setq elfeed-search-date-format '("%d/%m/%Y %H:%M" 11 :left))
+  (setq elfeed-search-title-max-width 150)
+  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
+  (setq elfeed-log-level 'warn)
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :feed-url "emacs-china\\.org"
                               :add '(emacs-china)))
@@ -1935,9 +2168,51 @@ mu4e-views 使用 xwdigets 来显示 html 格式的右键：
       (interactive)
       (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
     (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
+
+(use-package elfeed-goodies
+  :config
+  (setq elfeed-goodies/entry-pane-position 'bottom)
+  (setq elfeed-goodies/feed-source-column-width 30)
+  (setq elfeed-goodies/tag-column-width 30)
+  (setq elfeed-goodies/powerline-default-separator 'arrow)
+  (elfeed-goodies/setup))
+
+(use-package elfeed-score
+  :ensure t
+  :config
+  (progn
+    (elfeed-score-enable)
+    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+
 #+end_src
-+ 查询示例：@6-months-ago +unread !https://emacs-china.org +emacs
-+ 清理数据库：M-x elfeed-db-unload; rm -rf ～/.emacs.d/elfeed;
++ 查询示例： =@6-months-ago +unread !https://emacs-china.org +emacs=
++ 清理数据库： =M-x elfeed-db-unload; rm -rf ~/.emacs.d/elfeed=
++ 清理任务队列： =M-x elfeed-unjam=
++ 更新： =M-x elfeed-dashboard-update=
+
+elfeed-score 规则文件:
+#+begin_src emacs-lisp :tangle ~/.emacs.d/elfeed.score
+;;; Elfeed score file                                     -*- lisp -*-
+(("title"
+  (:text "opsnull" :value 250 :type S))
+ ("content"
+  (:text "type erasure" :value 500 :type s))
+ ("title-or-content"
+  (:text "emacs" :title-value 150 :content-value 100 :type s)
+  (:text "opsnull" :title-value 150 :content-value 100 :type w))
+ ("feed"
+  (:text "Essays in Idleness" :value 250 :type S :attr t)
+  (:text "Irreal" :value 250 :type S :attr t)
+  (:text "Julia Evans" :value 100 :type s :attr t)
+  (:text "emacs-news – sacha chua" :value 350 :type S :attr t :comment "Essential!"))
+ ("authors"
+   (:text "opsnull" :value 500 :type s))
+ ("tag"
+  (:tags (t . reddit-question)
+   :value 750
+   :comment "Add 750 points to any entry with a tag of reddit-question"))
+ (mark -2500))
+#+end_src
 
 * 版本控制
 
@@ -2877,8 +3152,6 @@ Google 搜索(只支持单行内容搜索):
 ** vterm
 
 #+begin_src emacs-lisp
-;;(shell-command "which cmake &>/dev/null || brew install cmake")
-;;(shell-command "which glibtool &>/dev/null || brew install libtool")
 (use-package vterm
   :config
   (setq vterm-max-scrollback 100000)
@@ -2993,7 +3266,7 @@ Google 搜索(只支持单行内容搜索):
 ;; 自定义远程 shell 环境变量
 (let ((process-environment tramp-remote-process-environment))
   ;; 设置环境变量 VTERM_TRAMP=true, 这样 ~/.bashrc 导入 ~/.emacs_bashrc 后能选择
-  ;; 执行 emacs 相关的初始化。
+  ;; 执行 emacs 相关的初始化操作。
   (setenv "VTERM_TRAMP" "true")
   (setq tramp-remote-process-environment process-environment))
 #+end_src
@@ -3128,8 +3401,7 @@ Google 搜索(只支持单行内容搜索):
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
-;; buffer 智能分组（取代 ibuffer）
-(use-package bufler :config (global-set-key (kbd "C-x C-b") 'bufler))
+(global-set-key (kbd "C-x C-b") 'ibuffer)
 
 (with-eval-after-load 'dired
   ;; re-use dired buffer, available in Emacs 28
@@ -3248,6 +3520,23 @@ Google 搜索(只支持单行内容搜索):
 
 按需开启全局 socks 代理(支持 http, https):
 #+begin_src emacs-lisp
+(setq my/socks-host "127.0.0.1")
+(setq my/socks-port 13659)
+(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+
+(defun my/url-http-socks5 ()
+  "url-retrieve 使用 curl 作为后端实现, 支持 socks5 代理。"
+  (interactive)
+  (use-package mb-url-http
+    :load-path "~/.emacs.d/site-lisp/mb-url"
+    :defer t
+    :commands (mb-url-http-around-advice)
+    :init
+    (setq mb-url-http-backend 'mb-url-http-curl
+          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-switches `("--max-time" "20" "-x" ,my/socks-proxy "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"))
+    (advice-add 'url-http :around 'mb-url-http-around-advice)))
+
 (defun proxy-socks-show ()
   "Show SOCKS proxy."
   (interactive)
@@ -3258,15 +3547,15 @@ Google 搜索(只支持单行内容搜索):
       (message "No SOCKS proxy"))))
 
 (defun proxy-socks-enable ()
-  "Enable SOCKS proxy."
+  "使用 socks 代理 url 访问请求。"
   (interactive)
   (require 'socks)
-  ;; 使用 socks 代理 url 访问请求
   (setq url-gateway-method 'socks
         socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
-        socks-server '("Default server" "127.0.0.1" 13659 5))
-  (setenv "all_proxy" "socks5://127.0.0.1:13659")
-  (proxy-socks-show))
+        socks-server '("Default server" my/socks-host my/socks-port 5))
+  (setenv "all_proxy" my/socks-proxy)
+  (proxy-socks-show)
+  (my/url-http-socks5))
 
 (defun proxy-socks-disable ()
   "Disable SOCKS proxy."
@@ -3287,6 +3576,9 @@ Google 搜索(只支持单行内容搜索):
 #+end_src
 + 注意 macos 自带的 curl 不支持 socks 代理, 可以 brew install curl 后, 然后设置
   export PATH="/usr/local/opt/curl/bin:$PATH"
++ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可以使用 socks5 代理。 下载自：
+  https://github.com/jiacai2050/mb-url,需要添加 =--user-agent= 配置, 否则会被
+  Google 403 Forbidden;
 
 * 推荐
 
@@ -3302,6 +3594,24 @@ Google 搜索(只支持单行内容搜索):
 * 归档
 
 #+begin_src emacs-lisp :tangle no
+(transient-mark-mode t)
+
+(add-to-list 'default-frame-alist '(height . 600))
+(add-to-list 'default-frame-alist '(width . 600))
+
+;; That tells auth-source (the package responsible for retrieving and storing
+;; passwords from the environment) to consult the keychain for your credentials
+;; - instead of putting them into ~/.authinfo in plaintext
+;; https://www.reddit.com/r/emacs/comments/ew75ib/comment/fg23tcj/?utm_source=share&utm_medium=web2x&context=3
+(eval-after-load 'auth-source
+  '(when (member window-system '(mac ns))
+     (add-to-list 'auth-sources 'macos-keychain-internet)
+     (add-to-list 'auth-sources 'macos-keychain-generic)))
+
+;; buffer 智能分组（取代 ibuffer）
+;; 显示 buffer 列表时会自动连接 TRAMP buffer, 可能会 hang.
+(use-package bufler :config (global-set-key (kbd "C-x C-b") 'bufler))
+
 ;; 多光标编辑
 (use-package iedit)
 

@@ -25,9 +25,6 @@
 (set-frame-parameter (selected-frame) 'maximized 'fullscreen)
 (add-hook 'after-init-hook #'toggle-frame-maximized)
 
-(add-to-list 'default-frame-alist '(height . 600))
-(add-to-list 'default-frame-alist '(width . 600))
-
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
  (when (file-exists-p custom-file)
@@ -37,20 +34,11 @@
 (setq user-full-name "zhangjun"
       user-mail-address "geekard@qq.com")
 
-;; 使用 emacs 自身的 password 提示而非外部的程序，如 gpg-agent
-;; 否则, emacs 处理 gpg 文件时报错。
+;; 使用自带的 password 提示而非外部的程序，如 gpg-agent, 否则, emacs 处理 gpg 文
+;; 件时报错。
 (setq epa-pinentry-mode 'loopback)
 
 ;; gnus 和 tramp 等认证信息文件
 (setq auth-sources '("~/.authinfo.gpg")
       auth-source-cache-expiry nil) ; default is 7200 (2h)
 ;;(setq auth-source-debug t)
-
-;; That tells auth-source (the package responsible for retrieving and storing
-;; passwords from the environment) to consult the keychain for your credentials
-;; - instead of putting them into ~/.authinfo in plaintext
-;; https://www.reddit.com/r/emacs/comments/ew75ib/comment/fg23tcj/?utm_source=share&utm_medium=web2x&context=3
-(eval-after-load 'auth-source
-  '(when (member window-system '(mac ns))
-     (add-to-list 'auth-sources 'macos-keychain-internet)
-     (add-to-list 'auth-sources 'macos-keychain-generic)))

@@ -1,3 +1,7 @@
+;; Avoid loading old bytecode instead of newer source.
+;; use the newest version available.
+(setq load-prefer-newer t)
+
 (require 'package)
 (setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
                          ("elpa" . "https://elpa.gnu.org/packages/")
@@ -14,10 +18,6 @@
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
-
-;; Avoid loading old bytecode instead of newer source.
-;; use the newest version available.
-(setq load-prefer-newer t)
 
 ;; Increase how much is read from processes in a single chunk (default is 4kb).
 (setq read-process-output-max (* 1024 1024))  ;; 1MB
@@ -77,18 +77,17 @@
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
 
-(use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
-
 (setq inhibit-startup-screen t
       inhibit-startup-message t
       initial-major-mode 'fundamental-mode
       inhibit-startup-echo-area-message t
       initial-scratch-message nil)
 
+(use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+
 (setq frame-resize-pixelwise t)
 
-(transient-mark-mode t)
-
+;; 高亮匹配的括号
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
 
@@ -624,12 +623,23 @@
 
 (use-package chinese-word-at-point)
 
+(use-package go-translate
+  :config
+  (setq gts-translate-list '(("en" "zh")))
+
+  (setq gts-default-translator
+        (gts-translator
+         :picker (gts-prompt-picker)
+         :engines (list (gts-google-engine) (gts-google-rpc-engine))
+         :render (gts-posframe-pin-render))))
+
 (dolist (package '(org org-plus-contrib ob-go ox-reveal ox-gfm))
   (unless (package-installed-p package)
     (package-install package)))
 
 (use-package org
   :config
+  (setq org-emphasis-alist '(("*" bold) ("=" org-verbatim verbatim) ("~" org-code  verbatim)))
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
         org-hide-emphasis-markers t
@@ -864,6 +874,63 @@
 
 ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
+
+(use-package ox-latex
+  :ensure auctex
+  :defer t
+  :after org
+  :config
+  ;;https://yuchi.me/post/export-org-mode-in-chinese-to-pdf-with-custom-latex-class/
+  ;; http://orgmode.org/worg/org-faq.html#using-xelatex-for-pdf-export
+  ;; latexmk runs pdflatex/xelatex (whatever is specified) multiple times
+  ;; automatically to resolve the cross-references.
+  (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
+  ;; ;; Alist of packages to be inserted in every LaTeX header.
+  ;; (setq org-latex-packages-alist
+  ;;       (quote (("" "color" t)
+  ;;               ("" "xcolor" t)
+  ;;               ("" "listings" t)
+  ;;               ("" "fontspec" t)
+  ;;               ("" "parskip" t) ;; 增加正文段落的间距
+  ;;               ("AUTO" "inputenc" t))))
+  (add-to-list 'org-latex-classes
+               '("ctexart"
+                 "\\documentclass[lang=cn,11pt,a4paper]{ctexart}
+                 [NO-DEFAULT-PACKAGES]
+                 [PACKAGES]
+                 [EXTRA]"
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  ;; 自定义 latex 语言环境(基于 tcolorbox)
+  ;; 参考: https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
+  (setq org-latex-custom-lang-environments
+        '((c "\\begin{programlist}[label={%l}]{c}{: %c}\n%s\\end{programlist}")
+          (ditaa "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (emacs-lisp "\\begin{programlist}[label={%l}]{lisp}{: %c}\n%s\\end{programlist}")
+          (ruby "\\begin{programlist}[label={%l}]{ruby}{: %c}\n%s\\end{programlist}")
+          (latex "\\begin{programlist}[label={%l}]{latex}{: %c}\n%s\\end{programlist}")
+          (go "\\begin{programlist}[label={%l}]{go}{: %c}\n%s\\end{programlist}")
+          (lua "\\begin{programlist}[label={%l}]{lua}{: %c}\n%s\\end{programlist}")
+          (java "\\begin{programlist}[label={%l}]{java}{: %c}\n%s\\end{programlist}")
+          (javascript "\\begin{programlist}[label={%l}]{javascript}{: %c}\n%s\\end{programlist}")
+          (json "\\begin{programlist}[label={%l}]{json}{: %c}\n%s\\end{programlist}")
+          (plantuml "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (maxima "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (ipython "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
+          (python "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
+          (perl "\\begin{programlist}[label={%l}]{perl}{: %c}\n%s\\end{programlist}")
+          (html "\\begin{programlist}[label={%l}]{html}{: %c}\n%s\\end{programlist}")
+          (org "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (typescript "\\begin{programlist}[label={%l}]{typescript}{: %c}\n%s\\end{programlist}")
+          (scss "\\begin{programlist}[label={%l}]{scss}{: %c}\n%s\\end{programlist}")
+          (sh "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
+          (shell "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
+          (shellinput "\\begin{shellinput}[%c]\n%s\\end{shellinput}")
+          (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}")))
+  (setq org-latex-listings 'listings))
 
 ;;brew install poppler automake zlib
 (use-package pdf-tools
@@ -1106,14 +1173,17 @@
   :config
   (global-set-key (kbd "C-x w") 'elfeed)
   (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
-          elfeed-show-entry-switch 'display-buffer)
-  (setq elfeed-curl-timeout 600)
-  (setq elfeed-curl-extra-arguments '("--insecure"))
-  (setq elfeed-search-filter "@4-months-ago +unread")
-  (setq elfeed-show-unique-buffers t)
+        elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-timeout 30)
+  (setf url-queue-timeout 40)
+  (push "-k" elfeed-curl-extra-arguments)
+  (setq elfeed-search-filter "@1-months-ago +unread")
+  ;; 在同一个 buffer 中显示 entry
+  (setq elfeed-show-unique-buffers nil)
   (setq line-spacing 0.3)
-  (setq elfeed-search-title-max-width 100)
-  (setq elfeed-search-date-format '("%d/%m/%Y %H:%M" 11 :left))
+  (setq elfeed-search-title-max-width 150)
+  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
+  (setq elfeed-log-level 'warn)
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :feed-url "emacs-china\\.org"
                               :add '(emacs-china)))
@@ -1136,6 +1206,21 @@
       (interactive)
       (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
     (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
+
+(use-package elfeed-goodies
+  :config
+  (setq elfeed-goodies/entry-pane-position 'bottom)
+  (setq elfeed-goodies/feed-source-column-width 30)
+  (setq elfeed-goodies/tag-column-width 30)
+  (setq elfeed-goodies/powerline-default-separator 'arrow)
+  (elfeed-goodies/setup))
+
+(use-package elfeed-score
+  :ensure t
+  :config
+  (progn
+    (elfeed-score-enable)
+    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
 
 (setq vc-follow-symlinks t)
 
@@ -1764,8 +1849,6 @@ mermaid.initialize({
   ;; 不限制结果
   (setq ebuku-results-limit 0))
 
-;;(shell-command "which cmake &>/dev/null || brew install cmake")
-;;(shell-command "which glibtool &>/dev/null || brew install libtool")
 (use-package vterm
   :config
   (setq vterm-max-scrollback 100000)
@@ -1872,7 +1955,7 @@ mermaid.initialize({
 ;; 自定义远程 shell 环境变量
 (let ((process-environment tramp-remote-process-environment))
   ;; 设置环境变量 VTERM_TRAMP=true, 这样 ~/.bashrc 导入 ~/.emacs_bashrc 后能选择
-  ;; 执行 emacs 相关的初始化。
+  ;; 执行 emacs 相关的初始化操作。
   (setenv "VTERM_TRAMP" "true")
   (setq tramp-remote-process-environment process-environment))
 
@@ -2003,8 +2086,7 @@ mermaid.initialize({
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
-;; buffer 智能分组（取代 ibuffer）
-(use-package bufler :config (global-set-key (kbd "C-x C-b") 'bufler))
+(global-set-key (kbd "C-x C-b") 'ibuffer)
 
 (with-eval-after-load 'dired
   ;; re-use dired buffer, available in Emacs 28
@@ -2116,6 +2198,23 @@ mermaid.initialize({
   :commands
   (reveal-in-osx-finder))
 
+(setq my/socks-host "127.0.0.1")
+(setq my/socks-port 13659)
+(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+
+(defun my/url-http-socks5 ()
+  "url-retrieve 使用 curl 作为后端实现, 支持 socks5 代理。"
+  (interactive)
+  (use-package mb-url-http
+    :load-path "~/.emacs.d/site-lisp/mb-url"
+    :defer t
+    :commands (mb-url-http-around-advice)
+    :init
+    (setq mb-url-http-backend 'mb-url-http-curl
+          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-switches `("--max-time" "20" "-x" ,my/socks-proxy "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"))
+    (advice-add 'url-http :around 'mb-url-http-around-advice)))
+
 (defun proxy-socks-show ()
   "Show SOCKS proxy."
   (interactive)
@@ -2126,15 +2225,15 @@ mermaid.initialize({
       (message "No SOCKS proxy"))))
 
 (defun proxy-socks-enable ()
-  "Enable SOCKS proxy."
+  "使用 socks 代理 url 访问请求。"
   (interactive)
   (require 'socks)
-  ;; 使用 socks 代理 url 访问请求
   (setq url-gateway-method 'socks
         socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
-        socks-server '("Default server" "127.0.0.1" 13659 5))
-  (setenv "all_proxy" "socks5://127.0.0.1:13659")
-  (proxy-socks-show))
+        socks-server '("Default server" my/socks-host my/socks-port 5))
+  (setenv "all_proxy" my/socks-proxy)
+  (proxy-socks-show)
+  (my/url-http-socks5))
 
 (defun proxy-socks-disable ()
   "Disable SOCKS proxy."
