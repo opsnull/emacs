@@ -932,7 +932,6 @@
           (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}")))
   (setq org-latex-listings 'listings))
 
-;;brew install poppler automake zlib
 (use-package pdf-tools
   :init
   ;; 使用 scaling 后，中文字体不模糊。
@@ -944,8 +943,6 @@
   (setq-default pdf-view-display-size 'fit-page)
   ;; automatically annotate highlights
   (setq pdf-annot-activate-created-annotations t)
-  :bind (:map pdf-view-mode-map
-         ("\\" . hydra-pdftools/body))
   :hook ((pdf-view-mode . pdf-view-themed-minor-mode)
          (pdf-view-mode . pdf-isearch-minor-mode))
   :config
@@ -955,57 +952,6 @@
   (setq pdf-info-epdfinfo-program "/usr/local/bin/epdfinfo")
   (setenv "PKG_CONFIG_PATH" "/usr/local/opt/zlib/lib/pkgconfig:/usr/local/opt/pkgconfig:/usr/local/lib/pkgconfig")
   (pdf-tools-install))
-
-;; https://www.reddit.com/r/emacs/comments/gm1c2p/pdftools_installation/
-(defhydra hydra-pdftools (:color blue :hint nil)
-        "
-                                                                      ╭───────────┐
-       Move  History   Scale/Fit     Annotations  Search/Link    Do   │ PDF Tools │
-   ╭──────────────────────────────────────────────────────────────────┴───────────╯
-         ^^_g_^^      _B_    ^↧^    _+_    ^ ^     [_al_] list    [_s_] search    [_u_] revert buffer
-         ^^^↑^^^      ^↑^    _H_    ^↑^  ↦ _W_ ↤   [_am_] markup  [_o_] outline   [_i_] info
-         ^^_p_^^      ^ ^    ^↥^    _0_    ^ ^     [_at_] text    [_F_] link      [_d_] dark mode
-         ^^^↑^^^      ^↓^  ╭─^─^─┐  ^↓^  ╭─^ ^─┐   [_ad_] delete  [_f_] search link
-    _h_ ←pag_e_→ _l_  _N_  │ _P_ │  _-_    _b_     [_aa_] dired
-         ^^^↓^^^      ^ ^  ╰─^─^─╯  ^ ^  ╰─^ ^─╯   [_y_]  yank
-         ^^_n_^^      ^ ^  _r_eset slice box
-         ^^^↓^^^
-         ^^_G_^^
-   --------------------------------------------------------------------------------
-        "
-        ;;("\\" hydra-master/body "back")
-        ("\\" nil "quit")
-        ("<ESC>" nil "quit")
-        ("al" pdf-annot-list-annotations)
-        ("ad" pdf-annot-delete)
-        ("aa" pdf-annot-attachment-dired)
-        ("am" pdf-annot-add-markup-annotation)
-        ("at" pdf-annot-add-text-annotation)
-        ("y"  pdf-view-kill-ring-save)
-        ("+" pdf-view-enlarge :color red)
-        ("-" pdf-view-shrink :color red)
-        ("0" pdf-view-scale-reset)
-        ("H" pdf-view-fit-height-to-window)
-        ("W" pdf-view-fit-width-to-window)
-        ("P" pdf-view-fit-page-to-window)
-        ("n" pdf-view-next-page-command :color red)
-        ("p" pdf-view-previous-page-command :color red)
-        ("d" pdf-view-dark-minor-mode)
-        ("b" pdf-view-set-slice-from-bounding-box)
-        ("r" pdf-view-reset-slice)
-        ("g" pdf-view-first-page)
-        ("G" pdf-view-last-page)
-        ("e" pdf-view-goto-page)
-        ("o" pdf-outline)
-        ("s" pdf-occur)
-        ("i" pdf-misc-display-metadata)
-        ("u" pdf-view-revert-buffer)
-        ("F" pdf-links-action-perfom)
-        ("f" pdf-links-isearch-link)
-        ("B" pdf-history-backward :color red)
-        ("N" pdf-history-forward :color red)
-        ("l" image-forward-hscroll :color red)
-        ("h" image-backward-hscroll :color red))
 
 (use-package mu4e
   :load-path "/usr/local/share/emacs/site-lisp/mu/mu4e"
@@ -1075,15 +1021,16 @@
               (local-set-key (kbd "<tab>") 'shr-next-link)
               (local-set-key (kbd "<backtab>") 'shr-previous-link)))
 
-  ;; 周期同步邮件
-  ;; 使用 proxychains4 进行 socks5 代理
+  ;; 使用 proxychains4 socks5 代理周期同步邮件
   (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
-  (setq mu4e-update-interval 120)
+  (setq mu4e-update-interval 300)
 
   ;; 使用 gnus 发送邮件
   (setq message-send-mail-function 'smtpmail-send-it)
   (setq smtpmail-debug-info t)
   (setq smtpmail-debug-verb t)
+
+  (setq mu4e-user-mailing-lists '("geekard@qq.com" "geekard@gmail.com"))
 
   ;; root maildir
   (setq mu4e-maildir "~/.mail")
@@ -1094,7 +1041,8 @@
              :enter-func (lambda () (mu4e-message "Switch to the gmail context"))
              :match-func (lambda (msg)
                            (when msg
-                             (string-match-p "^/gmail" (mu4e-message-field msg :maildir))))
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@gmail.com")
+                                 (string-match-p "^/gmail" (mu4e-message-field msg :maildir)))))
              :leave-func (lambda () (mu4e-clear-caches))
              :vars '((user-mail-address            . "geekard@gmail.com")
                      (user-full-name               . "张俊(Jun Zhang)")
@@ -1113,7 +1061,8 @@
              :enter-func (lambda () (mu4e-message "Switch to the qq context"))
              :match-func (lambda (msg)
                            (when msg
-                             (string-match-p "^/qq" (mu4e-message-field msg :maildir))))
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@qq.com")
+                                 (string-match-p "^/qq" (mu4e-message-field msg :maildir)))))
              :leave-func (lambda () (mu4e-clear-caches))
              :vars '(
                      (user-mail-address            . "geekard@qq.com")
@@ -1166,8 +1115,7 @@
   :config
   (setq org-mime-export-options '(:section-numbers nil :with-author nil :with-toc nil))
   ;; Prompt for confirmation if message has no HTML
-  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart)
-  )
+  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart))
 
 (use-package elfeed
   :config
@@ -2220,8 +2168,7 @@ mermaid.initialize({
   (interactive)
   (when (fboundp 'cadddr)
     (if (bound-and-true-p socks-noproxy)
-        (message "Current SOCKS%d proxy is %s:%d"
-                 (cadddr socks-server) (cadr socks-server) (caddr socks-server))
+        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
       (message "No SOCKS proxy"))))
 
 (defun proxy-socks-enable ()
@@ -2231,6 +2178,7 @@ mermaid.initialize({
   (setq url-gateway-method 'socks
         socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
         socks-server '("Default server" my/socks-host my/socks-port 5))
+        ;;socks-server '("Default server" my/socks-host my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
   (my/url-http-socks5))
