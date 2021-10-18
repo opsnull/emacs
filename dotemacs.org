@@ -23,7 +23,15 @@
 - [[#编辑辅助][编辑辅助]]
 - [[#dict][dict]]
 - [[#org][org]]
-- [[#tex][tex]]
+  - [[#美化-org][美化 org]]
+  - [[#内容居中显式][内容居中显式]]
+  - [[#slide-演示][slide 演示]]
+  - [[#capture][capture]]
+  - [[#保存图片][保存图片]]
+  - [[#日历和日记][日历和日记]]
+  - [[#babel][Babel]]
+  - [[#通知][通知]]
+  - [[#tex][tex]]
 - [[#pdf][pdf]]
 - [[#email][email]]
   - [[#安装软件包][安装软件包]]
@@ -100,14 +108,14 @@ ln -sf /usr/local/opt/emacs-plus@28/Emacs.app /Applications
 
 * 外部依赖
 
-需要安装如下命令或工具：
-
+安装如下命令或工具：
 #+begin_src shell :tangle no
 mkdir -p ~/.emacs.d/backup
 mkdir -p ~/.emacs.d/autosave
 mkdir -p ~/.emacs.d/.cache
 mkdir -p ~/.emacs.d/snippets
 mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib
+mkdir -p ~/.mail/attachments
 
 go get golang.org/x/tools/gopls@latest
 
@@ -115,9 +123,11 @@ which fd || brew install fd
 which ag || brew install the_silver_searcher
 which rg || brew install ripgrep
 which fzf || brew install fzf
-which direnv || brew install direnv
 which trash || brew install trash
 which pngpaste || brew install pngpaste
+
+# 编译 pdf-tools 依赖
+brew install poppler automake zlib
 
 # 编译 libvterm 依赖
 which cmake || brew install cmake
@@ -132,11 +142,15 @@ which pdftotext || brew install poppler
 
 # org notify
 which terminal-notifier || brew install terminal-notifier
+
+# mac 输入法选择
 brew tap laishulu/macism
 which macism || brew install macism
 
 brew install --HEAD pyenv
 brew install --HEAD pyenv-virtualenv
+
+brew install direnv
 
 # 程序默认输入法
 brew install --cask switchkey
@@ -161,7 +175,8 @@ brew install proxychains-ng
 # 提供 isync 和 msmtp 所需的根证书
 brew install openssl@1.1
 
-brew install stardict sdcv # 星际词典(本地词典)
+# 星际词典(本地词典)
+brew install stardict sdcv
 
 # 使用 pyenv shell VERSION 切换到对应版本环境, 然后执行如下命令:
 pip install ipython ansible
@@ -1180,7 +1195,7 @@ import_tables:
 + 使用 M-x package-install org 安装最新版本，否则使用系统自带的老版本。
 + org-make-toc 使用帮助, [[https://github.com/alphapapa/org-make-toc][参考官方文档]]。
 
-美化 org-mode:
+** 美化 org
 #+begin_src emacs-lisp
 (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
 (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
@@ -1211,7 +1226,7 @@ import_tables:
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
 #+end_src
 
-内容居中显式:
+** 内容居中显式
 #+begin_src emacs-lisp
 (defun my/org-mode-visual-fill ()
   (setq
@@ -1228,7 +1243,7 @@ import_tables:
   (org-mode . my/org-mode-visual-fill))
 #+end_src
 
-slide 演示:
+** slide 演示
 #+begin_src emacs-lisp
 (use-package org-tree-slide
   :after org
@@ -1257,6 +1272,7 @@ slide 演示:
                                   (read-only-mode -1)))))
 #+end_src
 
+** capture
 自动 Capture 浏览器发来的网址或选中的内容:
 #+begin_src emacs-lisp
 (require 'org-protocol)
@@ -1276,6 +1292,7 @@ slide 演示:
                "* ☞ TODO [#B] %U %i%?"))
 #+end_src
 
+** 保存图片
 拖拽保存图片或 F6 保存剪贴板中图片:
 #+begin_src emacs-lisp
 ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
@@ -1292,7 +1309,7 @@ slide 演示:
   (org-download-enable))
 #+end_src
 
-日历和日记:
+** 日历和日记
 #+begin_src emacs-lisp
 (setq org-agenda-time-grid (quote ((daily today require-timed)
                                    (300 600 900 1200 1500 1800 2100 2400)
@@ -1346,7 +1363,7 @@ slide 演示:
          (set-face-foreground 'holiday-face "white")))
 #+end_src
 
-Babel:
+** Babel
 #+begin_src emacs-lisp
 (setq org-confirm-babel-evaluate nil
       org-src-fontify-natively t
@@ -1365,6 +1382,7 @@ Babel:
    (css . t)))
 #+end_src
 
+** 通知
 倒计时结束通知:
 #+BEGIN_SRC  emacs-lisp
 ;; brew install terminal-notifier
@@ -1387,7 +1405,7 @@ Babel:
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 #+end_src
 
-* tex
+** tex
 
 #+begin_src emacs-lisp
 (use-package ox-latex
@@ -1585,7 +1603,6 @@ right=1in]{geometry}
 * pdf
 
 #+begin_src emacs-lisp
-;;brew install poppler automake zlib
 (use-package pdf-tools
   :init
   ;; 使用 scaling 后，中文字体不模糊。
@@ -1597,8 +1614,6 @@ right=1in]{geometry}
   (setq-default pdf-view-display-size 'fit-page)
   ;; automatically annotate highlights
   (setq pdf-annot-activate-created-annotations t)
-  :bind (:map pdf-view-mode-map
-         ("\\" . hydra-pdftools/body))
   :hook ((pdf-view-mode . pdf-view-themed-minor-mode)
          (pdf-view-mode . pdf-isearch-minor-mode))
   :config
@@ -1608,63 +1623,12 @@ right=1in]{geometry}
   (setq pdf-info-epdfinfo-program "/usr/local/bin/epdfinfo")
   (setenv "PKG_CONFIG_PATH" "/usr/local/opt/zlib/lib/pkgconfig:/usr/local/opt/pkgconfig:/usr/local/lib/pkgconfig")
   (pdf-tools-install))
-
-;; https://www.reddit.com/r/emacs/comments/gm1c2p/pdftools_installation/
-(defhydra hydra-pdftools (:color blue :hint nil)
-        "
-                                                                      ╭───────────┐
-       Move  History   Scale/Fit     Annotations  Search/Link    Do   │ PDF Tools │
-   ╭──────────────────────────────────────────────────────────────────┴───────────╯
-         ^^_g_^^      _B_    ^↧^    _+_    ^ ^     [_al_] list    [_s_] search    [_u_] revert buffer
-         ^^^↑^^^      ^↑^    _H_    ^↑^  ↦ _W_ ↤   [_am_] markup  [_o_] outline   [_i_] info
-         ^^_p_^^      ^ ^    ^↥^    _0_    ^ ^     [_at_] text    [_F_] link      [_d_] dark mode
-         ^^^↑^^^      ^↓^  ╭─^─^─┐  ^↓^  ╭─^ ^─┐   [_ad_] delete  [_f_] search link
-    _h_ ←pag_e_→ _l_  _N_  │ _P_ │  _-_    _b_     [_aa_] dired
-         ^^^↓^^^      ^ ^  ╰─^─^─╯  ^ ^  ╰─^ ^─╯   [_y_]  yank
-         ^^_n_^^      ^ ^  _r_eset slice box
-         ^^^↓^^^
-         ^^_G_^^
-   --------------------------------------------------------------------------------
-        "
-        ;;("\\" hydra-master/body "back")
-        ("\\" nil "quit")
-        ("<ESC>" nil "quit")
-        ("al" pdf-annot-list-annotations)
-        ("ad" pdf-annot-delete)
-        ("aa" pdf-annot-attachment-dired)
-        ("am" pdf-annot-add-markup-annotation)
-        ("at" pdf-annot-add-text-annotation)
-        ("y"  pdf-view-kill-ring-save)
-        ("+" pdf-view-enlarge :color red)
-        ("-" pdf-view-shrink :color red)
-        ("0" pdf-view-scale-reset)
-        ("H" pdf-view-fit-height-to-window)
-        ("W" pdf-view-fit-width-to-window)
-        ("P" pdf-view-fit-page-to-window)
-        ("n" pdf-view-next-page-command :color red)
-        ("p" pdf-view-previous-page-command :color red)
-        ("d" pdf-view-dark-minor-mode)
-        ("b" pdf-view-set-slice-from-bounding-box)
-        ("r" pdf-view-reset-slice)
-        ("g" pdf-view-first-page)
-        ("G" pdf-view-last-page)
-        ("e" pdf-view-goto-page)
-        ("o" pdf-outline)
-        ("s" pdf-occur)
-        ("i" pdf-misc-display-metadata)
-        ("u" pdf-view-revert-buffer)
-        ("F" pdf-links-action-perfom)
-        ("f" pdf-links-isearch-link)
-        ("B" pdf-history-backward :color red)
-        ("N" pdf-history-forward :color red)
-        ("l" image-forward-hscroll :color red)
-        ("h" image-backward-hscroll :color red))
 #+end_src
 
 + pdf-tools 默认是白底黑字，可以：
-  + 深色模式：M-x pdf-view-midnight-minor-mode
-  + 主题模式：M-x pdf-view-themed-minor-mode
-+ 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 M-s o 的 occur 模
+  + 深色模式： =M-x pdf-view-midnight-minor-mode=
+  + 主题模式： =M-x pdf-view-themed-minor-mode=
++ 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 =M-s o= 的 occur 模
   式；phi-search 与 pdf-tools 不兼容；
 + 维护的版本：https://github.com/vedang/pdf-tools
 
@@ -1679,7 +1643,7 @@ brew install isync mu gnupg pass proxychains-ng
 + pass: 使用 gnupg 来管理密码；
 + proxychains-ng: 任意 socket 代理, 访问 gmail 使用;
 
-mu 安装包同时也安装了 mu4e:
+mu 安装包自带 mu4e emacs 包:
 #+begin_src shell :tangle no
 $ ls  /usr/local/share/emacs/site-lisp/mu/mu4e/
 mu4e-actions.el   mu4e-headers.el     mu4e-message.el    mu4e-utils.el         mu4e-view.el
@@ -1711,7 +1675,7 @@ uid             [ 绝对 ] zhangjun <geekard@qq.com>
 sub   cv25519 2021-10-03 [E] [有效至：2023-10-03]
 #+end_src
 + uid 是 zhangjun 或 geekard@qq.com 或 hash, 对应的 hash 值可以使用 =gpg -a --export |gpg
-  --list-packets --verbose= 获取或 M-x epa-list-keys 。
+  --list-packets --verbose= 获取或 =M-x epa-list-keys= 。
 
 参考: [[https://ruanyifeng.com/blog/2013/07/gpg.html][阮一峰 GPG 入门教程]]
 
@@ -1720,25 +1684,14 @@ sub   cv25519 2021-10-03 [E] [有效至：2023-10-03]
 #+BEGIN_SRC  shell :tangle no
 # 使用 gngpg uid geekard@qq.com 来初始化 pass
 $ pass init "geekard@qq.com"
-mkdir: created directory '/Users/zhangjun/.password-store/'
-
 # pass 内容更新到 git
 $ pass git init
-已初始化空的 Git 仓库于 /Users/zhangjun/.password-store/.git/
 $ pass git remote add origin git@github.com:opsnull/pass-store.git
-
-# 在 web qq 中申请授权码, 作为帐号密码.
-# 添加 qq 帐号
+# 在 web qq 中申请授权码, 作为帐号密码, 添加 qq 帐号
 $ pass insert email/qq
-mkdir: created directory '/Users/zhangjun/.password-store/email'
-
-$ pass ls
-Password Store
-└── email
-    └── qq
-
 $ pass insert email/gmail
 #+end_src
++ 帐号信息保存在 =~/.password-store=
 
 ** 配置 mbsync
 
@@ -1749,7 +1702,7 @@ $ pass insert email/gmail
 IMAPAccount qq
 Host imap.qq.com
 User geekard@qq.com
-PassCmd "pass email/qq"  # 调用 pass 命令获取 email/qq 密码
+PassCmd "pass email/qq"  # 调用 pass 命令
 Port 993
 AuthMechs LOGIN
 SSLType IMAPS
@@ -1869,8 +1822,6 @@ Channel gmail-junk
 #+begin_src shell
 $ mkdir -p ~/.mail/qq/{Sent,Drafts,Trash,Archive}
 $ mkdir -p ~/.mail/gmail/{All,Sent,Drafts,Junk,Trash}
-
-# 同步邮件
 $ mbsync --all
 #+end_src
 
@@ -1879,7 +1830,7 @@ $ mbsync --all
 ** 配置 proxychains
 
 proxychains 为不支持代理的命令行程序提供任意 socks 代理功能：
-+ 如 mbsync 不感知任何代理环境变量，如  HTTP_PROXY HTTPS_PROXY ALL_PROXY 等；
++ 如 mbsync 不感知任何代理环境变量, 通过 proxychains 可以代理。
 
 #+begin_src shell :tangle no
 $ mkdir .proxychains/
@@ -1901,35 +1852,12 @@ $ proxychains4 mbsync gmail
 #+begin_src shell
 # 初始化索引, 指定自己的 email 地址列表
 $ mu init  --my-address=geekard@qq.com --my-address=geekard@gmail.com -m ~/.mail/
-maildir           : /Users/zhangjun/.mail
-database-path     : /Users/zhangjun/.cache/mu/xapian
-schema-version    : 452
-max-message-size  : 100000000
-batch-size        : 250000
-messages in store : 0
-created           : 日 10/ 3 21:38:14 2021
-personal-address  : geekard@qq.com
-personal-address  : geekard@gmail.com
-
-store created; use the 'index' command to fill/update it.
-
 # 建立索引
 $ mu index
-indexing maildir /Users/zhangjun/.mail -> store /Users/zhangjun/.cache/mu/xapian
-| indexing messages; processed: 69; updated/new: 69; cleaned-up: 0
-
-# 索引位置在 ~/.cache/mu 目录下
-$ ls .cache/mu/
-mu.log  parts/  xapian/
-$ ls .cache/mu/xapian/
-flintlock  iamglass  position.glass  postlist.glass  termlist.glass
-
 # 检索索引
 $ mu find github
-日  9/26 16:50:39 2021 GitHub <noreply@github.com> [GitHub] A third-party OAuth application has been added to your account
-二  9/28 09:31:43 2021 GitHub <noreply@github.com> [GitHub] A third-party OAuth application has been added to your account
-五 10/ 1 04:30:07 2021 Erez Zukerman - ZSA <contact@ergodox-ez.com> The Ergo 36
 #+end_src
++ 索引位置： =~/.cache/mu=
 
 ** 配置 mu4e
 
@@ -2002,15 +1930,16 @@ $ mu find github
               (local-set-key (kbd "<tab>") 'shr-next-link)
               (local-set-key (kbd "<backtab>") 'shr-previous-link)))
 
-  ;; 周期同步邮件
-  ;; 使用 proxychains4 进行 socks5 代理
+  ;; 使用 proxychains4 socks5 代理周期同步邮件
   (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
-  (setq mu4e-update-interval 120)
+  (setq mu4e-update-interval 300)
 
   ;; 使用 gnus 发送邮件
   (setq message-send-mail-function 'smtpmail-send-it)
   (setq smtpmail-debug-info t)
   (setq smtpmail-debug-verb t)
+
+  (setq mu4e-user-mailing-lists '("geekard@qq.com" "geekard@gmail.com"))
 
   ;; root maildir
   (setq mu4e-maildir "~/.mail")
@@ -2021,7 +1950,8 @@ $ mu find github
              :enter-func (lambda () (mu4e-message "Switch to the gmail context"))
              :match-func (lambda (msg)
                            (when msg
-                             (string-match-p "^/gmail" (mu4e-message-field msg :maildir))))
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@gmail.com")
+                                 (string-match-p "^/gmail" (mu4e-message-field msg :maildir)))))
              :leave-func (lambda () (mu4e-clear-caches))
              :vars '((user-mail-address            . "geekard@gmail.com")
                      (user-full-name               . "张俊(Jun Zhang)")
@@ -2040,7 +1970,8 @@ $ mu find github
              :enter-func (lambda () (mu4e-message "Switch to the qq context"))
              :match-func (lambda (msg)
                            (when msg
-                             (string-match-p "^/qq" (mu4e-message-field msg :maildir))))
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@qq.com")
+                                 (string-match-p "^/qq" (mu4e-message-field msg :maildir)))))
              :leave-func (lambda () (mu4e-clear-caches))
              :vars '(
                      (user-mail-address            . "geekard@qq.com")
@@ -2058,8 +1989,8 @@ $ mu find github
                      )))))
 #+end_src
 
-mu4e 默认使用 gnus 发送 SMTP 邮件, 而 gnus 从 ~/.authinfo.gpg (根据配置) 读取
-SMTP 服务器的帐号信息:
+mu4e 默认使用 gnus 发送 SMTP 邮件, 而 gnus 从 =~/.authinfo.gpg= 读取SMTP 服务器的
+帐号信息:
 
 #+begin_src txt :tangle no
 machine smtp.qq.com login geekard@qq.com password {QQ 授权码}
@@ -2068,7 +1999,7 @@ machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
 
 ** mu4e-alert
 
-使用 mu4e-alert 和 notifier(使用 terminal-notifier 程序) 来进行桌面通知:
+使用 mu4e-alert 和 notifier(通过 terminal-notifier 程序) 进行桌面通知:
 #+begin_src emacs-lisp
 (use-package mu4e-alert
   :after mu4e
@@ -2093,7 +2024,7 @@ machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
 
 ** mu4e-views
 
-mu4e-views 使用 xwdigets 来显示 html 格式的右键：
+mu4e-views 使用 xwdigets 来显示 html 格式邮件：
 #+begin_src emacs-lisp
 (use-package mu4e-views
   :after mu4e
@@ -2115,16 +2046,17 @@ mu4e-views 使用 xwdigets 来显示 html 格式的右键：
 + 在 mu4e-header 中使用 v 来切换邮件显示方式;
 
 ** org-mime
-
+org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+begin_src emacs-lisp
 (use-package org-mime
   :after mu4e
   :config
   (setq org-mime-export-options '(:section-numbers nil :with-author nil :with-toc nil))
   ;; Prompt for confirmation if message has no HTML
-  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart)
-  )
+  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart))
 #+end_src
+
+使用方法：
 + M-x org-mime-htmlize
 + M-x org-mime-edit-mail-in-org-mode
 + M-x org-mime-revert-to-plain-text-mail
@@ -2190,7 +2122,7 @@ mu4e-views 使用 xwdigets 来显示 html 格式的右键：
 + 清理任务队列： =M-x elfeed-unjam=
 + 更新： =M-x elfeed-dashboard-update=
 
-elfeed-score 规则文件:
+elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][语法参考]]):
 #+begin_src emacs-lisp :tangle ~/.emacs.d/elfeed.score
 ;;; Elfeed score file                                     -*- lisp -*-
 (("title"
@@ -3542,8 +3474,7 @@ Google 搜索(只支持单行内容搜索):
   (interactive)
   (when (fboundp 'cadddr)
     (if (bound-and-true-p socks-noproxy)
-        (message "Current SOCKS%d proxy is %s:%d"
-                 (cadddr socks-server) (cadr socks-server) (caddr socks-server))
+        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
       (message "No SOCKS proxy"))))
 
 (defun proxy-socks-enable ()
@@ -3553,6 +3484,7 @@ Google 搜索(只支持单行内容搜索):
   (setq url-gateway-method 'socks
         socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
         socks-server '("Default server" my/socks-host my/socks-port 5))
+        ;;socks-server '("Default server" my/socks-host my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
   (my/url-http-socks5))
