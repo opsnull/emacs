@@ -1,3 +1,10 @@
+# VTERM_TRAMP 和 VTERM_HOSTNAME 都是 TRAMP 设置的环境变量，这两个变量正确设置后,
+# VTERM 的 buffer 名称和远程目录追踪功能才能正确有效。
+
+if [ -z "$VTERM_HOSTNAME" ]; then
+   VTERM_HOSTNAME=$(hostname -i)
+fi
+
 if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
     echo '. ~/.emacs_bashrc' >> ~/.bashrc
     touch /{etc,home,root,tmp,usr}/.projectile
@@ -12,8 +19,15 @@ if [ -f "${tarball}" ]; then
   rm -rf "${tarball}"
 fi
 
+# fzf shell 配置，来源：https://github.com/junegunn/fzf/tree/master/shell
+if which fzf &>/dev/null ; then
+    [[ $- == *i* ]] && source ~/.fzf_completion.bash
+    source ~/.fzf_key-bindings.bash
+    source ~/.fzf.bash
+fi
+
 if [[ "$VTERM_TRAMP" == "true" ]]; then
-    PS1="[\u@$(hostname -i) \W]\$ "
+    PS1="[\u@${VTERM_HOSTNAME} \W]\$ "
     vterm_printf(){
         if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
             # Tell tmux to pass the escape sequences through
@@ -33,18 +47,11 @@ if [[ "$VTERM_TRAMP" == "true" ]]; then
     }
 
     # vterm-buffer-name-string
-    PROMPT_COMMAND='echo -ne "\033]0;$(hostname -i):${PWD}\007"'
+    PROMPT_COMMAND='echo -ne "\033]0;${VTERM_HOSTNAME}:${PWD}\007"'
 
     # Directory tracking and Prompt tracking
     vterm_prompt_end(){
-        vterm_printf "51;A$(whoami)@$(hostname -i):$(pwd)"
+        vterm_printf "51;A$(whoami)@${VTERM_HOSTNAME}:$(pwd)"
     }
-    PS1=$PS1'\[$(vterm_prompt_end)\]'  
-fi
-
-# fzf shell 配置，来源：https://github.com/junegunn/fzf/tree/master/shell
-if which fzf &>/dev/null ; then
-    [[ $- == *i* ]] && source ~/.fzf_completion.bash
-    source ~/.fzf_key-bindings.bash
-    source ~/.fzf.bash
+    PS1=$PS1'\[$(vterm_prompt_end)\]'
 fi

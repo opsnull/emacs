@@ -1,0 +1,106 @@
+% https://blog.shimanoke.com/ja/posts/change-latex-emph/
+% 克隆 https://github.com/doraTeX/breakfbox 到 /usr/local/texlive/texmf-local/tex/latex
+% 刷新数据库:  sudo mktexlsr
+
+% 黄色背景高亮强调
+\usepackage{uline--}
+\renewcommand{\emph}[1]{
+{\sffamily\bfseries\itshape
+  \uline[
+    background,
+    color={[rgb]{1,1,0.0}},
+    width=0.8em,position=1pt]{#1}}}
+
+% 自定义 programlist 语言环境
+% https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins,raster,external,listings,minted}
+\tcbEXTERNALIZE
+\newtcblisting[
+auto counter,
+number within=section]{programlist}[3][]{
+  listing engine=minted,
+  minted style=emacs,
+  minted language=#2,
+  minted options={autogobble,fontsize=\footnotesize,breaklines,breakanywhere,baselinestretch=1.2,linenos,numbersep=3mm},
+  title={\sffamily\bfseries 代码块 \thetcbcounter},
+  %title={\sffamily\bfseries 代码块 \thetcbcounter #3},
+  after,
+  breakable=true,
+  lowerbox=ignored,
+  hyphenationfix=true,
+  colback=blue!5!white,
+  colframe=blue!85!black,
+  listing only,
+  enhanced,
+  drop fuzzy shadow southeast,
+  left=5mm,
+  overlay={\begin{tcbclipinterior}\fill[red!20!blue!20!white] (frame.south west) rectangle ([xshift=5mm]frame.north west);\end{tcbclipinterior}},
+  #1
+}
+
+\usepackage{hyperref}
+\hypersetup{
+  pdfborder={0 0 0},
+  colorlinks=true,
+  linkcolor={winered},
+  urlcolor={winered},
+  filecolor={winered},
+  citecolor={winered},
+  linktoc=all}
+
+\usepackage{fontspec}
+\usepackage[utf8]{inputenc}
+\setmainfont{Sarasa Mono SC}
+\setsansfont{Sarasa Mono SC}[Scale=MatchLowercase]
+\setmonofont{Sarasa Mono SC}[Scale=MatchLowercase]
+% \setCJKmainfont[BoldFont={Adobe Heiti Std}, ItalicFont={Adobe Kaiti Std}]{Adobe Song Std}
+\setCJKmainfont[BoldFont = Noto Serif SC]{Noto Serif SC}
+\setCJKsansfont{Noto Sans SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+
+\XeTeXlinebreaklocale "zh"
+\XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt
+
+% add the email cmd
+\newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+
+\usepackage{color}
+% define the hyperref color
+\usepackage{xcolor}
+\definecolor{winered}{rgb}{0.5,0,0}
+\definecolor{lightgrey}{rgb}{0.95,0.95,0.95}
+\definecolor{commentcolor}{RGB}{0,100,0}
+\definecolor{frenchplum}{RGB}{190,20,83}
+% 代码块使用的背景
+\definecolor{LightGray}{gray}{0.9}
+
+\usepackage{parskip}
+\usepackage{etoolbox}
+\usepackage{calc}
+
+\usepackage[scale=0.85]{geometry}
+%\setlength{\headsep}{5pt}
+
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{indentfirst}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{linegoal}
+\usepackage{graphicx}
+\usepackage{fancyvrb}
+\usepackage{abstract}
+\usepackage{hologo}
+
+\linespread{1.35}
+\graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
+
+\usepackage[font=small,labelfont={bf}]{caption}
+\captionsetup[table]{skip=3pt}
+\captionsetup[figure]{skip=3pt}
+
+\usepackage[shortlabels,inline]{enumitem}
+\setlist{nolistsep}

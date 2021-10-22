@@ -8,32 +8,19 @@
 :TOC:      :include all :ignore this
 :END:
 :CONTENTS:
-- [[#编译安装][编译安装]]
+- [[#安装][安装]]
 - [[#外部依赖][外部依赖]]
 - [[#初始配置][初始配置]]
 - [[#软件源][软件源]]
 - [[#性能优化][性能优化]]
 - [[#环境变量][环境变量]]
 - [[#字体主题][字体主题]]
-- [[#目录变量][目录变量]]
-- [[#增量补全][增量补全]]
-- [[#自动补全][自动补全]]
-- [[#快速跳转][快速跳转]]
+- [[#补全][补全]]
+- [[#跳转][跳转]]
 - [[#输入法][输入法]]
-- [[#编辑辅助][编辑辅助]]
-- [[#dict][dict]]
-- [[#org][org]]
-  - [[#美化-org][美化 org]]
-  - [[#内容居中显式][内容居中显式]]
-  - [[#slide-演示][slide 演示]]
-  - [[#capture][capture]]
-  - [[#保存图片][保存图片]]
-  - [[#日历和日记][日历和日记]]
-  - [[#babel][Babel]]
-  - [[#通知][通知]]
-  - [[#tex][tex]]
-- [[#pdf][pdf]]
-- [[#email][email]]
+- [[#编辑][编辑]]
+- [[#词典][词典]]
+- [[#邮件][邮件]]
   - [[#安装软件包][安装软件包]]
   - [[#生成-gnupg-加密-key][生成 gnupg 加密 key]]
   - [[#配置-pass][配置 pass]]
@@ -45,10 +32,21 @@
   - [[#mu4e-maildirs-extension][mu4e-maildirs-extension]]
   - [[#mu4e-views][mu4e-views]]
   - [[#org-mime][org-mime]]
+- [[#org][org]]
+  - [[#美化-org][美化 org]]
+  - [[#内容居中显式][内容居中显式]]
+  - [[#slide-演示][slide 演示]]
+  - [[#capture][capture]]
+  - [[#保存图片][保存图片]]
+  - [[#日历和日记][日历和日记]]
+  - [[#babel][Babel]]
+  - [[#通知][通知]]
+  - [[#tex][tex]]
+- [[#pdf][pdf]]
 - [[#rss][rss]]
 - [[#版本控制][版本控制]]
 - [[#搜索比较][搜索比较]]
-- [[#编程开发][编程开发]]
+- [[#开发][开发]]
   - [[#lsp][lsp]]
   - [[#python][python]]
     - [[#pyenv][pyenv]]
@@ -69,6 +67,7 @@
   - [[#yaml][yaml]]
   - [[#flycheck][flycheck]]
   - [[#devdocs][devdocs]]
+  - [[#目录变量][目录变量]]
 - [[#树形浏览][树形浏览]]
 - [[#项目管理][项目管理]]
 - [[#浏览器][浏览器]]
@@ -76,8 +75,8 @@
   - [[#vterm][vterm]]
   - [[#eshell][eshell]]
   - [[#tramp][tramp]]
+- [[#代理][代理]]
 - [[#其它][其它]]
-  - [[#socks-代理][socks 代理]]
 - [[#推荐][推荐]]
 - [[#归档][归档]]
   - [[#origami][origami]]
@@ -87,7 +86,7 @@
   - [[#company-box][company-box]]
 :END:
 
-* 编译安装
+* 安装
 
 Emacs 27：
 #+begin_src shell :tangle no
@@ -240,8 +239,7 @@ npm install -g prettier
 
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
- (when (file-exists-p custom-file)
-   (load custom-file))
+(add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
 ;; 个人信息
 (setq user-full-name "zhangjun"
@@ -256,6 +254,8 @@ npm install -g prettier
       auth-source-cache-expiry nil) ; default is 7200 (2h)
 ;;(setq auth-source-debug t)
 #+end_src
++ early-init.el 是 Emacs 启动时最开始执行的文件，由于很多包还没有加载，执行复杂
+  逻辑可能导致 Emacs 悄无声息失败，该文件应该以变量定义为主。
 
 * 软件源
 
@@ -475,8 +475,8 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   :disabled
   :config
   (setq x-gtk-resize-child-frames 'resize-mode)
-    ;; 光标位置显示 minibuffer
-    (setq mini-frame-show-parameters
+  ;; 光标位置显示 minibuffer
+  (setq mini-frame-show-parameters
         (lambda ()
           (let* ((info (posframe-poshandler-argbuilder))
                  (posn (posframe-poshandler-point-bottom-left-corner info))
@@ -520,50 +520,26 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 
 (global-font-lock-mode t)
 
+;; 透明背景间切换(真透明!)
+(defun toggle-transparency ()
+  (interactive)
+  (let ((alpha (frame-parameter nil 'alpha)))
+    (set-frame-parameter
+     nil 'alpha
+     (if (eql (cond ((numberp alpha) alpha)
+                    ((numberp (cdr alpha)) (cdr alpha))
+                    ;; Also handle undocumented (<active> <inactive>) form.
+                    ((numberp (cadr alpha)) (cadr alpha)))
+              100)
+         '(85 . 50) '(100 . 100)))))
+(global-set-key (kbd "C-c t") 'toggle-transparency)
 #+end_src
 + 更新 fire-code 字体：M-x fira-code-mode-install-fonts
 + 更新 icon 字体：M-x all-the-icons-install-fonts
 
-* 目录变量
+* 补全
 
-目录变量是只对特定目录及子目录有效的变量，主要使用场景是根据目录变量来指定版本的
-python 和 golang 。
-
-安装 =direnv= 工具命令：
-#+begin_src shell :results none
-brew install direnv
-#+end_src
-
-[[https://direnv.net/docs/hook.html][将 direnv hook 到 shell 启动文件中]]：
-#+begin_src shell :results none
-eval "$(direnv hook bash)"
-#+end_src
-
-安装 emacs envrc 软件包，它调用 direnv 命令获取当前文件或目录的环境变量，然后更
-新到 emacs 变量 =process-environment= 和 =exec-path= ，emacs 后续启动的命令就会继承
-这些环境变量（direnv 包是全局的，而 envrc 是 buffer-local 生效)：
-
-#+begin_src emacs-lisp
-(use-package envrc
-  :hook (after-init . envrc-global-mode)
-  :config
-  (with-eval-after-load 'envrc
-    (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map)))
-#+end_src
-+ C-c e a: envrc-allow
-+ C-c e d: envrc-deny
-+ C-c e r: envrc-reload
-
-使用步骤：
-1. 在对应目录创建 =.envrc= 文件;
-2. 向 .envrc 文件添加 shell 环境变量;
-3. 执行 =direnv allow .= 生效环境变量;
-
-如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
-lsp-workspace-restart= 来重启语言服务器。
-
-* 增量补全
-
+增量补齐：
 #+begin_src emacs-lisp
 (use-package vertico
   :config
@@ -712,8 +688,7 @@ lsp-workspace-restart= 来重启语言服务器。
   (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
-* 自动补全
-
+自动补全：
 #+begin_src emacs-lisp
 (use-package company
   :bind
@@ -783,7 +758,7 @@ lsp-workspace-restart= 来重启语言服务器。
   snippets 补全项。
 + 通过 "C-c y" 快捷键触发 yasnippet 的自动补全。
 
-* 快速跳转
+* 跳转
 
 跳转到上次修改位置：
 #+begin_src emacs-lisp
@@ -1019,7 +994,7 @@ import_tables:
 然后执行命令 =M-x rime-deploy= 生效。输入 =weiyamu=, 如果内容是 =鳚亚目= 则证明导入成
 功。
 
-* 编辑辅助
+* 编辑
 
 #+begin_src emacs-lisp
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
@@ -1106,7 +1081,7 @@ import_tables:
 + fundamental-mode 打开的 json/yaml 文件，使用 M-s o(occur) 或 M-s
   l（consult-line) 来进行搜索跳转。
 
-* dict
+* 词典
 
 #+BEGIN_SRC  emacs-lisp
 (use-package youdao-dictionary
@@ -1130,6 +1105,435 @@ import_tables:
 #+end_src
 + 有道词典需要额外安装中文分词软件才能正确分词，如结巴分词： =pip install jieba=
 + Google 翻译： =M-x gts-do-translate=;
+* 邮件
+** 安装软件包
+
+#+begin_src shell :tangle no
+brew install isync mu gnupg pass proxychains-ng
+#+end_src
++ mbsync(isync): 同步邮件到本地；
++ mu(包括 mu4e): 索引和读取邮件；
++ pass: 使用 gnupg 来管理密码；
++ proxychains-ng: 任意 socket 代理, 访问 gmail 使用;
+
+mu 安装包自带 mu4e emacs 包:
+#+begin_src shell :tangle no
+$ ls  /usr/local/share/emacs/site-lisp/mu/mu4e/
+mu4e-actions.el   mu4e-headers.el     mu4e-message.el    mu4e-utils.el         mu4e-view.el
+mu4e-actions.elc  mu4e-headers.elc    mu4e-message.elc   mu4e-utils.elc        mu4e-view.elc
+mu4e-compose.el   mu4e-icalendar.el   mu4e-meta.el       mu4e-vars.el          mu4e.el
+mu4e-compose.elc  mu4e-icalendar.elc  mu4e-meta.elc      mu4e-vars.elc         mu4e.elc
+mu4e-context.el   mu4e-lists.el       mu4e-org.el        mu4e-view-common.el   org-mu4e.el
+mu4e-context.elc  mu4e-lists.elc      mu4e-org.elc       mu4e-view-common.elc  org-mu4e.elc
+mu4e-contrib.el   mu4e-main.el        mu4e-proc.el       mu4e-view-gnus.el
+mu4e-contrib.elc  mu4e-main.elc       mu4e-proc.elc      mu4e-view-gnus.elc
+mu4e-draft.el     mu4e-mark.el        mu4e-speedbar.el   mu4e-view-old.el
+mu4e-draft.elc    mu4e-mark.elc       mu4e-speedbar.elc  mu4e-view-old.elc
+#+end_src
+
+** 生成 gnupg 加密 key
+
+#+begin_src shell :tangle no
+# 生成加密 key
+$ gpg --gen-key
+# 生成吊销证书
+$ gpg --gen-revoke B1D06C306F507C66
+# 查看 key
+$ gpg --list-keys
+/Users/zhangjun/.gnupg/pubring.kbx
+----------------------------------
+pub   ed25519 2021-10-03 [SC] [有效至：2023-10-03]
+      10BC65EE905F64CCAFF5E123B1D06C306F507C66
+uid             [ 绝对 ] zhangjun <geekard@qq.com>
+sub   cv25519 2021-10-03 [E] [有效至：2023-10-03]
+#+end_src
++ uid 是 zhangjun 或 geekard@qq.com 或 hash, 对应的 hash 值可以使用 =gpg -a --export |gpg
+  --list-packets --verbose= 获取或 =M-x epa-list-keys= 。
+
+参考: [[https://ruanyifeng.com/blog/2013/07/gpg.html][阮一峰 GPG 入门教程]]
+
+** 配置 pass
+
+#+BEGIN_SRC  shell :tangle no
+# 使用 gngpg uid geekard@qq.com 来初始化 pass
+$ pass init "geekard@qq.com"
+# pass 内容更新到 git
+$ pass git init
+$ pass git remote add origin git@github.com:opsnull/pass-store.git
+# 在 web qq 中申请授权码, 作为帐号密码, 添加 qq 帐号
+$ pass insert email/qq
+$ pass insert email/gmail
+#+end_src
++ 帐号信息保存在 =~/.password-store=
+
+** 配置 mbsync
+
+#+begin_src txt :tangle ~/.mbsyncrc
+########################################
+# qq.com
+########################################
+IMAPAccount qq
+Host imap.qq.com
+User geekard@qq.com
+PassCmd "pass email/qq"  # 调用 pass 命令
+Port 993
+AuthMechs LOGIN
+SSLType IMAPS
+#CertificateFile /etc/ssl/certs/ca-certificates.crt # Linux
+CertificateFile /usr/local/etc/openssl@1.1/cert.pem  # MacOS
+
+IMAPStore qq-remote
+Account qq
+
+MaildirStore qq-local
+# The trailing "/" is important
+Path ~/.mail/qq/
+Inbox ~/.mail/qq/Inbox/
+# The SubFolders option allows to represent all IMAP subfolders as local subfolders
+SubFolders Verbatim
+
+## Connections
+Channel qq-inbox
+Far :qq-remote:"INBOX"
+Near :qq-local:"Inbox"
+Create Near
+Expunge Both
+SyncState *
+
+Channel qq-drafts
+Far :qq-remote:"Drafts"
+Near :qq-local:"Drafts"
+Create Near
+Expunge Both
+SyncState *
+
+Channel qq-sent
+Far :qq-remote:"Sent Messages"
+Near :qq-local:"Sent"
+Create Near
+Expunge Both
+SyncState *
+
+Channel qq-trash
+Far :qq-remote:"Deleted Messages"
+Near :qq-local:"Trash"
+Create Near
+Expunge Both
+SyncState *
+
+## Groups
+Group qq
+Channel qq-inbox
+Channel qq-drafts
+Channel qq-sent
+Channel qq-trash
+
+########################################
+# gmail
+########################################
+IMAPAccount gmail
+Host imap.gmail.com
+User geekard@gmail.com
+PassCmd "pass email/gmail"
+SSLType IMAPS
+AuthMechs PLAIN
+CertificateFile /usr/local/etc/openssl@1.1/cert.pem  # MacOS
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+# The trailing "/" is important
+Path ~/.mail/gmail/
+Inbox ~/.mail/gmail/inbox
+
+Channel gmail-default
+Far :gmail-remote:
+Near :gmail-local:Inbox
+#Patterns INBOX
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-sent
+Far :gmail-remote:"[Gmail]/Sent Mail"
+Near  :gmail-local:Sent
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-trash
+Far :gmail-remote:"[Gmail]/Trash"
+Near  :gmail-local:Trash
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-archive
+Far :gmail-remote:"[Gmail]/All Mail"
+Near  :gmail-local:All
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-junk
+Far :gmail-remote:"[Gmail]/Spam"
+Near  :gmail-local:Junk
+Create Near
+Expunge Both
+SyncState *
+
+Group gmail
+Channel gmail-default
+Channel gmail-trash
+Channel gmail-archive
+Channel gmail-sent
+Channel gmail-junk
+#+end_src
+
+同步邮件:
+#+begin_src shell
+$ mkdir -p ~/.mail/qq/{Sent,Drafts,Trash,Archive}
+$ mkdir -p ~/.mail/gmail/{All,Sent,Drafts,Junk,Trash}
+$ mbsync --all
+#+end_src
+
+可以使用 https://gitlab.com/shackra/goimapnotify 来自动调用 mbsync 同步邮件。
+
+** 配置 proxychains
+
+proxychains 为不支持代理的命令行程序提供任意 socks 代理功能：
++ 如 mbsync 不感知任何代理环境变量, 通过 proxychains 可以代理。
+
+#+begin_src shell :tangle no
+$ mkdir .proxychains/
+$ cp /usr/local/Cellar/proxychains-ng/4.14/.bottle/etc/proxychains.conf ~/.proxychains/proxychains.conf
+#+end_src
+
+在 proxychains.conf 的 ProxyList 后添加 socks5 代理地址:
+#+begin_src text :tangle no
+[ProxyList]
+socks5  127.0.0.1 13659
+#+end_src
+
+测试 gmail:
+#+begin_src shell :tangle no
+$ proxychains4 mbsync gmail
+#+end_src
+
+** 建立 mu 索引
+#+begin_src shell
+# 初始化索引, 指定自己的 email 地址列表
+$ mu init  --my-address=geekard@qq.com --my-address=geekard@gmail.com -m ~/.mail/
+# 建立索引
+$ mu index
+# 检索索引
+$ mu find github
+#+end_src
++ 索引位置： =~/.cache/mu=
+
+** 配置 mu4e
+
+#+begin_src emacs-lisp
+(use-package mu4e
+  :load-path "/usr/local/share/emacs/site-lisp/mu/mu4e"
+  :if (executable-find "mu")
+  :commands (mu4e)
+  :config
+
+  ;; Run mu4e in the background to sync mail periodically
+  (mu4e t)
+
+  (setq shr-color-visible-luminance-min 80)
+
+  ;; View images inline in message view buffer
+  (setq mu4e-view-show-images t
+        mu4e-view-image-max-width 800)
+  (when (fboundp 'imagemagick-register-types)
+    (imagemagick-register-types))
+
+  ;; show full addresses in view message (instead of just names)
+  (setq mu4e-view-show-addresses t)
+
+  ;; Do not insert signature in sent emails
+  (setq mu4e-compose-signature-auto-include nil)
+
+  ;; every new email composition using current frame
+  (setq mu4e-compose-in-new-frame nil)
+  (setq mu4e-compose-format-flowed nil)
+
+  ;; It is OK to use non-ascii characters
+  (setq mu4e-use-fancy-chars t)
+  (setq mu4e-attachment-dir "~/.mail/attachments")
+
+  ;; This enabled the thread like viewing of email similar to gmail's UI.
+  (setq mu4e-headers-include-related t)
+  ;; Do not display duplicate messages
+  (setq mu4e-headers-skip-duplicates t)
+  (setq mu4e-headers-date-format "%Y/%m/%d")
+  (setq mu4e-headers-include-related nil)
+
+  (setq mu4e-change-filenames-when-moving t)
+  (setq mu4e-display-update-status-in-modeline t)
+  (setq mu4e-hide-index-messages t)
+  (setq mu4e-date-format "%y/%m/%d")
+
+  ;; Do not confirm on quit
+  (setq mu4e-confirm-quit nil)
+
+  ;; use mu4e as MUA in emacs
+  (setq mail-user-agent 'mu4e-user-agent)
+
+  ;; Kill message buffer after email is sent
+  (setq message-kill-buffer-on-exit t)
+
+  ;; 回复邮件时，插入邮件引用信息
+  (setq message-citation-line-function 'message-insert-formatted-citation-line)
+  (setq message-citation-line-format "On %a, %b %d %Y, %f wrote:\n")
+
+  (setq gnus-unbuttonized-mime-types nil)
+
+  ;; mu find 搜索任意单个中文字符。
+  (setenv "XAPIAN_CJK_NGRAM" "yes")
+
+  (add-to-list 'mu4e-view-actions '("browser" . mu4e-action-view-in-browser) t)
+  (add-hook 'mu4e-view-mode-hook
+            (lambda()
+              ;; try to emulate some of the eww key-bindings
+              (local-set-key (kbd "<tab>") 'shr-next-link)
+              (local-set-key (kbd "<backtab>") 'shr-previous-link)))
+
+  ;; 使用 proxychains4 socks5 代理周期同步邮件
+  (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
+  (setq mu4e-update-interval 300)
+
+  ;; 使用 gnus 发送邮件
+  (setq message-send-mail-function 'smtpmail-send-it)
+  (setq smtpmail-debug-info t)
+  (setq smtpmail-debug-verb t)
+
+  (setq mu4e-user-mailing-lists '("geekard@qq.com" "geekard@gmail.com"))
+
+  ;; root maildir
+  (setq mu4e-maildir "~/.mail")
+
+  (setq mu4e-contexts
+        `( ,(make-mu4e-context
+             :name "gmail"
+             :enter-func (lambda () (mu4e-message "Switch to the gmail context"))
+             :match-func (lambda (msg)
+                           (when msg
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@gmail.com")
+                                 (string-match-p "^/gmail" (mu4e-message-field msg :maildir)))))
+             :leave-func (lambda () (mu4e-clear-caches))
+             :vars '((user-mail-address            . "geekard@gmail.com")
+                     (user-full-name               . "张俊(Jun Zhang)")
+                     (smtpmail-default-smtp-server . "smtp.gmail.com")
+                     (smtpmail-smtp-server         . "smtp.gmail.com")
+                     (smtpmail-smtp-user           . "geekard@gmail.com")
+                     (smtpmail-smtp-service        . 587)
+                     (smtpmail-stream-type         . starttls)
+                     (mu4e-compose-signature       . (concat "---\n zhangjun \n"))
+                     (mu4e-sent-folder      . "/gmail/Sent")
+                     (mu4e-drafts-folder    . "/gmail/Drafts")
+                     (mu4e-trash-folder     . "/gmail/Junk")
+                     (mu4e-refile-folder    . "/gmail/Archive")))
+           ,(make-mu4e-context
+             :name "qq"
+             :enter-func (lambda () (mu4e-message "Switch to the qq context"))
+             :match-func (lambda (msg)
+                           (when msg
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@qq.com")
+                                 (string-match-p "^/qq" (mu4e-message-field msg :maildir)))))
+             :leave-func (lambda () (mu4e-clear-caches))
+             :vars '(
+                     (user-mail-address            . "geekard@qq.com")
+                     (user-full-name               . "张俊(Jun Zhang)")
+                     (smtpmail-default-smtp-server . "smtp.qq.com")
+                     (smtpmail-smtp-server         . "smtp.qq.com")
+                     (smtpmail-smtp-user           . "geekard@qq.com")
+                     (smtpmail-smtp-service        . 465)
+                     (smtpmail-stream-type         . ssl)
+                     (mu4e-compose-signature       . (concat "---\n Zhang Jun \n"))
+                     (mu4e-sent-folder      . "/qq/Sent")
+                     (mu4e-drafts-folder    . "/qq/Drafts")
+                     (mu4e-trash-folder     . "/qq/Trash")
+                     (mu4e-refile-folder    . "/qq/Archive")
+                     )))))
+#+end_src
+
+mu4e 默认使用 gnus 发送 SMTP 邮件, 而 gnus 从 =~/.authinfo.gpg= 读取SMTP 服务器的
+帐号信息:
+
+#+begin_src txt :tangle no
+machine smtp.qq.com login geekard@qq.com password {QQ 授权码}
+machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
+#+end_src
+
+** mu4e-alert
+
+使用 mu4e-alert 和 notifier(通过 terminal-notifier 程序) 进行桌面通知:
+#+begin_src emacs-lisp
+(use-package mu4e-alert
+  :after mu4e
+  :config
+  (mu4e-alert-set-default-style 'notifier)
+  ;; (mu4e-alert-set-default-style 'growl)
+  (add-hook 'after-init-hook #'mu4e-alert-enable-notifications)
+  ;; enable mode line display
+  (add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display)
+  (setq mu4e-alert-email-notification-types '(count)))
+#+end_src
+
+** mu4e-maildirs-extension
+
+使用 mu4e-maildirs-extension 在 mu4e-main-view 展示 Maildirs 概览。
+#+begin_src emacs-lisp
+(use-package mu4e-maildirs-extension
+  :after mu4e
+  :config
+  (mu4e-maildirs-extension))
+#+end_src
+
+** mu4e-views
+
+mu4e-views 使用 xwdigets 来显示 html 格式邮件：
+#+begin_src emacs-lisp
+(use-package mu4e-views
+  :after mu4e
+  :bind (:map mu4e-headers-mode-map
+        ("v" . mu4e-views-mu4e-select-view-msg-method) ;; 切换展示类型
+        ("M-n" . mu4e-views-cursor-msg-view-window-down) ;; from headers window scroll the email view
+        ("M-p" . mu4e-views-cursor-msg-view-window-up) ;; from headers window scroll the email view
+        ("f" . mu4e-views-toggle-auto-view-selected-message) ;; toggle opening messages automatically when moving in the headers view
+        ("i" . mu4e-views-mu4e-view-as-nonblocked-html) ;; show currently selected email with all remote content
+        )
+  :config
+  (setq mu4e-views-completion-method 'default) ;; use ivy for completion
+  (setq mu4e-views-default-view-method "html") ;; make xwidgets default
+  (mu4e-views-mu4e-use-view-msg-method "html") ;; select the default
+  (setq mu4e-views-next-previous-message-behaviour 'stick-to-current-window) ;; when pressing n and p stay in the current window
+  (setq mu4e-views-auto-view-selected-message t)) ;; automatically open messages when moving in the headers view
+#+end_src
++ 测试 Emacs 是否支持 xwdigets: (xwidget-webkit-browse-url "https://www.gnu.org/");
++ 在 mu4e-header 中使用 v 来切换邮件显示方式;
+
+** org-mime
+org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
+#+begin_src emacs-lisp
+(use-package org-mime
+  :after mu4e
+  :config
+  (setq org-mime-export-options '(:section-numbers nil :with-author nil :with-toc nil))
+  ;; Prompt for confirmation if message has no HTML
+  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart))
+#+end_src
+
+使用方法：
++ M-x org-mime-htmlize
++ M-x org-mime-edit-mail-in-org-mode
++ M-x org-mime-revert-to-plain-text-mail
+
 * org
 
 #+begin_src emacs-lisp
@@ -1562,9 +1966,7 @@ number within=section]{programlist}[3][]{
 \usepackage{etoolbox}
 \usepackage{calc}
 
-\usepackage[
-left=1in,
-right=1in]{geometry}
+\usepackage[scale=0.85]{geometry}
 %\setlength{\headsep}{5pt}
 
 \usepackage{amsthm}
@@ -1631,435 +2033,6 @@ right=1in]{geometry}
 + 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 =M-s o= 的 occur 模
   式；phi-search 与 pdf-tools 不兼容；
 + 维护的版本：https://github.com/vedang/pdf-tools
-
-* email
-** 安装软件包
-
-#+begin_src shell :tangle no
-brew install isync mu gnupg pass proxychains-ng
-#+end_src
-+ mbsync(isync): 同步邮件到本地；
-+ mu(包括 mu4e): 索引和读取邮件；
-+ pass: 使用 gnupg 来管理密码；
-+ proxychains-ng: 任意 socket 代理, 访问 gmail 使用;
-
-mu 安装包自带 mu4e emacs 包:
-#+begin_src shell :tangle no
-$ ls  /usr/local/share/emacs/site-lisp/mu/mu4e/
-mu4e-actions.el   mu4e-headers.el     mu4e-message.el    mu4e-utils.el         mu4e-view.el
-mu4e-actions.elc  mu4e-headers.elc    mu4e-message.elc   mu4e-utils.elc        mu4e-view.elc
-mu4e-compose.el   mu4e-icalendar.el   mu4e-meta.el       mu4e-vars.el          mu4e.el
-mu4e-compose.elc  mu4e-icalendar.elc  mu4e-meta.elc      mu4e-vars.elc         mu4e.elc
-mu4e-context.el   mu4e-lists.el       mu4e-org.el        mu4e-view-common.el   org-mu4e.el
-mu4e-context.elc  mu4e-lists.elc      mu4e-org.elc       mu4e-view-common.elc  org-mu4e.elc
-mu4e-contrib.el   mu4e-main.el        mu4e-proc.el       mu4e-view-gnus.el
-mu4e-contrib.elc  mu4e-main.elc       mu4e-proc.elc      mu4e-view-gnus.elc
-mu4e-draft.el     mu4e-mark.el        mu4e-speedbar.el   mu4e-view-old.el
-mu4e-draft.elc    mu4e-mark.elc       mu4e-speedbar.elc  mu4e-view-old.elc
-#+end_src
-
-** 生成 gnupg 加密 key
-
-#+begin_src shell :tangle no
-# 生成加密 key
-$ gpg --gen-key
-# 生成吊销证书
-$ gpg --gen-revoke B1D06C306F507C66
-# 查看 key
-$ gpg --list-keys
-/Users/zhangjun/.gnupg/pubring.kbx
-----------------------------------
-pub   ed25519 2021-10-03 [SC] [有效至：2023-10-03]
-      10BC65EE905F64CCAFF5E123B1D06C306F507C66
-uid             [ 绝对 ] zhangjun <geekard@qq.com>
-sub   cv25519 2021-10-03 [E] [有效至：2023-10-03]
-#+end_src
-+ uid 是 zhangjun 或 geekard@qq.com 或 hash, 对应的 hash 值可以使用 =gpg -a --export |gpg
-  --list-packets --verbose= 获取或 =M-x epa-list-keys= 。
-
-参考: [[https://ruanyifeng.com/blog/2013/07/gpg.html][阮一峰 GPG 入门教程]]
-
-** 配置 pass
-
-#+BEGIN_SRC  shell :tangle no
-# 使用 gngpg uid geekard@qq.com 来初始化 pass
-$ pass init "geekard@qq.com"
-# pass 内容更新到 git
-$ pass git init
-$ pass git remote add origin git@github.com:opsnull/pass-store.git
-# 在 web qq 中申请授权码, 作为帐号密码, 添加 qq 帐号
-$ pass insert email/qq
-$ pass insert email/gmail
-#+end_src
-+ 帐号信息保存在 =~/.password-store=
-
-** 配置 mbsync
-
-#+begin_src txt :tangle ~/.mbsyncrc
-########################################
-# qq.com
-########################################
-IMAPAccount qq
-Host imap.qq.com
-User geekard@qq.com
-PassCmd "pass email/qq"  # 调用 pass 命令
-Port 993
-AuthMechs LOGIN
-SSLType IMAPS
-#CertificateFile /etc/ssl/certs/ca-certificates.crt # Linux
-CertificateFile /usr/local/etc/openssl@1.1/cert.pem  # MacOS
-
-IMAPStore qq-remote
-Account qq
-
-MaildirStore qq-local
-# The trailing "/" is important
-Path ~/.mail/qq/
-Inbox ~/.mail/qq/Inbox/
-# The SubFolders option allows to represent all IMAP subfolders as local subfolders
-SubFolders Verbatim
-
-## Connections
-Channel qq-inbox
-Far :qq-remote:"INBOX"
-Near :qq-local:"Inbox"
-Create Near
-Expunge Both
-SyncState *
-
-Channel qq-drafts
-Far :qq-remote:"Drafts"
-Near :qq-local:"Drafts"
-Create Near
-Expunge Both
-SyncState *
-
-Channel qq-sent
-Far :qq-remote:"Sent Messages"
-Near :qq-local:"Sent"
-Create Near
-Expunge Both
-SyncState *
-
-Channel qq-trash
-Far :qq-remote:"Deleted Messages"
-Near :qq-local:"Trash"
-Create Near
-Expunge Both
-SyncState *
-
-## Groups
-Group qq
-Channel qq-inbox
-Channel qq-drafts
-Channel qq-sent
-Channel qq-trash
-
-########################################
-# gmail
-########################################
-IMAPAccount gmail
-Host imap.gmail.com
-User geekard@gmail.com
-PassCmd "pass email/gmail"
-SSLType IMAPS
-AuthMechs PLAIN
-CertificateFile /usr/local/etc/openssl@1.1/cert.pem  # MacOS
-
-IMAPStore gmail-remote
-Account gmail
-
-MaildirStore gmail-local
-# The trailing "/" is important
-Path ~/.mail/gmail/
-Inbox ~/.mail/gmail/inbox
-
-Channel gmail-default
-Far :gmail-remote:
-Near :gmail-local:Inbox
-#Patterns INBOX
-Create Near
-Expunge Both
-SyncState *
-
-Channel gmail-sent
-Far :gmail-remote:"[Gmail]/Sent Mail"
-Near  :gmail-local:Sent
-Create Near
-Expunge Both
-SyncState *
-
-Channel gmail-trash
-Far :gmail-remote:"[Gmail]/Trash"
-Near  :gmail-local:Trash
-Create Near
-Expunge Both
-SyncState *
-
-Channel gmail-archive
-Far :gmail-remote:"[Gmail]/All Mail"
-Near  :gmail-local:All
-Create Near
-Expunge Both
-SyncState *
-
-Channel gmail-junk
-Far :gmail-remote:"[Gmail]/Spam"
-Near  :gmail-local:Junk
-Create Near
-Expunge Both
-SyncState *
-
-Group gmail
-Channel gmail-default
-Channel gmail-trash
-Channel gmail-archive
-Channel gmail-sent
-Channel gmail-junk
-#+end_src
-
-同步邮件:
-#+begin_src shell
-$ mkdir -p ~/.mail/qq/{Sent,Drafts,Trash,Archive}
-$ mkdir -p ~/.mail/gmail/{All,Sent,Drafts,Junk,Trash}
-$ mbsync --all
-#+end_src
-
-可以使用 https://gitlab.com/shackra/goimapnotify 来自动调用 mbsync 同步邮件。
-
-** 配置 proxychains
-
-proxychains 为不支持代理的命令行程序提供任意 socks 代理功能：
-+ 如 mbsync 不感知任何代理环境变量, 通过 proxychains 可以代理。
-
-#+begin_src shell :tangle no
-$ mkdir .proxychains/
-$ cp /usr/local/Cellar/proxychains-ng/4.14/.bottle/etc/proxychains.conf ~/.proxychains/proxychains.conf
-#+end_src
-
-在 proxychains.conf 的 ProxyList 后添加 socks5 代理地址:
-#+begin_src text :tangle no
-[ProxyList]
-socks5  127.0.0.1 13659
-#+end_src
-
-测试 gmail:
-#+begin_src shell :tangle no
-$ proxychains4 mbsync gmail
-#+end_src
-
-** 建立 mu 索引
-#+begin_src shell
-# 初始化索引, 指定自己的 email 地址列表
-$ mu init  --my-address=geekard@qq.com --my-address=geekard@gmail.com -m ~/.mail/
-# 建立索引
-$ mu index
-# 检索索引
-$ mu find github
-#+end_src
-+ 索引位置： =~/.cache/mu=
-
-** 配置 mu4e
-
-#+begin_src emacs-lisp
-(use-package mu4e
-  :load-path "/usr/local/share/emacs/site-lisp/mu/mu4e"
-  :if (executable-find "mu")
-  :commands (mu4e)
-  :config
-
-  ;; Run mu4e in the background to sync mail periodically
-  (mu4e t)
-
-  (setq shr-color-visible-luminance-min 80)
-
-  ;; View images inline in message view buffer
-  (setq mu4e-view-show-images t
-        mu4e-view-image-max-width 800)
-  (when (fboundp 'imagemagick-register-types)
-    (imagemagick-register-types))
-
-  ;; show full addresses in view message (instead of just names)
-  (setq mu4e-view-show-addresses t)
-
-  ;; Do not insert signature in sent emails
-  (setq mu4e-compose-signature-auto-include nil)
-
-  ;; every new email composition using current frame
-  (setq mu4e-compose-in-new-frame nil)
-  (setq mu4e-compose-format-flowed nil)
-
-  ;; It is OK to use non-ascii characters
-  (setq mu4e-use-fancy-chars t)
-  (setq mu4e-attachment-dir "~/.mail/attachments")
-
-  ;; This enabled the thread like viewing of email similar to gmail's UI.
-  (setq mu4e-headers-include-related t)
-  ;; Do not display duplicate messages
-  (setq mu4e-headers-skip-duplicates t)
-  (setq mu4e-headers-date-format "%Y/%m/%d")
-  (setq mu4e-headers-include-related nil)
-
-  (setq mu4e-change-filenames-when-moving t)
-  (setq mu4e-display-update-status-in-modeline t)
-  (setq mu4e-hide-index-messages t)
-  (setq mu4e-date-format "%y/%m/%d")
-
-  ;; Do not confirm on quit
-  (setq mu4e-confirm-quit nil)
-
-  ;; use mu4e as MUA in emacs
-  (setq mail-user-agent 'mu4e-user-agent)
-
-  ;; Kill message buffer after email is sent
-  (setq message-kill-buffer-on-exit t)
-
-  ;; 回复邮件时，插入邮件引用信息
-  (setq message-citation-line-function 'message-insert-formatted-citation-line)
-  (setq message-citation-line-format "On %a, %b %d %Y, %f wrote:\n")
-
-  (setq gnus-unbuttonized-mime-types nil)
-
-  ;; mu find 搜索任意单个中文字符。
-  (setenv "XAPIAN_CJK_NGRAM" "yes")
-
-  (add-to-list 'mu4e-view-actions '("browser" . mu4e-action-view-in-browser) t)
-  (add-hook 'mu4e-view-mode-hook
-            (lambda()
-              ;; try to emulate some of the eww key-bindings
-              (local-set-key (kbd "<tab>") 'shr-next-link)
-              (local-set-key (kbd "<backtab>") 'shr-previous-link)))
-
-  ;; 使用 proxychains4 socks5 代理周期同步邮件
-  (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
-  (setq mu4e-update-interval 300)
-
-  ;; 使用 gnus 发送邮件
-  (setq message-send-mail-function 'smtpmail-send-it)
-  (setq smtpmail-debug-info t)
-  (setq smtpmail-debug-verb t)
-
-  (setq mu4e-user-mailing-lists '("geekard@qq.com" "geekard@gmail.com"))
-
-  ;; root maildir
-  (setq mu4e-maildir "~/.mail")
-
-  (setq mu4e-contexts
-        `( ,(make-mu4e-context
-             :name "gmail"
-             :enter-func (lambda () (mu4e-message "Switch to the gmail context"))
-             :match-func (lambda (msg)
-                           (when msg
-                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@gmail.com")
-                                 (string-match-p "^/gmail" (mu4e-message-field msg :maildir)))))
-             :leave-func (lambda () (mu4e-clear-caches))
-             :vars '((user-mail-address            . "geekard@gmail.com")
-                     (user-full-name               . "张俊(Jun Zhang)")
-                     (smtpmail-default-smtp-server . "smtp.gmail.com")
-                     (smtpmail-smtp-server         . "smtp.gmail.com")
-                     (smtpmail-smtp-user           . "geekard@gmail.com")
-                     (smtpmail-smtp-service        . 587)
-                     (smtpmail-stream-type         . starttls)
-                     (mu4e-compose-signature       . (concat "---\n zhangjun \n"))
-                     (mu4e-sent-folder      . "/gmail/Sent")
-                     (mu4e-drafts-folder    . "/gmail/Drafts")
-                     (mu4e-trash-folder     . "/gmail/Junk")
-                     (mu4e-refile-folder    . "/gmail/Archive")))
-           ,(make-mu4e-context
-             :name "qq"
-             :enter-func (lambda () (mu4e-message "Switch to the qq context"))
-             :match-func (lambda (msg)
-                           (when msg
-                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@qq.com")
-                                 (string-match-p "^/qq" (mu4e-message-field msg :maildir)))))
-             :leave-func (lambda () (mu4e-clear-caches))
-             :vars '(
-                     (user-mail-address            . "geekard@qq.com")
-                     (user-full-name               . "张俊(Jun Zhang)")
-                     (smtpmail-default-smtp-server . "smtp.qq.com")
-                     (smtpmail-smtp-server         . "smtp.qq.com")
-                     (smtpmail-smtp-user           . "geekard@qq.com")
-                     (smtpmail-smtp-service        . 465)
-                     (smtpmail-stream-type         . ssl)
-                     (mu4e-compose-signature       . (concat "---\n Zhang Jun \n"))
-                     (mu4e-sent-folder      . "/qq/Sent")
-                     (mu4e-drafts-folder    . "/qq/Drafts")
-                     (mu4e-trash-folder     . "/qq/Trash")
-                     (mu4e-refile-folder    . "/qq/Archive")
-                     )))))
-#+end_src
-
-mu4e 默认使用 gnus 发送 SMTP 邮件, 而 gnus 从 =~/.authinfo.gpg= 读取SMTP 服务器的
-帐号信息:
-
-#+begin_src txt :tangle no
-machine smtp.qq.com login geekard@qq.com password {QQ 授权码}
-machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
-#+end_src
-
-** mu4e-alert
-
-使用 mu4e-alert 和 notifier(通过 terminal-notifier 程序) 进行桌面通知:
-#+begin_src emacs-lisp
-(use-package mu4e-alert
-  :after mu4e
-  :config
-  (mu4e-alert-set-default-style 'notifier)
-  ;; (mu4e-alert-set-default-style 'growl)
-  (add-hook 'after-init-hook #'mu4e-alert-enable-notifications)
-  ;; enable mode line display
-  (add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display)
-  (setq mu4e-alert-email-notification-types '(count)))
-#+end_src
-
-** mu4e-maildirs-extension
-
-使用 mu4e-maildirs-extension 在 mu4e-main-view 展示 Maildirs 概览。
-#+begin_src emacs-lisp
-(use-package mu4e-maildirs-extension
-  :after mu4e
-  :config
-  (mu4e-maildirs-extension))
-#+end_src
-
-** mu4e-views
-
-mu4e-views 使用 xwdigets 来显示 html 格式邮件：
-#+begin_src emacs-lisp
-(use-package mu4e-views
-  :after mu4e
-  :bind (:map mu4e-headers-mode-map
-        ("v" . mu4e-views-mu4e-select-view-msg-method) ;; 切换展示类型
-        ("M-n" . mu4e-views-cursor-msg-view-window-down) ;; from headers window scroll the email view
-        ("M-p" . mu4e-views-cursor-msg-view-window-up) ;; from headers window scroll the email view
-        ("f" . mu4e-views-toggle-auto-view-selected-message) ;; toggle opening messages automatically when moving in the headers view
-        ("i" . mu4e-views-mu4e-view-as-nonblocked-html) ;; show currently selected email with all remote content
-        )
-  :config
-  (setq mu4e-views-completion-method 'default) ;; use ivy for completion
-  (setq mu4e-views-default-view-method "html") ;; make xwidgets default
-  (mu4e-views-mu4e-use-view-msg-method "html") ;; select the default
-  (setq mu4e-views-next-previous-message-behaviour 'stick-to-current-window) ;; when pressing n and p stay in the current window
-  (setq mu4e-views-auto-view-selected-message t)) ;; automatically open messages when moving in the headers view
-#+end_src
-+ 测试 Emacs 是否支持 xwdigets: (xwidget-webkit-browse-url "https://www.gnu.org/");
-+ 在 mu4e-header 中使用 v 来切换邮件显示方式;
-
-** org-mime
-org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
-#+begin_src emacs-lisp
-(use-package org-mime
-  :after mu4e
-  :config
-  (setq org-mime-export-options '(:section-numbers nil :with-author nil :with-toc nil))
-  ;; Prompt for confirmation if message has no HTML
-  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart))
-#+end_src
-
-使用方法：
-+ M-x org-mime-htmlize
-+ M-x org-mime-edit-mail-in-org-mode
-+ M-x org-mime-revert-to-plain-text-mail
 
 * rss
 #+begin_src emacs-lisp
@@ -2241,7 +2214,7 @@ ediff:
   )
 #+end_src
 
-* 编程开发
+* 开发
 ** lsp
 
 #+begin_src emacs-lisp
@@ -2902,6 +2875,44 @@ flycheck-pos-tip 提供在线显示 flycheck 错误的功能：
 + 安装文档: M-x devdocs-install
 + 更新当前使用的文档目录: C-u M-x dovdocs-lookup
 
+** 目录变量
+
+目录变量是只对特定目录及子目录有效的变量，主要使用场景是根据目录变量来指定版本的
+python 和 golang 。
+
+安装 =direnv= 工具命令：
+#+begin_src shell :results none
+brew install direnv
+#+end_src
+
+[[https://direnv.net/docs/hook.html][将 direnv hook 到 shell 启动文件中]]：
+#+begin_src shell :results none
+eval "$(direnv hook bash)"
+#+end_src
+
+安装 emacs envrc 软件包，它调用 direnv 命令获取当前文件或目录的环境变量，然后更
+新到 emacs 变量 =process-environment= 和 =exec-path= ，emacs 后续启动的命令就会继承
+这些环境变量（direnv 包是全局的，而 envrc 是 buffer-local 生效)：
+
+#+begin_src emacs-lisp
+(use-package envrc
+  :hook (after-init . envrc-global-mode)
+  :config
+  (with-eval-after-load 'envrc
+    (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map)))
+#+end_src
++ C-c e a: envrc-allow
++ C-c e d: envrc-deny
++ C-c e r: envrc-reload
+
+使用步骤：
+1. 在对应目录创建 =.envrc= 文件;
+2. 向 .envrc 文件添加 shell 环境变量;
+3. 执行 =direnv allow .= 生效环境变量;
+
+如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x
+lsp-workspace-restart= 来重启语言服务器。
+
 * 树形浏览
 
 #+begin_src emacs-lisp
@@ -3062,12 +3073,31 @@ Emacs 浏览 URL 程序:
 open -a 'Google Chrome' $*
 #+end_src
 
-Google 搜索(只支持单行内容搜索):
+在线搜索：
 #+begin_src emacs-lisp
-(setq xah-lookup-browser-function 'browse-url )
-(use-package xah-lookup )
-(global-set-key (kbd "<f9>") 'xah-lookup-google)
+(use-package engine-mode
+  :config
+  (engine-mode t)
+  ;;(setq engine/browser-function 'eww-browse-url)
+  (defengine github
+    "https://github.com/search?ref=simplesearch&q=%s"
+    :keybinding "h")
+
+  (defengine google
+    "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s"
+    :keybinding "g")
+
+  (defengine twitter
+    "https://twitter.com/search?q=%s"
+    :keybinding "t")
+
+  (defengine wikipedia
+    "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s"
+    :keybinding "w"
+    :docstring "Searchin' the wikis."))
 #+end_src
++ 搜索前缀命令： =C-x /= 。可以先选中 region 再执行上面的搜索。
++ 如果启动时报错，则执行命令 =rm ~/.emacs.d/elpa/engine-mode*/engine-mode-*.el*=;
 
 书签管理器:
 #+begin_src emacs-lisp
@@ -3122,25 +3152,7 @@ Google 搜索(只支持单行内容搜索):
   ;; Or create 1 new vterm buffer
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
-  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
-  ;; 在 side-window 显示窗口，side-window 会一直显示，为 vterm mode 专用（不能最大化），
-  ;; vterm-toggle-forward 和  'vterm-toggle-backward 也都显示在这个 side-window 中。
-  ;; (setq vterm-toggle-fullscreen-p nil)
-  ;; (add-to-list 'display-buffer-alist
-  ;;              '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
-  ;;                (display-buffer-reuse-window display-buffer-in-side-window)
-  ;;                (side . bottom)
-  ;;                (dedicated . t)
-  ;;                (reusable-frames . visible)
-  ;;                (window-height . 0.3)))
-)
-
-;; https://github.com/kweizh/posframe-project-term
-(use-package posframe-project-term
-  :ensure nil
-  :load-path "/Users/zhangjun/.emacs.d/site-lisp/posframe-project-term"
-  :bind
-  (("C-c t" . posframe-project-term-toggle)))
+  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 #+end_src
 
 ** eshell
@@ -3181,9 +3193,10 @@ Google 搜索(只支持单行内容搜索):
        ;; 远程文件名不过期
        ;;remote-file-name-inhibit-cache nil
        ;;tramp-verbose 10
-       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
+       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin):
+       ;; unexpected end of file”
        tramp-inline-compress-start-size (* 1024 8)
-       ;; 当文件大小超过 tramp-copy-size-limit 时，会用 external methods(如 scp）
+       ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）
        ;; 来传输，从而大大提高拷贝效率。
        tramp-copy-size-limit (* 1024 1024 2)
        ;; Store TRAMP auto-save files locally.
@@ -3192,16 +3205,99 @@ Google 搜索(只支持单行内容搜索):
        tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory)
        ;; Cache SSH passwords during the whole Emacs session.
        password-cache-expiry nil
+       tramp-default-method "ssh"
        tramp-default-remote-shell "/bin/bash"
        tramp-default-user "root"
        tramp-terminal-type "tramp")
-;; 自定义远程 shell 环境变量
+
+;; 自定义远程环境变量
 (let ((process-environment tramp-remote-process-environment))
-  ;; 设置环境变量 VTERM_TRAMP=true, 这样 ~/.bashrc 导入 ~/.emacs_bashrc 后能选择
-  ;; 执行 emacs 相关的初始化操作。
+  ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置
+  ;; VTERM 参数。
   (setenv "VTERM_TRAMP" "true")
   (setq tramp-remote-process-environment process-environment))
+
+;; 远程机器
+(load "~/.emacs.d/sshenv.el.gpg")
+
+;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过
+;; vterm-environment 传递到远程环境中。远程机器的 ~/.emacs_bashrc 根据这个变量设
+;; 置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的
+;; 问题。
+(add-hook
+ 'buffer-list-update-hook
+ (lambda ()
+   (when (file-remote-p default-directory)
+     (setq my/remote-host (file-remote-p default-directory 'host))
+     (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
 #+end_src
++ =tramp-default-method= 缺省值为 scp, 不支持多跳（但拷贝大文件时性能更高），再打
+  开多跳远程文件时每次都需要修改 /- 中的 - 为 ssh，较麻烦，所以设置为 ssh。
+
+* 代理
+
+按需开启全局 socks 代理(支持 http, https):
+#+begin_src emacs-lisp
+(setq my/socks-host "127.0.0.1")
+(setq my/socks-port 13659)
+(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+
+(defun my/url-http-socks5 ()
+  "url-retrieve 使用 curl 作为后端实现, 支持 socks5 代理。"
+  (interactive)
+  (use-package mb-url-http
+    :load-path "~/.emacs.d/site-lisp/mb-url"
+    :defer t
+    :commands (mb-url-http-around-advice)
+    :init
+    (setq mb-url-http-backend 'mb-url-http-curl
+          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-switches `("--max-time" "20" "-x" ,my/socks-proxy "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"))
+    (advice-add 'url-http :around 'mb-url-http-around-advice)))
+
+(defun proxy-socks-show ()
+  "Show SOCKS proxy."
+  (interactive)
+  (when (fboundp 'cadddr)
+    (if (bound-and-true-p socks-noproxy)
+        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
+      (message "No SOCKS proxy"))))
+
+(defun proxy-socks-enable ()
+  "使用 socks 代理 url 访问请求。"
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'socks
+        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
+        socks-server '("Default server" my/socks-host my/socks-port 5))
+        ;;socks-server '("Default server" my/socks-host my/socks-port 5))
+  (setenv "all_proxy" my/socks-proxy)
+  (proxy-socks-show)
+  ;;(my/url-http-socks5)
+)
+
+(defun proxy-socks-disable ()
+  "Disable SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'native
+        socks-noproxy nil)
+  (setenv "all_proxy" "")
+  (proxy-socks-show))
+
+(defun proxy-socks-toggle ()
+  "Toggle SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (if (bound-and-true-p socks-noproxy)
+      (proxy-socks-disable)
+    (proxy-socks-enable)))
+#+end_src
++ 注意 macos 自带的 curl 不支持 socks 代理, 可以 brew install curl 后, 然后设置
+  export PATH="/usr/local/opt/curl/bin:$PATH"
++ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可以使用 socks5 代理。 下载自：
+  https://github.com/jiacai2050/mb-url,需要添加 =--user-agent= 配置, 否则会被
+  Google 403 Forbidden;
 
 * 其它
 
@@ -3448,70 +3544,6 @@ Google 搜索(只支持单行内容搜索):
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行
   rm 命令。
 
-** socks 代理
-
-按需开启全局 socks 代理(支持 http, https):
-#+begin_src emacs-lisp
-(setq my/socks-host "127.0.0.1")
-(setq my/socks-port 13659)
-(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
-
-(defun my/url-http-socks5 ()
-  "url-retrieve 使用 curl 作为后端实现, 支持 socks5 代理。"
-  (interactive)
-  (use-package mb-url-http
-    :load-path "~/.emacs.d/site-lisp/mb-url"
-    :defer t
-    :commands (mb-url-http-around-advice)
-    :init
-    (setq mb-url-http-backend 'mb-url-http-curl
-          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("--max-time" "20" "-x" ,my/socks-proxy "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"))
-    (advice-add 'url-http :around 'mb-url-http-around-advice)))
-
-(defun proxy-socks-show ()
-  "Show SOCKS proxy."
-  (interactive)
-  (when (fboundp 'cadddr)
-    (if (bound-and-true-p socks-noproxy)
-        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
-      (message "No SOCKS proxy"))))
-
-(defun proxy-socks-enable ()
-  "使用 socks 代理 url 访问请求。"
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'socks
-        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
-        socks-server '("Default server" my/socks-host my/socks-port 5))
-        ;;socks-server '("Default server" my/socks-host my/socks-port 5))
-  (setenv "all_proxy" my/socks-proxy)
-  (proxy-socks-show)
-  (my/url-http-socks5))
-
-(defun proxy-socks-disable ()
-  "Disable SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'native
-        socks-noproxy nil)
-  (setenv "all_proxy" "")
-  (proxy-socks-show))
-
-(defun proxy-socks-toggle ()
-  "Toggle SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (if (bound-and-true-p socks-noproxy)
-      (proxy-socks-disable)
-    (proxy-socks-enable)))
-#+end_src
-+ 注意 macos 自带的 curl 不支持 socks 代理, 可以 brew install curl 后, 然后设置
-  export PATH="/usr/local/opt/curl/bin:$PATH"
-+ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可以使用 socks5 代理。 下载自：
-  https://github.com/jiacai2050/mb-url,需要添加 =--user-agent= 配置, 否则会被
-  Google 403 Forbidden;
-
 * 推荐
 
 本配置参考了以下仓库代码, 感谢 + 推荐!
@@ -3526,6 +3558,24 @@ Google 搜索(只支持单行内容搜索):
 * 归档
 
 #+begin_src emacs-lisp :tangle no
+;; 在 side-window 显示窗口，side-window 会一直显示，为 vterm mode 专用（不能最大化），
+;; vterm-toggle-forward 和  'vterm-toggle-backward 也都显示在这个 side-window 中。
+;; (setq vterm-toggle-fullscreen-p nil)
+;; (add-to-list 'display-buffer-alist
+;;              '((lambda(bufname _) (with-current-buffer bufname (equal major-mode 'vterm-mode)))
+;;                (display-buffer-reuse-window display-buffer-in-side-window)
+;;                (side . bottom)
+;;                (dedicated . t)
+;;                (reusable-frames . visible)
+;;                (window-height . 0.3)))
+
+;; https://github.com/kweizh/posframe-project-term
+(use-package posframe-project-term
+  :ensure nil
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp/posframe-project-term"
+  :bind
+  (("C-c t" . posframe-project-term-toggle)))
+
 (transient-mark-mode t)
 
 (add-to-list 'default-frame-alist '(height . 600))
