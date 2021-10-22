@@ -27,8 +27,7 @@
 
 ;; 使用单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
- (when (file-exists-p custom-file)
-   (load custom-file))
+(add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
 ;; 个人信息
 (setq user-full-name "zhangjun"
