@@ -1,23 +1,48 @@
-;; Avoid loading old bytecode instead of newer source.
-;; use the newest version available.
-(setq load-prefer-newer t)
-
 (require 'package)
 (setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
                          ("elpa" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "https://melpa.org/packages/")))
-;; activate all the packages (in particular autoloads)
-(package-initialize)
-;; fetch the list of packages available
-(unless package-archive-contents (package-refresh-contents))
-(setq package-native-compile t)
 
-(setq use-package-always-ensure t
-      use-package-always-demand t)
+;; Avoid loading old bytecode instead of newer source.
+;; use the newest version available.
+(setq load-prefer-newer t)
+
+;; 为 use-package 自动添加配置 :straight t, 从而使用 straight 来安装包(默认使用
+;; package.el)
+(setq straight-use-package-by-default t)
+(setq straight-vc-git-default-clone-depth 1)
+(setq straight-recipes-gnu-elpa-use-mirror t)
+;; (setq straight-check-for-modifications '(check-on-save find-when-checking))
+(setq straight-check-for-modifications nil)
+(setq straight-host-usernames '((github . "opsnull")))
+
+(defvar bootstrap-version)
+(let ((bootstrap-file
+      (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+        "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+        'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+;; 安装 use-package
+(straight-use-package 'use-package)
+;; 配置 use-package
 (setq use-package-verbose t)
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+(setq use-package-compute-statistics t)
+
+(use-package use-package-ensure-system-package)
+
+;; ensure we can install from git sources
+(use-package git)
+
+;; This is a variable that has been renamed but straight still refers when
+;; doing :sraight (:no-native-compile t)
+(setq comp-deferred-compilation-black-list nil)
 
 ;; Increase how much is read from processes in a single chunk (default is 4kb).
 (setq read-process-output-max (* 1024 1024))  ;; 1MB
@@ -56,6 +81,7 @@
 ;; so we use `gcmh' to stave off the GC while we're using Emacs, and provoke it
 ;; when it's idle.
 (use-package gcmh
+  :demand t
   :init
   ;; Debug：Show garbage collections in minibuffer
   ;;(setq garbage-collection-messages t)
@@ -66,6 +92,7 @@
   (gcmh-set-high-threshold))
 
 (use-package exec-path-from-shell
+  :demand t
   :custom
   (exec-path-from-shell-check-startup-files nil)
   (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
@@ -83,7 +110,11 @@
       inhibit-startup-echo-area-message t
       initial-scratch-message nil)
 
-(use-package ns-auto-titlebar :config (when (eq system-type 'darwin) (ns-auto-titlebar-mode)))
+(use-package ns-auto-titlebar
+  :demand t
+  :config
+  (when (eq system-type 'darwin)
+    (ns-auto-titlebar-mode)))
 
 (setq frame-resize-pixelwise t)
 
@@ -92,10 +123,13 @@
 (setq show-paren-style 'parentheses)
 
 (setq-default indicate-empty-lines t)
-(when (not indicate-empty-lines) (toggle-indicate-empty-lines))
+(when (not indicate-empty-lines)
+  (toggle-indicate-empty-lines))
 
 ;; 增强窗口背景对比度
-(use-package solaire-mode :config (solaire-global-mode +1))
+(use-package solaire-mode
+  :demand t
+  :config (solaire-global-mode +1))
 
 ;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
 ;; in non-focused windows.
@@ -107,8 +141,9 @@
 
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
-  :demand
-  :custom-face (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :demand t
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
   :custom
   (doom-themes-enable-bold t)
   (doom-themes-enable-italic t)
@@ -148,7 +183,8 @@
 ;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
 ;; 否则 doom-modeline 右下角内容会溢出。
 (use-package doom-modeline
-  :demand :after(doom-themes)
+  :demand t
+  :after(doom-themes)
   :custom
   ;; 不显示换行和编码，节省空间
   (doom-modeline-buffer-encoding nil)
@@ -173,6 +209,8 @@
     '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "")))
 
 (use-package dashboard
+  :demand t
+  :after (projectile)
   :config
   (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
   ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
@@ -183,32 +221,13 @@
   (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
-;; 显示光标位置
-(use-package beacon :config (beacon-mode 1))
-
-(use-package mini-frame
-  :disabled
-  :config
-  (setq x-gtk-resize-child-frames 'resize-mode)
-  ;; 光标位置显示 minibuffer
-  (setq mini-frame-show-parameters
-        (lambda ()
-          (let* ((info (posframe-poshandler-argbuilder))
-                 (posn (posframe-poshandler-point-bottom-left-corner info))
-                 (left (car posn))
-                 (top (cdr posn)))
-            `((left . ,left)
-              (top . ,top)))))
-  ;; 固定在 frame 顶部显式。
-  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)  (height . 10))))
-  (mini-frame-mode))
-
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
 ;; 英文: JuliaMono: https://juliamono.netlify.app/download/
 ;; 英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
 ;; 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 ;; Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 (use-package cnfonts
+  :demand t
   :after (doom-modeline)
   :init
   (setq cnfonts-personal-fontnames '(("JuliaMono" "Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
@@ -217,12 +236,13 @@
   (setq cnfonts-use-face-font-rescale t)
   (cnfonts-enable))
 
-(use-package all-the-icons :after (cnfonts))
+(use-package all-the-icons :demand t :after (cnfonts))
 
 ;; fire-code-mode 和 set-fontset-font 只能在 GUI 模式下使用。
 (when (display-graphic-p)
   (use-package fira-code-mode
-    :custom (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+    :custom
+    (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode)
   ;; Emoji 字体
   (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
@@ -234,6 +254,9 @@
 (setq inhibit-compacting-font-caches t)
 
 (global-font-lock-mode t)
+
+;; 显示光标位置
+(use-package beacon :config (beacon-mode 1))
 
 ;; 透明背景间切换(真透明!)
 (defun toggle-transparency ()
@@ -250,6 +273,7 @@
 (global-set-key (kbd "C-c t") 'toggle-transparency)
 
 (use-package vertico
+  :demand t
   :config
   (setq completion-in-region-function
         (lambda (&rest args)
@@ -265,6 +289,13 @@
         completion-category-defaults nil
         completion-category-overrides '((file (styles partial-completion)))))
 
+(use-package vertico-posframe
+  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
+  :config
+  ;; 光标位置显示 posframe
+  (setq vertico-posframe-poshandler 'posframe-poshandler-point-window-center)
+  (vertico-posframe-mode 1))
+
 ;; 高亮 company 候选者
 (defun just-one-face (fn &rest args)
   (let ((orderless-match-faces [completions-common-part]))
@@ -272,6 +303,7 @@
 (advice-add 'company-capf--candidates :around #'just-one-face)
 
 (use-package emacs
+  :straight (:type built-in)
   :init
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
@@ -488,7 +520,6 @@
      ((t (:inherit ace-jump-face-foreground :foreground "red" :height 2.0))))))
 
 (use-package rime
-  :demand
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
@@ -560,13 +591,20 @@
   (define-key isearch-mb-minibuffer-map (kbd "M-s l") 'consult-line))
 
 ;; 智能括号
-(use-package smartparens :config (smartparens-global-mode t) (show-smartparens-global-mode t))
+(use-package smartparens
+  :config
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode t))
 
 ;; 彩色括号
-(use-package rainbow-delimiters :hook (prog-mode . rainbow-delimiters-mode))
+(use-package rainbow-delimiters
+  :hook
+  (prog-mode . rainbow-delimiters-mode))
 
 ;; 智能扩展区域
-(use-package expand-region :bind ("M-@" . er/expand-region))
+(use-package expand-region
+  :bind
+  ("M-@" . er/expand-region))
 
 ;; 显示缩进
 (use-package highlight-indent-guides
@@ -623,7 +661,8 @@
 (setq large-file-warning-threshold nil)
 
 (use-package youdao-dictionary
-  :bind ( ("C-c y" . youdao-dictionary-search-at-point))
+  :bind
+  (("C-c y" . youdao-dictionary-search-at-point))
   :init
   (setq url-automatic-caching t
         ;; 中文分词
@@ -634,7 +673,6 @@
 (use-package go-translate
   :config
   (setq gts-translate-list '(("en" "zh")))
-
   (setq gts-default-translator
         (gts-translator
          :picker (gts-prompt-picker)
@@ -642,11 +680,13 @@
          :render (gts-posframe-pin-render))))
 
 (use-package mu4e
-  :load-path "/usr/local/share/emacs/site-lisp/mu/mu4e"
+  :demand t
+  ;; 如果 mu 二进制不存在, 则使用系统包管理工具自动安装;
+  :ensure-system-package (mu)
+  :straight (:host github :repo "djcb/mu" :branch "master" :files ("mu4e/*") :build nil)
   :if (executable-find "mu")
   :commands (mu4e)
   :config
-
   ;; Run mu4e in the background to sync mail periodically
   (mu4e t)
 
@@ -766,8 +806,10 @@
                      (mu4e-trash-folder     . "/qq/Trash")
                      (mu4e-refile-folder    . "/qq/Archive")
                      )))))
+(require 'mu4e)
 
 (use-package mu4e-alert
+  :disabled
   :after mu4e
   :config
   (mu4e-alert-set-default-style 'notifier)
@@ -805,11 +847,8 @@
   ;; Prompt for confirmation if message has no HTML
   (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart))
 
-(dolist (package '(org org-plus-contrib ob-go ox-reveal ox-gfm))
-  (unless (package-installed-p package)
-    (package-install package)))
-
 (use-package org
+  :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :config
   (setq org-emphasis-alist '(("*" bold) ("=" org-verbatim verbatim) ("~" org-code  verbatim)))
   (setq org-ellipsis "▾"
@@ -858,6 +897,7 @@
 
 (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
 (use-package htmlize)
+
 ;; 自动创建和更新目录
 (use-package org-make-toc
   :after (org)
@@ -901,13 +941,14 @@
    visual-fill-column-fringes-outside-margins nil
    visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
+
 (use-package visual-fill-column
-  :after org
+  :after (org)
   :hook
   (org-mode . my/org-mode-visual-fill))
 
 (use-package org-tree-slide
-  :after org
+  :after (org)
   :commands org-tree-slide-mode
   :config
   (setq org-tree-slide-slide-in-effect t
@@ -1018,6 +1059,10 @@
       org-src-tab-acts-natively t)
 
 (require 'org)
+(use-package ob-go)
+(use-package ox-reveal)
+(use-package ox-gfm)
+
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((shell . t)
@@ -1048,9 +1093,9 @@
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
 (use-package ox-latex
+  :straight (ox-latex :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git" :files ("lisp/ox-latex.el"))
   :ensure auctex
-  :defer t
-  :after org
+  :after (org)
   :config
   ;;https://yuchi.me/post/export-org-mode-in-chinese-to-pdf-with-custom-latex-class/
   ;; http://orgmode.org/worg/org-faq.html#using-xelatex-for-pdf-export
@@ -1105,6 +1150,7 @@
   (setq org-latex-listings 'listings))
 
 (use-package pdf-tools
+  :demand t
   :init
   ;; 使用 scaling 后，中文字体不模糊。
   (setq pdf-view-use-scaling t
@@ -1115,8 +1161,9 @@
   (setq-default pdf-view-display-size 'fit-page)
   ;; automatically annotate highlights
   (setq pdf-annot-activate-created-annotations t)
-  :hook ((pdf-view-mode . pdf-view-themed-minor-mode)
-         (pdf-view-mode . pdf-isearch-minor-mode))
+  :hook
+  ((pdf-view-mode . pdf-view-themed-minor-mode)
+   (pdf-view-mode . pdf-isearch-minor-mode))
   :config
   ;; use normal isearch
   (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
@@ -1126,6 +1173,7 @@
   (pdf-tools-install))
 
 (use-package elfeed
+  :demand t
   :config
   (global-set-key (kbd "C-x w") 'elfeed)
   (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
@@ -1156,7 +1204,7 @@
 (use-package elfeed-org
   :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
   :hook (elfeed-dashboard-mode . elfeed-org)
-  :init
+  :config
   (progn
     (defun my/reload-org-feeds ()
       (interactive)
@@ -1172,11 +1220,73 @@
   (elfeed-goodies/setup))
 
 (use-package elfeed-score
-  :ensure t
   :config
   (progn
     (elfeed-score-enable)
     (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+
+(use-package twittering-mode
+  :commands (twit)
+  :init
+  (defalias 'epa--decode-coding-string 'decode-coding-string)
+  (setq twittering-icon-mode t)
+  (setq twittering-use-icon-storage t)
+  (setq twittering-allow-insecure-server-cert t
+        twittering-use-master-password t))
+
+(setq my/socks-host "127.0.0.1")
+(setq my/socks-port 13659)
+(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+
+(defun my/url-http-socks5 ()
+  "url-retrieve 使用 curl 作为后端实现, 支持 socks5 代理。"
+  (interactive)
+  (use-package mb-url-http
+    :straight (mb-url :repo "jiacai2050/mb-url")
+    :commands (mb-url-http-around-advice)
+    :init
+    (setq mb-url-http-backend 'mb-url-http-curl
+          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-switches `("-k" "--max-time" "20" "-x" ,my/socks-proxy "--user-agent"
+                                      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"))
+    (advice-add 'url-http :around 'mb-url-http-around-advice)))
+
+(defun proxy-socks-show ()
+  "Show SOCKS proxy."
+  (interactive)
+  (when (fboundp 'cadddr)
+    (if (bound-and-true-p socks-noproxy)
+        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
+      (message "No SOCKS proxy"))))
+
+(defun proxy-socks-enable ()
+  "使用 socks 代理 url 访问请求。"
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'socks
+        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
+        socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
+  (setenv "all_proxy" my/socks-proxy)
+  (proxy-socks-show)
+  ;;(my/url-http-socks5)
+)
+
+(defun proxy-socks-disable ()
+  "Disable SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'native
+        socks-noproxy nil)
+  (setenv "all_proxy" "")
+  (proxy-socks-show))
+
+(defun proxy-socks-toggle ()
+  "Toggle SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (if (bound-and-true-p socks-noproxy)
+      (proxy-socks-disable)
+    (proxy-socks-enable)))
 
 (setq vc-follow-symlinks t)
 
@@ -1212,11 +1322,12 @@
   (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
 
 ;; brew install ripgrep
-(use-package deadgrep :bind  ("<f5>" . deadgrep))
+(use-package deadgrep :bind ("<f5>" . deadgrep))
 
 (setq grep-highlight-matches t)
 
 (use-package ediff
+  :straight (:type built-in)
   :config
   ;; 忽略空格
   (setq ediff-diff-options "-w")
@@ -1252,8 +1363,7 @@
     (f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
 
   (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
-  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree)
-  )
+  (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree))
 
 (use-package lsp-mode
   :hook
@@ -1382,7 +1492,8 @@
     (setq lsp-pyright-python-executable-cmd "python3")))
 
 (use-package lsp-java
-  :disabled t :after (lsp-mode company)
+  :disabled t
+  :after (lsp-mode company)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -1399,8 +1510,8 @@
               (concat "-javaagent:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar"))))
   :hook (java-mode . lsp)
   :config
-  (use-package dap-mode :ensure :disabled t :after (lsp-java) :config (dap-auto-configure-mode))
-  (use-package dap-java :ensure :disabled t))
+  (use-package dap-mode :disabled t :after (lsp-java) :config (dap-auto-configure-mode))
+  (use-package dap-java :disabled t))
 
 (use-package go-mode
   :after (lsp-mode)
@@ -1722,15 +1833,12 @@ mermaid.initialize({
 (use-package treemacs-magit :after (treemacs magit))
 
 (use-package projectile
-  :after (treemacs)
   :config
   (projectile-global-mode)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   (projectile-mode +1)
   ;; selectrum/vertico 使用 'default，可选：'ivy、'helm、'ido、'auto
   (setq projectile-completion-system 'default)
-  ;; 手动 M-0 打开 treemacs
-  ;;(add-hook 'projectile-after-switch-project-hook (lambda () (unless (bound-and-true-p treemacs-mode) (treemacs) (other-window 1))))
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
   (dolist (dirs '(".cache"
                   ".dropbox"
@@ -1916,7 +2024,7 @@ mermaid.initialize({
        tramp-default-user "root"
        tramp-terminal-type "tramp")
 
-;; 自定义远程 shell 环境变量
+;; 自定义远程环境变量
 (let ((process-environment tramp-remote-process-environment))
   ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置
   ;; VTERM 参数。
@@ -1924,73 +2032,23 @@ mermaid.initialize({
   (setq tramp-remote-process-environment process-environment))
 
 ;; 远程机器
+(require 'epa-file)
+(epa-file-enable)
 (load "~/.emacs.d/sshenv.el.gpg")
 
 ;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过
 ;; vterm-environment 传递到远程环境中。远程机器的 ~/.emacs_bashrc 根据这个变量设
 ;; 置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的
 ;; 问题。
+(defvar my/remote-host "")
 (add-hook
  'buffer-list-update-hook
  (lambda ()
    (when (file-remote-p default-directory)
      (setq my/remote-host (file-remote-p default-directory 'host))
+     ;; 动态计算 ENV=VALUE
+     (require 'vterm)
      (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
-
-(setq my/socks-host "127.0.0.1")
-(setq my/socks-port 13659)
-(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
-
-(defun my/url-http-socks5 ()
-  "url-retrieve 使用 curl 作为后端实现, 支持 socks5 代理。"
-  (interactive)
-  (use-package mb-url-http
-    :load-path "~/.emacs.d/site-lisp/mb-url"
-    :defer t
-    :commands (mb-url-http-around-advice)
-    :init
-    (setq mb-url-http-backend 'mb-url-http-curl
-          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("--max-time" "20" "-x" ,my/socks-proxy "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"))
-    (advice-add 'url-http :around 'mb-url-http-around-advice)))
-
-(defun proxy-socks-show ()
-  "Show SOCKS proxy."
-  (interactive)
-  (when (fboundp 'cadddr)
-    (if (bound-and-true-p socks-noproxy)
-        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
-      (message "No SOCKS proxy"))))
-
-(defun proxy-socks-enable ()
-  "使用 socks 代理 url 访问请求。"
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'socks
-        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
-        socks-server '("Default server" my/socks-host my/socks-port 5))
-        ;;socks-server '("Default server" my/socks-host my/socks-port 5))
-  (setenv "all_proxy" my/socks-proxy)
-  (proxy-socks-show)
-  ;;(my/url-http-socks5)
-)
-
-(defun proxy-socks-disable ()
-  "Disable SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'native
-        socks-noproxy nil)
-  (setenv "all_proxy" "")
-  (proxy-socks-show))
-
-(defun proxy-socks-toggle ()
-  "Toggle SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (if (bound-and-true-p socks-noproxy)
-      (proxy-socks-disable)
-    (proxy-socks-enable)))
 
 (auto-image-file-mode t)
 
@@ -2084,7 +2142,6 @@ mermaid.initialize({
               comment-fill-column 0
               recentf-max-menu-items 100
               recentf-max-saved-items 100
-              recentf-exclude `("/tmp/" "/ssh:" ,(concat package-user-dir "/.*-autoloads\\.el\\'"))
               tab-width 4
               ;; Make it impossible to insert tabs.
               indent-tabs-mode nil
@@ -2092,6 +2149,14 @@ mermaid.initialize({
               message-log-max t
               load-prefer-newer t
               ad-redefinition-action 'accept)
+
+(setq recentf-exclude `(,(expand-file-name "straight/build/" user-emacs-directory)
+                        ,(expand-file-name "eln-cache/" user-emacs-directory)
+                        ,(expand-file-name "etc/" user-emacs-directory)
+                        ,(expand-file-name "var/" user-emacs-directory)
+                        "/tmp"
+                        "/ssh:"
+                        ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
 
 ;; 使用系统剪贴板，这样可以和其它程序相互粘贴。
 (setq x-select-enable-clipboard t)
@@ -2183,9 +2248,7 @@ mermaid.initialize({
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
   :config
-  (use-package restclient-test
-    :diminish
-    :hook (restclient-mode . restclient-test-mode))
+  (use-package restclient-test :diminish :hook (restclient-mode . restclient-test-mode))
 
   (with-eval-after-load 'company
     (use-package company-restclient
@@ -2226,7 +2289,4 @@ mermaid.initialize({
   (global-set-key (kbd "C-h C") #'helpful-command))
 
 ;; 在 Finder 中打开当前文件
-(use-package reveal-in-osx-finder
-  :ensure t
-  :commands
-  (reveal-in-osx-finder))
+(use-package reveal-in-osx-finder :commands (reveal-in-osx-finder))
