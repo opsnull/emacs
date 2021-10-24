@@ -11,6 +11,9 @@
 
 (setq byte-compile-warnings '(cl-functions))
 
+;; Disable package.el in favor of straight.el
+(setq package-enable-at-startup nil)
+
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
@@ -25,7 +28,12 @@
 (set-frame-parameter (selected-frame) 'maximized 'fullscreen)
 (add-hook 'after-init-hook #'toggle-frame-maximized)
 
-;; 使用单独文件保存自定义配置
+;; 第一个 frame 规格
+(setq initial-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
+;; 后续 frame 规格
+(setq default-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
+
+;; 在单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
@@ -33,8 +41,7 @@
 (setq user-full-name "zhangjun"
       user-mail-address "geekard@qq.com")
 
-;; 使用自带的 password 提示而非外部的程序，如 gpg-agent, 否则, emacs 处理 gpg 文
-;; 件时报错。
+;; 使用 minibuffer 输入 GPG 密码。
 (setq epa-pinentry-mode 'loopback)
 
 ;; gnus 和 tramp 等认证信息文件
