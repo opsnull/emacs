@@ -55,3 +55,10 @@ if [[ "$VTERM_TRAMP" == "true" ]]; then
     }
     PS1=$PS1'\[$(vterm_prompt_end)\]'
 fi
+
+# 开启 ssh 会话保持
+if [[ "$TERM" == "tramp" || "$VTERM_TRAMP" == "true" ]]; then
+    if ! egrep 'ControlMaster|ControlPath' ~/.ssh/config &>/dev/null; then
+        sed -i '1s/^/Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n\n/' ~/.ssh/config
+    fi
+fi

@@ -5,11 +5,11 @@
 % 黄色背景高亮强调
 \usepackage{uline--}
 \renewcommand{\emph}[1]{
-{\sffamily\bfseries\itshape
-  \uline[
-    background,
-    color={[rgb]{1,1,0.0}},
-    width=0.8em,position=1pt]{#1}}}
+  {\sffamily\bfseries\itshape
+    \uline[
+      background,
+      color={[rgb]{1,1,0.0}},
+      width=0.8em,position=1pt]{#1}}}
 
 % 自定义 programlist 语言环境
 % https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
@@ -17,8 +17,8 @@
 \tcbuselibrary{breakable,skins,raster,external,listings,minted}
 \tcbEXTERNALIZE
 \newtcblisting[
-auto counter,
-number within=section]{programlist}[3][]{
+  auto counter,
+  number within=section]{programlist}[3][]{
   listing engine=minted,
   minted style=emacs,
   minted language=#2,

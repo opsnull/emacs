@@ -12,9 +12,9 @@
   (:text "Julia Evans" :value 100 :type s :attr t)
   (:text "emacs-news – sacha chua" :value 350 :type S :attr t :comment "Essential!"))
  ("authors"
-   (:text "opsnull" :value 500 :type s))
+  (:text "opsnull" :value 500 :type s))
  ("tag"
   (:tags (t . reddit-question)
-   :value 750
-   :comment "Add 750 points to any entry with a tag of reddit-question"))
+         :value 750
+         :comment "Add 750 points to any entry with a tag of reddit-question"))
  (mark -2500))

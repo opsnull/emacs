@@ -18,13 +18,13 @@
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
-      (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
         (url-retrieve-synchronously
-        "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-        'silent 'inhibit-cookies)
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
@@ -293,7 +293,7 @@
   :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
   :config
   ;; 光标位置显示 posframe
-  (setq vertico-posframe-poshandler 'posframe-poshandler-point-window-center)
+  (setq vertico-posframe-poshandler 'posframe-poshandler-p0.5p0-to-f0.5p1)
   (vertico-posframe-mode 1))
 
 ;; 高亮 company 候选者
@@ -526,19 +526,19 @@
   (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
   :bind
   ( :map rime-active-mode-map
-         ;; 强制切换到英文模式，直到按回车。
-         ("M-j" . 'rime-inline-ascii)
-         :map rime-mode-map
-         ;; 中英文切换
-         ("C-$" . 'rime-send-keybinding)
-         ;; 中英文标点切换
-         ("C-." . 'rime-send-keybinding)
-         ;; 全半角切换
-         ("C-," . 'rime-send-keybinding)
-         ;; 输入法菜单
-         ("C-!" . 'rime-send-keybinding)
-         ;; 强制切换到中文模式
-         ("M-j" . 'rime-force-enable))
+    ;; 强制切换到英文模式，直到按回车。
+    ("M-j" . 'rime-inline-ascii)
+    :map rime-mode-map
+    ;; 中英文切换
+    ("C-=" . 'rime-send-keybinding)
+    ;; 输入法菜单
+    ("C-+" . 'rime-send-keybinding)
+    ;; 中英文标点切换
+    ("C-." . 'rime-send-keybinding)
+    ;; 全半角切换
+    ("C-," . 'rime-send-keybinding)
+    ;; 强制切换到中文模式
+    ("M-j" . 'rime-force-enable))
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
@@ -568,27 +568,30 @@
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 
-(use-package phi-search
-  :after (rime)
-  :config
-  (global-set-key (kbd "C-s") 'phi-search)
-  (global-set-key (kbd "C-r") 'phi-search-backward))
-
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
 
-;; 直接在 minibuffer 中编辑 query
+;; 直接在 minibuffer 中编辑 query(rime 探测到 minibuffer 时自动关闭输入法)
 (use-package isearch-mb
-  :after (consult)
+  :demand t
   :config
+  (setq-default
+   ;; Match count next to the minibuffer prompt
+   isearch-lazy-count t
+   ;; Don't be stingy with history; default is to keep just 16 entries
+   search-ring-max 200
+   regexp-search-ring-max 200)
+
+  ;; 习惯使用 regexp 类型的 isearch
+  (global-set-key (kbd "C-s") 'isearch-forward-regexp)
+  (global-set-key (kbd "C-r") 'isearch-backward-regexp)
+
   (add-to-list 'isearch-mb--with-buffer #'consult-isearch)
   (define-key isearch-mb-minibuffer-map (kbd "M-r") #'consult-isearch)
 
-  (add-to-list 'isearch-mb--after-exit #'anzu-isearch-query-replace)
-  (define-key isearch-mb-minibuffer-map (kbd "M-%") 'anzu-isearch-query-replace)
-
   (add-to-list 'isearch-mb--after-exit #'consult-line)
-  (define-key isearch-mb-minibuffer-map (kbd "M-s l") 'consult-line))
+  (define-key isearch-mb-minibuffer-map (kbd "M-s l") 'consult-line)
+  (isearch-mb-mode t))
 
 ;; 智能括号
 (use-package smartparens
@@ -618,17 +621,7 @@
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; 快速跳转当前标记符
-(use-package symbol-overlay
-  :config
-  (global-set-key (kbd "M-i") 'symbol-overlay-put)
-  (global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
-  (global-set-key (kbd "M-p") 'symbol-overlay-jump-prev)
-  (global-set-key (kbd "<f7>") 'symbol-overlay-mode)
-  (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all)
-  :hook (prog-mode . symbol-overlay-mode))
-
-;; 按照中文折行
+;; 按中文折行
 (setq word-wrap-by-category t)
 
 ;; 打开特定类型大文件时，使用 fundamental-mode。
@@ -827,12 +820,12 @@
 (use-package mu4e-views
   :after mu4e
   :bind (:map mu4e-headers-mode-map
-        ("v" . mu4e-views-mu4e-select-view-msg-method) ;; 切换展示类型
-        ("M-n" . mu4e-views-cursor-msg-view-window-down) ;; from headers window scroll the email view
-        ("M-p" . mu4e-views-cursor-msg-view-window-up) ;; from headers window scroll the email view
-        ("f" . mu4e-views-toggle-auto-view-selected-message) ;; toggle opening messages automatically when moving in the headers view
-        ("i" . mu4e-views-mu4e-view-as-nonblocked-html) ;; show currently selected email with all remote content
-        )
+              ("v" . mu4e-views-mu4e-select-view-msg-method) ;; 切换展示类型
+              ("M-n" . mu4e-views-cursor-msg-view-window-down) ;; from headers window scroll the email view
+              ("M-p" . mu4e-views-cursor-msg-view-window-up) ;; from headers window scroll the email view
+              ("f" . mu4e-views-toggle-auto-view-selected-message) ;; toggle opening messages automatically when moving in the headers view
+              ("i" . mu4e-views-mu4e-view-as-nonblocked-html) ;; show currently selected email with all remote content
+              )
   :config
   (setq mu4e-views-completion-method 'default) ;; use ivy for completion
   (setq mu4e-views-default-view-method "html") ;; make xwidgets default
@@ -850,7 +843,6 @@
 (use-package org
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :config
-  (setq org-emphasis-alist '(("*" bold) ("=" org-verbatim verbatim) ("~" org-code  verbatim)))
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
         org-hide-emphasis-markers t
@@ -1190,10 +1182,10 @@
   (setq elfeed-log-level 'warn)
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :feed-url "emacs-china\\.org"
-                              :add '(emacs-china)))
+                                :add '(emacs-china)))
   (add-hook 'elfeed-new-entry-hook
             (elfeed-make-tagger :feed-url "github\\.com"
-                              :add '(github))))
+                                :add '(github))))
 
 (use-package elfeed-dashboard
   :config
@@ -1268,8 +1260,8 @@
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
-  ;;(my/url-http-socks5)
-)
+  (my/url-http-socks5)
+  )
 
 (defun proxy-socks-disable ()
   "Disable SOCKS proxy."
@@ -1421,12 +1413,12 @@
                  "[/\\\\]\\.cache"
                  "[/\\\\]\\.clwb$"))
     (push dir lsp-file-watch-ignored-directories))
-:bind
-(:map lsp-mode-map
-      ("C-c f" . lsp-format-region)
-      ("C-c d" . lsp-describe-thing-at-point)
-      ("C-c a" . lsp-execute-code-action)
-      ("C-c r" . lsp-rename)))
+  :bind
+  (:map lsp-mode-map
+        ("C-c f" . lsp-format-region)
+        ("C-c d" . lsp-describe-thing-at-point)
+        ("C-c a" . lsp-execute-code-action)
+        ("C-c r" . lsp-rename)))
 
 (use-package consult-lsp
   :after (lsp-mode consult)
@@ -1593,8 +1585,8 @@ mermaid.initialize({
   ;; 从 ~/.authinfo 文件获取认证信息
   (require 'auth-source)
   (let ((credential (auth-source-user-and-password "api.github.com")))
-             (setq grip-github-user (car credential)
-                   grip-github-password (cadr credential))))
+    (setq grip-github-user (car credential)
+          grip-github-password (cadr credential))))
 
 (use-package markdown-toc
   :after(markdown-mode)
@@ -1628,8 +1620,8 @@ mermaid.initialize({
   (define-key ansible-doc-mode-map (kbd "M-?") #'ansible-doc))
 
 (defun my/use-eslint-from-node-modules ()
-;; use local eslint from node_modules before global
-;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
+  ;; use local eslint from node_modules before global
+  ;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
   (let* ((root (locate-dominating-file (or (buffer-file-name) default-directory) "node_modules"))
          (eslint (and root (expand-file-name "node_modules/eslint/bin/eslint.js" root))))
     (when (and eslint (file-executable-p eslint))
@@ -1977,7 +1969,7 @@ mermaid.initialize({
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 (setq explicit-shell-file-name "/bin/bash")
-(setq shell-file-name "bash")
+(setq shell-file-name "/bin/bash")
 (setq shell-command-prompt-show-cwd t)
 (setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
 (setenv "SHELL" shell-file-name)
@@ -2004,8 +1996,8 @@ mermaid.initialize({
        vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
        ;; Don’t clean up recentf tramp buffers.
        recentf-auto-cleanup 'never
-       ;; 远程文件名不过期
-       ;;remote-file-name-inhibit-cache nil
+       ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能
+       remote-file-name-inhibit-cache 600
        ;;tramp-verbose 10
        ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin):
        ;; unexpected end of file”
