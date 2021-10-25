@@ -37,14 +37,14 @@
   - [[#mu4e-views][mu4e-views]]
   - [[#org-mime][org-mime]]
 - [[#org][org]]
-  - [[#美化-org][美化 org]]
-  - [[#内容居中显式][内容居中显式]]
-  - [[#slide-演示][slide 演示]]
+  - [[#美化][美化]]
+  - [[#居中][居中]]
+  - [[#slide][slide]]
   - [[#capture][capture]]
-  - [[#保存图片][保存图片]]
-  - [[#日历和日记][日历和日记]]
-  - [[#babel][Babel]]
-  - [[#通知][通知]]
+  - [[#图片][图片]]
+  - [[#日历][日历]]
+  - [[#babel][babel]]
+  - [[#notify][notify]]
   - [[#tex][tex]]
 - [[#pdf][pdf]]
 - [[#rss][rss]]
@@ -97,7 +97,7 @@ brew link --overwrite emacs-plus@28
 ln -sf /usr/local/opt/emacs-plus@28/Emacs.app /Applications
 #+end_src
 
-建立如下目录:
+建立目录:
 #+begin_src shell :tangle no
 mkdir -p ~/.emacs.d/backup
 mkdir -p ~/.emacs.d/autosave
@@ -107,7 +107,7 @@ mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib
 mkdir -p ~/.mail/attachments
 #+end_src
 
-安装如下命令工具：
+安装命令工具：
 #+begin_src shell :tangle no
 go get golang.org/x/tools/gopls@latest
 
@@ -273,8 +273,7 @@ build 机制来安装软件包（而非从 package archives 下载 tarballs 包�
 ;; use the newest version available.
 (setq load-prefer-newer t)
 
-;; 为 use-package 自动添加配置 :straight t, 从而使用 straight 来安装包(默认使用
-;; package.el)
+;; use-package 默认使用 straight 安装软件包（自动添加 :straight t)
 (setq straight-use-package-by-default t)
 (setq straight-vc-git-default-clone-depth 1)
 (setq straight-recipes-gnu-elpa-use-mirror t)
@@ -297,7 +296,6 @@ build 机制来安装软件包（而非从 package archives 下载 tarballs 包�
 
 ;; 安装 use-package
 (straight-use-package 'use-package)
-;; 配置 use-package
 (setq use-package-verbose t)
 (setq use-package-compute-statistics t)
 
@@ -324,9 +322,6 @@ build 机制来安装软件包（而非从 package archives 下载 tarballs 包�
 
 ;; Speed up startup
 (setq auto-mode-case-fold nil)
-
-;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
-(setq idle-update-delay 1.0)  ; default is 0.5
 
 ;; Disable bidirectional text scanning for a modest performance boost.
 (setq-default bidi-display-reordering 'left-to-right
@@ -470,7 +465,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   :demand t
   :after(doom-themes)
   :custom
-  ;; 不显示换行和编码，节省空间
+  ;; 不显示换行和编码（节省空间）
   (doom-modeline-buffer-encoding nil)
   ;; 使用 HUD 显式光标位置(默认是 bar)
   (doom-modeline-hud t)
@@ -490,7 +485,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
     ;; 去掉 remote-host，避免编辑远程文件时卡住。
     '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
     ;; right-hand segment list，尾部增加空格，避免溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "")))
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
 
 (use-package dashboard
   :demand t
@@ -502,7 +497,7 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
+  (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
@@ -785,9 +780,8 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 (use-package yasnippet-snippets)
 (use-package yasnippet-classic-snippets)
 #+end_src
-+ 关闭 company-snippets 的候选提示，手动触发 snippets 补全，否则提示太多的
-  snippets 补全项。
-+ 通过 "C-c y" 快捷键触发 yasnippet 的自动补全。
++ 关闭 company-snippets 候选提示，手动触发 snippets 补全（ =C-c s= ），否则提示太
+  多的 snippets 候选项。
 
 * 跳转
 
@@ -835,25 +829,25 @@ GUI 或 systemd 启动的 Emacs 进程有可能没有继承用户 shell 环境�
 Mac 系统安装 RIME 输入法：
 1. 下载 鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
 2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
-3. 重新登录用户，然后就可以使用 =Control+`= 来触发 RIME 输入法了。
+3. 重新登录用户，然后就可以使用 =Control-+= 来触发 RIME 输入法了。
 4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
 5. 部署生效,:
-   + 如果修改了 ~/Library/Rime 中的配置，则必须点击鼠须管的 “重新部署” 才能生效。
-   + 对于 emacs-rime，如果也修改了 ~/Library/Rime 的配置，则需要执行 =M-x
+   + 如果修改了 =~/Library/Rime= 下的配置，必须点击鼠须管的 “重新部署” 才能生效。
+   + 对于 emacs-rime，如果修改了 =~/Library/Rime= 下的配置，需要执行 =M-x
      rime-deploy= 生效；
 
-下载 librime 库, emacs rime 使用它与系统的 rime 输入法交互：
+下载 librime 库, emacs-rime 使用它与系统的 RIME 交互：
 #+Begin_src bash :results no
 curl -L -O https://github.com/rime/librime/releases/download/1.7.2/rime-1.7.2-osx.zip
 unzip rime-1.7.2-osx.zip -d ~/.emacs.d/librime
 rm -rf rime-1.7.2-osx.zip
-# 如果MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
+# 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
 sudo spctl --master-disable
-# later: sudo spctl --master-enable
+# 后续再开启：sudo spctl --master-enable
 #+end_src
 
 从 [[https://github.com/fkxxyz/rime-cloverpinyin][rime-cloverpinyin]] 下载最新的词库方案安装包（文件名不包含 build), 解压后配置拷
-贝到 ~/Library/Rime 目录。另外一份比较好的词库方案是 [[https://github.com/placeless/squirrel_config][squirrel_config]] 。
+贝到 ~/Library/Rime 目录。
 
 配置 Emacs:
 #+begin_src emacs-lisp
@@ -883,7 +877,7 @@ sudo spctl --master-disable
   ;; 使用开源的 [SwitchKey](https://github.com/itsuhane/SwitchKey) 程序可以实现
   ;; 其它程序切换到 Emacs 时自动将系统输入法切换到英文，从而避免系统输入法干扰。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
-  ;; 切换到 vterm-mode 类型外的其它类型 buffer 时激活 rime 输入法。
+  ;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
   (defadvice switch-to-buffer (after activate-input-method activate)
     (if (string-match "vterm-mode" (symbol-name major-mode))
         (activate-input-method nil)
@@ -894,98 +888,99 @@ sudo spctl --master-disable
   ;; 只有当使用系统 RIME 输入法时才有效。
   (setq rime-inline-ascii-trigger 'shift-l)
   ;; 临时英文模式
-  (setq rime-disable-predicates '(rime-predicate-ace-window-p
-                                  rime-predicate-evil-mode-p
-                                  rime-predicate-hydra-p
-                                  rime-predicate-current-uppercase-letter-p
-                                  rime-predicate-after-alphabet-char-p
-                                  rime-predicate-space-after-cc-p
-                                  rime-predicate-punctuation-after-space-cc-p
-                                  rime-predicate-prog-in-code-p
-                                  rime-predicate-after-ascii-char-p))
+  (setq rime-disable-predicates
+        '(rime-predicate-ace-window-p
+          rime-predicate-evil-mode-p
+          rime-predicate-hydra-p
+          rime-predicate-current-uppercase-letter-p
+          rime-predicate-after-alphabet-char-p
+          rime-predicate-space-after-cc-p
+          rime-predicate-punctuation-after-space-cc-p
+          rime-predicate-prog-in-code-p
+          rime-predicate-after-ascii-char-p))
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 #+end_src
 
 RIME 输入法自定义缺省配置：
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
-  patch:
-    schema_list:
-      - schema: clover  # 使用 clover 输入法方案
-        menu/page_size: 9
-        ascii_composer/good_old_caps_lock: true
-        ascii_composer/switch_key:
-          Caps_Lock: commit_code
-          Shift_L: inline_ascii
-          Shift_R: commit
-          Control_L: commit_code
-          Control_R: commit_code
-          switcher/hotkeys:
-            - F4
-            - "Control+plus" # 使用 C-+ 调出输入法菜单
-            key_binder/bindings:
-              - { when: composing, accept: ISO_Left_Tab, send: Page_Up }
-              - { when: composing, accept: Shift+Tab, send: Page_Up }
-              - { when: composing, accept: Tab, send: Page_Down }
-              - { when: has_menu, accept: equal, send: Page_Down }
-              - { when: has_menu, accept: bracketright, send: Page_Down }
-              - { when: paging, accept: minus, send: Page_Up }                 # 上一页
-              - { when: paging, accept: bracketleft, send: Page_Up }           # 下一页
-              - { when: always, accept: "Control+equal", toggle: ascii_mode}   # 中英文切换
-              - { when: always, accept: "Control+period", toggle: ascii_punct} # 中英文标点切换
-              - { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
-              # 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
+patch:
+  schema_list:
+  - schema: clover  # 使用 clover 输入法方案
+  menu/page_size: 9
+  ascii_composer/good_old_caps_lock: true
+  ascii_composer/switch_key:
+    Caps_Lock: commit_code
+    Shift_L: inline_ascii
+    Shift_R: commit
+    Control_L: commit_code
+    Control_R: commit_code
+  switcher/hotkeys:
+  - F4
+  - "Control+plus" # 使用 C-+ 掉出输入法菜单
+  key_binder/bindings:
+  - { when: composing, accept: ISO_Left_Tab, send: Page_Up }
+  - { when: composing, accept: Shift+Tab, send: Page_Up }
+  - { when: composing, accept: Tab, send: Page_Down }
+  - { when: has_menu, accept: equal, send: Page_Down }
+  - { when: has_menu, accept: bracketright, send: Page_Down }
+  - { when: paging, accept: minus, send: Page_Up }                 # 上一页
+  - { when: paging, accept: bracketleft, send: Page_Up }           # 下一页
+  - { when: always, accept: "Control+equal", toggle: ascii_mode}   # 中英文切换
+  - { when: always, accept: "Control+period", toggle: ascii_punct} # 中英文标点切换
+  - { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
+# 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
 #+end_src
 
 三叶草输入方案(clover) 配置:
 #+begin_src yaml :tangle ~/Library/Rime/clover.custom.yaml
-  patch:
-    switches:
-      - name: zh_simp_s2t
-        reset: 0
-        states: [ 简, 繁 ]
-        - name: emoji_suggestion
-          reset: 0   # 不提示输出 emoji 符号
-          states: [ "🈚️️\uFE0E", "🈶️️\uFE0F" ]
-          - name: symbol_support
-            reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后，emacs 卡死
-            states: [ "无符", "符" ]
-            - name: ascii_punct
-              reset: 0
-              states: ["。，", ".,"]
-              - name: full_shape
-                reset: 0
-                states: [ 半, 全 ]
-                - name: ascii_mode
-                  reset: 0
-                  states: [ 中, 英 ]
-                  speller:
-                    algebra:
-                      - erase/^xx$/                      # 第一行保留
-                      - derive/^([zcs])h/$1/             # zh, ch, sh => z, c, s
-                      - derive/^([zcs])([^h])/$1h$2/     # z, c, s => zh, ch, sh
-                      - derive/^n/l/                     # n => l
-                      - derive/^l/n/                     # l => n
-                      - derive/([ei])n$/$1ng/            # en => eng, in => ing
-                      - derive/([ei])ng$/$1n/            # eng => en, ing => in
-                      - derive/ao$/oa/       # oa = ao
-                      - derive/([iu])a(o|ng?)$/a$1$2/    # aio = iao; aing = iang; aung = uang
-                      - derive/([aeiou])ng$/$1gn/   # gn = ng
-                      - derive/un$/uen/    # uen = un
-                      - derive/ui$/uei/    # uei = ui
-                      - derive/iu$/iou/    # iou = ui
-                      - derive/tie$/tei/   # tei = tie
-                      - derive/i$/ii/      # ii = i
-                      - derive/u$/uu/      # ui = u
+patch:
+  switches:
+  - name: zh_simp_s2t
+    reset: 0
+    states: [ 简, 繁 ]
+  - name: emoji_suggestion
+    reset: 0   # 不提示输出 emoji 符号
+    states: [ "🈚️️\uFE0E", "🈶️️\uFE0F" ]
+  - name: symbol_support
+    reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后 emacs 卡死
+    states: [ "无符", "符" ]
+  - name: ascii_punct
+    reset: 0
+    states: ["。，", ".,"]
+  - name: full_shape
+    reset: 0
+    states: [ 半, 全 ]
+  - name: ascii_mode
+    reset: 0
+    states: [ 中, 英 ]
+  speller:
+    algebra:
+    - erase/^xx$/                      # 第一行保留
+    - derive/^([zcs])h/$1/             # zh, ch, sh => z, c, s
+    - derive/^([zcs])([^h])/$1h$2/     # z, c, s => zh, ch, sh
+    - derive/^n/l/                     # n => l
+    - derive/^l/n/                     # l => n
+    - derive/([ei])n$/$1ng/            # en => eng, in => ing
+    - derive/([ei])ng$/$1n/            # eng => en, ing => in
+    - derive/ao$/oa/                   # oa = ao
+    - derive/([iu])a(o|ng?)$/a$1$2/    # aio = iao; aing = iang; aung = uang
+    - derive/([aeiou])ng$/$1gn/        # gn = ng
+    - derive/un$/uen/    # uen = un
+    - derive/ui$/uei/    # uei = ui
+    - derive/iu$/iou/    # iou = ui
+    - derive/tie$/tei/   # tei = tie
+    - derive/i$/ii/      # ii = i
+    - derive/u$/uu/      # ui = u
 #+end_src
 
-下载[[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases][肥猫中文维基百万大词库（felixonmars/fcitx5-pinyin-zhwiki)]], 放到 ~/Library/Rime 目录：
+下载[[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases][肥猫中文维基百万大词库（felixonmars/fcitx5-pinyin-zhwiki)]], 放到 =~/Library/Rime= 目录：
 #+begin_src shell :tangle no
 cd ~/Library/Rime
 wget https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.2.3/zhwiki-20210911.dict.yaml
 #+end_src
 
-修改文件 ~/Library/Rime/clover.dict.yaml, 内容如下：
+修改文件 =~/Library/Rime/clover.dict.yaml=, 内容如下：
 #+begin_src yaml :tangle ~/Library/Rime/clover.dict.yaml
 name: clover
 version: "1"
@@ -1100,8 +1095,8 @@ import_tables:
 
 (setq large-file-warning-threshold nil)
 #+END_SRC
-+ fundamental-mode 打开的 json/yaml 文件，使用 M-s o(occur) 或 M-s
-  l（consult-line) 来进行搜索跳转。
++ 对于 fundamental-mode 类型的 buffer, 可以使用 =M-s o(occur)= 或 =M-s
+  l（consult-line)= 进行搜索、跳转。
 
 * dict
 
@@ -1362,6 +1357,7 @@ $ mu find github
   :demand t
   ;; 如果 mu 二进制不存在, 则使用系统包管理工具自动安装;
   :ensure-system-package (mu)
+  ;; 使用 mu4e/* 目录下的 lisp 文件, 跳过 straight 的 build 过程;
   :straight (:host github :repo "djcb/mu" :branch "master" :files ("mu4e/*") :build nil)
   :if (executable-find "mu")
   :commands (mu4e)
@@ -1623,7 +1619,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 + 使用 M-x package-install org 安装最新版本，否则使用系统自带的老版本。
 + org-make-toc 使用帮助, [[https://github.com/alphapapa/org-make-toc][参考官方文档]]。
 
-** 美化 org
+** 美化
+
 #+begin_src emacs-lisp
 (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
 (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
@@ -1654,7 +1651,9 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
 #+end_src
 
-** 内容居中显式
+** 居中
+
+内容居中显示:
 #+begin_src emacs-lisp
 (defun my/org-mode-visual-fill ()
   (setq
@@ -1672,7 +1671,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (org-mode . my/org-mode-visual-fill))
 #+end_src
 
-** slide 演示
+** slide
 #+begin_src emacs-lisp
 (use-package org-tree-slide
   :after (org)
@@ -1721,7 +1720,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
                "* ☞ TODO [#B] %U %i%?"))
 #+end_src
 
-** 保存图片
+** 图片
 拖拽保存图片或 F6 保存剪贴板中图片:
 #+begin_src emacs-lisp
 ;;(shell-command "pngpaste -v &>/dev/null || brew install pngpaste")
@@ -1738,7 +1737,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (org-download-enable))
 #+end_src
 
-** 日历和日记
+** 日历
 #+begin_src emacs-lisp
 (setq org-agenda-time-grid (quote ((daily today require-timed)
                                    (300 600 900 1200 1500 1800 2100 2400)
@@ -1792,7 +1791,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
          (set-face-foreground 'holiday-face "white")))
 #+end_src
 
-** Babel
+** babel
 
 #+begin_src emacs-lisp
 (setq org-confirm-babel-evaluate nil
@@ -1816,7 +1815,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
    (css . t)))
 #+end_src
 
-** 通知
+** notify
 倒计时结束通知:
 #+BEGIN_SRC  emacs-lisp
 ;; brew install terminal-notifier
@@ -2062,9 +2061,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 + pdf-tools 默认是白底黑字，可以：
   + 深色模式： =M-x pdf-view-midnight-minor-mode=
   + 主题模式： =M-x pdf-view-themed-minor-mode=
-+ 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 =M-s o= 的 occur 模
-  式；phi-search 与 pdf-tools 不兼容；
-+ 维护的版本：https://github.com/vedang/pdf-tools
++ 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 =M-s o(occur)= ；
+  phi-search 与 pdf-tools 不兼容；
 
 * rss
 #+begin_src emacs-lisp
@@ -2152,23 +2150,25 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
 #+end_src
 
 * twitter
+
 #+begin_src emacs-lisp
 (use-package twittering-mode
   :commands (twit)
   :init
+  ;; 解决报错"epa--decode-coding-string not defined"
   (defalias 'epa--decode-coding-string 'decode-coding-string)
   (setq twittering-icon-mode t)
   (setq twittering-use-icon-storage t)
+  ;; 解决内置的 twitter 根证书失效的问题
   (setq twittering-allow-insecure-server-cert t
         twittering-use-master-password t))
 #+end_src
-+ "epa--decode-coding-string not defined"的报错解决办法参考上面的 defalias;
-+ 默认将 OAuth Token 加密保存到 "~/.twittering-mode.gpg", 第一次需要输入两次相同
-  的加密密码。
++ 默认将 OAuth Token 加密保存到 =~/.twittering-mode.gpg=, 第一次需要输入两次相同的
+  加密密码。
 
 * proxy
 
-按需开启全局 socks 代理(支持 http, https):
+全局 socks 代理:
 #+begin_src emacs-lisp
 (setq my/socks-host "127.0.0.1")
 (setq my/socks-port 13659)
@@ -2224,9 +2224,9 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
       (proxy-socks-disable)
     (proxy-socks-enable)))
 #+end_src
-+ 注意 macos 自带的 curl 不支持 socks 代理, 可以 brew install curl 后, 然后设置
-  export PATH="/usr/local/opt/curl/bin:$PATH"
-+ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可以使用 socks5 代理。
++ 注意 macos 自带的 curl 不支持 socks 代理, 可以 =brew install curl= 后, 然后设置
+  ~export PATH="/usr/local/opt/curl/bin:$PATH"~
++ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局使用 socks5 代理。
 + 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
 
 * magit
@@ -3262,6 +3262,11 @@ open -a 'Google Chrome' $*
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
+
+(use-package posframe-project-term
+  :straight (posframe-project-term :host github :repo "zwpaper/posframe-project-term")
+  :bind
+  (("C-c t" . posframe-project-term-toggle)))
 #+end_src
 
 ** eshell
@@ -3387,8 +3392,8 @@ open -a 'Google Chrome' $*
 (require 'server)
 (unless (server-running-p) (server-start))
 
-;; 记录最近 1000 次按键，可以通过 M-x view-lossage 来查看输入的内容。
-(lossage-size 1000)
+;; 记录最近 100 次按键，可以通过 M-x view-lossage 来查看输入的内容。
+(lossage-size 100)
 
 ;; Highlight current line.
 ;;(global-hl-line-mode t)
@@ -3655,12 +3660,6 @@ open -a 'Google Chrome' $*
 ;;                (reusable-frames . visible)
 ;;                (window-height . 0.3)))
 
-;; https://github.com/kweizh/posframe-project-term
-(use-package posframe-project-term
-  :ensure nil
-  :load-path "/Users/zhangjun/.emacs.d/site-lisp/posframe-project-term"
-  :bind
-  (("C-c t" . posframe-project-term-toggle)))
 
 (transient-mark-mode t)
 

@@ -7,8 +7,7 @@
 ;; use the newest version available.
 (setq load-prefer-newer t)
 
-;; 为 use-package 自动添加配置 :straight t, 从而使用 straight 来安装包(默认使用
-;; package.el)
+;; use-package 默认使用 straight 安装软件包（自动添加 :straight t)
 (setq straight-use-package-by-default t)
 (setq straight-vc-git-default-clone-depth 1)
 (setq straight-recipes-gnu-elpa-use-mirror t)
@@ -31,7 +30,6 @@
 
 ;; 安装 use-package
 (straight-use-package 'use-package)
-;; 配置 use-package
 (setq use-package-verbose t)
 (setq use-package-compute-statistics t)
 
@@ -52,9 +50,6 @@
 
 ;; Speed up startup
 (setq auto-mode-case-fold nil)
-
-;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
-(setq idle-update-delay 1.0)  ; default is 0.5
 
 ;; Disable bidirectional text scanning for a modest performance boost.
 (setq-default bidi-display-reordering 'left-to-right
@@ -186,7 +181,7 @@
   :demand t
   :after(doom-themes)
   :custom
-  ;; 不显示换行和编码，节省空间
+  ;; 不显示换行和编码（节省空间）
   (doom-modeline-buffer-encoding nil)
   ;; 使用 HUD 显式光标位置(默认是 bar)
   (doom-modeline-hud t)
@@ -206,7 +201,7 @@
     ;; 去掉 remote-host，避免编辑远程文件时卡住。
     '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
     ;; right-hand segment list，尾部增加空格，避免溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "")))
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
 
 (use-package dashboard
   :demand t
@@ -218,7 +213,7 @@
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents  . 8) (projects . 8) (bookmarks . 3) (agenda . 3)))
+  (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
 ;; 中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
@@ -545,7 +540,7 @@
   ;; 使用开源的 [SwitchKey](https://github.com/itsuhane/SwitchKey) 程序可以实现
   ;; 其它程序切换到 Emacs 时自动将系统输入法切换到英文，从而避免系统输入法干扰。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
-  ;; 切换到 vterm-mode 类型外的其它类型 buffer 时激活 rime 输入法。
+  ;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
   (defadvice switch-to-buffer (after activate-input-method activate)
     (if (string-match "vterm-mode" (symbol-name major-mode))
         (activate-input-method nil)
@@ -556,15 +551,16 @@
   ;; 只有当使用系统 RIME 输入法时才有效。
   (setq rime-inline-ascii-trigger 'shift-l)
   ;; 临时英文模式
-  (setq rime-disable-predicates '(rime-predicate-ace-window-p
-                                  rime-predicate-evil-mode-p
-                                  rime-predicate-hydra-p
-                                  rime-predicate-current-uppercase-letter-p
-                                  rime-predicate-after-alphabet-char-p
-                                  rime-predicate-space-after-cc-p
-                                  rime-predicate-punctuation-after-space-cc-p
-                                  rime-predicate-prog-in-code-p
-                                  rime-predicate-after-ascii-char-p))
+  (setq rime-disable-predicates
+        '(rime-predicate-ace-window-p
+          rime-predicate-evil-mode-p
+          rime-predicate-hydra-p
+          rime-predicate-current-uppercase-letter-p
+          rime-predicate-after-alphabet-char-p
+          rime-predicate-space-after-cc-p
+          rime-predicate-punctuation-after-space-cc-p
+          rime-predicate-prog-in-code-p
+          rime-predicate-after-ascii-char-p))
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 
@@ -676,6 +672,7 @@
   :demand t
   ;; 如果 mu 二进制不存在, 则使用系统包管理工具自动安装;
   :ensure-system-package (mu)
+  ;; 使用 mu4e/* 目录下的 lisp 文件, 跳过 straight 的 build 过程;
   :straight (:host github :repo "djcb/mu" :branch "master" :files ("mu4e/*") :build nil)
   :if (executable-find "mu")
   :commands (mu4e)
@@ -1220,9 +1217,11 @@
 (use-package twittering-mode
   :commands (twit)
   :init
+  ;; 解决报错"epa--decode-coding-string not defined"
   (defalias 'epa--decode-coding-string 'decode-coding-string)
   (setq twittering-icon-mode t)
   (setq twittering-use-icon-storage t)
+  ;; 解决内置的 twitter 根证书失效的问题
   (setq twittering-allow-insecure-server-cert t
         twittering-use-master-password t))
 
@@ -1968,6 +1967,11 @@ mermaid.initialize({
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
+(use-package posframe-project-term
+  :straight (posframe-project-term :host github :repo "zwpaper/posframe-project-term")
+  :bind
+  (("C-c t" . posframe-project-term-toggle)))
+
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "/bin/bash")
 (setq shell-command-prompt-show-cwd t)
@@ -2078,8 +2082,8 @@ mermaid.initialize({
 (require 'server)
 (unless (server-running-p) (server-start))
 
-;; 记录最近 1000 次按键，可以通过 M-x view-lossage 来查看输入的内容。
-(lossage-size 1000)
+;; 记录最近 100 次按键，可以通过 M-x view-lossage 来查看输入的内容。
+(lossage-size 100)
 
 ;; Highlight current line.
 ;;(global-hl-line-mode t)
