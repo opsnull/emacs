@@ -44,7 +44,7 @@
 ;; 使用 minibuffer 输入 GPG 密码。
 (setq epa-pinentry-mode 'loopback)
 
-;; gnus 和 tramp 等认证信息文件
+;; 加密认证信息文件
 (setq auth-sources '("~/.authinfo.gpg")
       auth-source-cache-expiry nil) ; default is 7200 (2h)
 ;;(setq auth-source-debug t)
