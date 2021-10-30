@@ -8,13 +8,12 @@
 
 * Bookmarks
 
- [u] Unread      ([[elfeed:+unread][  6444]]/[[elfeed:][  6453]])
- [b] Blogs       ([[elfeed:+unread +blog][  1010]]/[[elfeed:+blog][  1010]])
-    - [e] Emacs          ([[elfeed:+unread +emacs][  3241]]/[[elfeed:+emacs][  3250]])
-    - [n] Null Program   ([[elfeed:+unread +nullprogram][     0]]/[[elfeed:+nullprogram][     0]])
- [m] Monitoring  ([[elfeed:+unread +monitoring][     0]]/[[elfeed:+monitoring][     0]])
- [n] News        ([[elfeed:+unread +news][   527]]/[[elfeed:+news][   527]])
- [v] Video       ([[elfeed:+unread +video][     0]]/[[elfeed:+video][     0]])
+ [u] Unread      ([[elfeed:+unread @1-months-ago][  7106]]/[[elfeed:@1-months-ago][  8812]])
+ [b] Blog        ([[elfeed:+unread @1-months-ago -emacs +blog][   223]]/[[elfeed:@1-months-ago -emacs +blog][   228]])
+ [e] Emacs       ([[elfeed:+unread @1-months-ago +emacs][   815]]/[[elfeed:@1-months-ago +emacs][  1955]])
+    - [b] blog   ([[elfeed:+unread @1-months-ago +blog][  20]]/[[elfeed:@1-months-ago +blog][  789]])
+    - [c] conf   ([[elfeed:+unread @1-months-ago +conf][   17]]/[[elfeed:@1-months-ago +conf][  202]])
+    - [p] project          ([[elfeed:+unread @1-months-ago +project][   778]]/[[elfeed:@1-months-ago +project][   964]])
 
 * Configuration
   :PROPERTIES:
@@ -24,12 +23,8 @@
   Press "E" to edit and M-x elfeed-dashboard-mode to go back
 
   #+STARTUP: showall showstars indent
-  #+KEYMAP: u | elfeed-dashboard-query "+unread"
-  #+KEYMAP: be | elfeed-dashboard-query "+unread +blogs +emacs"
-  #+KEYMAP: bn | elfeed-dashboard-query "+unread +blogs +nullprogram"
-  #+KEYMAP: m | elfeed-dashboard-query "+unread +monitoring"
-  #+KEYMAP: v | elfeed-dashboard-query "+unread +video"
-  #+KEYMAP: n | elfeed-dashboard-query "+unread +news"
+  #+KEYMAP: u | elfeed-dashboard-query "+unread @1-months-ago"
+  #+KEYMAP: b | elfeed-dashboard-query "+unread @1-months-ago -emacs +blog"
   #+KEYMAP: s | elfeed
   #+KEYMAP: g | elfeed-dashboard-update-links
   #+KEYMAP: U | elfeed-dashboard-update

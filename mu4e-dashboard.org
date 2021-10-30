@@ -1,0 +1,70 @@
+* Mailboxes                 *[[mu:flag:unread|%2d][++]]*
+
+/[i]/ [[mu:m:/gmail/inbox or m:/qq/inbox][Inbox]] /.............../ /[[mu:m:/gmail/inbox or m:/qq/inbox|%2d][++]]/
+/[f]/ [[mu:flag:flagged][Important]] /........../ /[[mu:flag:flagged|%3d][  6]]/
+/[d]/ [[mu:m:/gmail/drafts or m:/qq/drafts][Drafts]] /.............../ /[[mu:m:/gmail/drafts or m:/qq/drafts|%1d][0]]/
+/[s]/ [[mu:m:/gmail/sent or m:/qq/sent][Sent]] /............../ /[[mu:m:/gmail/sent or m:/qq/sent|%4d][ 107]]/
+/[a]/ [[mu:m:m:/gmail/archive or m:/qq/archive][Archive]] /........../ /[[mu:m:/gmail/archive or m:/qq/archive|%5d][    0]]/
+
+* Smart mailboxes
+
+/[t]/ [[mu:date:today..now][Today]] /............../ /[[mu:date:today..now|%3d][ 15]]/
+/[y]/ [[mu:date:2d..today and not date:today..now][Yesterday]] /........../ /[[mu:date:2d..today and not date:today..now|%3d][ 10]]/
+/[w]/ [[mu:date:1w..now][Last week]] /......... /[[mu:date:7d..now|%4d][  68]]/
+/[m]/ [[mu:date:4w..now][Last month]] /......../ /[[mu:date:4w..|%4d][ 135]]/
+
+[[mu:flag:attach][Attachments]] /........../ /[[mu:flag:attach|%5d][   85]]/
+[[mu:flag:encrypted][Encrypted]] /............./ /[[mu:flag:encrypted|%4d][   0]]/
+
+** Tags
+
+[[mu:tag:LINK][LINK]] /-/ [[mu:tag:PAPER][PAPER]] /-/ [[mu:tag:TODO][TODO]] /-/ [[mu:tag:CODE][CODE]]
+[[mu:tag:CV][CV]] /-/ [[mu:tag:ASPP][ASPP]] /-/ [[mu:tag:EDMI][EDMI]]
+
+** People
+
+[[mu:from:rms@gnu.org][Richard Stallman]]       /[[mu:from:rms@gnu.org|%3d][  0]]/
+[[mu:from:djcb@djcbsoftware.nl][Dirk-Jan C. Binnema]] /[[mu:from:djcb@djcbsoftware.nl|%2d][ 0]]/
+
+** Mailing lists
+
+[[mu:list:emacs-devel.gnu.org][Emacs development]] /.../ /[[mu:list:emacs-devel.gnu.org|%4d][   0]]/
+
+** Date
+[[mu:flag:attach][Year 2021]] /........../ /[[mu:date:20210101..20211231|%5d][    1]]/
+[[mu:flag:attach][Year 2020]] /........../ /[[mu:date:20200101..20201231|%5d][    1]]/
+[[mu:date:20190101..20191231][Year 2019]] /........../ /[[mu:date:20190101..20191231|%5d][   14]]/
+[[mu:date:20180101..20181231][Year 2018]] /.........../ /[[mu:date:20180101..20181231|%4d][   0]]/
+
+* /Configuration/
+:PROPERTIES:
+:VISIBILITY: hideall
+:END:
+
+#+STARTUP: showall showstars indent
+
+#+NAME: query
+#+BEGIN_SRC shell :results list raw :var query="flag:unread count=5
+export LANG="en_US.UTF-8"; export LC_ALL="en_US.UTF-8";
+mu find --sortfield=date --reverse --fields "f s" $query  | head -$count
+#+END_SRC
+
+#+KEYMAP: u | mu4e-headers-search "flag:unread"
+#+KEYMAP: i | mu4e-headers-search "m:m:/gmail/inbox or m:/qq/inbox"
+#+KEYMAP: d | mu4e-headers-search "m:m:/gmail/drafts or m:/qq/drafts"
+#+KEYMAP: s | mu4e-headers-search "m:m:/gmail/sent or m:/qq/sent"
+#+KEYMAP: f | mu4e-headers-search "flag:flagged"
+
+#+KEYMAP: t | mu4e-headers-search "date:today..now"
+#+KEYMAP: y | mu4e-headers-search "date:2d..today and not date:today..now"
+#+KEYMAP: w | mu4e-headers-search "date:7d..now"
+#+KEYMAP: m | mu4e-headers-search "date:4w..now"
+
+#+KEYMAP: C | mu4e-compose-new
+#+KEYMAP: U | mu4e-dashboard-update
+#+KEYMAP: ; | mu4e-context-switch
+#+KEYMAP: q | mu4e-dashboard-quit
+#+KEYMAP: W | mu4e-headers-toggle-include-related
+#+KEYMAP: O | mu4e-headers-change-sorting
+#+KEYMAP: x | mu4e-mark-execute-all t
+#+KEYMAP: <return> | org-open-at-point
