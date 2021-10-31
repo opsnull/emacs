@@ -1,8 +1,8 @@
-% https://blog.shimanoke.com/ja/posts/change-latex-emph/
-% 克隆 https://github.com/doraTeX/breakfbox 到 /usr/local/texlive/texmf-local/tex/latex
-% 刷新数据库:  sudo mktexlsr
+% 安装荧光笔效果的强调宏包 breakfbox(https://blog.shimanoke.com/ja/posts/change-latex-emph/)
+% 1. 克隆 https://github.com/doraTeX/breakfbox 到 /usr/local/texlive/texmf-local/tex/latex
+% 2. 刷新数据库:  sudo mktexlsr
 
-% 黄色背景高亮强调
+% 黄色背景高亮强调（来源于 breakfbox)
 \usepackage{uline--}
 \renewcommand{\emph}[1]{
   {\sffamily\bfseries\itshape

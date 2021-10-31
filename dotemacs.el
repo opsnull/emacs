@@ -101,11 +101,12 @@
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
 
-(setq inhibit-startup-screen t
-      inhibit-startup-message t
-      initial-major-mode 'fundamental-mode
-      inhibit-startup-echo-area-message t
-      initial-scratch-message nil)
+(setq inhibit-startup-screen t)
+(setq inhibit-startup-message t)
+(setq inhibit-startup-echo-area-message t)
+
+(setq initial-major-mode 'fundamental-mode)
+(setq initial-scratch-message nil)
 
 (use-package ns-auto-titlebar
   :demand t
@@ -164,11 +165,11 @@
 (column-number-mode t)
 (size-indication-mode -1)
 (display-time-mode t)
-(setq display-time-24hr-format t
-      display-time-default-load-average nil
-      display-time-load-average-threshold 5
-      display-time-format "%m/%d[%u]%H:%M"
-      display-time-day-and-date t)
+(setq display-time-24hr-format t)
+(setq display-time-default-load-average nil)
+(setq display-time-load-average-threshold 5)
+(setq display-time-format "%m/%d[%u]%H:%M")
+(setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
 ;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
@@ -231,17 +232,18 @@
 (use-package cnfonts
   :demand t
   :ensure-system-package
-  ;; 英文字体
   ("/Users/zhangjun/Library/Fonts/JuliaMono-Regular.ttf" . "brew tap homebrew/cask-fonts; brew install --cask font-juliamono")
   :after (doom-modeline)
   :init
   (setq cnfonts-personal-fontnames '(("JuliaMono" "Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
-  :config
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
+  :config
   (cnfonts-enable))
 
-(use-package all-the-icons :demand t :after (cnfonts))
+(use-package all-the-icons
+  :demand t
+  :after (cnfonts))
 
 ;; fire-code-mode 和 set-fontset-font 只能在 GUI 模式下使用。
 (when (display-graphic-p)
@@ -274,9 +276,7 @@
 (use-package vertico-posframe
   :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
   :config
-  (setq vertico-posframe-parameters
-        '((left-fringe . 8)
-          (right-fringe . 8)))
+  (setq vertico-posframe-parameters '((left-fringe . 8) (right-fringe . 8)))
   ;; 光标位置显示 posframe
   (setq vertico-posframe-poshandler 'posframe-poshandler-p0.5p0-to-f0.5p1)
   (vertico-posframe-mode 1))
@@ -330,7 +330,8 @@
    ("M-e" . consult-isearch)
    ("M-s e" . consult-isearch)
    ("M-s l" . consult-line))
-  :hook (completion-list-mode . consult-preview-at-point-mode)
+  :hook
+  (completion-list-mode . consult-preview-at-point-mode)
   :init
   ;; 如果搜索字符少于 5，可以添加后缀#开始搜索，如 #gr#。
   (setq consult-async-min-input 5)
@@ -390,7 +391,7 @@
          ("C-x C-d" . consult-dir)
          ("C-x C-j" . consult-dir-jump-file)))
 
-;; 类似于 consult-grep 和 consult-find, 但前后端都异步, 支持 fuzzy 搜索。
+;; 类似于 consult-grep 和 consult-find, 但前后端都异步且支持 fuzzy 搜索。
 (use-package affe
   :after (orderless)
   :ensure-system-package
@@ -476,8 +477,8 @@
 
 (use-package avy
   :config
-  (setq avy-all-windows nil
-        avy-background t)
+  (setq avy-all-windows nil)
+  (setq avy-background t)
   :bind
   ("M-g c" . avy-goto-char-2)
   ("M-g l" . avy-goto-line))
@@ -555,8 +556,8 @@
   :bind
   (("C-c y" . youdao-dictionary-search-at-point))
   :init
-  (setq url-automatic-caching t
-        youdao-dictionary-use-chinese-word-segmentation t)
+  (setq url-automatic-caching t)
+  (setq youdao-dictionary-use-chinese-word-segmentation t)
   :config
   ;; 使用 jieba 进行中文分词: pip install jieba
   (use-package chinese-word-at-point :demand t))
@@ -591,8 +592,8 @@
   (setq shr-color-visible-luminance-min 80)
 
   ;; View images inline in message view buffer
-  (setq mu4e-view-show-images t
-        mu4e-view-image-max-width 800)
+  (setq mu4e-view-show-images t)
+  (setq mu4e-view-image-max-width 800)
   (when (fboundp 'imagemagick-register-types)
     (imagemagick-register-types))
 
@@ -771,13 +772,8 @@
         org-startup-folded 'content
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
-        ;; SRC 代码块不自动缩进
-        org-src-preserve-indentation t
-        org-edit-src-content-indentation 0
         org-startup-indented t
-        org-link-file-path-type 'absolute
-        ;; 在当前 window 编辑 SRC Block
-        org-src-window-setup 'current-window)
+        org-link-file-path-type 'absolute)
   (setq org-todo-keywords
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
@@ -827,46 +823,80 @@
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
 
-(defun my/org-mode-visual-fill ()
-  (setq
+(setq-default line-spacing 1)
+(custom-set-faces
+ '(org-block-begin-line ((t (:underline "#A7A6AA"))))
+ '(org-block ((t (:font "JuliaMono-16"))))
+ '(org-block-end-line ((t (:overline "#A7A6AA")))))
+
+(defun my/org-mode-visual-fill (fill width)
+  (setq-default
    ;; 自动换行的字符数
-   fill-column 80
-   ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏；
-   visual-fill-column-width 130
+   fill-column fill
+   ;; window 可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏。
+   visual-fill-column-width width
    visual-fill-column-fringes-outside-margins nil
+   ;; 使用 setq-default 来设置居中, 否则可能不生效。
    visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
+  :demand t
   :after (org)
   :hook
-  (org-mode . my/org-mode-visual-fill))
+  (org-mode . (lambda () (my/org-mode-visual-fill 120 130)))
+  :config
+  ;; 文字缩放时自动调整 visual-fill-column-width
+  (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
 
 (use-package org-tree-slide
   :after (org)
   :commands org-tree-slide-mode
+  :bind
+  (:map org-mode-map
+        ("<f8>" . org-tree-slide-mode)
+        :map org-tree-slide-mode-map
+        ("<f9>" . org-tree-slide-content)
+        ("<left>" . org-tree-slide-move-previous-tree)
+        ("<right>" . org-tree-slide-move-next-tree))
+  :hook
+  ((org-tree-slide-play . (lambda ()
+                            (beacon-mode -1)
+                            (redraw-display)
+                            (org-display-inline-images)
+                            (text-scale-increase 2)
+                            (read-only-mode 1)))
+   (org-tree-slide-stop . (lambda ()
+                            (text-scale-increase 0)
+                            (org-remove-inline-images)
+                            (beacon-mode +1)
+                            (read-only-mode -1))))
   :config
-  (setq org-tree-slide-slide-in-effect t
-        org-tree-slide-activate-message "Presentation started."
-        org-tree-slide-deactivate-message "Presentation ended."
-        org-tree-slide-header t)
-  :bind (:map org-mode-map
-              ("<f8>" . org-tree-slide-mode)
-              :map org-tree-slide-mode-map
-              ("<left>" . org-tree-slide-move-previous-tree)
-              ("<right>" . org-tree-slide-move-next-tree)
-              ("S-SPC" . org-tree-slide-move-previous-tree)
-              ("SPC" . org-tree-slide-move-next-tree))
-  :hook ((org-tree-slide-play . (lambda ()
-                                  (text-scale-increase 3)
-                                  (beacon-mode -1)
-                                  (org-display-inline-images)
-                                  (read-only-mode 1)))
-         (org-tree-slide-stop . (lambda ()
-                                  (text-scale-increase 0)
-                                  (org-remove-inline-images)
-                                  (beacon-mode +1)
-                                  (read-only-mode -1)))))
+  (setq org-tree-slide-slide-in-effect t)
+  (setq org-tree-slide-activate-message "Presentation started.")
+  (setq org-tree-slide-deactivate-message "Presentation ended.")
+  (setq org-tree-slide-content-margin-top 0)
+  (setq org-tree-slide-heading-emphasis t)
+  (setq org-tree-slide-header t)
+
+  (defvar my-hide-org-meta-line-p nil)
+  (defun my-hide-org-meta-line ()
+    (interactive)
+    (setq my-hide-org-meta-line-p t)
+    (set-face-attribute 'org-meta-line nil
+                        :foreground (face-attribute 'default :background)))
+  (defun my-show-org-meta-line ()
+    (interactive)
+    (setq my-hide-org-meta-line-p nil)
+    (set-face-attribute 'org-meta-line nil :foreground nil))
+
+  (defun my-toggle-org-meta-line ()
+    (interactive)
+    (if my-hide-org-meta-line-p
+        (my-show-org-meta-line) (my-hide-org-meta-line)))
+
+  (add-hook 'org-tree-slide-play-hook #'my-hide-org-meta-line)
+  (add-hook 'org-tree-slide-stop-hook #'my-show-org-meta-line))
 
 (require 'org-protocol)
 (require 'org-capture)
@@ -956,7 +986,13 @@
 
 (setq org-confirm-babel-evaluate nil
       org-src-fontify-natively t
-      org-src-preserve-indentation nil
+      ;; add a special face to #+begin_quote and #+begin_verse block
+      org-fontify-quote-and-verse-blocks t
+      ;; 不自动缩进
+      org-src-preserve-indentation t
+      org-edit-src-content-indentation 0
+      ;; 在当前 window 编辑 SRC Block
+      org-src-window-setup 'current-window
       org-src-tab-acts-natively t)
 
 (require 'org)
@@ -1064,9 +1100,9 @@
    ("/usr/local/opt/zlib" . zlib))
   :init
   ;; 使用 scaling 后，中文字体不模糊。
-  (setq pdf-view-use-scaling t
-        pdf-view-use-imagemagick nil
-        pdf-annot-activate-created-annotations t)
+  (setq pdf-view-use-scaling t)
+  (setq pdf-view-use-imagemagick nil)
+  (setq pdf-annot-activate-created-annotations t)
   (setq pdf-view-resize-factor 1.1)
   ;; open pdfs scaled to fit page
   (setq-default pdf-view-display-size 'fit-page)
@@ -1089,15 +1125,14 @@
 (use-package elfeed
   :demand t
   :config
-  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory)
-        elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  (setq elfeed-show-entry-switch 'display-buffer)
   (setq elfeed-curl-timeout 30)
   (setf url-queue-timeout 40)
   (push "-k" elfeed-curl-extra-arguments)
   (setq elfeed-search-filter "@1-months-ago +unread")
   ;; 在同一个 buffer 中显示 entry
   (setq elfeed-show-unique-buffers nil)
-  (setq line-spacing 0.3)
   (setq elfeed-search-title-max-width 150)
   (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
   (setq elfeed-log-level 'warn))
@@ -1105,8 +1140,8 @@
 (use-package elfeed-org
   :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
   :hook
-  (elfeed-dashboard-mode . elfeed-org)
-  (elfeed-show-mode . elfeed-org)
+  ((elfeed-dashboard-mode . elfeed-org)
+  (elfeed-show-mode . elfeed-org))
   :config
   (progn
     (defun my/reload-org-feeds ()
@@ -1206,8 +1241,8 @@
   (setq twittering-icon-mode t)
   (setq twittering-use-icon-storage t)
   ;; 解决内置的 twitter 根证书失效的问题
-  (setq twittering-allow-insecure-server-cert t
-        twittering-use-master-password t))
+  (setq twittering-allow-insecure-server-cert t)
+  (setq twittering-use-master-password t))
 
 (setq vc-follow-symlinks t)
 
@@ -1278,30 +1313,24 @@
   (setq flycheck-check-syntax-automatically '(save idle-change mode-enabled))
   (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
   (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
-  ;; 在当前窗口底部显示错误列表
-  (add-to-list 'display-buffer-alist
-               `(,(rx bos "*Flycheck errors*" eos)
-                 (display-buffer-reuse-window
-                  display-buffer-in-side-window)
-                 (side            . bottom)
-                 (reusable-frames . visible)
-                 (window-height   . 0.33)))
   :hook
   (prog-mode . flycheck-mode))
 
-(use-package consult-flycheck
-  :after (consult flycheck)
-  :bind
-  (:map flycheck-command-map ("!" . consult-flycheck)))
-
+;; flycheck-pos-tip 用于在线显示 flycheck 错误：
 (use-package flycheck-pos-tip
   :after (flycheck)
   :config
   (flycheck-pos-tip-mode))
 
+;; flycheck 实时预览
+(use-package consult-flycheck
+  :after (consult flycheck)
+  :bind
+  (:map flycheck-command-map ("!" . consult-flycheck)))
+
 (use-package lsp-mode
   :hook
-  (java-mode . lsp)
+  ((java-mode . lsp)
   (python-mode . lsp)
   (go-mode . lsp)
   ;;(yaml-mode . lsp)
@@ -1309,10 +1338,10 @@
   (web-mode . lsp)
   (tide-mode . lsp)
   (typescript-mode . lsp)
-  (dockerfile-mode . lsp)
+  (dockerfile-mode . lsp))
   :custom
-  ;; 调试模式（开启极大影响性能）
-  (lsp-log-io nil)
+  ;; 调试模式（开启后非常影响性能）
+  ;;(lsp-log-io t)
   (lsp-enable-folding t)
   ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
   ;; https://github.com/hlissner/doom-emacs/issues/2911
@@ -1322,8 +1351,10 @@
   (lsp-modeline-code-actions-enable nil)
   (lsp-keymap-prefix "C-c l")
   (lsp-auto-guess-root t)
+  ;; flycheck 集成
   (lsp-diagnostics-provider :flycheck)
   (lsp-diagnostics-flycheck-default-level 'warning)
+  (lsp-modeline-diagnostics-enable nil)
   (lsp-completion-provider :capf)
   ;; Turn off for better performance
   (lsp-enable-symbol-highlighting nil)
@@ -1339,7 +1370,7 @@
   (process-adaptive-read-buffering nil)
   ;; refresh the highlights, lenses, links
   (lsp-idle-delay 0.1)
-  (lsp-keep-workspace-alive t)
+  (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
   ;; Auto restart LSP.
   (lsp-restart 'auto-restart)
@@ -1377,6 +1408,7 @@
   ;; 文件列表宽度
   (lsp-ui-peek-list-width 70)
   (lsp-ui-doc-delay 0.1)
+  ;; 启用 flycheck 集成
   (lsp-ui-flycheck-enable t)
   (lsp-ui-sideline-enable nil)
   :config
@@ -1410,6 +1442,7 @@
         (flycheck-set-checker-executable "python-flake8" flake8)))))
 
 (use-package python
+  :after (flycheck)
   :ensure-system-package
   ((pylint . pylint)
    (flake8 . flake8)
@@ -1427,9 +1460,9 @@
   :after (python)
   :ensure-system-package
   ((pyright . "sudo npm update -g pyright")
-  (yapf . "pip install yapf"))
+   (yapf . "pip install yapf"))
   :preface
-  ;; Use yapf to format
+  ;; 使用 yapf 格式化 python 代码
   (defun lsp-pyright-format-buffer ()
     (interactive)
     (when (and (executable-find "yapf") buffer-file-name)
@@ -1491,16 +1524,17 @@
   :init
   (when (executable-find "multimarkdown")
     (setq markdown-command "multimarkdown"))
-  (setq markdown-enable-wiki-links t
-        markdown-italic-underscore t
-        markdown-asymmetric-header t
-        markdown-make-gfm-checkboxes-buttons t
-        markdown-gfm-uppercase-checkbox t
-        markdown-fontify-code-blocks-natively t
-        markdown-content-type "application/xhtml+xml"
-        markdown-css-paths '("https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css"
-                             "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github.min.css")
-        markdown-xhtml-header-content "
+  (setq markdown-enable-wiki-links t)
+  (setq markdown-italic-underscore t)
+  (setq markdown-asymmetric-header t)
+  (setq markdown-make-gfm-checkboxes-buttons t)
+  (setq markdown-gfm-uppercase-checkbox t)
+  (setq markdown-fontify-code-blocks-natively t)
+  (setq markdown-gfm-additional-languages "Mermaid")
+  (setq markdown-content-type "application/xhtml+xml")
+  (setq markdown-css-paths '("https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css"
+                             "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github.min.css"))
+  (setq markdown-xhtml-header-content "
 <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
 <style>
 body {
@@ -1530,11 +1564,11 @@ mermaid.initialize({
   startOnLoad: true
 });
 </script>
-"
-        markdown-gfm-additional-languages "Mermaid"))
+"))
 
 (use-package grip-mode
-  :ensure-system-package grip
+  :ensure-system-package
+  (grip . "pip install grip")
   :bind
   (:map markdown-mode-command-map ("g" . grip-mode))
   :config
@@ -1654,6 +1688,11 @@ mermaid.initialize({
   :config
   (flycheck-add-mode 'javascript-eslint 'web-mode))
 
+(defun my/json-format ()
+  (interactive)
+  (save-excursion
+    (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)))
+
 (use-package prettier
   :ensure-system-package (prettier . "npm -g install prettier")
   :diminish
@@ -1678,8 +1717,7 @@ mermaid.initialize({
   :ensure-system-package direnv
   :hook (after-init . envrc-global-mode)
   :config
-  (with-eval-after-load 'envrc
-    (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map)))
+  (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map))
 
 (use-package dap-mode
   :disabled t
@@ -1908,8 +1946,7 @@ mermaid.initialize({
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
-  (my/url-http-socks5)
-  )
+  (my/url-http-socks5))
 
 (defun proxy-socks-disable ()
   "Disable SOCKS proxy."
@@ -1927,6 +1964,9 @@ mermaid.initialize({
   (if (bound-and-true-p socks-noproxy)
       (proxy-socks-disable)
     (proxy-socks-enable)))
+
+;; 默认启用 socks 代理。
+(proxy-socks-enable)
 
 (use-package vterm
   :ensure-system-package
@@ -2210,10 +2250,8 @@ mermaid.initialize({
 (recentf-mode +1)
 (use-package savehist :init (savehist-mode))
 
-(setq-default line-spacing 1
-              ;; fill-column 的值应该小于 visual-fill-column-width，
-              ;; 否则居中显示时行内容会过长而被隐藏；
-              fill-column 80
+;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏；
+(setq-default fill-column 100
               comment-fill-column 0
               recentf-max-menu-items 100
               recentf-max-saved-items 100
@@ -2248,8 +2286,9 @@ mermaid.initialize({
         mouse-wheel-scroll-amount-horizontal 1
         mouse-wheel-progressive-speed nil)
   (xterm-mouse-mode t)
-  (global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
-  (global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
+  ;; 容易触碰误操作，故关闭
+  ;;(global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
+  ;;(global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
   (setq use-file-dialog nil
         use-dialog-box nil
         next-screen-context-lines 5))
