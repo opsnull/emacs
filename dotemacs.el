@@ -827,7 +827,7 @@
 (custom-set-faces
  '(org-block-begin-line ((t (:underline "#A7A6AA"))))
  '(org-block ((t (:font "JuliaMono-15"))))
- '(org-block-end-line ((t (:overline "#A7A6AA")))))
+ '(org-block-end-line ((t (:underline "#A7A6AA")))))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -2139,9 +2139,6 @@ mermaid.initialize({
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
-
-;; 按中文折行
-(setq word-wrap-by-category t)
 
 ;; 使用 fundamental-mode 打开大文件。
 (defun my/large-file-hook ()
