@@ -11,13 +11,13 @@
 
 (setq byte-compile-warnings '(cl-functions))
 
-;; Disable package.el in favor of straight.el
+;; 关闭 package.el(后续使用 straight.el)
 (setq package-enable-at-startup nil)
 
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
-;; Mac 的 native fullscreen 会导致白屏和左右滑动问题，故使用传统全屏模式。
+;; Mac native fullscreen 会导致白屏和左右滑动问题，故使用传统全屏模式。
 (when (eq system-type 'darwin)
   (setq ns-use-native-fullscreen nil
         ns-use-fullscreen-animation nil))
@@ -48,3 +48,5 @@
 (setq auth-sources '("~/.authinfo.gpg")
       auth-source-cache-expiry nil) ; default is 7200 (2h)
 ;;(setq auth-source-debug t)
+
+(defun org-clocking-buffer (&rest _))
