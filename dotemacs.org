@@ -162,6 +162,9 @@ npm config set registry=http://registry.npm.taobao.org
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
+;; 按中文折行
+(setq word-wrap-by-category t)
+
 ;; 个人信息
 (setq user-full-name "zhangjun"
       user-mail-address "geekard@qq.com")
@@ -1466,7 +1469,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 (custom-set-faces
  '(org-block-begin-line ((t (:underline "#A7A6AA"))))
  '(org-block ((t (:font "JuliaMono-15"))))
- '(org-block-end-line ((t (:overline "#A7A6AA")))))
+ '(org-block-end-line ((t (:underline "#A7A6AA")))))
 #+end_src
 
 ** 居中
@@ -3300,9 +3303,6 @@ open -a 'Google Chrome' $*
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
-
-;; 按中文折行
-(setq word-wrap-by-category t)
 
 ;; 使用 fundamental-mode 打开大文件。
 (defun my/large-file-hook ()
