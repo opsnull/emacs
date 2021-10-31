@@ -806,7 +806,7 @@
 
 (defun my/org-faces ()
   (custom-set-faces
-   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 3.0))))))
+   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))))
 (add-hook 'org-mode-hook 'my/org-faces)
 
 (use-package org-superstar
@@ -826,7 +826,7 @@
 (setq-default line-spacing 1)
 (custom-set-faces
  '(org-block-begin-line ((t (:underline "#A7A6AA"))))
- '(org-block ((t (:font "JuliaMono-16"))))
+ '(org-block ((t (:font "JuliaMono-15"))))
  '(org-block-end-line ((t (:overline "#A7A6AA")))))
 
 (defun my/org-mode-visual-fill (fill width)
@@ -1670,7 +1670,6 @@ mermaid.initialize({
 (use-package web-mode
   :after (flycheck)
   :init
-  (add-to-list 'auto-mode-alist '("\\.json?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.jinja2?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
@@ -1694,9 +1693,11 @@ mermaid.initialize({
     (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)))
 
 (use-package prettier
+  ;; TRAMP 支持的有问题, 故关闭。
+  :disabled t
   :ensure-system-package (prettier . "npm -g install prettier")
   :diminish
-  :hook (after-init . global-prettier-mode)
+  :hook (prog-mode . prettier-mode)
   :init (setq prettier-mode-sync-config-flag nil))
 
 (use-package yaml-mode
@@ -2142,12 +2143,11 @@ mermaid.initialize({
 ;; 按中文折行
 (setq word-wrap-by-category t)
 
-;; 打开特定类型大文件时，使用 fundamental-mode。
+;; 使用 fundamental-mode 打开大文件。
 (defun my/large-file-hook ()
   "If a file is over a given size, make the buffer read only."
   (when (and (> (buffer-size) (* 1024 1))
              (or (string-equal (file-name-extension (buffer-file-name)) "json")
-                 (string-equal (file-name-extension (buffer-file-name)) "js")
                  (string-equal (file-name-extension (buffer-file-name)) "yaml")
                  (string-equal (file-name-extension (buffer-file-name)) "yml")
                  (string-equal (file-name-extension (buffer-file-name)) "log")))
@@ -2159,6 +2159,8 @@ mermaid.initialize({
     (smartparens-global-mode -1)
     (show-smartparens-mode -1)
     (smartparens-mode -1)))
+(add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
+(add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
 (add-hook 'find-file-hook 'my/large-file-hook)
 
 ;; 大文件不显示行号
@@ -2286,9 +2288,9 @@ mermaid.initialize({
         mouse-wheel-scroll-amount-horizontal 1
         mouse-wheel-progressive-speed nil)
   (xterm-mouse-mode t)
-  ;; 容易触碰误操作，故关闭
-  ;;(global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
-  ;;(global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
+  ;; 默认执行 mouse-wheel-text-scale 命令, 容易触碰误操作，故关闭。
+  (global-unset-key (kbd "C-<wheel-down>"))
+  (global-unset-key (kbd "C-<wheel-up>"))
   (setq use-file-dialog nil
         use-dialog-box nil
         next-screen-context-lines 5))
