@@ -267,11 +267,64 @@
   (setq vertico-count 20)
   (vertico-mode 1))
 
+;;https://github.com/minad/consult/wiki
 (use-package orderless
-  :init
+  :demand t
+  :config
+  (defvar +orderless-dispatch-alist
+    '((?% . char-fold-to-regexp)
+      (?! . orderless-without-literal)
+      (?`. orderless-initialism)
+      (?= . orderless-literal)
+      (?~ . orderless-flex)))
+  ;; Recognizes the following patterns:
+  ;; * ~flex flex~
+  ;; * =literal literal=
+  ;; * %char-fold char-fold%
+  ;; * `initialism initialism`
+  ;; * !without-literal without-literal!
+  ;; * .ext (file extension)
+  ;; * regexp$ (regexp matching at end)
+  (defun +orderless-dispatch (pattern index _total)
+    (cond
+     ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
+     ((string-suffix-p "$" pattern)
+      `(orderless-regexp . ,(concat (substring pattern 0 -1) "[\x100000-\x10FFFD]*$")))
+     ;; File extensions
+     ((and
+       ;; Completing filename or eshell
+       (or minibuffer-completing-file-name
+           (derived-mode-p 'eshell-mode))
+       ;; File extension
+       (string-match-p "\\`\\.." pattern))
+      `(orderless-regexp . ,(concat "\\." (substring pattern 1) "[\x100000-\x10FFFD]*$")))
+     ;; Ignore single !
+     ((string= "!" pattern) `(orderless-literal . ""))
+     ;; Prefix and suffix
+     ((if-let (x (assq (aref pattern 0) +orderless-dispatch-alist))
+          (cons (cdr x) (substring pattern 1))
+        (when-let (x (assq (aref pattern (1- (length pattern))) +orderless-dispatch-alist))
+          (cons (cdr x) (substring pattern 0 -1)))))))
+
+  ;; Define orderless style with initialism by default
+  (orderless-define-completion-style +orderless-with-initialism
+    (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
+
   (setq completion-styles '(orderless)
         completion-category-defaults nil
-        completion-category-overrides '((file (styles partial-completion)))))
+        ;;; Enable partial-completion for files.
+        ;;; Either give orderless precedence or partial-completion.
+        ;;; Note that completion-category-overrides is not really an override,
+        ;;; but rather prepended to the default completion-styles.
+        ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
+        completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
+                                        ;; enable initialism by default for symbols
+                                        (command (styles +orderless-with-initialism))
+                                        (variable (styles +orderless-with-initialism))
+                                        (symbol (styles +orderless-with-initialism)))
+        ;; allow escaping space with backslash!
+        orderless-component-separator #'orderless-escapable-split-on-space
+        orderless-style-dispatchers '(+orderless-dispatch)))
 
 (use-package vertico-posframe
   :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
@@ -457,6 +510,11 @@
                       (company-dabbrev-code company-keywords company-files)
                       company-dabbrev))
   :config
+  ;; 高亮候选者（orderless 排序）
+  (defun just-one-face (fn &rest args)
+    (let ((orderless-match-faces [completions-common-part]))
+      (apply fn args)))
+  (advice-add 'company-capf--candidates :around #'just-one-face)
   (global-company-mode t))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
@@ -1351,31 +1409,28 @@
   (lsp-modeline-code-actions-enable nil)
   (lsp-keymap-prefix "C-c l")
   (lsp-auto-guess-root t)
-  ;; flycheck 集成
   (lsp-diagnostics-provider :flycheck)
   (lsp-diagnostics-flycheck-default-level 'warning)
+  ;; flycheck 会在 modeline 展示检查情况, 故没必要再展示
   (lsp-modeline-diagnostics-enable nil)
   (lsp-completion-provider :capf)
-  ;; Turn off for better performance
-  (lsp-enable-symbol-highlighting nil)
-  ;; 不显示面包屑
-  (lsp-headerline-breadcrumb-enable nil)
-  ;; 手动激活 snippet 补全（C-c s)，否则按 TAB 容易出现误补全
-  (lsp-enable-snippet nil)
-  ;; 不显示所有文档，否则 minibuffer 占用太多屏幕空间
-  (lsp-eldoc-render-all nil)
-  ;; lsp 使用 eldoc 在 minibuffer 显示函数签名， 设置显示的文档行数
-  (lsp-signature-doc-lines 3)
+  (lsp-enable-symbol-highlighting t)
+  (lsp-headerline-breadcrumb-enable t)
+  (lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  ;; 启用 snippet 后才支持函数或方法的 placeholder 提示
+  (lsp-enable-snippet t)
+  (lsp-eldoc-render-all t)
+  ;; 使用 posframe 在光标位置处显示函数签名
+  (lsp-signature-function 'lsp-signature-posframe)
+  (lsp-signature-doc-lines 20)
   ;; 增加 IO 性能
   (process-adaptive-read-buffering nil)
   ;; refresh the highlights, lenses, links
   (lsp-idle-delay 0.1)
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
-  ;; Auto restart LSP.
   (lsp-restart 'auto-restart)
   :config
-  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
                  "[/\\\\]vendor\\'"
@@ -1513,6 +1568,8 @@
    `(("gopls.completeUnimported" t t)
      ("gopls.experimentalWorkspaceModule" t t)
      ("gopls.allExperiments" t t))))
+
+(use-package go-playground :demand t)
 
 (use-package markdown-mode
   :ensure-system-package multimarkdown
@@ -1712,7 +1769,9 @@ mermaid.initialize({
 (use-package devdocs
   :bind ("C-c b" . devdocs-lookup)
   :config
-  (add-to-list 'completion-category-defaults '(devdocs (styles . (flex)))))
+  (add-to-list 'completion-category-defaults '(devdocs (styles . (flex))))
+  (add-hook 'python-mode-hook (lambda () (setq-local devdocs-current-docs '("python~3.9"))))
+  (add-hook 'go-mode-hook (lambda () (setq-local devdocs-current-docs '("go")))))
 
 (use-package envrc
   :ensure-system-package direnv
@@ -1737,22 +1796,21 @@ mermaid.initialize({
      treemacs-deferred-git-apply-delay      0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              100
-     treemacs-file-follow-delay             0.1
+     treemacs-file-event-delay              3000
+     treemacs-file-follow-delay             0.01
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
      treemacs-goto-tag-strategy             'refetch-index
      treemacs-indentation                   1
      treemacs-indentation-string            " "
-     treemacs-is-never-other-window         nil
+     treemacs-is-never-other-window         t
      treemacs-max-git-entries               3000
-     treemacs-missing-project-action        'remove
+     treemacs-missing-project-action        'ask
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
-     treemacs-project-follow-cleanup        t
      treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
      treemacs-position                      'left
-     treemacs-recenter-distance             0.1
+     treemacs-recenter-distance             0.01
      treemacs-recenter-after-file-follow    t
      treemacs-recenter-after-tag-follow     t
      treemacs-recenter-after-project-jump   'always
@@ -1762,19 +1820,26 @@ mermaid.initialize({
      treemacs-silent-filewatch              nil
      treemacs-silent-refresh                nil
      treemacs-sorting                       'alphabetic-asc
-     treemacs-space-between-root-nodes      nil
+     treemacs-select-when-already-in-treemacs 'stay
+     treemacs-space-between-root-nodes      t
      treemacs-tag-follow-cleanup            t
      treemacs-tag-follow-delay              1
      treemacs-width                         35
+     treemacs-width-increment               5
+     treemacs-width-is-initially-locked     nil
+     treemacs-project-follow-cleanup        t
      imenu-auto-rescan                      t)
     (treemacs-resize-icons 11)
     (treemacs-follow-mode t)
+    ;; 自动切换到当前 buffer 的 project
+    (treemacs-project-follow-mode t)
     (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode t)
+    (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
     (pcase (cons (not (null (executable-find "git"))) (not (null treemacs-python-executable)))
       (`(t . t) (treemacs-git-mode 'deferred))
-      (`(t . _) (treemacs-git-mode 'simple))))
+      (`(t . _) (treemacs-git-mode 'simple)))
+    (treemacs-hide-gitignored-files-mode nil))
   :bind
   (:map global-map
         ("M-0"       . treemacs-select-window)
@@ -1917,18 +1982,23 @@ mermaid.initialize({
 (setq my/socks-port 13659)
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
-(defun my/url-http-socks5 ()
-  "url-retrieve 使用 curl 作为后端实现, 支持 socks5 代理。"
-  (interactive)
-  (use-package mb-url-http
-    :straight (mb-url :repo "jiacai2050/mb-url")
-    :commands (mb-url-http-around-advice)
-    :init
+(use-package mb-url-http
+  :demand
+  :straight (mb-url :repo "dochang/mb-url")
+  :commands (mb-url-http-around-advice)
+  :init
+  (require 'auth-source)
+  (let ((credential (auth-source-user-and-password "api.github.com")))
+    (setq github-user (car credential)
+          github-password (cadr credential))
+    (setq github-auth (concat github-user ":" github-password))
     (setq mb-url-http-backend 'mb-url-http-curl
           mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("-k" "--max-time" "20" "-x" ,my/socks-proxy "--user-agent"
-                                      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"))
-    (advice-add 'url-http :around 'mb-url-http-around-advice)))
+          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
+                                      ;;"--max-time" "300"
+                                      ;;"-u" ,github-auth
+                                      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+                                      ))))
 
 (defun proxy-socks-show ()
   "Show SOCKS proxy."
@@ -1947,7 +2017,8 @@ mermaid.initialize({
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
-  (my/url-http-socks5))
+  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理
+  (advice-add 'url-http :around 'mb-url-http-around-advice))
 
 (defun proxy-socks-disable ()
   "Disable SOCKS proxy."
@@ -1966,9 +2037,6 @@ mermaid.initialize({
       (proxy-socks-disable)
     (proxy-socks-enable)))
 
-;; 默认启用 socks 代理。
-(proxy-socks-enable)
-
 (use-package vterm
   :ensure-system-package
   ((cmake . cmake)
@@ -1984,6 +2052,8 @@ mermaid.initialize({
               (setq-local show-paren-mode nil)
               (yas-minor-mode -1)
               (flycheck-mode -1)))
+  ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容
+  (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
   :bind
   (:map vterm-mode-map ("C-l" . nil))
   ;; 防止输入法切换冲突。
@@ -2182,6 +2252,9 @@ mermaid.initialize({
 
 ;; Don't lock files.
 (setq create-lockfiles nil)
+
+;; 增加剪贴板历史记录数量
+(setq kill-ring-max 100)
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
