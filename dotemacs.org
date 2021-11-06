@@ -35,12 +35,13 @@
   - [[#mu4e-views][mu4e-views]]
   - [[#org-mime][org-mime]]
 - [[#org][org]]
-  - [[#美化][美化]]
-  - [[#居中][居中]]
+  - [[#org][org]]
+  - [[#face][face]]
+  - [[#fill][fill]]
   - [[#slide][slide]]
   - [[#capture][capture]]
-  - [[#图片][图片]]
-  - [[#日历][日历]]
+  - [[#image][image]]
+  - [[#agenda][agenda]]
   - [[#babel][babel]]
   - [[#notify][notify]]
   - [[#tex][tex]]
@@ -104,12 +105,11 @@ mkdir -p ~/.mail/attachments
 
 安装命令工具：
 #+begin_src shell :tangle no
-# 使用 pyenv shell VERSION 切换到对应版本环境, 然后执行如下命令:
+# 默认安装到当前家目录的 pyenv 中，如果项目使用其它 pyenv 则需要单独安装
 pip install ipython ansible jieba
 
 # latex 中文字体
 git clone https://github.com/googlefonts/noto-cjk.git
-# latex 英文字体
 
 which npm || brew install npm
 which nvm || brew install nvm
@@ -119,8 +119,8 @@ npm config set registry=http://registry.npm.taobao.org
 
 * init
 
- =early-init.el= 是 Emacs 启动时最开始执行的文件，由于很多包还没有加载，执行复杂逻
- 辑可能导致 Emacs 启动时悄无声息失败，所以该文件尽量以变量定义为主。
+ =early-init.el= 是 Emacs 启动时最开始执行的文件，由于很多包还没有加载，执行复杂逻辑可能导致 Emacs 启动时悄无声息失败，所
+ 以该文件尽量以变量定义为主。
 
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 ;; Emacs 28
@@ -232,7 +232,7 @@ build 机制来安装软件包（而非从 package archives 下载 tarball）。
 (setq comp-deferred-compilation-black-list nil)
 #+end_src
 
-=exec-path-from-shell= 将 shell 环境变量拷贝到 Emacs 环境中，解决命令找不到的问题。
+=exec-path-from-shell= 将用户 Shell 环境变量拷贝到 Emacs 环境中，解决找不到命令的问题。
 #+begin_src emacs-lisp
 (use-package exec-path-from-shell
   :demand t
@@ -376,8 +376,7 @@ build 机制来安装软件包（而非从 package archives 下载 tarball）。
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
-;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
-;; 否则 doom-modeline 右下角内容会溢出。
+;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
 (use-package doom-modeline
   :demand t
   :after(doom-themes)
@@ -397,8 +396,7 @@ build 机制来安装软件包（而非从 package archives 下载 tarball）。
   (doom-modeline-mode 1)
   :config
   (doom-modeline-def-modeline 'main
-    ;; left-hand segment list
-    ;; 去掉 remote-host，避免编辑远程文件时卡住。
+    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
     '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
     ;; right-hand segment list，尾部增加空格，避免溢出。
     '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
@@ -431,7 +429,6 @@ build 机制来安装软件包（而非从 package archives 下载 tarball）。
                     ((numberp (cadr alpha)) (cadr alpha)))
               100)
          '(85 . 50) '(100 . 100)))))
-(global-set-key (kbd "C-c t") 'my/toggle-transparency)
 #+end_src
 + 更新 fire-code 字体： =M-x fira-code-mode-install-fonts=
 + 更新 icon 字体： =M-x all-the-icons-install-fonts=
@@ -488,7 +485,8 @@ build 机制来安装软件包（而非从 package archives 下载 tarball）。
   (setq vertico-count 20)
   (vertico-mode 1))
 
-;;https://github.com/minad/consult/wiki
+;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang
+;; https://github.com/minad/consult/wiki
 (use-package orderless
   :demand t
   :config
@@ -617,7 +615,7 @@ build 机制来安装软件包（而非从 package archives 下载 tarball）。
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
-  ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会 hang。
+  ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
 
@@ -758,8 +756,7 @@ build 机制来安装软件包（而非从 package archives 下载 tarball）。
 (use-package yasnippet-snippets :demand t)
 (use-package yasnippet-classic-snippets :demand t)
 #+end_src
-+ 关闭 company-snippets 候选提示，手动触发 snippets 补全（ =C-c s= ），否则提示太
-  多的 snippets 候选项。
++ 关闭 company-snippets 候选提示，手动触发 snippets 补全（ =C-c s= ），否则提示太多的 snippets 候选项。
 
 * goto
 
@@ -811,8 +808,7 @@ Mac 系统安装 RIME 输入法：
 4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
 5. 部署生效,:
    + 如果修改了 =~/Library/Rime= 下的配置，必须点击鼠须管的 “重新部署” 才能生效。
-   + 对于 emacs-rime，如果修改了 =~/Library/Rime= 下的配置，需要执行 =M-x
-     rime-deploy= 生效；
+   + 对于 emacs-rime，如果修改了 =~/Library/Rime= 下的配置，需要执行 =M-x rime-deploy= 生效；
 
 下载 librime 库, emacs-rime 使用它与系统的 RIME 交互：
 #+Begin_src bash :results no
@@ -824,8 +820,7 @@ sudo spctl --master-disable
 # 后续再开启：sudo spctl --master-enable
 #+end_src
 
-从 [[https://github.com/fkxxyz/rime-cloverpinyin][rime-cloverpinyin]] 下载最新的词库方案安装包（文件名不包含 build), 解压后配置拷
-贝到 ~/Library/Rime 目录。
+从 [[https://github.com/fkxxyz/rime-cloverpinyin][rime-cloverpinyin]] 下载最新的词库方案安装包（文件名不包含 build), 解压后配置拷贝到 =~/Library/Rime= 目录。
 
 配置 Emacs:
 #+begin_src emacs-lisp
@@ -854,8 +849,7 @@ sudo spctl --master-disable
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
-  ;; 使用开源的 [SwitchKey](https://github.com/itsuhane/SwitchKey) 程序可以实现
-  ;; 其它程序切换到 Emacs 时自动将系统输入法切换到英文，从而避免系统输入法干扰。
+  ;; 使用 [SwitchKey](https://github.com/itsuhane/SwitchKey) 将 Emacs 的默认系统输入法设置为英文，避免干扰 RIME。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
   ;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
   (defadvice switch-to-buffer (after activate-input-method activate)
@@ -864,8 +858,7 @@ sudo spctl --master-disable
       (activate-input-method "rime")))
   ;; modline 输入法图标高亮, 用来区分中英文输入状态
   (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; support shift-l, shift-r, control-l, control-r
-  ;; 只有当使用系统 RIME 输入法时才有效。
+  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
   (setq rime-inline-ascii-trigger 'shift-l)
   ;; 临时英文模式
   (setq rime-disable-predicates
@@ -897,7 +890,7 @@ patch:
     Control_R: commit_code
   switcher/hotkeys:
   - F4
-  - "Control+plus" # 使用 C-+ 掉出输入法菜单
+  - "Control+plus" # 使用 C-+ 调出输入法菜单
   key_binder/bindings:
   - { when: composing, accept: ISO_Left_Tab, send: Page_Up }
   - { when: composing, accept: Shift+Tab, send: Page_Up }
@@ -920,7 +913,7 @@ patch:
     reset: 0
     states: [ 简, 繁 ]
   - name: emoji_suggestion
-    reset: 0   # 不提示输出 emoji 符号
+    reset: 0   # 不提示输出 emoji 字体
     states: [ "🈚️️\uFE0E", "🈶️️\uFE0F" ]
   - name: symbol_support
     reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后 emacs 卡死
@@ -984,11 +977,7 @@ import_tables:
   - sogou_new_words
 #+end_src
 
-然后执行命令 =M-x rime-deploy= 生效。输入 =weiyamu=, 如果内容是 =鳚亚目= 则证明导入成
-功。
-
-使用 switchkey 程序将 Emacs 的系统输入法设置为英文: =brew install --cask
-switchkey=
+然后执行命令 =M-x rime-deploy= 生效。输入 =weiyamu=, 如果内容是 =鳚亚目= 则证明导入成功。
 
 * dict
 
@@ -1307,7 +1296,7 @@ $ mu find github
 
   ;; 使用 proxychains4 socks5 代理周期同步邮件
   (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
-  (setq mu4e-update-interval 300)
+  (setq mu4e-update-interval 3600)
 
   ;; 使用 gnus 发送邮件
   (setq message-send-mail-function 'smtpmail-send-it)
@@ -1439,7 +1428,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 + M-x org-mime-revert-to-plain-text-mail
 
 * org
-
+** org
 #+begin_src emacs-lisp
 (use-package org
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
@@ -1474,7 +1463,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
   (setq org-refile-targets
-        '(("~/docs/orgs/later.org" :level . 1) ("~/docs/orgs/gtd.org" :maxlevel . 3)))
+        '(("~/docs/orgs/later.org" :level . 1)
+          ("~/docs/orgs/gtd.org" :maxlevel . 3)))
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -1492,7 +1482,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+END_SRC
 + org-make-toc: [[https://github.com/alphapapa/org-make-toc][参考官方文档]]。
 
-** 美化
+** face
 
 #+begin_src emacs-lisp
 (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
@@ -1505,8 +1495,14 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
 
 (defun my/org-faces ()
+  (setq-default line-spacing 1)
   (custom-set-faces
-   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))))
+   ;; 自定义标题样式
+   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
+   '(org-block-begin-line ((t (:underline "#A7A6AA"))))
+   ;; 调大 org-block 字体
+   '(org-block ((t (:font "JuliaMono-15"))))
+   '(org-block-end-line ((t (:underline "#A7A6AA"))))))
 (add-hook 'org-mode-hook 'my/org-faces)
 
 (use-package org-superstar
@@ -1522,15 +1518,9 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
-
-(setq-default line-spacing 1)
-(custom-set-faces
- '(org-block-begin-line ((t (:underline "#A7A6AA"))))
- '(org-block ((t (:font "JuliaMono-15"))))
- '(org-block-end-line ((t (:underline "#A7A6AA")))))
 #+end_src
 
-** 居中
+** fill
 
 内容居中显示:
 #+begin_src emacs-lisp
@@ -1593,13 +1583,11 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (defun my-hide-org-meta-line ()
     (interactive)
     (setq my-hide-org-meta-line-p t)
-    (set-face-attribute 'org-meta-line nil
-                        :foreground (face-attribute 'default :background)))
+    (set-face-attribute 'org-meta-line nil :foreground (face-attribute 'default :background)))
   (defun my-show-org-meta-line ()
     (interactive)
     (setq my-hide-org-meta-line-p nil)
     (set-face-attribute 'org-meta-line nil :foreground nil))
-
   (defun my-toggle-org-meta-line ()
     (interactive)
     (if my-hide-org-meta-line-p
@@ -1630,7 +1618,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
                "* ☞ TODO [#B] %U %i%?"))
 #+end_src
 
-** 图片
+** image
+
 拖拽保存图片或 F6 保存剪贴板中图片:
 #+begin_src emacs-lisp
 (use-package org-download
@@ -1647,7 +1636,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (org-download-enable))
 #+end_src
 
-** 日历
+** agenda
+
 #+begin_src emacs-lisp
 (setq org-agenda-time-grid
       (quote ((daily today require-timed)
@@ -1961,7 +1951,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
    (mutool . mupdf)
    ("/usr/local/opt/zlib" . zlib))
   :init
-  ;; 使用 scaling 后，中文字体不模糊。
+  ;; 使用 scaling 确保中文字体不模糊
   (setq pdf-view-use-scaling t)
   (setq pdf-view-use-imagemagick nil)
   (setq pdf-annot-activate-created-annotations t)
@@ -1988,10 +1978,10 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 + pdf-tools 默认是白底黑字，可以：
   + 深色模式： =M-x pdf-view-midnight-minor-mode=
   + 主题模式： =M-x pdf-view-themed-minor-mode=
-+ 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 =M-s o(occur)= ；
-  phi-search 与 pdf-tools 不兼容；
++ 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 =M-s o(occur)= ；phi-search 与 pdf-tools 不兼容；
 
 * rss
+
 #+begin_src emacs-lisp
 (use-package elfeed
   :demand t
@@ -2142,8 +2132,7 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
   (setq twittering-allow-insecure-server-cert t)
   (setq twittering-use-master-password t))
 #+end_src
-+ 默认将 OAuth Token 加密保存到 =~/.twittering-mode.gpg=, 第一次需要输入两次相同的
-  加密密码。
++ 默认将 OAuth Token 加密保存到 =~/.twittering-mode.gpg=, 第一次需要输入两次相同的加密密码。
 
 * magit
 
@@ -2167,8 +2156,8 @@ magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有�
   (bind-key "q" #'mu-magit-kill-buffers magit-log-mode-map)
   (bind-key "q" #'mu-magit-kill-buffers magit-mode-map))
 #+end_src
-+ =(setq auto-revert-check-vc-info t)= 可以自动 revert buffer，确保 modeline 上的
-  分支名正确，但是 CPU Profile 显示比较影响性能，故暂不开启。
++ =(setq auto-revert-check-vc-info t)= 可以自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU Profile 显示比较影响
+  性能，故暂不开启。
 
 git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
 #+begin_src emacs-lisp
@@ -3043,8 +3032,7 @@ lsp-workspace-restart= 来重启 lsp 。
   (setq projectile-require-project-root nil))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
-(use-package ripgrep
-  :ensure-system-package (rg . ripgrep))
+(use-package ripgrep :ensure-system-package (rg . ripgrep))
 
 (use-package find-file-in-project
   :config
@@ -3183,8 +3171,7 @@ open -a 'Google Chrome' $*
     (proxy-socks-enable)))
 #+end_src
 
-+ Mac 自带的 curl 不支持 socks 代理, 需要安装 =brew install curl= 并设置 ~export
-  PATH="/usr/local/opt/curl/bin:$PATH"~
++ Mac 自带的 curl 不支持 socks 代理, 需要安装 =brew install curl= 并设置 ~export PATH="/usr/local/opt/curl/bin:$PATH"~
 + [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
 + 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
 
@@ -3276,11 +3263,9 @@ open -a 'Google Chrome' $*
        ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能
        remote-file-name-inhibit-cache 600
        ;;tramp-verbose 10
-       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin):
-       ;; unexpected end of file”
+       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 8)
-       ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）
-       ;; 来传输，从而大大提高拷贝效率。
+       ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
        tramp-copy-size-limit (* 1024 1024 2)
        ;; Store TRAMP auto-save files locally.
        tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
@@ -3295,8 +3280,7 @@ open -a 'Google Chrome' $*
 
 ;; 自定义远程环境变量
 (let ((process-environment tramp-remote-process-environment))
-  ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置
-  ;; VTERM 参数。
+  ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置 VTERM 参数。
   (setenv "VTERM_TRAMP" "true")
   (setq tramp-remote-process-environment process-environment))
 
@@ -3305,10 +3289,8 @@ open -a 'Google Chrome' $*
 (epa-file-enable)
 (load "~/.emacs.d/sshenv.el.gpg")
 
-;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过
-;; vterm-environment 传递到远程环境中。远程机器的 ~/.emacs_bashrc 根据这个变量设
-;; 置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的
-;; 问题。
+;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程环境中。远程
+;; 机器的 ~/.emacs_bashrc 根据这个变量设置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的问题。
 (defvar my/remote-host "")
 (add-hook
  'buffer-list-update-hook
@@ -3319,8 +3301,8 @@ open -a 'Google Chrome' $*
      (require 'vterm)
      (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
 #+end_src
-+ =tramp-default-method= 缺省值为 scp, 不支持多跳（但拷贝大文件时性能更高），再打
-  开多跳远程文件时每次都需要修改 /- 中的 - 为 ssh，较麻烦，所以设置为 ssh。
++ =tramp-default-method= 缺省值为 scp, 不支持多跳（但拷贝大文件时性能更高），再打开多跳远程文件时每次都需要修改 /- 中的 -
+  为 ssh，较麻烦，所以设置为 ssh。
 
 * others
 #+begin_src emacs-lisp
@@ -3393,9 +3375,10 @@ open -a 'Google Chrome' $*
     (smartparens-global-mode -1)
     (show-smartparens-mode -1)
     (smartparens-mode -1)))
+(add-hook 'find-file-hook 'my/large-file-hook)
+;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
 (add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
 (add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
-(add-hook 'find-file-hook 'my/large-file-hook)
 
 ;; 大文件不显示行号
 (setq large-file-warning-threshold nil)
@@ -3410,17 +3393,13 @@ open -a 'Google Chrome' $*
 
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
-;; (global-set-key "\C-w" 'backward-kill-word)
-;; (global-set-key "\C-x\C-k" 'kill-region)
-;; (global-set-key "\C-c\C-k" 'kill-region)
-
 ;; Provide undo/redo commands for window changes.
 (winner-mode t)
 
 ;; Don't lock files.
 (setq create-lockfiles nil)
 
-;; 增加剪贴板历史记录数量
+;; 剪贴板历史记录数量
 (setq kill-ring-max 100)
 
 ;; macOS modifiers.
@@ -3487,9 +3466,9 @@ open -a 'Google Chrome' $*
 (global-unset-key (kbd "s-t"))
 
 (recentf-mode +1)
-(use-package savehist :init (savehist-mode))
+(use-package savehist :init (savehist-mode) :demand t)
 
-;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏；
+;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100
               comment-fill-column 0
               recentf-max-menu-items 100
@@ -3516,7 +3495,7 @@ open -a 'Google Chrome' $*
 (setq x-select-enable-primary t)
 (setq select-enable-primary t)
 
-;; 粘贴于光标处,而不是鼠标指针处。
+;; 粘贴于光标处, 而不是鼠标指针处。
 (setq mouse-yank-at-point t)
 
 (unless window-system
@@ -3579,8 +3558,8 @@ open -a 'Google Chrome' $*
 
 ;; UTF8 stuff.
 (prefer-coding-system 'utf-8)
-(setq locale-coding-system 'utf-8
-      default-buffer-file-coding-system 'utf-8)
+(setq locale-coding-system 'utf-8)
+(setq default-buffer-file-coding-system 'utf-8)
 (set-buffer-file-coding-system 'utf-8)
 (set-language-environment "UTF-8")
 (set-default buffer-file-coding-system 'utf8)
@@ -3589,7 +3568,6 @@ open -a 'Google Chrome' $*
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
 
-;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
   :ensure-system-package trash
   :config
@@ -3818,7 +3796,7 @@ open -a 'Google Chrome' $*
      (add-to-list 'auth-sources 'macos-keychain-generic)))
 
 ;; buffer 智能分组（取代 ibuffer）
-;; 显示 buffer 列表时会自动连接 TRAMP buffer, 可能会 hang.
+;; 显示 buffer 列表时会自动连接 TRAMP buffer, 可能会卡住。
 (use-package bufler :config (global-set-key (kbd "C-x C-b") 'bufler))
 
 ;; 多光标编辑
@@ -4032,7 +4010,7 @@ open -a 'Google Chrome' $*
   (zoom-mode t))
 
 ;; 使用 embark C-h 替换 which-key
-;; which-key 会导致 ediff 的 gX 命令 hang，解决办法是向 Emacs 发送 USR2 信号
+;; which-key 会导致 ediff 的 gX 命令卡住，解决办法是向 Emacs 发送 USR2 信号
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode
@@ -4056,7 +4034,7 @@ open -a 'Google Chrome' $*
   (org-msg-mode)
   )
 
-;;company-box 为候选者显示图标和帮助文档, 会导致 RIME 输入法提示时 hang, 故关闭。
+;;company-box 为候选者显示图标和帮助文档, 会导致 RIME 输入法提示时卡住, 故关闭。
 (use-package company-box
   :after (company all-the-icons)
   :init
