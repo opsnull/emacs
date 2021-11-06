@@ -172,8 +172,7 @@
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
-;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
-;; 否则 doom-modeline 右下角内容会溢出。
+;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
 (use-package doom-modeline
   :demand t
   :after(doom-themes)
@@ -193,8 +192,7 @@
   (doom-modeline-mode 1)
   :config
   (doom-modeline-def-modeline 'main
-    ;; left-hand segment list
-    ;; 去掉 remote-host，避免编辑远程文件时卡住。
+    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
     '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
     ;; right-hand segment list，尾部增加空格，避免溢出。
     '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
@@ -227,7 +225,6 @@
                     ((numberp (cadr alpha)) (cadr alpha)))
               100)
          '(85 . 50) '(100 . 100)))))
-(global-set-key (kbd "C-c t") 'my/toggle-transparency)
 
 (use-package cnfonts
   :demand t
@@ -267,7 +264,8 @@
   (setq vertico-count 20)
   (vertico-mode 1))
 
-;;https://github.com/minad/consult/wiki
+;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang
+;; https://github.com/minad/consult/wiki
 (use-package orderless
   :demand t
   :config
@@ -396,7 +394,7 @@
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
-  ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会 hang。
+  ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
 
@@ -583,8 +581,7 @@
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
-  ;; 使用开源的 [SwitchKey](https://github.com/itsuhane/SwitchKey) 程序可以实现
-  ;; 其它程序切换到 Emacs 时自动将系统输入法切换到英文，从而避免系统输入法干扰。
+  ;; 使用 [SwitchKey](https://github.com/itsuhane/SwitchKey) 将 Emacs 的默认系统输入法设置为英文，避免干扰 RIME。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
   ;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
   (defadvice switch-to-buffer (after activate-input-method activate)
@@ -593,8 +590,7 @@
       (activate-input-method "rime")))
   ;; modline 输入法图标高亮, 用来区分中英文输入状态
   (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; support shift-l, shift-r, control-l, control-r
-  ;; 只有当使用系统 RIME 输入法时才有效。
+  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
   (setq rime-inline-ascii-trigger 'shift-l)
   ;; 临时英文模式
   (setq rime-disable-predicates
@@ -708,7 +704,7 @@
 
   ;; 使用 proxychains4 socks5 代理周期同步邮件
   (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
-  (setq mu4e-update-interval 300)
+  (setq mu4e-update-interval 3600)
 
   ;; 使用 gnus 发送邮件
   (setq message-send-mail-function 'smtpmail-send-it)
@@ -837,7 +833,8 @@
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
   (setq org-refile-targets
-        '(("~/docs/orgs/later.org" :level . 1) ("~/docs/orgs/gtd.org" :maxlevel . 3)))
+        '(("~/docs/orgs/later.org" :level . 1)
+          ("~/docs/orgs/gtd.org" :maxlevel . 3)))
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -863,8 +860,14 @@
 (set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
 
 (defun my/org-faces ()
+  (setq-default line-spacing 1)
   (custom-set-faces
-   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))))
+   ;; 自定义标题样式
+   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
+   '(org-block-begin-line ((t (:underline "#A7A6AA"))))
+   ;; 调大 org-block 字体
+   '(org-block ((t (:font "JuliaMono-15"))))
+   '(org-block-end-line ((t (:underline "#A7A6AA"))))))
 (add-hook 'org-mode-hook 'my/org-faces)
 
 (use-package org-superstar
@@ -880,12 +883,6 @@
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
-
-(setq-default line-spacing 1)
-(custom-set-faces
- '(org-block-begin-line ((t (:underline "#A7A6AA"))))
- '(org-block ((t (:font "JuliaMono-15"))))
- '(org-block-end-line ((t (:underline "#A7A6AA")))))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -941,13 +938,11 @@
   (defun my-hide-org-meta-line ()
     (interactive)
     (setq my-hide-org-meta-line-p t)
-    (set-face-attribute 'org-meta-line nil
-                        :foreground (face-attribute 'default :background)))
+    (set-face-attribute 'org-meta-line nil :foreground (face-attribute 'default :background)))
   (defun my-show-org-meta-line ()
     (interactive)
     (setq my-hide-org-meta-line-p nil)
     (set-face-attribute 'org-meta-line nil :foreground nil))
-
   (defun my-toggle-org-meta-line ()
     (interactive)
     (if my-hide-org-meta-line-p
@@ -1157,7 +1152,7 @@
    (mutool . mupdf)
    ("/usr/local/opt/zlib" . zlib))
   :init
-  ;; 使用 scaling 后，中文字体不模糊。
+  ;; 使用 scaling 确保中文字体不模糊
   (setq pdf-view-use-scaling t)
   (setq pdf-view-use-imagemagick nil)
   (setq pdf-annot-activate-created-annotations t)
@@ -1922,8 +1917,7 @@ mermaid.initialize({
   (setq projectile-require-project-root nil))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
-(use-package ripgrep
-  :ensure-system-package (rg . ripgrep))
+(use-package ripgrep :ensure-system-package (rg . ripgrep))
 
 (use-package find-file-in-project
   :config
@@ -2114,11 +2108,9 @@ mermaid.initialize({
        ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能
        remote-file-name-inhibit-cache 600
        ;;tramp-verbose 10
-       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin):
-       ;; unexpected end of file”
+       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
        tramp-inline-compress-start-size (* 1024 8)
-       ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）
-       ;; 来传输，从而大大提高拷贝效率。
+       ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
        tramp-copy-size-limit (* 1024 1024 2)
        ;; Store TRAMP auto-save files locally.
        tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
@@ -2133,8 +2125,7 @@ mermaid.initialize({
 
 ;; 自定义远程环境变量
 (let ((process-environment tramp-remote-process-environment))
-  ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置
-  ;; VTERM 参数。
+  ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置 VTERM 参数。
   (setenv "VTERM_TRAMP" "true")
   (setq tramp-remote-process-environment process-environment))
 
@@ -2143,10 +2134,8 @@ mermaid.initialize({
 (epa-file-enable)
 (load "~/.emacs.d/sshenv.el.gpg")
 
-;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过
-;; vterm-environment 传递到远程环境中。远程机器的 ~/.emacs_bashrc 根据这个变量设
-;; 置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的
-;; 问题。
+;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程环境中。远程
+;; 机器的 ~/.emacs_bashrc 根据这个变量设置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的问题。
 (defvar my/remote-host "")
 (add-hook
  'buffer-list-update-hook
@@ -2226,9 +2215,10 @@ mermaid.initialize({
     (smartparens-global-mode -1)
     (show-smartparens-mode -1)
     (smartparens-mode -1)))
+(add-hook 'find-file-hook 'my/large-file-hook)
+;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
 (add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
 (add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
-(add-hook 'find-file-hook 'my/large-file-hook)
 
 ;; 大文件不显示行号
 (setq large-file-warning-threshold nil)
@@ -2243,17 +2233,13 @@ mermaid.initialize({
 
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
-;; (global-set-key "\C-w" 'backward-kill-word)
-;; (global-set-key "\C-x\C-k" 'kill-region)
-;; (global-set-key "\C-c\C-k" 'kill-region)
-
 ;; Provide undo/redo commands for window changes.
 (winner-mode t)
 
 ;; Don't lock files.
 (setq create-lockfiles nil)
 
-;; 增加剪贴板历史记录数量
+;; 剪贴板历史记录数量
 (setq kill-ring-max 100)
 
 ;; macOS modifiers.
@@ -2320,9 +2306,9 @@ mermaid.initialize({
 (global-unset-key (kbd "s-t"))
 
 (recentf-mode +1)
-(use-package savehist :init (savehist-mode))
+(use-package savehist :init (savehist-mode) :demand t)
 
-;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏；
+;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100
               comment-fill-column 0
               recentf-max-menu-items 100
@@ -2349,7 +2335,7 @@ mermaid.initialize({
 (setq x-select-enable-primary t)
 (setq select-enable-primary t)
 
-;; 粘贴于光标处,而不是鼠标指针处。
+;; 粘贴于光标处, 而不是鼠标指针处。
 (setq mouse-yank-at-point t)
 
 (unless window-system
@@ -2412,8 +2398,8 @@ mermaid.initialize({
 
 ;; UTF8 stuff.
 (prefer-coding-system 'utf-8)
-(setq locale-coding-system 'utf-8
-      default-buffer-file-coding-system 'utf-8)
+(setq locale-coding-system 'utf-8)
+(setq default-buffer-file-coding-system 'utf-8)
 (set-buffer-file-coding-system 'utf-8)
 (set-language-environment "UTF-8")
 (set-default buffer-file-coding-system 'utf8)
@@ -2422,7 +2408,6 @@ mermaid.initialize({
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
 
-;;(shell-command "trash -v || brew install trash")
 (use-package osx-trash
   :ensure-system-package trash
   :config
