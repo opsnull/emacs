@@ -17,10 +17,7 @@
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
-;; Mac native fullscreen 会导致白屏和左右滑动问题，故使用传统全屏模式。
-(when (eq system-type 'darwin)
-  (setq ns-use-native-fullscreen nil
-        ns-use-fullscreen-animation nil))
+(setq frame-resize-pixelwise t)
 
 ;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
 ;;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
@@ -44,7 +41,7 @@
 (setq user-full-name "zhangjun"
       user-mail-address "geekard@qq.com")
 
-;; 使用 minibuffer 输入 GPG 密码。
+;; 使用 minibuffer 输入 GPG 密码
 (setq epa-pinentry-mode 'loopback)
 
 ;; 加密认证信息文件
