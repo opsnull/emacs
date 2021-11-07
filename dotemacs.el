@@ -3,15 +3,14 @@
                          ("elpa" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "https://melpa.org/packages/")))
 
-;; Avoid loading old bytecode instead of newer source.
-;; use the newest version available.
+;; Avoid loading old bytecode instead of newer source. use the newest version available.
 (setq load-prefer-newer t)
 
-;; use-package 默认使用 straight 安装软件包（自动添加 :straight t)
+;; use-package 默认使用 straight 安装包
 (setq straight-use-package-by-default t)
 (setq straight-vc-git-default-clone-depth 1)
 (setq straight-recipes-gnu-elpa-use-mirror t)
-;; (setq straight-check-for-modifications '(check-on-save find-when-checking))
+(setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
 (setq straight-check-for-modifications nil)
 (setq straight-host-usernames '((github . "opsnull")))
 
@@ -33,12 +32,8 @@
 (setq use-package-verbose t)
 (setq use-package-compute-statistics t)
 
-;; use-package 添加 :ensure-system-package 支持
+;; use-package 支持 :ensure-system-package
 (use-package use-package-ensure-system-package)
-
-;; This is a variable that has been renamed but straight still refers when
-;; doing :sraight (:no-native-compile t)
-(setq comp-deferred-compilation-black-list nil)
 
 (use-package exec-path-from-shell
   :demand t
@@ -65,24 +60,25 @@
 ;; Disabling the BPA makes redisplay faster, but might produce incorrect display
 ;; reordering of bidirectional text with embedded parentheses and other bracket
 ;; characters whose 'paired-bracket' Unicode property is non-nil.
-(setq bidi-inhibit-bpa t)  ; Emacs 27 only
+(setq bidi-inhibit-bpa t)
 
 ;; Resizing the Emacs frame can be a terribly expensive part of changing the
 ;; font. By inhibiting this, we halve startup times, particularly when we use
 ;; fonts that are larger than the system default (which would resize the frame).
 (setq frame-inhibit-implied-resize t)
 
-(setq jit-lock-defer-time 0.25)
+;; fontify time
+(setq jit-lock-defer-time 0.1)
+(setq jit-lock-context-time 0.1)
 
 ;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
 ;; in non-focused windows.
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
-;; Font compacting can be terribly expensive, especially for rendering icon
-;; fonts on Windows. Whether disabling it has a notable affect on Linux and Mac
-;; hasn't been determined, but do it there anyway, just in case. This increases
-;; memory usage, however!
+;; Font compacting can be terribly expensive, especially for rendering icon fonts on Windows. Whether disabling it has a
+;; notable affect on Linux and Mac hasn't been determined, but do it there anyway, just in case. This increases memory
+;; usage, however!
 (setq inhibit-compacting-font-caches t)
 
 ;; Garbage Collector Magic Hack
@@ -97,134 +93,128 @@
   (gcmh-mode)
   (gcmh-set-high-threshold))
 
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
-(menu-bar-mode -1)
+  (tool-bar-mode -1)
+  (scroll-bar-mode -1)
+  (menu-bar-mode -1)
 
-(setq inhibit-startup-screen t)
-(setq inhibit-startup-message t)
-(setq inhibit-startup-echo-area-message t)
+  (setq inhibit-startup-screen t)
+  (setq inhibit-startup-message t)
+  (setq inhibit-startup-echo-area-message t)
 
-(setq initial-major-mode 'fundamental-mode)
-(setq initial-scratch-message nil)
+  (setq initial-major-mode 'fundamental-mode)
+  (setq initial-scratch-message nil)
 
-(use-package ns-auto-titlebar
-  :demand t
-  :config
-  (when (eq system-type 'darwin)
-    (ns-auto-titlebar-mode)))
+  ;; 高亮匹配的括号
+  (show-paren-mode t)
+  (setq show-paren-style 'parentheses)
 
-(setq frame-resize-pixelwise t)
+  (setq-default indicate-empty-lines t)
+  (when (not indicate-empty-lines)
+    (toggle-indicate-empty-lines))
 
-;; 高亮匹配的括号
-(show-paren-mode t)
-(setq show-paren-style 'parentheses)
+  ;; 增强窗口背景对比度
+  (use-package solaire-mode
+    :demand t
+    :config (solaire-global-mode +1))
 
-(setq-default indicate-empty-lines t)
-(when (not indicate-empty-lines)
-  (toggle-indicate-empty-lines))
+  ;; Stretch cursor to the glyph width
+  (setq-default x-stretch-cursor t)
 
-;; 增强窗口背景对比度
-(use-package solaire-mode
-  :demand t
-  :config (solaire-global-mode +1))
+  ;; 主题预览: https://emacsthemes.com/
+  (use-package doom-themes
+    :demand t
+    :custom-face
+    (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+    :custom
+    (doom-themes-enable-bold t)
+    (doom-themes-enable-italic t)
+    (doom-themes-treemacs-theme "doom-colors")
+    ;; pad the mode-line in 4px on each side
+    (doom-themes-padded-modeline t)
+    :config
+    ;;(load-theme 'doom-gruvbox t)
+    ;; Enable flashing mode-line on errors
+    (doom-themes-visual-bell-config)
+    (doom-themes-treemacs-config)
+    (doom-themes-org-config))
 
-;; Stretch cursor to the glyph width
-(setq-default x-stretch-cursor t)
+  ;; 浅色: doom-one-light
+  ;; 深色: doom-one doom-vibrant
+  (defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
+  (defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
+  ;; 跟随 Mac 选择深浅主题
+  (add-hook 'ns-system-appearance-change-functions
+        (lambda (appearance)
+          (pcase appearance
+        ('light (my/load-light-theme))
+        ('dark (my/load-dark-theme)))))
 
-;; 主题预览: https://emacsthemes.com/
-(use-package doom-themes
-  :demand t
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  (doom-themes-treemacs-theme "doom-colors")
-  ;; pad the mode-line in 4px on each side
-  (doom-themes-padded-modeline t)
-  :config
-  ;;(load-theme 'doom-gruvbox t)
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-  (doom-themes-treemacs-config)
-  (doom-themes-org-config))
+  (display-battery-mode t)
+  (column-number-mode t)
+  (size-indication-mode -1)
+  (display-time-mode t)
+  (setq display-time-24hr-format t)
+  (setq display-time-default-load-average nil)
+  (setq display-time-load-average-threshold 5)
+  (setq display-time-format "%m/%d[%u]%H:%M")
+  (setq display-time-day-and-date t)
+  (setq indicate-buffer-boundaries (quote left))
 
-;; 浅色: doom-one-light
-;; 深色: doom-one doom-vibrant
-(defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
-;; 跟随 Mac 选择深浅主题
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
+  ;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
+  (use-package doom-modeline
+    :demand t
+    :after(doom-themes)
+    :custom
+    ;; 不显示换行和编码（节省空间）
+    (doom-modeline-buffer-encoding nil)
+    ;; 使用 HUD 显式光标位置(默认是 bar)
+    (doom-modeline-hud t)
+    ;; 显示 go 等语言版本
+    (doom-modeline-env-version t)
+    ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
+    ;;(doom-modeline-buffer-file-name-style 'file-name)
+    (doom-modeline-vcs-max-length 20)
+    (doom-modeline-github nil)
+    (doom-modeline-height 2)
+    :init
+    (doom-modeline-mode 1)
+    :config
+    ;; (doom-modeline-def-modeline 'main
+    ;;   ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+    ;;   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;;   ;; right-hand segment list，尾部增加空格，避免溢出。
+    ;;   '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
+    )
 
-(display-battery-mode t)
-(column-number-mode t)
-(size-indication-mode -1)
-(display-time-mode t)
-(setq display-time-24hr-format t)
-(setq display-time-default-load-average nil)
-(setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%d[%u]%H:%M")
-(setq display-time-day-and-date t)
-(setq indicate-buffer-boundaries (quote left))
+  (use-package dashboard
+    :demand t
+    ;;:after (projectile)
+    :config
+    (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
+    ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
+    (setq dashboard-projects-backend 'project-el)
+    (setq dashboard-center-content t)
+    (setq dashboard-set-heading-icons t)
+    (setq dashboard-set-navigator t)
+    (setq dashboard-set-file-icons t)
+    (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
+    (dashboard-setup-startup-hook))
 
-;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
-(use-package doom-modeline
-  :demand t
-  :after(doom-themes)
-  :custom
-  ;; 不显示换行和编码（节省空间）
-  (doom-modeline-buffer-encoding nil)
-  ;; 使用 HUD 显式光标位置(默认是 bar)
-  (doom-modeline-hud t)
-  ;; 显示 go 等语言版本
-  (doom-modeline-env-version t)
-  ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
-  (doom-modeline-buffer-file-name-style 'file-name)
-  (doom-modeline-vcs-max-length 20)
-  (doom-modeline-github nil)
-  (doom-modeline-height 2)
-  :init
-  (doom-modeline-mode 1)
-  :config
-  (doom-modeline-def-modeline 'main
-    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
+  ;; 显示光标位置
+  (use-package beacon :config (beacon-mode 1))
 
-(use-package dashboard
-  :demand t
-  :after (projectile)
-  :config
-  (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
-  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
-  (setq dashboard-center-content t)
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-navigator t)
-  (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
-  (dashboard-setup-startup-hook))
-
-;; 显示光标位置
-(use-package beacon :config (beacon-mode 1))
-
-;; 切换到透明背景(真透明!)
-(defun my/toggle-transparency ()
-  (interactive)
-  (let ((alpha (frame-parameter nil 'alpha)))
-    (set-frame-parameter
-     nil 'alpha
-     (if (eql (cond ((numberp alpha) alpha)
-                    ((numberp (cdr alpha)) (cdr alpha))
-                    ;; Also handle undocumented (<active> <inactive>) form.
-                    ((numberp (cadr alpha)) (cadr alpha)))
-              100)
-         '(85 . 50) '(100 . 100)))))
+  ;; 切换到透明背景(真透明!)
+  (defun my/toggle-transparency ()
+    (interactive)
+    (let ((alpha (frame-parameter nil 'alpha)))
+      (set-frame-parameter
+       nil 'alpha
+       (if (eql (cond ((numberp alpha) alpha)
+              ((numberp (cdr alpha)) (cdr alpha))
+              ;; Also handle undocumented (<active> <inactive>) form.
+              ((numberp (cadr alpha)) (cadr alpha)))
+        100)
+       '(85 . 50) '(100 . 100)))))
 
 (use-package cnfonts
   :demand t
@@ -264,7 +254,7 @@
   (setq vertico-count 20)
   (vertico-mode 1))
 
-;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang
+;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang$
 ;; https://github.com/minad/consult/wiki
 (use-package orderless
   :demand t
@@ -389,29 +379,39 @@
   ;; 预览 register
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
+  ;; Optionally tweak the register preview window.
+  ;; This adds thin lines, sorting and hides the mode line of the window.
   (advice-add #'register-preview :override #'consult-register-window)
 
+  ;; Optionally replace `completing-read-multiple' with an enhanced version.
+  (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
+
+  ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
+  ;; Optionally configure a function which returns the project root directory.
+  ;; There are multiple reasonable alternatives to chose from.
+  ;;;; 1. project.el (project-roots)
+  (setq consult-project-root-function
+        (lambda ()
+          (when-let (project (project-current))
+            (car (project-roots project))))))
 
   ;; (autoload 'projectile-project-root "projectile")
   ;; (setq consult-project-root-function #'projectile-project-root)
 
   ;; 如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
-  (setq consult-project-root-function
-        (lambda ()
-          (unless (file-remote-p default-directory)
-            (when-let (project (project-current))
-              (car (project-roots project)))))))
+  ;; (setq consult-project-root-function
+  ;;       (lambda ()
+  ;;         (unless (file-remote-p default-directory)
+  ;;           (when-let (project (project-current))
+  ;;             (car (project-roots project)))))))
 
-(use-package marginalia
-  :init (marginalia-mode)
-  :config
-  (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil)))
+(use-package marginalia :init (marginalia-mode))
 
 (use-package embark
   :init
@@ -443,24 +443,24 @@
          ("C-x C-j" . consult-dir-jump-file)))
 
 ;; 类似于 consult-grep 和 consult-find, 但前后端都异步且支持 fuzzy 搜索。
-(use-package affe
-  :after (orderless)
-  :ensure-system-package
-  ((gfind . findutils)
-   (fd . fd)
-   (fzf . fzf)
-   (rg . ripgrep))
-  :bind
-  (;; C-c bindings (mode-specific-map)
-   ("M-s g" . affe-grep)
-   ("M-s f" . affe-find))
-  :config
-  (setq affe-count 200)
-  ;; Configure Orderless
-  (setq affe-regexp-function #'orderless-pattern-compiler
-        affe-highlight-function #'orderless--highlight)
-  ;; Manual preview key for `affe-grep'
-  (consult-customize affe-grep :preview-key (kbd "M-.")))
+;; (use-package affe
+;;   :after (orderless)
+;;   :ensure-system-package
+;;   ((gfind . findutils)
+;;    (fd . fd)
+;;    (fzf . fzf)
+;;    (rg . ripgrep))
+;;   :bind
+;;   (;; bind-c bindings (mode-specific-map)
+;;    ("M-s g" . affe-grep)
+;;    ("M-s f" . affe-find))
+;;   :config
+;;   (setq affe-count 200)
+;;   ;; Configure Orderless
+;;   (setq affe-regexp-function #'orderless-pattern-compiler
+;;         affe-highlight-function #'orderless--highlight)
+;;   ;; Manual preview key for `affe-grep'
+;;   (consult-customize affe-grep :preview-key (kbd "M-.")))
 
 (use-package company
   :bind
@@ -802,6 +802,9 @@
 
 (use-package org
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
+  :ensure auctex
+  ;; latext pdf 代码高亮
+  :ensure-system-package (pygmentize . pygments)
   :config
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
@@ -847,8 +850,9 @@
 
 ;; 自动创建和更新目录
 (use-package org-make-toc
-  :config
-  (add-hook 'org-mode-hook #'org-make-toc-mode))
+  ;; :config
+  ;; (add-hook 'org-mode-hook #'org-make-toc-mode)
+)
 
 (set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
 (set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
@@ -899,7 +903,7 @@
   :demand t
   :after (org)
   :hook
-  (org-mode . (lambda () (my/org-mode-visual-fill 120 130)))
+  (org-mode . (lambda () (my/org-mode-visual-fill 120 140)))
   :config
   ;; 文字缩放时自动调整 visual-fill-column-width
   (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
@@ -1085,13 +1089,8 @@
 ;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
 (setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
-(use-package ox-latex
-  :straight (ox-latex :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git" :files ("lisp/ox-latex.el"))
-  :ensure auctex
-  ;; latext pdf 代码高亮
-  :ensure-system-package (pygmentize . pygments)
-  :after (org)
-  :config
+(require 'ox-latex)
+(with-eval-after-load 'ox-latex
   ;;https://yuchi.me/post/export-org-mode-in-chinese-to-pdf-with-custom-latex-class/
   ;; http://orgmode.org/worg/org-faq.html#using-xelatex-for-pdf-export
   ;; latexmk runs pdflatex/xelatex (whatever is specified) multiple times
@@ -1780,6 +1779,69 @@ mermaid.initialize({
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
 
+(use-package project
+  :after (vterm)
+  :config
+  (setq project-switch-commands
+	'((?f "File" project-find-file)
+          (?g "Grep" project-find-regexp)
+          (?d "Dired" project-dired)
+          (?b "Buffer" project-switch-to-buffer)
+          (?q "Query replace" project-query-replace-regexp)
+          (?v "VC dir" project-vc-dir)
+          (?t "Vterm" vterm)))
+
+  (defun my/project-try-local (dir)
+    "Determine if DIR is a non-Git project.
+DIR must include a .project file to be considered a project."
+    (catch 'ret
+      (dolist (flag-file '(".project" "README.org" "README.md" "Makefile" "pom.xml" "go.mod" "project.clj"))
+	(when-let ((root (locate-dominating-file dir flag-file)))
+          (throw 'ret (cons 'local root))))))
+
+  (setq project-find-functions '(my/project-try-local project-try-vc))
+
+  (cl-defmethod project-root ((project (head local)))
+    (cdr project))
+
+  (defun my/project-info ()
+    (interactive)
+    (message "%s" (project-current t)))
+
+  (defun my/project-discover ()
+    (interactive)
+    (dolist (search-path '("~/codes/" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+      (dolist (file (file-expand-wildcards search-path))
+	(message "-> %s" file)
+	(when (file-directory-p file)
+          (when-let ((pr (project-current nil file)))
+            (project-remember-project pr)
+            (message "add project %s..." pr))))))
+
+  (defun my/project-add (dir)
+    (interactive "DWhich dir:")
+    (let* ((project-flag-file (expand-file-name "README.org" dir)))
+      (if-let ((pr (project-current nil dir)))
+          (if (string-equal (project-root pr) dir)
+              (project-remember-project pr)
+            (progn
+              (make-empty-file project-flag-file)
+              (project-remember-project (cons 'local dir))))
+	(progn
+          (make-empty-file project-flag-file)
+          (project-remember-project (cons 'local dir)))))
+    (message "Add project %s..." dir))
+
+  (defun my/project-remove ()
+    "Remove project from `project--list' using completion."
+    (interactive)
+    (project--ensure-read-project-list)
+    (let* ((projects project--list)
+           (dir (completing-read "REMOVE project: " projects nil t)))
+      (setq project--list (delete (assoc dir projects) projects))
+      (project--write-project-list)))
+  )
+
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
   :init
@@ -1789,9 +1851,10 @@ mermaid.initialize({
     (setq
      treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
      treemacs-deferred-git-apply-delay      0.1
+     treemacs--project-follow-delay         0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              3000
+     treemacs-file-event-delay              1000
      treemacs-file-follow-delay             0.01
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
@@ -1799,7 +1862,7 @@ mermaid.initialize({
      treemacs-indentation                   1
      treemacs-indentation-string            " "
      treemacs-is-never-other-window         t
-     treemacs-max-git-entries               3000
+     treemacs-max-git-entries               1000
      treemacs-missing-project-action        'ask
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
@@ -1816,7 +1879,7 @@ mermaid.initialize({
      treemacs-silent-refresh                nil
      treemacs-sorting                       'alphabetic-asc
      treemacs-select-when-already-in-treemacs 'stay
-     treemacs-space-between-root-nodes      t
+     treemacs-space-between-root-nodes      nil
      treemacs-tag-follow-cleanup            t
      treemacs-tag-follow-delay              1
      treemacs-width                         35
@@ -1826,6 +1889,7 @@ mermaid.initialize({
      imenu-auto-rescan                      t)
     (treemacs-resize-icons 11)
     (treemacs-follow-mode t)
+    ;;(treemacs-tag-follow-mode t)
     ;; 自动切换到当前 buffer 的 project
     (treemacs-project-follow-mode t)
     (treemacs-filewatch-mode t)
@@ -1844,85 +1908,17 @@ mermaid.initialize({
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
-(use-package treemacs-projectile :after (treemacs projectile))
+(with-eval-after-load 'treemacs
+  (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
+
 (use-package treemacs-magit :after (treemacs magit))
-
-(use-package projectile
-  :config
-  (projectile-global-mode)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-  (projectile-mode +1)
-  ;; selectrum/vertico 使用 'default
-  (setq projectile-completion-system 'default)
-  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
-  (dolist (dirs '(".cache"
-                  ".dropbox"
-                  ".git"
-                  ".hg"
-                  ".svn"
-                  ".nx"
-                  "elpa"
-                  "auto"
-                  "bak"
-                  "__pycache__"
-                  "vendor"
-                  "node_modules"
-                  "logs"
-                  "target"
-                  ".idea"
-                  "build"
-                  ".devcontainer"
-                  ".settings"
-                  ".gradle"
-                  ".vscode"))
-    (add-to-list 'projectile-globally-ignored-directories dirs))
-  (dolist (item '("GPATH"
-                  "GRTAGS"
-                  "GTAGS"
-                  "GSYMS"
-                  "TAGS"
-                  ".tags"
-                  ".classpath"
-                  ".project"
-                  ".DS_Store"
-                  "__init__.py"))
-    (add-to-list 'projectile-globally-ignored-files item))
-  (dolist (list '("\\.elc\\'"
-                  "\\.o\\'"
-                  "\\.class\\'"
-                  "\\.out\\'"
-                  "\\.pdf\\'"
-                  "\\.pyc\\'"
-                  "\\.rel\\'"
-                  "\\.rip\\'"
-                  "\\.swp\\'"
-                  "\\.iml\\'"
-                  "\\.bak\\'"
-                  "\\.log\\'"
-                  "~\\'"))
-    (add-to-list 'projectile-globally-ignored-file-suffixes list))
-
-  ;; Disable projectile on remote buffers
-  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
-  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
-  (defadvice projectile-project-root (around ignore-remote first activate)
-    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
-
-  ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
-  (setq projectile-enable-caching t)
-  (setq projectile-file-exists-remote-cache-expire (* 10 60))
-  (setq projectile-dynamic-mode-line nil)
-  ;; Make projectile to be usable in every directory (even without the presence
-  ;; of project file):
-  (setq projectile-require-project-root nil))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
 (use-package ripgrep :ensure-system-package (rg . ripgrep))
 
 (use-package find-file-in-project
   :config
-  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy
-  ;; slow on TRAMP buffers.
+  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy slow on TRAMP buffers.
   ;; https://github.com/mpereira/.emacs.d/#find-file-in-project
   (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
 
@@ -2062,7 +2058,8 @@ mermaid.initialize({
   :after (vterm)
   :custom
   ;; 由于 TRAMP 模式下关闭了 projectile，scope 不能设置为 'project。
-  (vterm-toggle-scope 'dedicated)
+  ;;(vterm-toggle-scope 'dedicated)
+  (vterm-toggle-scope 'project)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
@@ -2072,11 +2069,6 @@ mermaid.initialize({
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
-
-(use-package posframe-project-term
-  :straight (posframe-project-term :host github :repo "zwpaper/posframe-project-term")
-  :bind
-  (("C-c t" . posframe-project-term-toggle)))
 
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "/bin/bash")
@@ -2148,6 +2140,9 @@ mermaid.initialize({
 
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
+
+;;启动 isearch 进行搜索时，M-<, M->, C-v 和 M-v 这些按键不会打断搜索
+(setq isearch-allow-motion t)
 
 ;; 直接在 minibuffer 中编辑 query(rime 探测到 minibuffer 时自动关闭输入法)
 (use-package isearch-mb
@@ -2268,10 +2263,7 @@ mermaid.initialize({
 ;; centering the buffer when scrolling down its last line.
 (setq scroll-conservatively 100)
 
-;; Make cursor movement an order of magnitude faster
-;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag/28746
 (setq auto-window-vscroll nil)
-(setq fast-but-imprecise-scrolling 't)
 (setq scroll-step 1
       scroll-margin 0
       auto-window-vscroll nil)
@@ -2338,7 +2330,7 @@ mermaid.initialize({
 ;; 粘贴于光标处, 而不是鼠标指针处。
 (setq mouse-yank-at-point t)
 
-(unless window-system
+(when window-system
   ;; Scroll one line at a time (less "jumpy" than defaults)
   (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
         mouse-wheel-scroll-amount-horizontal 1

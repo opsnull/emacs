@@ -7,10 +7,11 @@ fi
 
 if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
     echo '. ~/.emacs_bashrc' >> ~/.bashrc
-    touch /{etc,home,root,tmp,usr}/.projectile
-    if [ -d "/apsara" ]; then
-      touch /{apsara,apsarapangu,cloud}/.projectile
-    fi
+    for d in / /data /etc /home /root /tmp /usr /apsara /apsarapangu /cloud /paas; do
+        if [ -d "$d" ]; then
+            touch /$d/{.project,.projectile}
+        fi
+    done
 fi
 
 tarball="${HOME}/$(uname -m).tar.bz2"
