@@ -138,11 +138,9 @@
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
-;; 浅色: doom-one-light
-;; 深色: doom-one doom-vibrant
+;; 跟随 Mac 自动切换深浅主题
 (defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
 (defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
-;; 跟随 Mac 自动切换深浅主题
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
@@ -216,16 +214,24 @@
               100)
          '(90 . 40) '(100 . 100)))))
 
+;; 自定义 emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 来调用才会生效。
+(defun my/set-fonts (&optional font)
+  (setq use-default-font-for-symbols nil)
+  (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+  (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
+
 (use-package cnfonts
   :demand t
   :ensure-system-package
-  ("/Users/zhangjun/Library/Fonts/JuliaMono-Regular.ttf" . "brew tap homebrew/cask-fonts; brew install --cask font-juliamono")
+  ("/Users/zhangjun/Library/Fonts/JuliaMono-Regular.ttf" .
+   "brew tap homebrew/cask-fonts; brew install --cask font-juliamono")
   :after (doom-modeline)
   :init
   (setq cnfonts-personal-fontnames '(("JuliaMono" "Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
   :config
+  (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
   (cnfonts-enable))
 
 (use-package all-the-icons
@@ -237,9 +243,13 @@
   (use-package fira-code-mode
     :custom
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-    :hook prog-mode)
-  ;; Emoji 字体
-  (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
+    :hook prog-mode))
+
+(use-package company-emoji
+  :demand t
+  :after (company)
+  :config
+  (add-to-list 'company-backends 'company-emoji))
 
 (use-package vertico
   :demand t
