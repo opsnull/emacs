@@ -1,0 +1,54 @@
+# VTERM_TRAMP 和 VTERM_HOSTNAME 是 TRAMP 设置的环境变量，VTERM 的 buffer 名称和远程目录追踪依赖它们。
+
+if [ -z "$VTERM_HOSTNAME" ]; then
+   VTERM_HOSTNAME=$(hostname -i)
+fi
+
+if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
+    echo '. /usr/local/bin/emacs_bashrc' >> ~/.bashrc
+    for d in / /data /etc /home /root /tmp /usr /apsara /apsarapangu /cloud /paas; do
+        if [ -d "$d" ]; then
+            touch /$d/{.project,.projectile}
+        fi
+    done
+fi
+
+if [[ "$VTERM_TRAMP" == "true" ]]; then
+    PS1="[\u@${VTERM_HOSTNAME} \W]\$ "
+    vterm_printf(){
+        if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
+            # Tell tmux to pass the escape sequences through
+            printf "\ePtmux;\e\e]%s\007\e\\" "$1"
+        elif [ "${TERM%%-*}" = "screen" ]; then
+            # GNU screen (screen, screen-256color, screen-256color-bce)
+            printf "\eP\e]%s\007\e\\" "$1"
+        else
+            printf "\e]%s\e\\" "$1"
+        fi
+    }
+
+    # vterm-clear-scrollback
+    function clear(){
+        vterm_printf "51;Evterm-clear-scrollback";
+        tput clear;
+    }
+
+    # vterm-buffer-name-string
+    PROMPT_COMMAND='echo -ne "\033]0;${VTERM_HOSTNAME}:${PWD}\007"'
+
+    # Directory tracking and Prompt tracking
+    vterm_prompt_end(){
+        vterm_printf "51;A$(whoami)@${VTERM_HOSTNAME}:$(pwd)"
+    }
+    PS1=$PS1'\[$(vterm_prompt_end)\]'
+fi
+
+# 开启 ssh 会话保持
+if [[ "$TERM" == "tramp" || "$VTERM_TRAMP" == "true" ]]; then
+    if [[ ! -e "~/.ssh/config" ]]; then
+        touch ~/.ssh/config
+    fi
+    if ! egrep 'ControlMaster|ControlPath' ~/.ssh/config &>/dev/null; then
+        sed -i '1s#^#Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n\n#' ~/.ssh/config
+    fi
+fi
