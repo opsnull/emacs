@@ -41,12 +41,17 @@
 (setq user-full-name "zhangjun"
       user-mail-address "geekard@qq.com")
 
+
+;; Use my email-address for encryption
+(setq-default epa-file-encrypt-to user-mail-address)
+;; Make sure we always use this
+(setq-default epa-file-select-keys nil)
 ;; 使用 minibuffer 输入 GPG 密码
-(setq epa-pinentry-mode 'loopback)
+(setq-default epa-pinentry-mode 'loopback)
 
 ;; 加密认证信息文件
-(setq auth-sources '("~/.authinfo.gpg")
-      auth-source-cache-expiry nil) ; default is 7200 (2h)
+(setq auth-sources '("~/.authinfo.gpg"))
+(setq auth-source-cache-expiry nil) ;;default is 7200 (2h)
 ;;(setq auth-source-debug t)
 
 (defun org-clocking-buffer (&rest _))

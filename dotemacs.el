@@ -45,7 +45,7 @@
     (exec-path-from-shell-initialize)))
 
 ;; Increase how much is read from processes in a single chunk (default is 4kb).
-(setq read-process-output-max (* 1024 1024))  ;; 1MB
+(setq read-process-output-max (* 1024 1024))
 
 ;; Don't ping things that look like domain names.
 (setq ffap-machine-p-known 'reject)
@@ -93,128 +93,128 @@
   (gcmh-mode)
   (gcmh-set-high-threshold))
 
-  (tool-bar-mode -1)
-  (scroll-bar-mode -1)
-  (menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(menu-bar-mode -1)
 
-  (setq inhibit-startup-screen t)
-  (setq inhibit-startup-message t)
-  (setq inhibit-startup-echo-area-message t)
+(setq inhibit-startup-screen t)
+(setq inhibit-startup-message t)
+(setq inhibit-startup-echo-area-message t)
 
-  (setq initial-major-mode 'fundamental-mode)
-  (setq initial-scratch-message nil)
+(setq initial-major-mode 'fundamental-mode)
+(setq initial-scratch-message nil)
 
-  ;; 高亮匹配的括号
-  (show-paren-mode t)
-  (setq show-paren-style 'parentheses)
+;; 高亮匹配的括号
+(show-paren-mode t)
+(setq show-paren-style 'parentheses)
 
-  (setq-default indicate-empty-lines t)
-  (when (not indicate-empty-lines)
-    (toggle-indicate-empty-lines))
+(setq-default indicate-empty-lines t)
+(when (not indicate-empty-lines)
+  (toggle-indicate-empty-lines))
 
-  ;; 增强窗口背景对比度
-  (use-package solaire-mode
-    :demand t
-    :config (solaire-global-mode +1))
+;; 增强窗口背景对比度
+(use-package solaire-mode
+  :demand t
+  :config (solaire-global-mode +1))
 
-  ;; Stretch cursor to the glyph width
-  (setq-default x-stretch-cursor t)
+;; Stretch cursor to the glyph width
+(setq-default x-stretch-cursor t)
 
-  ;; 主题预览: https://emacsthemes.com/
-  (use-package doom-themes
-    :demand t
-    :custom-face
-    (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-    :custom
-    (doom-themes-enable-bold t)
-    (doom-themes-enable-italic t)
-    (doom-themes-treemacs-theme "doom-colors")
-    ;; pad the mode-line in 4px on each side
-    (doom-themes-padded-modeline t)
-    :config
-    ;;(load-theme 'doom-gruvbox t)
-    ;; Enable flashing mode-line on errors
-    (doom-themes-visual-bell-config)
-    (doom-themes-treemacs-config)
-    (doom-themes-org-config))
+;; 主题预览: https://emacsthemes.com/
+(use-package doom-themes
+  :demand t
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  (doom-themes-treemacs-theme "doom-colors")
+  ;; pad the mode-line in 4px on each side
+  (doom-themes-padded-modeline t)
+  :config
+  ;;(load-theme 'doom-gruvbox t)
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
 
-  ;; 浅色: doom-one-light
-  ;; 深色: doom-one doom-vibrant
-  (defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
-  (defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
-  ;; 跟随 Mac 选择深浅主题
-  (add-hook 'ns-system-appearance-change-functions
-        (lambda (appearance)
-          (pcase appearance
-        ('light (my/load-light-theme))
-        ('dark (my/load-dark-theme)))))
+;; 浅色: doom-one-light
+;; 深色: doom-one doom-vibrant
+(defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
+;; 跟随 Mac 自动切换深浅主题
+(add-hook 'ns-system-appearance-change-functions
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
 
-  (display-battery-mode t)
-  (column-number-mode t)
-  (size-indication-mode -1)
-  (display-time-mode t)
-  (setq display-time-24hr-format t)
-  (setq display-time-default-load-average nil)
-  (setq display-time-load-average-threshold 5)
-  (setq display-time-format "%m/%d[%u]%H:%M")
-  (setq display-time-day-and-date t)
-  (setq indicate-buffer-boundaries (quote left))
+(display-battery-mode t)
+(column-number-mode t)
+(size-indication-mode -1)
+(display-time-mode t)
+(setq display-time-24hr-format t)
+(setq display-time-default-load-average nil)
+(setq display-time-load-average-threshold 5)
+(setq display-time-format "%m/%d[%u]%H:%M")
+(setq display-time-day-and-date t)
+(setq indicate-buffer-boundaries (quote left))
 
-  ;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
-  (use-package doom-modeline
-    :demand t
-    :after(doom-themes)
-    :custom
-    ;; 不显示换行和编码（节省空间）
-    (doom-modeline-buffer-encoding nil)
-    ;; 使用 HUD 显式光标位置(默认是 bar)
-    (doom-modeline-hud t)
-    ;; 显示 go 等语言版本
-    (doom-modeline-env-version t)
-    ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657.
-    ;;(doom-modeline-buffer-file-name-style 'file-name)
-    (doom-modeline-vcs-max-length 20)
-    (doom-modeline-github nil)
-    (doom-modeline-height 2)
-    :init
-    (doom-modeline-mode 1)
-    :config
-    ;; (doom-modeline-def-modeline 'main
-    ;;   ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
-    ;;   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;;   ;; right-hand segment list，尾部增加空格，避免溢出。
-    ;;   '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
-    )
+;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
+(use-package doom-modeline
+  :demand t
+  :after(doom-themes)
+  :custom
+  ;; 不显示换行和编码（节省空间）
+  (doom-modeline-buffer-encoding nil)
+  ;; 使用 HUD 显式光标位置(默认是 bar)
+  (doom-modeline-hud t)
+  ;; 显示语言环境版本（如 go/python)
+  (doom-modeline-env-version t)
+  ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657
+  (doom-modeline-buffer-file-name-style 'file-name)
+  (doom-modeline-vcs-max-length 20)
+  (doom-modeline-github nil)
+  (doom-modeline-height 2)
+  :init
+  (doom-modeline-mode 1)
+  :config
+  (doom-modeline-def-modeline 'main
+    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
 
-  (use-package dashboard
-    :demand t
-    ;;:after (projectile)
-    :config
-    (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
-    ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
-    (setq dashboard-projects-backend 'project-el)
-    (setq dashboard-center-content t)
-    (setq dashboard-set-heading-icons t)
-    (setq dashboard-set-navigator t)
-    (setq dashboard-set-file-icons t)
-    (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
-    (dashboard-setup-startup-hook))
+(use-package dashboard
+  :demand t
+  :after (projectile)
+  :config
+  (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
+  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
+  ;;(setq dashboard-projects-backend 'project-el)
+  (setq dashboard-projects-backend #'projectile)
+  (setq dashboard-center-content t)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
+  (dashboard-setup-startup-hook))
 
-  ;; 显示光标位置
-  (use-package beacon :config (beacon-mode 1))
+;; 显示光标位置
+(use-package beacon :config (beacon-mode 1))
 
-  ;; 切换到透明背景(真透明!)
-  (defun my/toggle-transparency ()
-    (interactive)
-    (let ((alpha (frame-parameter nil 'alpha)))
-      (set-frame-parameter
-       nil 'alpha
-       (if (eql (cond ((numberp alpha) alpha)
-              ((numberp (cdr alpha)) (cdr alpha))
-              ;; Also handle undocumented (<active> <inactive>) form.
-              ((numberp (cadr alpha)) (cadr alpha)))
-        100)
-       '(85 . 50) '(100 . 100)))))
+;; 切换到透明背景(真透明!)
+(defun my/toggle-transparency ()
+  (interactive)
+  (let ((alpha (frame-parameter nil 'alpha)))
+    (set-frame-parameter
+     nil 'alpha
+     (if (eql (cond ((numberp alpha) alpha)
+                    ((numberp (cdr alpha)) (cdr alpha))
+                    ;; Also handle undocumented (<active> <inactive>) form.
+                    ((numberp (cadr alpha)) (cadr alpha)))
+              100)
+         '(90 . 40) '(100 . 100)))))
 
 (use-package cnfonts
   :demand t
@@ -255,6 +255,14 @@
   (vertico-mode 1))
 
 ;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang$
+;; Recognizes the following patterns:
+;; * ~flex flex~
+;; * =literal literal=
+;; * %char-fold char-fold%
+;; * `initialism initialism`
+;; * !without-literal without-literal!
+;; * .ext (file extension)
+;; * regexp$ (regexp matching at end)
 ;; https://github.com/minad/consult/wiki
 (use-package orderless
   :demand t
@@ -265,14 +273,6 @@
       (?`. orderless-initialism)
       (?= . orderless-literal)
       (?~ . orderless-flex)))
-  ;; Recognizes the following patterns:
-  ;; * ~flex flex~
-  ;; * =literal literal=
-  ;; * %char-fold char-fold%
-  ;; * `initialism initialism`
-  ;; * !without-literal without-literal!
-  ;; * .ext (file extension)
-  ;; * regexp$ (regexp matching at end)
   (defun +orderless-dispatch (pattern index _total)
     (cond
      ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
@@ -376,11 +376,13 @@
   :init
   ;; 如果搜索字符少于 5，可以添加后缀#开始搜索，如 #gr#。
   (setq consult-async-min-input 5)
+  (setq consult-async-refresh-delay 0.15)
+  (setq consult-async-input-debounce 0.1)
+  (setq consult-async-input-throttle 0.2)
   ;; 预览 register
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
-  ;; Optionally tweak the register preview window.
-  ;; This adds thin lines, sorting and hides the mode line of the window.
+  ;; Optionally tweak the register preview window. This adds thin lines, sorting and hides the mode line of the window.
   (advice-add #'register-preview :override #'consult-register-window)
 
   ;; Optionally replace `completing-read-multiple' with an enhanced version.
@@ -393,25 +395,22 @@
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
-  ;; Optionally configure a function which returns the project root directory.
-  ;; There are multiple reasonable alternatives to chose from.
-  ;;;; 1. project.el (project-roots)
+
+  (autoload 'projectile-project-root "projectile")
+  (setq consult-project-root-function #'projectile-project-root)
+
+  ;;如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
   (setq consult-project-root-function
         (lambda ()
-          (when-let (project (project-current))
-            (car (project-roots project))))))
+          (unless (file-remote-p default-directory)
+            (when-let (project (project-current))
+              (car (project-roots project)))))))
 
-  ;; (autoload 'projectile-project-root "projectile")
-  ;; (setq consult-project-root-function #'projectile-project-root)
-
-  ;; 如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
-  ;; (setq consult-project-root-function
-  ;;       (lambda ()
-  ;;         (unless (file-remote-p default-directory)
-  ;;           (when-let (project (project-current))
-  ;;             (car (project-roots project)))))))
-
-(use-package marginalia :init (marginalia-mode))
+(use-package marginalia
+  :init
+  ;; 显示绝对时间
+  (setq marginalia-max-relative-age 0)
+  (marginalia-mode))
 
 (use-package embark
   :init
@@ -432,8 +431,7 @@
   :after (embark consult)
   :demand t ;; only necessary if you have the hook below
   :hook
-  ;; if you want to have consult previews as you move around an
-  ;; auto-updating embark collect buffer
+  ;; if you want to have consult previews as you move around an auto-updating embark collect buffer
   (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package consult-dir
@@ -441,26 +439,6 @@
          :map minibuffer-local-completion-map
          ("C-x C-d" . consult-dir)
          ("C-x C-j" . consult-dir-jump-file)))
-
-;; 类似于 consult-grep 和 consult-find, 但前后端都异步且支持 fuzzy 搜索。
-;; (use-package affe
-;;   :after (orderless)
-;;   :ensure-system-package
-;;   ((gfind . findutils)
-;;    (fd . fd)
-;;    (fzf . fzf)
-;;    (rg . ripgrep))
-;;   :bind
-;;   (;; bind-c bindings (mode-specific-map)
-;;    ("M-s g" . affe-grep)
-;;    ("M-s f" . affe-find))
-;;   :config
-;;   (setq affe-count 200)
-;;   ;; Configure Orderless
-;;   (setq affe-regexp-function #'orderless-pattern-compiler
-;;         affe-highlight-function #'orderless--highlight)
-;;   ;; Manual preview key for `affe-grep'
-;;   (consult-customize affe-grep :preview-key (kbd "M-.")))
 
 (use-package company
   :bind
@@ -562,7 +540,7 @@
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
+  (rime-emacs-module-header-root "/usr/local/Cellar/emacs-plus@28/28.0.50/include")
   :bind
   ( :map rime-active-mode-map
     ;; 强制切换到英文模式，直到按回车。
@@ -1041,6 +1019,8 @@
          (set-face-background 'holiday-face "slate blue")
          (set-face-foreground 'holiday-face "white")))
 
+(use-package org-super-agenda)
+
 (setq org-confirm-babel-evaluate nil
       org-src-fontify-natively t
       ;; add a special face to #+begin_quote and #+begin_verse block
@@ -1129,6 +1109,7 @@
           (javascript "\\begin{programlist}[label={%l}]{javascript}{: %c}\n%s\\end{programlist}")
           (json "\\begin{programlist}[label={%l}]{json}{: %c}\n%s\\end{programlist}")
           (plantuml "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (yaml "\\begin{programlist}[label={%l}]{yaml}{: %c}\n%s\\end{programlist}")
           (maxima "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
           (ipython "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
           (python "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
@@ -1221,6 +1202,22 @@
   (setq elfeed-goodies/tag-column-width 30)
   (setq elfeed-goodies/powerline-default-separator 'arrow)
   (elfeed-goodies/setup))
+
+;; feed 收藏
+;; From http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+(require 'elfeed)
+(defalias 'elfeed-toggle-star
+  (elfeed-expose #'elfeed-search-toggle-all 'star))
+
+(eval-after-load 'elfeed-search
+  '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
+
+;; face for starred articles
+(defface elfeed-search-star-title-face
+  '((t :foreground "#f77"))
+  "Marks a starred Elfeed entry.")
+
+(push '(star elfeed-search-star-title-face) elfeed-search-face-alist)
 
 ;; elfeed-goodies 显示日期栏
 ;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
@@ -1779,68 +1776,90 @@ mermaid.initialize({
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
 
-(use-package project
-  :after (vterm)
+(use-package posframe-project-term
+  :straight (posframe-project-term :host github :repo "zwpaper/posframe-project-term")
+  :bind
+  (("C-c t" . posframe-project-term-toggle)))
+
+(use-package projectile
   :config
-  (setq project-switch-commands
-	'((?f "File" project-find-file)
-          (?g "Grep" project-find-regexp)
-          (?d "Dired" project-dired)
-          (?b "Buffer" project-switch-to-buffer)
-          (?q "Query replace" project-query-replace-regexp)
-          (?v "VC dir" project-vc-dir)
-          (?t "Vterm" vterm)))
+  (projectile-global-mode)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+  (projectile-mode +1)
+  ;; selectrum/vertico 使用 'default
+  (setq projectile-completion-system 'default)
+  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
+  (dolist (dirs '(".cache"
+                  ".dropbox"
+                  ".git"
+                  ".hg"
+                  ".svn"
+                  ".nx"
+                  "elpa"
+                  "auto"
+                  "bak"
+                  "__pycache__"
+                  "vendor"
+                  "node_modules"
+                  "logs"
+                  "target"
+                  ".idea"
+                  "build"
+                  ".devcontainer"
+                  ".settings"
+                  ".gradle"
+                  ".vscode"))
+    (add-to-list 'projectile-globally-ignored-directories dirs))
+  (dolist (item '("GPATH"
+                  "GRTAGS"
+                  "GTAGS"
+                  "GSYMS"
+                  "TAGS"
+                  ".tags"
+                  ".classpath"
+                  ".project"
+                  ".DS_Store"
+                  "__init__.py"))
+    (add-to-list 'projectile-globally-ignored-files item))
+  (dolist (list '("\\.elc\\'"
+                  "\\.o\\'"
+                  "\\.class\\'"
+                  "\\.out\\'"
+                  "\\.pdf\\'"
+                  "\\.pyc\\'"
+                  "\\.rel\\'"
+                  "\\.rip\\'"
+                  "\\.swp\\'"
+                  "\\.iml\\'"
+                  "\\.bak\\'"
+                  "\\.log\\'"
+                  "~\\'"))
+    (add-to-list 'projectile-globally-ignored-file-suffixes list))
 
-  (defun my/project-try-local (dir)
-    "Determine if DIR is a non-Git project.
-DIR must include a .project file to be considered a project."
-    (catch 'ret
-      (dolist (flag-file '(".project" "README.org" "README.md" "Makefile" "pom.xml" "go.mod" "project.clj"))
-	(when-let ((root (locate-dominating-file dir flag-file)))
-          (throw 'ret (cons 'local root))))))
+  ;; Disable projectile on remote buffers
+  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
+  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
+  (defadvice projectile-project-root (around ignore-remote first activate)
+    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
 
-  (setq project-find-functions '(my/project-try-local project-try-vc))
+  ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
+  (setq projectile-enable-caching t)
+  (setq projectile-file-exists-remote-cache-expire (* 10 60))
+  (setq projectile-dynamic-mode-line nil)
+  ;; Make projectile to be usable in every directory (even without the presence of project file):
+  ;;(setq projectile-require-project-root nil)
+  (setq projectile-require-project-root 'prompt))
 
-  (cl-defmethod project-root ((project (head local)))
-    (cdr project))
+(defun my/project-discover ()
+  (interactive)
+  (dolist (search-path '("~/codes/" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+    (dolist (file (file-expand-wildcards search-path))
+      (message "-> %s" file)
+      (when (file-directory-p file)
+          (projectile-add-known-project file)
+          (message "add project %s..." file)))))
 
-  (defun my/project-info ()
-    (interactive)
-    (message "%s" (project-current t)))
-
-  (defun my/project-discover ()
-    (interactive)
-    (dolist (search-path '("~/codes/" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
-      (dolist (file (file-expand-wildcards search-path))
-	(message "-> %s" file)
-	(when (file-directory-p file)
-          (when-let ((pr (project-current nil file)))
-            (project-remember-project pr)
-            (message "add project %s..." pr))))))
-
-  (defun my/project-add (dir)
-    (interactive "DWhich dir:")
-    (let* ((project-flag-file (expand-file-name "README.org" dir)))
-      (if-let ((pr (project-current nil dir)))
-          (if (string-equal (project-root pr) dir)
-              (project-remember-project pr)
-            (progn
-              (make-empty-file project-flag-file)
-              (project-remember-project (cons 'local dir))))
-	(progn
-          (make-empty-file project-flag-file)
-          (project-remember-project (cons 'local dir)))))
-    (message "Add project %s..." dir))
-
-  (defun my/project-remove ()
-    "Remove project from `project--list' using completion."
-    (interactive)
-    (project--ensure-read-project-list)
-    (let* ((projects project--list)
-           (dir (completing-read "REMOVE project: " projects nil t)))
-      (setq project--list (delete (assoc dir projects) projects))
-      (project--write-project-list)))
-  )
+(use-package treemacs-projectile :after (treemacs projectile))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
@@ -2058,8 +2077,7 @@ DIR must include a .project file to be considered a project."
   :after (vterm)
   :custom
   ;; 由于 TRAMP 模式下关闭了 projectile，scope 不能设置为 'project。
-  ;;(vterm-toggle-scope 'dedicated)
-  (vterm-toggle-scope 'project)
+  (vterm-toggle-scope 'dedicated)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
@@ -2132,11 +2150,16 @@ DIR must include a .project file to be considered a project."
 (add-hook
  'buffer-list-update-hook
  (lambda ()
-   (when (file-remote-p default-directory)
-     (setq my/remote-host (file-remote-p default-directory 'host))
-     ;; 动态计算 ENV=VALUE
-     (require 'vterm)
-     (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
+   (if  (file-remote-p default-directory)
+       (progn
+         ;; 远程模式时关闭 marginalia-mode, 防止卡住。
+         (marginalia-mode -1)
+         (setq my/remote-host (file-remote-p default-directory 'host))
+         ;; 动态计算 ENV=VALUE
+         (require 'vterm)
+         (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))
+     (progn
+       (marginalia-mode t)))))
 
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
@@ -2317,8 +2340,7 @@ DIR must include a .project file to be considered a project."
                         ,(expand-file-name "eln-cache/" user-emacs-directory)
                         ,(expand-file-name "etc/" user-emacs-directory)
                         ,(expand-file-name "var/" user-emacs-directory)
-                        "/tmp"
-                        "/ssh:"
+                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:"
                         ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
 
 ;; 使用系统剪贴板，这样可以和其它程序相互粘贴。
@@ -2349,6 +2371,18 @@ DIR must include a .project file to be considered a project."
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
+(with-eval-after-load 'ibuffer
+  (setq ibuffer-expert t)
+  (setq ibuffer-display-summary nil)
+  (setq ibuffer-use-other-window nil)
+  (setq ibuffer-show-empty-filter-groups nil)
+  (setq ibuffer-movement-cycle nil)
+  (setq ibuffer-default-sorting-mode 'filename/process)
+  (setq ibuffer-use-header-line t)
+  (setq ibuffer-default-shrink-to-minimum-size nil)
+  (setq ibuffer-saved-filter-groups nil)
+  (setq ibuffer-old-time 48)
+  (add-hook 'ibuffer-mode-hook #'hl-line-mode))
 
 (with-eval-after-load 'dired
   ;; re-use dired buffer, available in Emacs 28
