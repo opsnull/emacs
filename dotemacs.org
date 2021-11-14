@@ -1004,14 +1004,12 @@ import_tables:
   :ensure-system-package
   ((mu . mu)
    (mbsync . isync)
-   (pass . pass)
    (gpg . gnupg)
    (proxychains4 . proxychains-ng)
    (openssl . openssl@1.1)))
 #+end_src
 + mbsync(isync): 同步邮件到本地；
 + mu(带 mu4e emacs 包): 索引和读取邮件；
-+ pass: 使用 gnupg 来管理密码；
 + proxychains-ng: 任意 socket 代理, 访问 gmail 使用;
 + gnupg: 加密；
 + openssl@1.1: 提供 isync 和 msmtp 所需的根证书；
@@ -1034,22 +1032,25 @@ sub   cv25519 2021-10-03 [E] [有效至：2023-10-03]
 #+end_src
 + uid 是 zhangjun 或 geekard@qq.com 或 hash, 对应的 hash 值可以使用 =gpg -a --export |gpg
   --list-packets --verbose= 获取或 =M-x epa-list-keys= 。
++ 参考: [[https://ruanyifeng.com/blog/2013/07/gpg.html][阮一峰 GPG 入门教程]]
 
-参考: [[https://ruanyifeng.com/blog/2013/07/gpg.html][阮一峰 GPG 入门教程]]
+创建 qq 和 gmail 加密密码文件：
+ #+begin_src shell :tangle no
+$ mkdir ~/.mail
+$ echo my.qq.password >.mail/qq.pwd
+$ gpg --encrypt --recipient 'geekard@qq.com' ~/.mail/qq.pwd
 
-** pass
+$ echo my.gmail.password >.mail/gmail/gmail.pwd
+$ gpg --encrypt --recipient 'geekard@qq.com' ~/.mail/gmail.pwd
 
-#+BEGIN_SRC  shell :tangle no
-# 使用 gngpg uid geekard@qq.com 来初始化 pass
-$ pass init "geekard@qq.com"
-# pass 内容更新到 git
-$ pass git init
-$ pass git remote add origin git@github.com:opsnull/pass-store.git
-# 在 web qq 中申请授权码, 作为帐号密码, 添加 qq 帐号
-$ pass insert email/qq
-$ pass insert email/gmail
-#+end_src
-+ 帐号信息保存在 =~/.password-store=
+$ ls ~/.mail/*.gpg
+/Users/zhangjun/.mail/gmail.pwd.gpg  /Users/zhangjun/.mail/qq.pwd.gpg
+
+# 删除原始明文密码
+rm ~/.mail/{qq,gmail}.pwd
+ #+end_src
+
+解压密码文件: =gpg --quiet --for-your-eyes-only --no-tty --decrypt ~/.mail/qq.pwd.gpg=
 
 ** mbsync
 
@@ -1060,7 +1061,7 @@ $ pass insert email/gmail
 IMAPAccount qq
 Host imap.qq.com
 User geekard@qq.com
-PassCmd "pass email/qq"  # 调用 pass 命令
+PassCmd "gpg --quiet --for-your-eyes-only --no-tty --decrypt \~/.mail/qq.pwd.gpg"
 Port 993
 AuthMechs LOGIN
 SSLType IMAPS
@@ -1119,7 +1120,7 @@ Channel qq-trash
 IMAPAccount gmail
 Host imap.gmail.com
 User geekard@gmail.com
-PassCmd "pass email/gmail"
+PassCmd "gpg --quiet --for-your-eyes-only --no-tty --decrypt \~/.mail/gmail.pwd.gpg"
 SSLType IMAPS
 AuthMechs PLAIN
 CertificateFile /usr/local/etc/openssl@1.1/cert.pem  # MacOS
@@ -1182,8 +1183,7 @@ $ mkdir -p ~/.mail/qq/{Sent,Drafts,Trash,Archive}
 $ mkdir -p ~/.mail/gmail/{All,Sent,Drafts,Junk,Trash}
 $ mbsync --all
 #+end_src
-
-可以使用 https://gitlab.com/shackra/goimapnotify 来自动调用 mbsync 同步邮件。
++ 使用 https://gitlab.com/shackra/goimapnotify 可以实现自动调用 mbsync 同步邮件。
 
 ** proxychains
 
