@@ -618,7 +618,6 @@
   :ensure-system-package
   ((mu . mu)
    (mbsync . isync)
-   (pass . pass)
    (gpg . gnupg)
    (proxychains4 . proxychains-ng)
    (openssl . openssl@1.1)))
@@ -658,7 +657,6 @@
   ;; Do not display duplicate messages
   (setq mu4e-headers-skip-duplicates t)
   (setq mu4e-headers-date-format "%Y/%m/%d")
-  (setq mu4e-headers-include-related nil)
 
   (setq mu4e-change-filenames-when-moving t)
   (setq mu4e-display-update-status-in-modeline t)
@@ -721,10 +719,10 @@
                      (smtpmail-smtp-service        . 587)
                      (smtpmail-stream-type         . starttls)
                      (mu4e-compose-signature       . (concat "---\n zhangjun \n"))
-                     (mu4e-sent-folder      . "/gmail/Sent")
-                     (mu4e-drafts-folder    . "/gmail/Drafts")
-                     (mu4e-trash-folder     . "/gmail/Junk")
-                     (mu4e-refile-folder    . "/gmail/Archive")))
+                     (mu4e-sent-folder      . "/gmail/Sent") ;; folder for sent messages
+                     (mu4e-drafts-folder    . "/gmail/Drafts") ;; unfinished messages
+                     (mu4e-trash-folder     . "/gmail/Junk") ;; trashed messages
+                     (mu4e-refile-folder    . "/gmail/Archive"))) ;; ;; saved messages
            ,(make-mu4e-context
              :name "qq"
              :enter-func (lambda () (mu4e-message "Switch to the qq context"))
@@ -747,7 +745,42 @@
                      (mu4e-trash-folder     . "/qq/Trash")
                      (mu4e-refile-folder    . "/qq/Archive")
                      )))))
-(require 'mu4e)
+;; 为 message 添加 Tag
+(with-eval-after-load 'mu4e
+  (add-to-list 'mu4e-marks
+               '(tag
+                 :char       "g"
+                 :prompt     "gtag"
+                 :ask-target (lambda () (read-string "Add Tag: "))
+                 :action      (lambda (docid msg target)
+                                (mu4e-action-retag-message msg (concat "+" target)))))
+  (mu4e~headers-defun-mark-for tag)
+  (define-key mu4e-headers-mode-map (kbd "g") 'mu4e-headers-mark-for-tag)
+
+  ;; 在 Dired 中标记文件, 然后 C-c RET C-a 来发送附件
+  (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
+
+  ;; 发送前确认
+  (add-hook 'message-send-hook
+            (lambda ()
+              (unless (yes-or-no-p "Sure you want to send this?")
+                (signal 'quit nil))))
+
+  ;; 先选择邮件, 然后按 r, 自动 refile 到对应目录
+  (setq mu4e-refile-folder
+        (lambda (msg)
+          (cond
+           ;; messages to the mu mailing list go to the /mu folder
+           ((mu4e-message-contact-field-matches msg :to "mu-discuss@googlegroups.com") "/mu")
+           ;; messages sent directly to some spefic address me go to /private
+           ((mu4e-message-contact-field-matches msg :to "me@example.com") "/private")
+           ;; messages with football or soccer in the subject go to /football
+           ((string-match "football\\|soccer" (mu4e-message-field msg :subject)) "/football")
+           ;; messages sent by me go to the sent folder
+           ((mu4e-message-sent-by-me msg (mu4e-personal-addresses)) mu4e-sent-folder)
+           ;; everything else goes to /archive
+           ;; important to have a catch-all at the end!
+           (t  "/archive")))))
 
 (use-package mu4e-alert
   :disabled
@@ -796,6 +829,7 @@
   :config
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
+        ;; 隐藏 // 和 ** 标记
         org-hide-emphasis-markers t
         org-hide-block-startup nil
         org-hidden-keywords '(title)
@@ -853,13 +887,23 @@
 
 (defun my/org-faces ()
   (setq-default line-spacing 1)
-  (custom-set-faces
-   ;; 自定义标题样式
-   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
-   '(org-block-begin-line ((t (:underline "#A7A6AA"))))
+  (custom-theme-set-faces
+   'user
    ;; 调大 org-block 字体
-   '(org-block ((t (:font "JuliaMono-15"))))
-   '(org-block-end-line ((t (:underline "#A7A6AA"))))))
+   '(org-block ((t (:font "JuliaMono-15" :inherit fixed-pitch))))
+   ;; 调小 height
+   '(org-block-begin-line ((t (:underline "#A7A6AA" :height 0.8))))
+   '(org-block-end-line ((t (:underline "#A7A6AA" :height 0.8))))
+   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
+   '(org-document-info ((t (:foreground "dark orange"))))
+   '(org-document-info-keyword ((t (:height 0.8))))
+   '(org-link ((t (:foreground "royal blue" :underline t))))
+   '(org-meta-line ((t ( :height 0.8))))
+   '(org-property-value ((t (:height 0.8))) t)
+   '(org-drawer ((t (:height 0.8))) t)
+   '(org-special-keyword ((t (:height 0.8))))
+   '(org-table ((t (:foreground "#83a598"))))
+   '(org-tag ((t (:weight bold :height 0.8))))))
 (add-hook 'org-mode-hook 'my/org-faces)
 
 (use-package org-superstar
@@ -2350,7 +2394,7 @@ mermaid.initialize({
                         ,(expand-file-name "eln-cache/" user-emacs-directory)
                         ,(expand-file-name "etc/" user-emacs-directory)
                         ,(expand-file-name "var/" user-emacs-directory)
-                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:"
+                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/"
                         ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
 
 ;; 使用系统剪贴板，这样可以和其它程序相互粘贴。
