@@ -38,8 +38,8 @@
 (setq word-wrap-by-category t)
 
 ;; 个人信息
-(setq user-full-name "zhangjun"
-      user-mail-address "geekard@qq.com")
+(setq user-full-name "zhangjun")
+(setq user-mail-address "geekard@qq.com")
 
 ;; Use my email-address for encryption
 (setq-default epa-file-encrypt-to user-mail-address)

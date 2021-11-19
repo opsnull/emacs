@@ -36,6 +36,7 @@
 (use-package use-package-ensure-system-package)
 
 (use-package exec-path-from-shell
+  ;; 即时加载, 否则不生效。
   :demand t
   :custom
   (exec-path-from-shell-check-startup-files nil)
@@ -214,12 +215,6 @@
               100)
          '(90 . 40) '(100 . 100)))))
 
-;; 自定义 emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 来调用才会生效。
-(defun my/set-fonts (&optional font)
-  (setq use-default-font-for-symbols nil)
-  (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-  (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
-
 (use-package cnfonts
   :demand t
   :ensure-system-package
@@ -231,6 +226,11 @@
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
   :config
+  ;; 自定义 emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 调用才会生效。
+  (defun my/set-fonts (&optional font)
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
   (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
   (cnfonts-enable))
 
@@ -249,6 +249,7 @@
   :demand t
   :after (company)
   :config
+  (company-emoji-init)
   (add-to-list 'company-backends 'company-emoji))
 
 (use-package vertico
@@ -310,13 +311,7 @@
 
   (setq completion-styles '(orderless)
         completion-category-defaults nil
-        ;;; Enable partial-completion for files.
-        ;;; Either give orderless precedence or partial-completion.
-        ;;; Note that completion-category-overrides is not really an override,
-        ;;; but rather prepended to the default completion-styles.
-        ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
-        completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
-                                        ;; enable initialism by default for symbols
+        completion-category-overrides '((file (styles partial-completion))
                                         (command (styles +orderless-with-initialism))
                                         (variable (styles +orderless-with-initialism))
                                         (symbol (styles +orderless-with-initialism)))
@@ -420,7 +415,13 @@
   :init
   ;; 显示绝对时间
   (setq marginalia-max-relative-age 0)
-  (marginalia-mode))
+  (marginalia-mode)
+  :config
+  ;; 不给 file 加注释，防止 TRAMP 卡住
+  (setq marginalia-annotator-registry
+        (assq-delete-all 'file marginalia-annotator-registry))
+  (setq marginalia-annotator-registry
+        (assq-delete-all 'project-file marginalia-annotator-registry)))
 
 (use-package embark
   :init
@@ -583,12 +584,9 @@
   ;; 临时英文模式
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
-          rime-predicate-evil-mode-p
           rime-predicate-hydra-p
           rime-predicate-current-uppercase-letter-p
           rime-predicate-after-alphabet-char-p
-          rime-predicate-space-after-cc-p
-          rime-predicate-punctuation-after-space-cc-p
           rime-predicate-prog-in-code-p
           rime-predicate-after-ascii-char-p))
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
@@ -1893,8 +1891,8 @@ mermaid.initialize({
   ;; Disable projectile on remote buffers
   ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
   ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
-  (defadvice projectile-project-root (around ignore-remote first activate)
-    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+  ;;(defadvice projectile-project-root (around ignore-remote first activate)
+  ;;  (unless (file-remote-p default-directory 'no-identification) ad-do-it))
 
   ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
@@ -1917,6 +1915,7 @@ mermaid.initialize({
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
+  :demand t
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -1924,10 +1923,9 @@ mermaid.initialize({
     (setq
      treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
      treemacs-deferred-git-apply-delay      0.1
-     treemacs--project-follow-delay         0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              1000
+     treemacs-file-event-delay              500
      treemacs-file-follow-delay             0.01
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
@@ -1987,13 +1985,8 @@ mermaid.initialize({
 (use-package treemacs-magit :after (treemacs magit))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
-(use-package ripgrep :ensure-system-package (rg . ripgrep))
-
-(use-package find-file-in-project
-  :config
-  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy slow on TRAMP buffers.
-  ;; https://github.com/mpereira/.emacs.d/#find-file-in-project
-  (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
+(use-package ripgrep
+  :ensure-system-package (rg . ripgrep))
 
 (use-package deadgrep
   :ensure-system-package (rg . ripgrep)
@@ -2206,14 +2199,15 @@ mermaid.initialize({
  (lambda ()
    (if  (file-remote-p default-directory)
        (progn
-         ;; 远程模式时关闭 marginalia-mode, 防止卡住。
-         (marginalia-mode -1)
          (setq my/remote-host (file-remote-p default-directory 'host))
          ;; 动态计算 ENV=VALUE
          (require 'vterm)
-         (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))
-     (progn
-       (marginalia-mode t)))))
+         (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host)))
+         ;; 关闭 treemacs, 避免建立新连接耗时
+         (require 'treemacs)
+         (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+             (delete-window (treemacs-get-local-window)))))
+   (progn)))
 
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
@@ -2281,7 +2275,7 @@ mermaid.initialize({
                  (string-equal (file-name-extension (buffer-file-name)) "log")))
     (fundamental-mode)
     (setq buffer-read-only t)
-    (buffer-disable-undo)
+    ;;(buffer-disable-undo)
     (font-lock-mode -1)
     (rainbow-delimiters-mode -1)
     (smartparens-global-mode -1)
@@ -2340,10 +2334,13 @@ mermaid.initialize({
 ;; centering the buffer when scrolling down its last line.
 (setq scroll-conservatively 100)
 
+;; 切换到已有的frame
+(setq display-buffer-reuse-frames t)
+
 (setq auto-window-vscroll nil)
-(setq scroll-step 1
-      scroll-margin 0
-      auto-window-vscroll nil)
+(setq scroll-step 1)
+(setq scroll-margin 0)
+(setq auto-window-vscroll nil)
 
 ;; Remember point position between sessions.
 (require 'saveplace)
@@ -2394,7 +2391,7 @@ mermaid.initialize({
                         ,(expand-file-name "eln-cache/" user-emacs-directory)
                         ,(expand-file-name "etc/" user-emacs-directory)
                         ,(expand-file-name "var/" user-emacs-directory)
-                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/"
+                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log"
                         ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
 
 ;; 使用系统剪贴板，这样可以和其它程序相互粘贴。

@@ -162,8 +162,8 @@ npm config set registry=http://registry.npm.taobao.org
 (setq word-wrap-by-category t)
 
 ;; 个人信息
-(setq user-full-name "zhangjun"
-      user-mail-address "geekard@qq.com")
+(setq user-full-name "zhangjun")
+(setq user-mail-address "geekard@qq.com")
 
 ;; Use my email-address for encryption
 (setq-default epa-file-encrypt-to user-mail-address)
@@ -193,7 +193,7 @@ npm config set registry=http://registry.npm.taobao.org
                          ("melpa" . "https://melpa.org/packages/")))
 #+end_src
 
-使用 =use-package + straight= 替代 Emacs 内置的 =package.el=, 它使用 Git checkout + build 机制来安装软件包（而非从包仓库下
+使用 =use-package + straight= 替代 Emacs 内置的 =package.el=, 它使用 =Git checkout + build= 机制来安装软件包（而非从包仓库下
 载）：
 
 #+begin_src emacs-lisp
@@ -233,6 +233,7 @@ npm config set registry=http://registry.npm.taobao.org
 =exec-path-from-shell= 将用户 Shell 环境变量拷贝到 Emacs 环境中，解决找不到命令的问题：
 #+begin_src emacs-lisp
 (use-package exec-path-from-shell
+  ;; 即时加载, 否则不生效。
   :demand t
   :custom
   (exec-path-from-shell-check-startup-files nil)
@@ -241,7 +242,6 @@ npm config set registry=http://registry.npm.taobao.org
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 #+end_src
-+ 必须即时加载, 否则不生效。
 
 * tuning
 
@@ -433,11 +433,6 @@ npm config set registry=http://registry.npm.taobao.org
 +  Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 
 #+begin_src emacs-lisp
-;; 自定义 emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 来调用才会生效。
-(defun my/set-fonts (&optional font)
-  (setq use-default-font-for-symbols nil)
-  (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-  (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
 
 (use-package cnfonts
   :demand t
@@ -450,6 +445,11 @@ npm config set registry=http://registry.npm.taobao.org
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
   :config
+  ;; 自定义 emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 调用才会生效。
+  (defun my/set-fonts (&optional font)
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
   (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
   (cnfonts-enable))
 
@@ -468,10 +468,11 @@ npm config set registry=http://registry.npm.taobao.org
   :demand t
   :after (company)
   :config
+  (company-emoji-init)
   (add-to-list 'company-backends 'company-emoji))
 #+end_src
-+ 查看 emacs 支持的字体： =(print (font-family-list))=
-+ 支持的 emoji 字体列表可以查看变量 company-emojis
++ 查看 emacs 支持的字体： =(print (font-family-list))=;
++ 支持的 emoji 字体列表可以查看变量 company-emojis;
 
 * complete
 
@@ -536,13 +537,7 @@ npm config set registry=http://registry.npm.taobao.org
 
   (setq completion-styles '(orderless)
         completion-category-defaults nil
-        ;;; Enable partial-completion for files.
-        ;;; Either give orderless precedence or partial-completion.
-        ;;; Note that completion-category-overrides is not really an override,
-        ;;; but rather prepended to the default completion-styles.
-        ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
-        completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
-                                        ;; enable initialism by default for symbols
+        completion-category-overrides '((file (styles partial-completion))
                                         (command (styles +orderless-with-initialism))
                                         (variable (styles +orderless-with-initialism))
                                         (symbol (styles +orderless-with-initialism)))
@@ -646,7 +641,13 @@ npm config set registry=http://registry.npm.taobao.org
   :init
   ;; 显示绝对时间
   (setq marginalia-max-relative-age 0)
-  (marginalia-mode))
+  (marginalia-mode)
+  :config
+  ;; 不给 file 加注释，防止 TRAMP 卡住
+  (setq marginalia-annotator-registry
+        (assq-delete-all 'file marginalia-annotator-registry))
+  (setq marginalia-annotator-registry
+        (assq-delete-all 'project-file marginalia-annotator-registry)))
 
 (use-package embark
   :init
@@ -677,8 +678,6 @@ npm config set registry=http://registry.npm.taobao.org
          ("C-x C-j" . consult-dir-jump-file)))
 #+end_src
 + 使用 gnu find 命令, 需要加环境变量 ~export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"~
-+ M-x affe-grep
-+ M-x affe-find
 
 自动补全：
 #+begin_src emacs-lisp
@@ -804,7 +803,7 @@ Mac 系统安装 RIME 输入法：
    + 对于 emacs-rime，如果修改了 =~/Library/Rime= 下的配置，需要执行 =M-x rime-deploy= 生效；
 
 下载 librime 库, emacs-rime 使用它与系统的 RIME 交互：
-#+Begin_src bash :results no
+#+Begin_src bash :tangle no
 curl -L -O https://github.com/rime/librime/releases/download/1.7.2/rime-1.7.2-osx.zip
 unzip rime-1.7.2-osx.zip -d ~/.emacs.d/librime
 rm -rf rime-1.7.2-osx.zip
@@ -856,19 +855,16 @@ sudo spctl --master-disable
   ;; 临时英文模式
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
-          rime-predicate-evil-mode-p
           rime-predicate-hydra-p
           rime-predicate-current-uppercase-letter-p
           rime-predicate-after-alphabet-char-p
-          rime-predicate-space-after-cc-p
-          rime-predicate-punctuation-after-space-cc-p
           rime-predicate-prog-in-code-p
           rime-predicate-after-ascii-char-p))
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
   (setq rime-show-candidate 'posframe))
 #+end_src
 
-RIME 输入法自定义缺省配置：
+RIME 输入法自定义缺省配置中文：
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
 patch:
   schema_list:
@@ -909,7 +905,7 @@ patch:
     reset: 0   # 不提示输出 emoji 字体
     states: [ "🈚️️\uFE0E", "🈶️️\uFE0F" ]
   - name: symbol_support
-    reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后 emacs 卡死
+    reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后 emacs 卡死。
     states: [ "无符", "符" ]
   - name: ascii_punct
     reset: 0
@@ -1187,15 +1183,13 @@ $ mbsync --all
 
 ** proxychains
 
-proxychains 为不支持代理的命令行程序提供任意 socks 代理功能：
-+ 如 mbsync 不感知任何代理环境变量, 通过 proxychains 可以代理。
-
+proxychains 为不支持代理的命令行程序（如 mbsync )提供任意 socks 代理功能：
 #+begin_src shell :tangle no
 $ mkdir .proxychains/
 $ cp /usr/local/Cellar/proxychains-ng/4.14/.bottle/etc/proxychains.conf ~/.proxychains/proxychains.conf
 #+end_src
 
-在 proxychains.conf 的 ProxyList 后添加 socks5 代理地址:
+在 proxychains.conf 的 ProxyList 中添加 socks5 代理地址:
 #+begin_src text :tangle no
 [ProxyList]
 socks5  127.0.0.1 13659
@@ -1206,7 +1200,7 @@ socks5  127.0.0.1 13659
 $ proxychains4 mbsync gmail
 #+end_src
 
-** mu
+** mu4e
 
 #+begin_src shell
 # 初始化索引, 指定自己的 email 地址列表
@@ -1219,8 +1213,6 @@ $ mu find github
 $ mu info
 #+end_src
 + 索引位置： =~/.cache/mu=
-
-** mu4e
 
 #+begin_src emacs-lisp
 (use-package mu4e
@@ -1392,8 +1384,6 @@ machine smtp.qq.com login geekard@qq.com password {QQ 授权码}
 machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
 #+end_src
 
-** mu4e-alert
-
 使用 mu4e-alert 和 notifier(通过 terminal-notifier 程序) 进行桌面通知:
 #+begin_src emacs-lisp
 (use-package mu4e-alert
@@ -1408,8 +1398,6 @@ machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
   (setq mu4e-alert-email-notification-types '(count)))
 #+end_src
 
-** mu4e-maildirs-extension
-
 使用 mu4e-maildirs-extension 在 mu4e-main-view 展示 Maildirs 概览。
 #+begin_src emacs-lisp
 (use-package mu4e-maildirs-extension
@@ -1417,8 +1405,6 @@ machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
   :config
   (mu4e-maildirs-extension))
 #+end_src
-
-** mu4e-views
 
 mu4e-views 使用 xwdigets 来显示 html 格式邮件：
 #+begin_src emacs-lisp
@@ -2909,7 +2895,7 @@ js/jsx/ts/tsx 等类型文件。
 来指定版本的 python 和 golang 。
 
 先安装 direnv 命令 =brew install direnv=, 然后在 ~/.bashrc 中添加:
-#+begin_src shell :results none
+#+begin_src shell :tangle no
 eval "$(direnv hook bash)"
 #+end_src
 
@@ -3013,8 +2999,8 @@ lsp-workspace-restart= 来重启 lsp 。
   ;; Disable projectile on remote buffers
   ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
   ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
-  (defadvice projectile-project-root (around ignore-remote first activate)
-    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+  ;;(defadvice projectile-project-root (around ignore-remote first activate)
+  ;;  (unless (file-remote-p default-directory 'no-identification) ad-do-it))
 
   ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
@@ -3041,6 +3027,7 @@ lsp-workspace-restart= 来重启 lsp 。
 #+begin_src emacs-lisp
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
+  :demand t
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -3048,10 +3035,9 @@ lsp-workspace-restart= 来重启 lsp 。
     (setq
      treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
      treemacs-deferred-git-apply-delay      0.1
-     treemacs--project-follow-delay         0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              1000
+     treemacs-file-event-delay              500
      treemacs-file-follow-delay             0.01
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
@@ -3111,13 +3097,8 @@ lsp-workspace-restart= 来重启 lsp 。
 (use-package treemacs-magit :after (treemacs magit))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
-(use-package ripgrep :ensure-system-package (rg . ripgrep))
-
-(use-package find-file-in-project
-  :config
-  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy slow on TRAMP buffers.
-  ;; https://github.com/mpereira/.emacs.d/#find-file-in-project
-  (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
+(use-package ripgrep
+  :ensure-system-package (rg . ripgrep))
 
 (use-package deadgrep
   :ensure-system-package (rg . ripgrep)
@@ -3370,14 +3351,15 @@ open -a 'Google Chrome' $*
  (lambda ()
    (if  (file-remote-p default-directory)
        (progn
-         ;; 远程模式时关闭 marginalia-mode, 防止卡住。
-         (marginalia-mode -1)
          (setq my/remote-host (file-remote-p default-directory 'host))
          ;; 动态计算 ENV=VALUE
          (require 'vterm)
-         (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))
-     (progn
-       (marginalia-mode t)))))
+         (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host)))
+         ;; 关闭 treemacs, 避免建立新连接耗时
+         (require 'treemacs)
+         (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+             (delete-window (treemacs-get-local-window)))))
+   (progn)))
 #+end_src
 + =tramp-default-method= 缺省值为 scp, 不支持多跳（但拷贝大文件时性能更高），再打开多跳远程文件时每次都需要修改 /- 中的 -
   为 ssh，较麻烦，所以设置为 ssh。
@@ -3450,7 +3432,6 @@ open -a 'Google Chrome' $*
                  (string-equal (file-name-extension (buffer-file-name)) "log")))
     (fundamental-mode)
     (setq buffer-read-only t)
-    (buffer-disable-undo)
     (font-lock-mode -1)
     (rainbow-delimiters-mode -1)
     (smartparens-global-mode -1)
@@ -3509,10 +3490,13 @@ open -a 'Google Chrome' $*
 ;; centering the buffer when scrolling down its last line.
 (setq scroll-conservatively 100)
 
+;; 切换到已有的frame
+(setq display-buffer-reuse-frames t)
+
 (setq auto-window-vscroll nil)
-(setq scroll-step 1
-      scroll-margin 0
-      auto-window-vscroll nil)
+(setq scroll-step 1)
+(setq scroll-margin 0)
+(setq auto-window-vscroll nil)
 
 ;; Remember point position between sessions.
 (require 'saveplace)
@@ -3563,7 +3547,7 @@ open -a 'Google Chrome' $*
                         ,(expand-file-name "eln-cache/" user-emacs-directory)
                         ,(expand-file-name "etc/" user-emacs-directory)
                         ,(expand-file-name "var/" user-emacs-directory)
-                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/"
+                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log"
                         ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
 
 ;; 使用系统剪贴板，这样可以和其它程序相互粘贴。
@@ -3735,6 +3719,12 @@ project 配置参考：
 2. [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/prot-lisp/prot-project.el][protesilaos/dotfiles]]
 
 #+begin_src emacs-lisp :tangle no
+(use-package find-file-in-project
+  :config
+  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy slow on TRAMP buffers.
+  ;; https://github.com/mpereira/.emacs.d/#find-file-in-project
+  (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
+
 ;;类似于 consult-grep 和 consult-find, 但前后端都异步且支持 fuzzy 搜索。
 (use-package affe
   :after (orderless)
