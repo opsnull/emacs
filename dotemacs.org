@@ -278,9 +278,6 @@ npm config set registry=http://registry.npm.taobao.org
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
-;; Font compacting can be terribly expensive, especially for rendering icon fonts on Windows. Whether disabling it has a
-;; notable affect on Linux and Mac hasn't been determined, but do it there anyway, just in case. This increases memory
-;; usage, however!
 (setq inhibit-compacting-font-caches t)
 
 ;; Garbage Collector Magic Hack
@@ -303,6 +300,7 @@ npm config set registry=http://registry.npm.taobao.org
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
+(set-fringe-mode 10)
 
 (setq inhibit-startup-screen t)
 (setq inhibit-startup-message t)
@@ -347,7 +345,7 @@ npm config set registry=http://registry.npm.taobao.org
 
 ;; 跟随 Mac 自动切换深浅主题
 (defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
@@ -377,18 +375,20 @@ npm config set registry=http://registry.npm.taobao.org
   ;; 显示语言环境版本（如 go/python)
   (doom-modeline-env-version t)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657
-  (doom-modeline-buffer-file-name-style 'file-name)
+  ;;(doom-modeline-buffer-file-name-style 'file-name)
+  (doom-modeline-buffer-file-name-style 'truncate-except-project)
   (doom-modeline-vcs-max-length 20)
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
   (doom-modeline-mode 1)
-  :config
-  (doom-modeline-def-modeline 'main
-    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
+  ;; :config
+  ;; (doom-modeline-def-modeline 'main
+  ;;   ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+  ;;   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+  ;;   ;; right-hand segment list，尾部增加空格，避免溢出。
+  ;;   '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
+  )
 
 (use-package dashboard
   :demand t
@@ -411,15 +411,8 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 切换到透明背景(真透明!)
 (defun my/toggle-transparency ()
   (interactive)
-  (let ((alpha (frame-parameter nil 'alpha)))
-    (set-frame-parameter
-     nil 'alpha
-     (if (eql (cond ((numberp alpha) alpha)
-                    ((numberp (cdr alpha)) (cdr alpha))
-                    ;; Also handle undocumented (<active> <inactive>) form.
-                    ((numberp (cadr alpha)) (cadr alpha)))
-              100)
-         '(90 . 40) '(100 . 100)))))
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 #+end_src
 + 更新 fire-code 字体： =M-x fira-code-mode-install-fonts=
 + 更新 icon 字体： =M-x all-the-icons-install-fonts=
@@ -463,23 +456,31 @@ npm config set registry=http://registry.npm.taobao.org
     :custom
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode))
-
-(use-package company-emoji
-  :demand t
-  :after (company)
-  :config
-  (company-emoji-init)
-  (add-to-list 'company-backends 'company-emoji))
 #+end_src
 + 查看 emacs 支持的字体： =(print (font-family-list))=;
-+ 支持的 emoji 字体列表可以查看变量 company-emojis;
 
-* complete
+* completion
 
 增量补全：
 #+begin_src emacs-lisp
+(defun my/minibuffer-backward-kill (arg)
+  "When minibuffer is completing a file name delete up to parent folder, otherwise delete a word"
+  (interactive "p")
+  (if minibuffer-completing-file-name
+      (if (string-match-p "/." (minibuffer-contents))
+          (zap-up-to-char (- arg) ?/)
+        (delete-minibuffer-contents))
+      (backward-kill-word arg)))
+
 (use-package vertico
   :demand t
+  :bind
+  (:map vertico-map
+        ("C-j" . vertico-next)
+        ("C-k" . vertico-previous)
+        ("C-f" . vertico-exit)
+        :map minibuffer-local-map
+        ("M-h" . my/minibuffer-backward-kill))
   :config
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
@@ -537,10 +538,11 @@ npm config set registry=http://registry.npm.taobao.org
 
   (setq completion-styles '(orderless)
         completion-category-defaults nil
-        completion-category-overrides '((file (styles partial-completion))
-                                        (command (styles +orderless-with-initialism))
-                                        (variable (styles +orderless-with-initialism))
-                                        (symbol (styles +orderless-with-initialism)))
+        completion-category-overrides
+        '((file (styles partial-completion))
+          (command (styles +orderless-with-initialism))
+          (variable (styles +orderless-with-initialism))
+          (symbol (styles +orderless-with-initialism)))
         ;; allow escaping space with backslash!
         orderless-component-separator #'orderless-escapable-split-on-space
         orderless-style-dispatchers '(+orderless-dispatch)))
@@ -613,7 +615,6 @@ npm config set registry=http://registry.npm.taobao.org
   ;; 预览 register
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
-  ;; Optionally tweak the register preview window. This adds thin lines, sorting and hides the mode line of the window.
   (advice-add #'register-preview :override #'consult-register-window)
 
   ;; Optionally replace `completing-read-multiple' with an enhanced version.
@@ -628,14 +629,14 @@ npm config set registry=http://registry.npm.taobao.org
   (setq consult-narrow-key "<")
 
   (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function #'projectile-project-root)
+  (setq consult-project-root-function #'projectile-project-root))
 
   ;;如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
-  (setq consult-project-root-function
-        (lambda ()
-          (unless (file-remote-p default-directory)
-            (when-let (project (project-current))
-              (car (project-roots project)))))))
+  ;; (setq consult-project-root-function
+  ;;       (lambda ()
+  ;;         (unless (file-remote-p default-directory)
+  ;;           (when-let (project (project-current))
+  ;;             (car (project-roots project)))))))
 
 (use-package marginalia
   :init
@@ -643,7 +644,7 @@ npm config set registry=http://registry.npm.taobao.org
   (setq marginalia-max-relative-age 0)
   (marginalia-mode)
   :config
-  ;; 不给 file 加注释，防止 TRAMP 卡住
+  ;; 不给 file 加注释，防止 TRAMP 变慢。
   (setq marginalia-annotator-registry
         (assq-delete-all 'file marginalia-annotator-registry))
   (setq marginalia-annotator-registry
@@ -1491,31 +1492,35 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
-  (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
+  (add-hook 'org-mode-hook (lambda ()
+                             (display-line-numbers-mode 0)
+                             ;; corfu 将 TAB 重定义为 Complete
+                             ;;(setq tab-always-indent t)
+                             ;; (setq c-tab-always-indent t)
+                             )))
 
 (use-package htmlize)
 
 ;; 自动创建和更新目录
 (use-package org-make-toc
-  ;; :config
-  ;; (add-hook 'org-mode-hook #'org-make-toc-mode)
-)
+  :config
+  (add-hook 'org-mode-hook #'org-make-toc-mode))
 #+END_SRC
 + org-make-toc: [[https://github.com/alphapapa/org-make-toc][参考官方文档]]。
 
 ** face
 #+begin_src emacs-lisp
-(set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
-(set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
-(set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
-(set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
-
 (defun my/org-faces ()
   (setq-default line-spacing 1)
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :weight 'medium :height (cdr face)))
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
@@ -1540,7 +1545,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   :hook
   (org-mode . org-superstar-mode)
   :custom
-  (org-superstar-remove-leading-stars t))
+  (org-superstar-remove-leading-stars t)
+  (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 (use-package org-fancy-priorities
   :after (org)
@@ -1548,6 +1554,12 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
+
+;;Make invisible parts of Org elements appear visible.
+(use-package org-appear
+  :custom
+  (org-appear-autolinks t)
+  :hook (org-mode . org-appear-mode))
 #+end_src
 
 ** fill
@@ -1591,14 +1603,17 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
         ("<right>" . org-tree-slide-move-next-tree))
   :hook
   ((org-tree-slide-play . (lambda ()
+                            (blink-cursor-mode -1)
+                            (setq-default x-stretch-cursor -1)
                             (beacon-mode -1)
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 2)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
+                            (blink-cursor-mode +1)
+                            (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
-                            (org-remove-inline-images)
                             (beacon-mode +1)
                             (read-only-mode -1))))
   :config
@@ -1609,6 +1624,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (setq org-tree-slide-heading-emphasis t)
   (setq org-tree-slide-header t)
 
+    ;; https://github.com/takaxp/org-tree-slide/issues/42#issuecomment-936481999
   (defvar my-hide-org-meta-line-p nil)
   (defun my-hide-org-meta-line ()
     (interactive)
@@ -1969,6 +1985,22 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+OPTIONS: prop:t ^:nil
 #+end_verse
 
+** template
+
+These templates enable you to type things like =<el= and then hit Tab to expand the template.
+#+begin_src emacs-lisp
+(require 'org-tempo)
+
+(add-to-list 'org-structure-template-alist '("sh" . "src sh"))
+(add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+(add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+(add-to-list 'org-structure-template-alist '("ts" . "src typescript"))
+(add-to-list 'org-structure-template-alist '("py" . "src python"))
+(add-to-list 'org-structure-template-alist '("go" . "src go"))
+(add-to-list 'org-structure-template-alist '("yaml" . "src yaml"))
+(add-to-list 'org-structure-template-alist '("json" . "src json"))
+#+end_src
+
 * pdf
 
 #+begin_src emacs-lisp
@@ -1991,6 +2023,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (setq pdf-annot-activate-created-annotations t)
   :hook
   ((pdf-view-mode . pdf-view-themed-minor-mode)
+   (pdf-view-mode . pdf-view-auto-slice-minor-mode)
    (pdf-view-mode . pdf-isearch-minor-mode))
   :config
   ;; use normal isearch
@@ -2060,8 +2093,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (setq elfeed-goodies/powerline-default-separator 'arrow)
   (elfeed-goodies/setup))
 
-;; feed 收藏
-;; From http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+;; feed 收藏， http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
 (require 'elfeed)
 (defalias 'elfeed-toggle-star
   (elfeed-expose #'elfeed-search-toggle-all 'star))
@@ -2183,6 +2215,7 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
 
 magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有之一！
 #+begin_src emacs-lisp
+;; Don't warn for following symlinked files
 (setq vc-follow-symlinks t)
 
 (use-package magit
@@ -2230,8 +2263,7 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window)) ) ))
 
-  ;; ediff 时自动展开 org-mode
-  ;; https://dotemacs.readthedocs.io/en/latest/#ediff
+  ;; ediff 时自动展开 org-mode, https://dotemacs.readthedocs.io/en/latest/#ediff
   (defun f-ediff-org-showhide (buf command &rest cmdargs)
     "If buffer exists and is orgmode then execute command"
     (when buf
@@ -2546,7 +2578,7 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 #+begin_src emacs-lisp
 (use-package lsp-java
   :disabled t
-  :after (lsp-mode company)
+  :after (lsp-mode)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -3528,7 +3560,13 @@ open -a 'Google Chrome' $*
 (global-unset-key (kbd "s-t"))
 
 (recentf-mode +1)
-(use-package savehist :init (savehist-mode) :demand t)
+
+;;Preserve Minibuffer History
+(use-package savehist
+  :demand t
+  :config
+  (setq history-length 25)
+  (savehist-mode 1))
 
 ;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100
@@ -3563,11 +3601,13 @@ open -a 'Google Chrome' $*
   ;; Scroll one line at a time (less "jumpy" than defaults)
   (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
         mouse-wheel-scroll-amount-horizontal 1
+        mouse-wheel-follow-mouse t
         mouse-wheel-progressive-speed nil)
   (xterm-mouse-mode t)
   ;; 默认执行 mouse-wheel-text-scale 命令, 容易触碰误操作，故关闭。
   (global-unset-key (kbd "C-<wheel-down>"))
   (global-unset-key (kbd "C-<wheel-up>"))
+  ;;Disable dialog boxes since they weren't working in Mac OSX
   (setq use-file-dialog nil
         use-dialog-box nil
         next-screen-context-lines 5))
@@ -3608,8 +3648,15 @@ open -a 'Google Chrome' $*
   (dired-async-mode 1)
   (put 'dired-find-alternate-file 'disabled nil))
 
+(use-package undo-tree
+  :init
+  (global-undo-tree-mode 1))
+
 ;; dired 显示高亮增强
 (use-package diredfl :config (diredfl-global-mode))
+
+;; ESC Cancels All
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
 ;; 管理 minior mode
 (use-package manage-minor-mode)
