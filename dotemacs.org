@@ -19,20 +19,15 @@
 - [[#tuning][tuning]]
 - [[#face][face]]
 - [[#font][font]]
-- [[#complete][complete]]
+- [[#completion][completion]]
 - [[#goto][goto]]
 - [[#rime][rime]]
 - [[#dict][dict]]
 - [[#email][email]]
   - [[#gnupg][gnupg]]
-  - [[#pass][pass]]
   - [[#mbsync][mbsync]]
   - [[#proxychains][proxychains]]
-  - [[#mu][mu]]
   - [[#mu4e][mu4e]]
-  - [[#mu4e-alert][mu4e-alert]]
-  - [[#mu4e-maildirs-extension][mu4e-maildirs-extension]]
-  - [[#mu4e-views][mu4e-views]]
   - [[#org-mime][org-mime]]
 - [[#org][org]]
   - [[#org][org]]
@@ -45,6 +40,7 @@
   - [[#babel][babel]]
   - [[#notify][notify]]
   - [[#tex][tex]]
+  - [[#template][template]]
 - [[#pdf][pdf]]
 - [[#rss][rss]]
 - [[#twitter][twitter]]
@@ -71,6 +67,7 @@
   - [[#devdocs][devdocs]]
   - [[#direnv][direnv]]
   - [[#dap][dap]]
+- [[#project][project]]
 - [[#treemacs][treemacs]]
 - [[#web][web]]
 - [[#vterm][vterm]]
@@ -141,6 +138,7 @@ npm config set registry=http://registry.npm.taobao.org
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
+;; 设置缩放的模式,避免 Mac 系统最大化窗口后右边和下边有空隙。
 (setq frame-resize-pixelwise t)
 
 ;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
@@ -193,11 +191,10 @@ npm config set registry=http://registry.npm.taobao.org
                          ("melpa" . "https://melpa.org/packages/")))
 #+end_src
 
-使用 =use-package + straight= 替代 Emacs 内置的 =package.el=, 它使用 =Git checkout + build= 机制来安装软件包（而非从包仓库下
-载）：
+使用 =use-package + straight= 替代 Emacs 的 =package.el=, 它用 =Git checkout + build= 机制安装软件包（而非直接从仓库下载）：
 
 #+begin_src emacs-lisp
-;; Avoid loading old bytecode instead of newer source. use the newest version available.
+;; 加载最新版本字节码
 (setq load-prefer-newer t)
 
 ;; use-package 默认使用 straight 安装包
@@ -230,7 +227,7 @@ npm config set registry=http://registry.npm.taobao.org
 (use-package use-package-ensure-system-package)
 #+end_src
 
-=exec-path-from-shell= 将用户 Shell 环境变量拷贝到 Emacs 环境中，解决找不到命令的问题：
+=exec-path-from-shell= 将 Shell 环境变量拷贝到 Emacs 环境中，避免找不到用户命令:
 #+begin_src emacs-lisp
 (use-package exec-path-from-shell
   ;; 即时加载, 否则不生效。
@@ -246,7 +243,7 @@ npm config set registry=http://registry.npm.taobao.org
 * tuning
 
 #+begin_src emacs-lisp
-;; Increase how much is read from processes in a single chunk (default is 4kb).
+;; 增加 IO 性能
 (setq read-process-output-max (* 1024 1024))
 
 ;; Don't ping things that look like domain names.
@@ -255,18 +252,12 @@ npm config set registry=http://registry.npm.taobao.org
 ;; Speed up startup
 (setq auto-mode-case-fold nil)
 
-;; Disable bidirectional text scanning for a modest performance boost.
+;; 增加长行处理性能
+(setq bidi-inhibit-bpa t)
 (setq-default bidi-display-reordering 'left-to-right)
 (setq-default bidi-paragraph-direction 'left-to-right)
 
-;; Disabling the BPA makes redisplay faster, but might produce incorrect display
-;; reordering of bidirectional text with embedded parentheses and other bracket
-;; characters whose 'paired-bracket' Unicode property is non-nil.
-(setq bidi-inhibit-bpa t)
-
-;; Resizing the Emacs frame can be a terribly expensive part of changing the
-;; font. By inhibiting this, we halve startup times, particularly when we use
-;; fonts that are larger than the system default (which would resize the frame).
+;; 不缩放 frame
 (setq frame-inhibit-implied-resize t)
 
 ;; fontify time
@@ -278,6 +269,7 @@ npm config set registry=http://registry.npm.taobao.org
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
+;; 使用字体缓存，避免卡顿
 (setq inhibit-compacting-font-caches t)
 
 ;; Garbage Collector Magic Hack
@@ -300,6 +292,8 @@ npm config set registry=http://registry.npm.taobao.org
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
+;; 指针不闪动
+(blink-cursor-mode -1)
 (set-fringe-mode 10)
 
 (setq inhibit-startup-screen t)
@@ -308,6 +302,9 @@ npm config set registry=http://registry.npm.taobao.org
 
 (setq initial-major-mode 'fundamental-mode)
 (setq initial-scratch-message nil)
+
+;; 上下分屏
+(setq split-width-threshold nil)
 
 ;; 高亮匹配的括号
 (show-paren-mode t)
@@ -470,15 +467,12 @@ npm config set registry=http://registry.npm.taobao.org
       (if (string-match-p "/." (minibuffer-contents))
           (zap-up-to-char (- arg) ?/)
         (delete-minibuffer-contents))
-      (backward-kill-word arg)))
+    (backward-kill-word arg)))
 
 (use-package vertico
   :demand t
   :bind
   (:map vertico-map
-        ("C-j" . vertico-next)
-        ("C-k" . vertico-previous)
-        ("C-f" . vertico-exit)
         :map minibuffer-local-map
         ("M-h" . my/minibuffer-backward-kill))
   :config
@@ -490,7 +484,26 @@ npm config set registry=http://registry.npm.taobao.org
   ;; Enable recursive minibuffers
   (setq enable-recursive-minibuffers t)
   (setq vertico-count 20)
+  ;;(setq vertico-cycle t)
   (vertico-mode 1))
+
+(use-package posframe :demand)
+(use-package vertico-posframe
+  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
+  :config
+  (setq vertico-posframe-parameters
+        '((left-fringe . 8)
+          (right-fringe . 8)
+          ;;(alpha . 80)
+          ))
+  ;; 在光标位置的上方显示 posframe, 避免遮住光标下方的内容
+  (defun my/posframe-poshandler-p0.5p0-to-f0.5p1 (info)
+    (let ((x (car (posframe-poshandler-p0.5p0-to-f0.5f0 info)))
+          ;; 第三个参数 t 表示 upward
+          (y (cdr (posframe-poshandler-point-1 info nil t))))
+      (cons x y)))
+  (setq vertico-posframe-poshandler 'my/posframe-poshandler-p0.5p0-to-f0.5p1)
+  (vertico-posframe-mode 1))
 
 ;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang$
 ;; Recognizes the following patterns:
@@ -546,14 +559,6 @@ npm config set registry=http://registry.npm.taobao.org
         ;; allow escaping space with backslash!
         orderless-component-separator #'orderless-escapable-split-on-space
         orderless-style-dispatchers '(+orderless-dispatch)))
-
-(use-package vertico-posframe
-  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
-  :config
-  (setq vertico-posframe-parameters '((left-fringe . 8) (right-fringe . 8)))
-  ;; 光标位置显示 posframe
-  (setq vertico-posframe-poshandler 'posframe-poshandler-p0.5p0-to-f0.5p1)
-  (vertico-posframe-mode 1))
 
 (use-package consult
   :ensure-system-package (rg . ripgrep)
@@ -631,12 +636,12 @@ npm config set registry=http://registry.npm.taobao.org
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function #'projectile-project-root))
 
-  ;;如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
-  ;; (setq consult-project-root-function
-  ;;       (lambda ()
-  ;;         (unless (file-remote-p default-directory)
-  ;;           (when-let (project (project-current))
-  ;;             (car (project-roots project)))))))
+;;如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
+;; (setq consult-project-root-function
+;;       (lambda ()
+;;         (unless (file-remote-p default-directory)
+;;           (when-let (project (project-current))
+;;             (car (project-roots project)))))))
 
 (use-package marginalia
   :init
@@ -682,6 +687,59 @@ npm config set registry=http://registry.npm.taobao.org
 
 自动补全：
 #+begin_src emacs-lisp
+;; 来自 https://github.com/company-mode/company-mode/blob/master/company.el#L2779
+(defun company-doc-buffer (&optional string)
+  (with-current-buffer (get-buffer-create "*company-documentation*")
+    (erase-buffer)
+    (fundamental-mode)
+    (when string
+      (save-excursion
+        (insert string)
+        (visual-line-mode)))
+    (current-buffer)))
+
+(use-package corfu
+  :demand
+  :straight '(corfu :host github :repo "minad/corfu")
+  :custom
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-commit-predicate nil)   ;; Do not commit selected candidates on next input
+  (corfu-quit-at-boundary nil)     ;; Automatically quit at word boundary
+  (corfu-quit-no-match t)        ;; Automatically quit if there is no match
+  (corfu-scroll-margin 5)        ;; Use scroll margin
+  (corfu-preview-current t)
+  (corfu-auto-prefix 3)
+  :config
+  (corfu-global-mode))
+
+;; Dabbrev works with Corfu
+(use-package dabbrev
+  :demand
+  :bind
+  (("M-/" . dabbrev-completion)
+   ("C-M-/" . dabbrev-expand)))
+
+;; TAB cycle if there are only few candidates
+(setq completion-cycle-threshold 3)
+(setq completion-ignore-case t)
+;; Enable indentation+completion using the TAB key.
+;; `completion-at-point' is often bound to M-TAB.
+(setq tab-always-indent 'complete)
+(setq c-tab-always-indent 'complete)
+
+(use-package kind-icon
+  :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
+  :after corfu
+  :demand
+  :custom
+  ;; to compute blended background correctly
+  (kind-icon-default-face 'corfu-background)
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
 (use-package company
   :bind
   (:map company-mode-map
@@ -734,7 +792,30 @@ npm config set registry=http://registry.npm.taobao.org
       (apply fn args)))
   (advice-add 'company-capf--candidates :around #'just-one-face)
   (global-company-mode t))
+
+(use-package company-emoji
+  :demand t
+  :after (company)
+  :config
+  (company-emoji-init)
+  (add-to-list 'company-backends 'company-emoji))
+
+(use-package restclient
+  :mode ("\\.http\\'" . restclient-mode)
+  :config
+  (use-package restclient-test :diminish :hook (restclient-mode . restclient-test-mode))
+
+  (with-eval-after-load 'company
+    (use-package company-restclient
+      :defines company-backends
+      :init (add-to-list 'company-backends 'company-restclient))))
+
+(use-package company-ansible
+  :after (ansible)
+  :config
+  (add-hook 'ansible-hook (lambda() (add-to-list 'company-backends 'company-ansible))))
 #+end_src
+
 
 片段：
 #+begin_src emacs-lisp
@@ -743,7 +824,7 @@ npm config set registry=http://registry.npm.taobao.org
   :demand t
   :commands yas-minor-mode
   :config
-  (global-set-key (kbd "C-c s") 'company-yasnippet)
+  ;;(global-set-key (kbd "C-c s") 'company-yasnippet)
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   (yas-global-mode 1))
 (use-package yasnippet-snippets :demand t)
@@ -2134,7 +2215,6 @@ These templates enable you to type things like =<el= and then hit Tab to expand 
 
 (defun elfeed-goodies/entry-line-draw (entry)
   "Print ENTRY to the buffer."
-
   (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
          (date (elfeed-search-format-date (elfeed-entry-date entry)))
          (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
@@ -2234,8 +2314,8 @@ magit 是 emacs 最强大、最好用的版本控制系统操作界面，没有�
   (bind-key "q" #'mu-magit-kill-buffers magit-log-mode-map)
   (bind-key "q" #'mu-magit-kill-buffers magit-mode-map))
 #+end_src
-+ =(setq auto-revert-check-vc-info t)= 可以自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU Profile 显示比较影响
-  性能，故暂不开启。
++ =(setq auto-revert-check-vc-info t)= 自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU Profile 显示比较影响性能，
+  故暂不开启。
 
 git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
 #+begin_src emacs-lisp
@@ -2690,9 +2770,8 @@ mermaid.initialize({
 "))
 #+end_src
 
-使用 grip 来预览 markdown 文件，它调用 github markdown API 来渲染文件，从而确保
-渲染后分隔和 Github 一致。为了避免 API 调用频率限制，可以创建一个空 scop 的
-Access Token，然后将 username 和 token 保存到 =~/.authinfo.gpg= 文件中：
+使用 grip 来预览 markdown 文件，它调用 github markdown API 来渲染文件，从而确保渲染后分隔和 Github 一致。为了避免 API 调
+用频率限制，可以创建一个空 scop 的Access Token，然后将 username 和 token 保存到 =~/.authinfo.gpg= 文件中：
 
 #+begin_src bash :results none
 machine api.github.com login geekard@qq.com password YOUR_TOKEN
@@ -2747,11 +2826,6 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
   :after (yaml-mode)
   :config
   (add-hook 'yaml-mode-hook (lambda () (ansible 1))))
-
-(use-package company-ansible
-  :after (ansible company)
-  :config
-  (add-hook 'ansible-hook (lambda() (add-to-list 'company-backends 'company-ansible))))
 
 ;; ansible-doc 使用系统的 ansible-doc 命令搜索文档
 (use-package ansible-doc
@@ -3059,7 +3133,6 @@ lsp-workspace-restart= 来重启 lsp 。
 #+begin_src emacs-lisp
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
-  :demand t
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -3300,7 +3373,8 @@ open -a 'Google Chrome' $*
   :after (vterm)
   :custom
   ;; 由于 TRAMP 模式下关闭了 projectile，scope 不能设置为 'project。
-  (vterm-toggle-scope 'dedicated)
+  ;;(vterm-toggle-scope 'dedicated)
+  (vterm-toggle-scope 'project)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
@@ -3400,6 +3474,9 @@ open -a 'Google Chrome' $*
 #+begin_src emacs-lisp
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
+
+;; 退出自动杀掉进程
+(setq confirm-kill-processes nil)
 
 ;;启动 isearch 进行搜索时，M-<, M->, C-v 和 M-v 这些按键不会打断搜索
 (setq isearch-allow-motion t)
@@ -3518,15 +3595,13 @@ open -a 'Google Chrome' $*
 ;; Keep cursor position when scrolling.
 (setq scroll-preserve-screen-position 1)
 
-;; Don't recenter buffer point when point goes outside window. This prevents
-;; centering the buffer when scrolling down its last line.
-(setq scroll-conservatively 100)
-
-;; 切换到已有的frame
+;; 切换到已有的 frame
 (setq display-buffer-reuse-frames t)
 
 (setq auto-window-vscroll nil)
+;; 平滑地进行半屏滚动，避免滚动后 recenter 操作
 (setq scroll-step 1)
+(setq scroll-conservatively 10000)
 (setq scroll-margin 0)
 (setq auto-window-vscroll nil)
 
@@ -3538,7 +3613,7 @@ open -a 'Google Chrome' $*
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'forward)
 
-(fset 'yes-or-no-p 'y-or-n-p)
+(setq use-short-answers t)
 (setq confirm-kill-emacs #'y-or-n-p)
 
 ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
@@ -3696,16 +3771,6 @@ open -a 'Google Chrome' $*
   ;; Delete files to trash
   (setq-default delete-by-moving-to-trash t))
 
-(use-package restclient
-  :mode ("\\.http\\'" . restclient-mode)
-  :config
-  (use-package restclient-test :diminish :hook (restclient-mode . restclient-test-mode))
-
-  (with-eval-after-load 'company
-    (use-package company-restclient
-      :defines company-backends
-      :init (add-to-list 'company-backends 'company-restclient))))
-
 ;; 在帮助文档底部显示 lisp demo
 (use-package elisp-demos
   :config
@@ -3758,6 +3823,7 @@ open -a 'Google Chrome' $*
 5. [[https://github.com/condy0919/.emacs.d][condy0919/.emacs.d]]
 6. [[https://github.com/manateelazycat/lazycat-emacs][manateelazycat/lazycat-emacs]]
 7. [[https://github.com/jiacai2050/dotfiles][jiacai2050/dotfiles]]
+8. [[https://config.daviwil.com/emacs][daviwil]]
 
 * archived
 
