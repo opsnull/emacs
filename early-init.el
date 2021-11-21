@@ -17,6 +17,7 @@
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
+;; 设置缩放的模式,避免 Mac 系统最大化窗口后右边和下边有空隙。
 (setq frame-resize-pixelwise t)
 
 ;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)

@@ -3,7 +3,7 @@
                          ("elpa" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "https://melpa.org/packages/")))
 
-;; Avoid loading old bytecode instead of newer source. use the newest version available.
+;; 加载最新版本字节码
 (setq load-prefer-newer t)
 
 ;; use-package 默认使用 straight 安装包
@@ -45,7 +45,7 @@
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
-;; Increase how much is read from processes in a single chunk (default is 4kb).
+;; 增加 IO 性能
 (setq read-process-output-max (* 1024 1024))
 
 ;; Don't ping things that look like domain names.
@@ -54,18 +54,12 @@
 ;; Speed up startup
 (setq auto-mode-case-fold nil)
 
-;; Disable bidirectional text scanning for a modest performance boost.
+;; 增加长行处理性能
+(setq bidi-inhibit-bpa t)
 (setq-default bidi-display-reordering 'left-to-right)
 (setq-default bidi-paragraph-direction 'left-to-right)
 
-;; Disabling the BPA makes redisplay faster, but might produce incorrect display
-;; reordering of bidirectional text with embedded parentheses and other bracket
-;; characters whose 'paired-bracket' Unicode property is non-nil.
-(setq bidi-inhibit-bpa t)
-
-;; Resizing the Emacs frame can be a terribly expensive part of changing the
-;; font. By inhibiting this, we halve startup times, particularly when we use
-;; fonts that are larger than the system default (which would resize the frame).
+;; 不缩放 frame
 (setq frame-inhibit-implied-resize t)
 
 ;; fontify time
@@ -77,9 +71,7 @@
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
-;; Font compacting can be terribly expensive, especially for rendering icon fonts on Windows. Whether disabling it has a
-;; notable affect on Linux and Mac hasn't been determined, but do it there anyway, just in case. This increases memory
-;; usage, however!
+;; 使用字体缓存，避免卡顿
 (setq inhibit-compacting-font-caches t)
 
 ;; Garbage Collector Magic Hack
@@ -97,6 +89,9 @@
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
+;; 指针不闪动
+(blink-cursor-mode -1)
+(set-fringe-mode 10)
 
 (setq inhibit-startup-screen t)
 (setq inhibit-startup-message t)
@@ -104,6 +99,9 @@
 
 (setq initial-major-mode 'fundamental-mode)
 (setq initial-scratch-message nil)
+
+;; 上下分屏
+(setq split-width-threshold nil)
 
 ;; 高亮匹配的括号
 (show-paren-mode t)
@@ -141,7 +139,7 @@
 
 ;; 跟随 Mac 自动切换深浅主题
 (defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
@@ -171,18 +169,20 @@
   ;; 显示语言环境版本（如 go/python)
   (doom-modeline-env-version t)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657
-  (doom-modeline-buffer-file-name-style 'file-name)
+  ;;(doom-modeline-buffer-file-name-style 'file-name)
+  (doom-modeline-buffer-file-name-style 'truncate-except-project)
   (doom-modeline-vcs-max-length 20)
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
   (doom-modeline-mode 1)
-  :config
-  (doom-modeline-def-modeline 'main
-    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
+  ;; :config
+  ;; (doom-modeline-def-modeline 'main
+  ;;   ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+  ;;   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+  ;;   ;; right-hand segment list，尾部增加空格，避免溢出。
+  ;;   '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
+  )
 
 (use-package dashboard
   :demand t
@@ -205,15 +205,8 @@
 ;; 切换到透明背景(真透明!)
 (defun my/toggle-transparency ()
   (interactive)
-  (let ((alpha (frame-parameter nil 'alpha)))
-    (set-frame-parameter
-     nil 'alpha
-     (if (eql (cond ((numberp alpha) alpha)
-                    ((numberp (cdr alpha)) (cdr alpha))
-                    ;; Also handle undocumented (<active> <inactive>) form.
-                    ((numberp (cadr alpha)) (cadr alpha)))
-              100)
-         '(90 . 40) '(100 . 100)))))
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
 (use-package cnfonts
   :demand t
@@ -245,15 +238,21 @@
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode))
 
-(use-package company-emoji
-  :demand t
-  :after (company)
-  :config
-  (company-emoji-init)
-  (add-to-list 'company-backends 'company-emoji))
+(defun my/minibuffer-backward-kill (arg)
+  "When minibuffer is completing a file name delete up to parent folder, otherwise delete a word"
+  (interactive "p")
+  (if minibuffer-completing-file-name
+      (if (string-match-p "/." (minibuffer-contents))
+          (zap-up-to-char (- arg) ?/)
+        (delete-minibuffer-contents))
+    (backward-kill-word arg)))
 
 (use-package vertico
   :demand t
+  :bind
+  (:map vertico-map
+        :map minibuffer-local-map
+        ("M-h" . my/minibuffer-backward-kill))
   :config
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
@@ -263,7 +262,26 @@
   ;; Enable recursive minibuffers
   (setq enable-recursive-minibuffers t)
   (setq vertico-count 20)
+  ;;(setq vertico-cycle t)
   (vertico-mode 1))
+
+(use-package posframe :demand)
+(use-package vertico-posframe
+  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
+  :config
+  (setq vertico-posframe-parameters
+        '((left-fringe . 8)
+          (right-fringe . 8)
+          ;;(alpha . 80)
+          ))
+  ;; 在光标位置的上方显示 posframe, 避免遮住光标下方的内容
+  (defun my/posframe-poshandler-p0.5p0-to-f0.5p1 (info)
+    (let ((x (car (posframe-poshandler-p0.5p0-to-f0.5f0 info)))
+          ;; 第三个参数 t 表示 upward
+          (y (cdr (posframe-poshandler-point-1 info nil t))))
+      (cons x y)))
+  (setq vertico-posframe-poshandler 'my/posframe-poshandler-p0.5p0-to-f0.5p1)
+  (vertico-posframe-mode 1))
 
 ;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang$
 ;; Recognizes the following patterns:
@@ -311,21 +329,14 @@
 
   (setq completion-styles '(orderless)
         completion-category-defaults nil
-        completion-category-overrides '((file (styles partial-completion))
-                                        (command (styles +orderless-with-initialism))
-                                        (variable (styles +orderless-with-initialism))
-                                        (symbol (styles +orderless-with-initialism)))
+        completion-category-overrides
+        '((file (styles partial-completion))
+          (command (styles +orderless-with-initialism))
+          (variable (styles +orderless-with-initialism))
+          (symbol (styles +orderless-with-initialism)))
         ;; allow escaping space with backslash!
         orderless-component-separator #'orderless-escapable-split-on-space
         orderless-style-dispatchers '(+orderless-dispatch)))
-
-(use-package vertico-posframe
-  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
-  :config
-  (setq vertico-posframe-parameters '((left-fringe . 8) (right-fringe . 8)))
-  ;; 光标位置显示 posframe
-  (setq vertico-posframe-poshandler 'posframe-poshandler-p0.5p0-to-f0.5p1)
-  (vertico-posframe-mode 1))
 
 (use-package consult
   :ensure-system-package (rg . ripgrep)
@@ -387,7 +398,6 @@
   ;; 预览 register
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
-  ;; Optionally tweak the register preview window. This adds thin lines, sorting and hides the mode line of the window.
   (advice-add #'register-preview :override #'consult-register-window)
 
   ;; Optionally replace `completing-read-multiple' with an enhanced version.
@@ -402,14 +412,14 @@
   (setq consult-narrow-key "<")
 
   (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function #'projectile-project-root)
+  (setq consult-project-root-function #'projectile-project-root))
 
-  ;;如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
-  (setq consult-project-root-function
-        (lambda ()
-          (unless (file-remote-p default-directory)
-            (when-let (project (project-current))
-              (car (project-roots project)))))))
+;;如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
+;; (setq consult-project-root-function
+;;       (lambda ()
+;;         (unless (file-remote-p default-directory)
+;;           (when-let (project (project-current))
+;;             (car (project-roots project)))))))
 
 (use-package marginalia
   :init
@@ -417,7 +427,7 @@
   (setq marginalia-max-relative-age 0)
   (marginalia-mode)
   :config
-  ;; 不给 file 加注释，防止 TRAMP 卡住
+  ;; 不给 file 加注释，防止 TRAMP 变慢。
   (setq marginalia-annotator-registry
         (assq-delete-all 'file marginalia-annotator-registry))
   (setq marginalia-annotator-registry
@@ -451,65 +461,63 @@
          ("C-x C-d" . consult-dir)
          ("C-x C-j" . consult-dir-jump-file)))
 
-(use-package company
-  :bind
-  (:map company-mode-map
-        ([remap completion-at-point] . company-complete)
-        :map company-active-map
-        ([escape] . company-abort)
-        ("C-p"     . company-select-previous)
-        ("C-n"     . company-select-next)
-        ("C-s"     . company-filter-candidates)
-        ([tab]     . company-complete-common-or-cycle)
-        ([backtab] . company-select-previous-or-abort)
-        :map company-search-map
-        ([escape] . company-search-abort)
-        ("C-p"    . company-select-previous)
-        ("C-n"    . company-select-next))
+;; 来自 https://github.com/company-mode/company-mode/blob/master/company.el#L2779
+(defun company-doc-buffer (&optional string)
+  (with-current-buffer (get-buffer-create "*company-documentation*")
+    (erase-buffer)
+    (fundamental-mode)
+    (when string
+      (save-excursion
+        (insert string)
+        (visual-line-mode)))
+    (current-buffer)))
+
+(use-package corfu
+  :demand
+  :straight '(corfu :host github :repo "minad/corfu")
   :custom
-  ;; trigger completion immediately.
-  (company-idle-delay 0)
-  (company-echo-delay 0)
-  ;; allow input string that do not match candidate words
-  ;; 开启后有大量不匹配的候选情况，故关闭
-  ;;(company-require-match nil)
-  ;; number the candidates (use M-1, M-2 etc to select completions).
-  (company-show-numbers t)
-  ;; pop up a completion menu by tapping a character
-  (company-minimum-prefix-length 1)
-  (company-tooltip-limit 14)
-  (company-tooltip-align-annotations t)
-  ;; Only search the current buffer for `company-dabbrev' (a backend that
-  ;; suggests text your open buffers). This prevents Company from causing
-  ;; lag once you have a lot of buffers open.
-  (company-dabbrev-other-buffers nil)
-  ;; Make `company-dabbrev' fully case-sensitive, to improve UX with
-  ;; domain-specific words with particular casing.
-  (company-dabbrev-ignore-case nil)
-  ;; Don't downcase the returned candidates.
-  (company-dabbrev-downcase nil)
-  ;; 候选框宽度
-  (company-tooltip-minimum-width 70)
-  (company-tooltip-maximum-width 100)
-  (company-global-modes '(not message-mode help-mode eshell-mode))
-  ;; 补全后端
-  (company-backends '(company-capf
-                      (company-dabbrev-code company-keywords company-files)
-                      company-dabbrev))
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-commit-predicate nil)   ;; Do not commit selected candidates on next input
+  (corfu-quit-at-boundary nil)     ;; Automatically quit at word boundary
+  (corfu-quit-no-match t)        ;; Automatically quit if there is no match
+  (corfu-scroll-margin 5)        ;; Use scroll margin
+  (corfu-preview-current t)
+  (corfu-auto-prefix 3)
   :config
-  ;; 高亮候选者（orderless 排序）
-  (defun just-one-face (fn &rest args)
-    (let ((orderless-match-faces [completions-common-part]))
-      (apply fn args)))
-  (advice-add 'company-capf--candidates :around #'just-one-face)
-  (global-company-mode t))
+  (corfu-global-mode))
+
+;; Dabbrev works with Corfu
+(use-package dabbrev
+  :demand
+  :bind
+  (("M-/" . dabbrev-completion)
+   ("C-M-/" . dabbrev-expand)))
+
+;; TAB cycle if there are only few candidates
+(setq completion-cycle-threshold 3)
+(setq completion-ignore-case t)
+;; Enable indentation+completion using the TAB key.
+;; `completion-at-point' is often bound to M-TAB.
+(setq tab-always-indent 'complete)
+(setq c-tab-always-indent 'complete)
+
+(use-package kind-icon
+  :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
+  :after corfu
+  :demand
+  :custom
+  ;; to compute blended background correctly
+  (kind-icon-default-face 'corfu-background)
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
   :demand t
   :commands yas-minor-mode
   :config
-  (global-set-key (kbd "C-c s") 'company-yasnippet)
+  ;;(global-set-key (kbd "C-c s") 'company-yasnippet)
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   (yas-global-mode 1))
 (use-package yasnippet-snippets :demand t)
@@ -864,27 +872,31 @@
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
-  (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
+  (add-hook 'org-mode-hook (lambda ()
+                             (display-line-numbers-mode 0)
+                             ;; corfu 将 TAB 重定义为 Complete
+                             ;;(setq tab-always-indent t)
+                             ;; (setq c-tab-always-indent t)
+                             )))
 
 (use-package htmlize)
 
 ;; 自动创建和更新目录
 (use-package org-make-toc
-  ;; :config
-  ;; (add-hook 'org-mode-hook #'org-make-toc-mode)
-)
-
-(set-face-attribute 'org-level-8 nil :weight 'bold :inherit 'default)
-(set-face-attribute 'org-level-7 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-6 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-5 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-4 nil :inherit 'org-level-8)
-(set-face-attribute 'org-level-3 nil :inherit 'org-level-8 :height 1.2)
-(set-face-attribute 'org-level-2 nil :inherit 'org-level-8 :height 1.44)
-(set-face-attribute 'org-level-1 nil :inherit 'org-level-8 :height 1.728)
+  :config
+  (add-hook 'org-mode-hook #'org-make-toc-mode))
 
 (defun my/org-faces ()
   (setq-default line-spacing 1)
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :weight 'medium :height (cdr face)))
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
@@ -909,7 +921,8 @@
   :hook
   (org-mode . org-superstar-mode)
   :custom
-  (org-superstar-remove-leading-stars t))
+  (org-superstar-remove-leading-stars t)
+  (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 (use-package org-fancy-priorities
   :after (org)
@@ -917,6 +930,12 @@
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
+
+;;Make invisible parts of Org elements appear visible.
+(use-package org-appear
+  :custom
+  (org-appear-autolinks t)
+  :hook (org-mode . org-appear-mode))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -950,14 +969,17 @@
         ("<right>" . org-tree-slide-move-next-tree))
   :hook
   ((org-tree-slide-play . (lambda ()
+                            (blink-cursor-mode -1)
+                            (setq-default x-stretch-cursor -1)
                             (beacon-mode -1)
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 2)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
+                            (blink-cursor-mode +1)
+                            (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
-                            (org-remove-inline-images)
                             (beacon-mode +1)
                             (read-only-mode -1))))
   :config
@@ -968,6 +990,7 @@
   (setq org-tree-slide-heading-emphasis t)
   (setq org-tree-slide-header t)
 
+    ;; https://github.com/takaxp/org-tree-slide/issues/42#issuecomment-936481999
   (defvar my-hide-org-meta-line-p nil)
   (defun my-hide-org-meta-line ()
     (interactive)
@@ -1176,6 +1199,17 @@
           (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}")))
   (setq org-latex-listings 'listings))
 
+(require 'org-tempo)
+
+(add-to-list 'org-structure-template-alist '("sh" . "src sh"))
+(add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+(add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
+(add-to-list 'org-structure-template-alist '("ts" . "src typescript"))
+(add-to-list 'org-structure-template-alist '("py" . "src python"))
+(add-to-list 'org-structure-template-alist '("go" . "src go"))
+(add-to-list 'org-structure-template-alist '("yaml" . "src yaml"))
+(add-to-list 'org-structure-template-alist '("json" . "src json"))
+
 (use-package pdf-tools
   :demand t
   :ensure-system-package
@@ -1195,6 +1229,7 @@
   (setq pdf-annot-activate-created-annotations t)
   :hook
   ((pdf-view-mode . pdf-view-themed-minor-mode)
+   (pdf-view-mode . pdf-view-auto-slice-minor-mode)
    (pdf-view-mode . pdf-isearch-minor-mode))
   :config
   ;; use normal isearch
@@ -1255,8 +1290,7 @@
   (setq elfeed-goodies/powerline-default-separator 'arrow)
   (elfeed-goodies/setup))
 
-;; feed 收藏
-;; From http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+;; feed 收藏， http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
 (require 'elfeed)
 (defalias 'elfeed-toggle-star
   (elfeed-expose #'elfeed-search-toggle-all 'star))
@@ -1297,7 +1331,6 @@
 
 (defun elfeed-goodies/entry-line-draw (entry)
   "Print ENTRY to the buffer."
-
   (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
          (date (elfeed-search-format-date (elfeed-entry-date entry)))
          (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
@@ -1345,6 +1378,7 @@
   (setq twittering-allow-insecure-server-cert t)
   (setq twittering-use-master-password t))
 
+;; Don't warn for following symlinked files
 (setq vc-follow-symlinks t)
 
 (use-package magit
@@ -1383,8 +1417,7 @@
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window)) ) ))
 
-  ;; ediff 时自动展开 org-mode
-  ;; https://dotemacs.readthedocs.io/en/latest/#ediff
+  ;; ediff 时自动展开 org-mode, https://dotemacs.readthedocs.io/en/latest/#ediff
   (defun f-ediff-org-showhide (buf command &rest cmdargs)
     "If buffer exists and is orgmode then execute command"
     (when buf
@@ -1575,7 +1608,7 @@
 
 (use-package lsp-java
   :disabled t
-  :after (lsp-mode company)
+  :after (lsp-mode)
   :init
   ;; 指定运行 jdtls 的 java 程序
   (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
@@ -1698,11 +1731,6 @@ mermaid.initialize({
   :after (yaml-mode)
   :config
   (add-hook 'yaml-mode-hook (lambda () (ansible 1))))
-
-(use-package company-ansible
-  :after (ansible company)
-  :config
-  (add-hook 'ansible-hook (lambda() (add-to-list 'company-backends 'company-ansible))))
 
 ;; ansible-doc 使用系统的 ansible-doc 命令搜索文档
 (use-package ansible-doc
@@ -1915,7 +1943,6 @@ mermaid.initialize({
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
-  :demand t
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -2124,7 +2151,8 @@ mermaid.initialize({
   :after (vterm)
   :custom
   ;; 由于 TRAMP 模式下关闭了 projectile，scope 不能设置为 'project。
-  (vterm-toggle-scope 'dedicated)
+  ;;(vterm-toggle-scope 'dedicated)
+  (vterm-toggle-scope 'project)
   :config
   (global-set-key (kbd "C-`") 'vterm-toggle)
   (global-set-key (kbd "C-~") 'vterm-toggle-cd)
@@ -2212,6 +2240,9 @@ mermaid.initialize({
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
 
+;; 退出自动杀掉进程
+(setq confirm-kill-processes nil)
+
 ;;启动 isearch 进行搜索时，M-<, M->, C-v 和 M-v 这些按键不会打断搜索
 (setq isearch-allow-motion t)
 
@@ -2275,7 +2306,6 @@ mermaid.initialize({
                  (string-equal (file-name-extension (buffer-file-name)) "log")))
     (fundamental-mode)
     (setq buffer-read-only t)
-    ;;(buffer-disable-undo)
     (font-lock-mode -1)
     (rainbow-delimiters-mode -1)
     (smartparens-global-mode -1)
@@ -2330,15 +2360,13 @@ mermaid.initialize({
 ;; Keep cursor position when scrolling.
 (setq scroll-preserve-screen-position 1)
 
-;; Don't recenter buffer point when point goes outside window. This prevents
-;; centering the buffer when scrolling down its last line.
-(setq scroll-conservatively 100)
-
-;; 切换到已有的frame
+;; 切换到已有的 frame
 (setq display-buffer-reuse-frames t)
 
 (setq auto-window-vscroll nil)
+;; 平滑地进行半屏滚动，避免滚动后 recenter 操作
 (setq scroll-step 1)
+(setq scroll-conservatively 10000)
 (setq scroll-margin 0)
 (setq auto-window-vscroll nil)
 
@@ -2350,7 +2378,7 @@ mermaid.initialize({
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'forward)
 
-(fset 'yes-or-no-p 'y-or-n-p)
+(setq use-short-answers t)
 (setq confirm-kill-emacs #'y-or-n-p)
 
 ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
@@ -2372,7 +2400,13 @@ mermaid.initialize({
 (global-unset-key (kbd "s-t"))
 
 (recentf-mode +1)
-(use-package savehist :init (savehist-mode) :demand t)
+
+;;Preserve Minibuffer History
+(use-package savehist
+  :demand t
+  :config
+  (setq history-length 25)
+  (savehist-mode 1))
 
 ;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100
@@ -2407,11 +2441,13 @@ mermaid.initialize({
   ;; Scroll one line at a time (less "jumpy" than defaults)
   (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
         mouse-wheel-scroll-amount-horizontal 1
+        mouse-wheel-follow-mouse t
         mouse-wheel-progressive-speed nil)
   (xterm-mouse-mode t)
   ;; 默认执行 mouse-wheel-text-scale 命令, 容易触碰误操作，故关闭。
   (global-unset-key (kbd "C-<wheel-down>"))
   (global-unset-key (kbd "C-<wheel-up>"))
+  ;;Disable dialog boxes since they weren't working in Mac OSX
   (setq use-file-dialog nil
         use-dialog-box nil
         next-screen-context-lines 5))
@@ -2452,8 +2488,15 @@ mermaid.initialize({
   (dired-async-mode 1)
   (put 'dired-find-alternate-file 'disabled nil))
 
+(use-package undo-tree
+  :init
+  (global-undo-tree-mode 1))
+
 ;; dired 显示高亮增强
 (use-package diredfl :config (diredfl-global-mode))
+
+;; ESC Cancels All
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
 ;; 管理 minior mode
 (use-package manage-minor-mode)
@@ -2492,16 +2535,6 @@ mermaid.initialize({
     (osx-trash-setup))
   ;; Delete files to trash
   (setq-default delete-by-moving-to-trash t))
-
-(use-package restclient
-  :mode ("\\.http\\'" . restclient-mode)
-  :config
-  (use-package restclient-test :diminish :hook (restclient-mode . restclient-test-mode))
-
-  (with-eval-after-load 'company
-    (use-package company-restclient
-      :defines company-backends
-      :init (add-to-list 'company-backends 'company-restclient))))
 
 ;; 在帮助文档底部显示 lisp demo
 (use-package elisp-demos
