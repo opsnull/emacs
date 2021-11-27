@@ -428,20 +428,47 @@
          ("C-x C-d" . consult-dir)
          ("C-x C-j" . consult-dir-jump-file)))
 
+(use-package cape
+  :demand
+  :straight '(cape :host github :repo "minad/cape")
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  )
+
 (use-package corfu
   :demand
   :straight '(corfu :host github :repo "minad/corfu")
   :custom
-  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-commit-predicate nil)   ;; Do not commit selected candidates on next input
-  (corfu-quit-at-boundary nil)     ;; Automatically quit at word boundary
-  (corfu-quit-no-match t)        ;; Automatically quit if there is no match
-  (corfu-scroll-margin 5)        ;; Use scroll margin
+  (corfu-cycle t)
+  (corfu-auto t)
+  (corfu-commit-predicate nil)
+  (corfu-quit-at-boundary nil)
+  (corfu-quit-no-match t)
+  (corfu-scroll-margin 5)
   (corfu-preview-current t)
   (corfu-auto-prefix 3)
   :config
-  (corfu-global-mode))
+  (corfu-global-mode)
+  ;; https://github.com/minad/corfu/wiki#additional-movement-commands
+  (defun corfu-beginning-of-prompt ()
+    "Move to beginning of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (car completion-in-region--data)))
+  (defun corfu-end-of-prompt ()
+    "Move to end of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (cadr completion-in-region--data)))
+  (define-key corfu-map [remap move-beginning-of-line] #'corfu-beginning-of-prompt)
+  (define-key corfu-map [remap move-end-of-line] #'corfu-end-of-prompt))
 
 ;; Dabbrev works with Corfu
 (use-package dabbrev
@@ -462,6 +489,8 @@
   :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
   :after corfu
   :demand
+  :custom
+  (kind-icon-default-face 'corfu-default) ;; to compute blended backgrounds correctly
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
@@ -1405,16 +1434,7 @@
   (:map flycheck-command-map ("!" . consult-flycheck)))
 
 (use-package lsp-mode
-  :hook
-  ((java-mode . lsp)
-  (python-mode . lsp)
-  (go-mode . lsp)
-  ;;(yaml-mode . lsp)
-  ;;(js-mode . lsp)
-  (web-mode . lsp)
-  (tide-mode . lsp)
-  (typescript-mode . lsp)
-  (dockerfile-mode . lsp))
+  :after (cape orderless)
   :custom
   ;; 调试模式（开启后非常影响性能）
   ;;(lsp-log-io t)
@@ -1431,7 +1451,8 @@
   (lsp-diagnostics-flycheck-default-level 'warning)
   ;; flycheck 会在 modeline 展示检查情况, 故没必要再展示
   (lsp-modeline-diagnostics-enable nil)
-  (lsp-completion-provider :capf)
+  (lsp-completion-provider :none) ;; 使用 corfu.el
+  ;;(lsp-completion-provider :capf) ;; 使用 company.el
   (lsp-enable-symbol-highlighting t)
   (lsp-headerline-breadcrumb-enable t)
   (lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
@@ -1448,6 +1469,27 @@
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
   (lsp-restart 'auto-restart)
+  :init
+  ;; https://github.com/minad/corfu/wiki
+  (defun my/orderless-dispatch-passthrough-first (_pattern index _total)
+         (if (eq index 0) 'orderless-flex))
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless))
+    (make-local-variable 'orderless-style-dispatchers)
+    (cl-pushnew #'my/orderless-dispatch-passthrough-first orderless-style-dispatchers)
+    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
+  :hook
+  ((java-mode . lsp)
+   (python-mode . lsp)
+   (go-mode . lsp)
+   (yaml-mode . lsp)
+   (js-mode . lsp)
+   (web-mode . lsp)
+   (tide-mode . lsp)
+   (typescript-mode . lsp)
+   (dockerfile-mode . lsp)
+   (lsp-completion-mode . my/lsp-mode-setup-completion))
   :config
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"

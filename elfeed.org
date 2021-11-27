@@ -47,14 +47,13 @@
 *** [[https://github.com/emacs-mirror/emacs/commits/master.atom][emacs-master]]
 *** [[https://github.com/minad/corfu/commits/main.atom][minad/corfu]]
 *** [[https://github.com/minad/consult/commits/main.atom][minad/consult]]
-*** [[https://github.com/oantolin/embark/commits/master.atom][oantolin/embark]]
-*** [[https://github.com/minad/marginalia/commits/main.atom][minad/marginalia]]
+*** [[https://github.com/minad/cape/commits/main.atom][minad/cape]]
 *** [[https://github.com/minad/vertico/commits/main.atom][minad/vertico]]
+*** [[https://github.com/oantolin/embark/commits/master.atom][oantolin/embark]]
 *** [[https://github.com/oantolin/orderless/commits/master.atom][oantolin/orderless]]
 *** [[https://github.com/d12frosted/homebrew-emacs-plus/commits/master.atom][homebrew-emacs-plus:master]]
 *** [[https://github.com/daviderestivo/homebrew-emacs-head/commits/master.atom][homebrew-emacs-head:master]]
 *** [[https://github.com/jimeh/build-emacs-for-macos/commits/master.atom][build-emacs-for-macos:master]]
-
 *** [[https://github.com/djcb/mu/commits/master.atom][mu:master]]
 *** [[https://github.com/emacs-lsp/lsp-mode/commits/master.atom][lsp-mode:master]]
 *** [[https://github.com/emacs-lsp/lsp-java/commits/master.atom][lsp-java:master]]
@@ -63,12 +62,9 @@
 *** [[https://github.com/company-mode/company-mode/commits/master.atom][company-mode:master]]
 *** [[https://github.com/bbatsov/projectile/commits/master.atom][projectile:master]]
 *** [[https://github.com/Alexander-Miller/treemacs/commits/master.atom][treemacs:master]]
-
 *** [[https://github.com/misohena/el-easydraw/commits/master.atom][el-easydraw:master]]
-
 *** [[https://github.com/akermu/emacs-libvterm/commits/master.atom][emacs-libvterm:master]]
 *** [[https://github.com/jixiuf/vterm-toggle/commits/master.atom][vterm-toggle:master]]
-
 *** [[https://github.com/DogLooksGood/emacs-rime/commits/master.atom][emacs-rime:master]]
 *** [[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/commits/master.atom][fcitx5-pinyin-zhwiki:master]]
 *** [[https://github.com/laishulu/emacs-smart-input-source/commits/master.atom][emacs-smart-input-source:master]]
