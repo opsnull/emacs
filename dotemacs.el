@@ -1,6 +1,5 @@
 (require 'package)
-(setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")
+(setq package-archives '(("elpa" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "https://melpa.org/packages/")))
 
 ;; 加载最新版本字节码
@@ -36,8 +35,7 @@
 (use-package use-package-ensure-system-package)
 
 (use-package exec-path-from-shell
-  ;; 即时加载, 否则不生效。
-  :demand t
+  :demand
   :custom
   (exec-path-from-shell-check-startup-files nil)
   (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
@@ -48,28 +46,14 @@
 ;; 增加 IO 性能
 (setq read-process-output-max (* 1024 1024))
 
-;; Don't ping things that look like domain names.
-(setq ffap-machine-p-known 'reject)
-
-;; Speed up startup
-(setq auto-mode-case-fold nil)
-
 ;; 增加长行处理性能
 (setq bidi-inhibit-bpa t)
 (setq-default bidi-display-reordering 'left-to-right)
 (setq-default bidi-paragraph-direction 'left-to-right)
 
-;; 不缩放 frame
-(setq frame-inhibit-implied-resize t)
-
 ;; fontify time
 (setq jit-lock-defer-time 0.1)
 (setq jit-lock-context-time 0.1)
-
-;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
-;; in non-focused windows.
-(setq-default cursor-in-non-selected-windows nil)
-(setq highlight-nonselected-windows nil)
 
 ;; 使用字体缓存，避免卡顿
 (setq inhibit-compacting-font-caches t)
@@ -89,8 +73,13 @@
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
+
 ;; 指针不闪动
 (blink-cursor-mode -1)
+
+;; 指针宽度与字符一致
+(setq-default x-stretch-cursor t)
+
 (set-fringe-mode 10)
 
 (setq inhibit-startup-screen t)
@@ -100,7 +89,7 @@
 (setq initial-major-mode 'fundamental-mode)
 (setq initial-scratch-message nil)
 
-;; 上下分屏
+;; 默认上下分屏
 (setq split-width-threshold nil)
 
 ;; 高亮匹配的括号
@@ -108,31 +97,21 @@
 (setq show-paren-style 'parentheses)
 
 (setq-default indicate-empty-lines t)
-(when (not indicate-empty-lines)
-  (toggle-indicate-empty-lines))
-
-;; 增强窗口背景对比度
-(use-package solaire-mode
-  :demand t
-  :config (solaire-global-mode +1))
-
-;; Stretch cursor to the glyph width
-(setq-default x-stretch-cursor t)
 
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
-  :demand t
+  :demand
   :custom-face
   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
   :custom
   (doom-themes-enable-bold t)
   (doom-themes-enable-italic t)
   (doom-themes-treemacs-theme "doom-colors")
-  ;; pad the mode-line in 4px on each side
+  ;; modeline 两边各加 4px 空白
   (doom-themes-padded-modeline t)
   :config
   ;;(load-theme 'doom-gruvbox t)
-  ;; Enable flashing mode-line on errors
+  ;; 出错时 modeline 闪动
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
@@ -146,6 +125,7 @@
               ('light (my/load-light-theme))
               ('dark (my/load-dark-theme)))))
 
+;; modeline 显示电池和日期时间
 (display-battery-mode t)
 (column-number-mode t)
 (size-indication-mode -1)
@@ -168,21 +148,13 @@
   (doom-modeline-hud t)
   ;; 显示语言环境版本（如 go/python)
   (doom-modeline-env-version t)
-  ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/bbatsov/projectile/issues/657
-  ;;(doom-modeline-buffer-file-name-style 'file-name)
-  (doom-modeline-buffer-file-name-style 'truncate-except-project)
-  (doom-modeline-vcs-max-length 20)
+  ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
+  (doom-modeline-buffer-file-name-style 'file-name)
+  (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1)
-  ;; :config
-  ;; (doom-modeline-def-modeline 'main
-  ;;   ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
-  ;;   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-  ;;   ;; right-hand segment list，尾部增加空格，避免溢出。
-  ;;   '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
-  )
+  (doom-modeline-mode 1))
 
 (use-package dashboard
   :demand t
@@ -190,8 +162,7 @@
   :config
   (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
   ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
-  ;;(setq dashboard-projects-backend 'project-el)
-  (setq dashboard-projects-backend #'projectile)
+  (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
@@ -202,14 +173,14 @@
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 
-;; 切换到透明背景(真透明!)
+;; 切换到透明背景
 (defun my/toggle-transparency ()
   (interactive)
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
   (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
 (use-package cnfonts
-  :demand t
+  :demand
   :ensure-system-package
   ("/Users/zhangjun/Library/Fonts/JuliaMono-Regular.ttf" .
    "brew tap homebrew/cask-fonts; brew install --cask font-juliamono")
@@ -228,10 +199,10 @@
   (cnfonts-enable))
 
 (use-package all-the-icons
-  :demand t
+  :demand
   :after (cnfonts))
 
-;; fire-code-mode 和 set-fontset-font 只能在 GUI 模式下使用。
+;; fire-code-mode 只能在 GUI 模式下使用。
 (when (display-graphic-p)
   (use-package fira-code-mode
     :custom
@@ -239,7 +210,6 @@
     :hook prog-mode))
 
 (defun my/minibuffer-backward-kill (arg)
-  "When minibuffer is completing a file name delete up to parent folder, otherwise delete a word"
   (interactive "p")
   (if minibuffer-completing-file-name
       (if (string-match-p "/." (minibuffer-contents))
@@ -248,7 +218,7 @@
     (backward-kill-word arg)))
 
 (use-package vertico
-  :demand t
+  :demand
   :bind
   (:map vertico-map
         :map minibuffer-local-map
@@ -259,10 +229,9 @@
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
   ;; Vertico commands are hidden in normal buffers.
   (setq read-extended-command-predicate #'command-completion-default-include-p)
-  ;; Enable recursive minibuffers
   (setq enable-recursive-minibuffers t)
   (setq vertico-count 20)
-  ;;(setq vertico-cycle t)
+  (setq vertico-cycle t)
   (vertico-mode 1))
 
 (use-package posframe :demand)
@@ -294,7 +263,7 @@
 ;; * regexp$ (regexp matching at end)
 ;; https://github.com/minad/consult/wiki
 (use-package orderless
-  :demand t
+  :demand
   :config
   (defvar +orderless-dispatch-alist
     '((?% . char-fold-to-regexp)
@@ -411,15 +380,17 @@
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
 
+  ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
   (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function #'projectile-project-root))
-
-;;如果是远程目录文件，直接返回 nil（使用 default-directory)， 防止卡主。
-;; (setq consult-project-root-function
-;;       (lambda ()
-;;         (unless (file-remote-p default-directory)
-;;           (when-let (project (project-current))
-;;             (car (project-roots project)))))))
+  (setq consult-project-root-function
+        (lambda ()
+          (unless (file-remote-p default-directory)
+            ;; 使用 projectile.el:
+            (projectile-project-root)
+            ;; 使用 project.el：
+            ;;(when-let (project (project-current))
+            ;; (car (project-roots project)))
+            ))))
 
 (use-package marginalia
   :init
@@ -449,28 +420,13 @@
    ("C-h B" . embark-bindings)))
 
 (use-package embark-consult
-  :after (embark consult)
-  :demand t ;; only necessary if you have the hook below
-  :hook
-  ;; if you want to have consult previews as you move around an auto-updating embark collect buffer
-  (embark-collect-mode . consult-preview-at-point-mode))
+  :after (embark consult))
 
 (use-package consult-dir
   :bind (("C-x C-d" . consult-dir)
          :map minibuffer-local-completion-map
          ("C-x C-d" . consult-dir)
          ("C-x C-j" . consult-dir-jump-file)))
-
-;; 来自 https://github.com/company-mode/company-mode/blob/master/company.el#L2779
-(defun company-doc-buffer (&optional string)
-  (with-current-buffer (get-buffer-create "*company-documentation*")
-    (erase-buffer)
-    (fundamental-mode)
-    (when string
-      (save-excursion
-        (insert string)
-        (visual-line-mode)))
-    (current-buffer)))
 
 (use-package corfu
   :demand
@@ -506,9 +462,6 @@
   :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
   :after corfu
   :demand
-  :custom
-  ;; to compute blended background correctly
-  (kind-icon-default-face 'corfu-background)
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
@@ -872,12 +825,7 @@
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-switchb)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
-  (add-hook 'org-mode-hook (lambda ()
-                             (display-line-numbers-mode 0)
-                             ;; corfu 将 TAB 重定义为 Complete
-                             ;;(setq tab-always-indent t)
-                             ;; (setq c-tab-always-indent t)
-                             )))
+  (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
 (use-package htmlize)
 
@@ -930,12 +878,6 @@
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
-
-;;Make invisible parts of Org elements appear visible.
-(use-package org-appear
-  :custom
-  (org-appear-autolinks t)
-  :hook (org-mode . org-appear-mode))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default

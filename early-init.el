@@ -17,6 +17,9 @@
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
+;; 不缩放 frame
+(setq frame-inhibit-implied-resize t)
+
 ;; 设置缩放的模式,避免 Mac 系统最大化窗口后右边和下边有空隙。
 (setq frame-resize-pixelwise t)
 
@@ -42,11 +45,9 @@
 (setq user-full-name "zhangjun")
 (setq user-mail-address "geekard@qq.com")
 
-;; Use my email-address for encryption
-(setq-default epa-file-encrypt-to user-mail-address)
-
-;; Make sure we always use this
+;; 缺省使用我的 email 地址来加密
 (setq-default epa-file-select-keys nil)
+(setq-default epa-file-encrypt-to user-mail-address)
 
 ;; 使用 minibuffer 输入 GPG 密码
 (setq-default epa-pinentry-mode 'loopback)
@@ -54,7 +55,8 @@
 ;; 加密认证信息文件
 (setq auth-sources '("~/.authinfo.gpg"))
 
-(setq auth-source-cache-expiry nil) ;;default is 7200 (2h)
+;; auth 不过期, 默认 7200(2h)
+(setq auth-source-cache-expiry nil)
 ;;(setq auth-source-debug t)
 
 (defun org-clocking-buffer (&rest _))
