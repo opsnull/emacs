@@ -55,6 +55,9 @@
 ;; 加密认证信息文件
 (setq auth-sources '("~/.authinfo.gpg"))
 
+;; 缓存对称加密密码
+(setq epa-file-cache-passphrase-for-symmetric-encryption t)
+
 ;; auth 不过期, 默认 7200(2h)
 (setq auth-source-cache-expiry nil)
 ;;(setq auth-source-debug t)

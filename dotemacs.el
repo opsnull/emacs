@@ -271,6 +271,7 @@
       (?`. orderless-initialism)
       (?= . orderless-literal)
       (?~ . orderless-flex)))
+
   (defun +orderless-dispatch (pattern index _total)
     (cond
      ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
@@ -299,7 +300,8 @@
   (setq completion-styles '(orderless)
         completion-category-defaults nil
         completion-category-overrides
-        '((file (styles partial-completion))
+        '((buffer (styles basic partial-completion))
+          (file (styles basic partial-completion))
           (command (styles +orderless-with-initialism))
           (variable (styles +orderless-with-initialism))
           (symbol (styles +orderless-with-initialism)))
@@ -433,9 +435,9 @@
   :straight '(cape :host github :repo "minad/cape")
   :init
   (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
@@ -479,7 +481,6 @@
 
 ;; TAB cycle if there are only few candidates
 (setq completion-cycle-threshold 3)
-(setq completion-ignore-case t)
 ;; Enable indentation+completion using the TAB key.
 ;; `completion-at-point' is often bound to M-TAB.
 (setq tab-always-indent 'complete)
@@ -577,6 +578,8 @@
           rime-predicate-hydra-p
           rime-predicate-current-uppercase-letter-p
           rime-predicate-after-alphabet-char-p
+          rime-predicate-space-after-cc-p
+          rime-predicate-punctuation-after-space-cc-p
           rime-predicate-prog-in-code-p
           rime-predicate-after-ascii-char-p))
   (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
@@ -812,30 +815,33 @@
 (use-package org
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
+  :demand
   ;; latext pdf 代码高亮
-  :ensure-system-package (pygmentize . pygments)
+  :ensure-system-package
+  ((pygmentize . pygments)
+   (magick . imagemagick))
   :config
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
-        ;; 隐藏 // 和 ** 标记
+        ;; 不显示下面 alist 中的强调字符(但高亮内容)
         org-hide-emphasis-markers t
-        org-hide-block-startup nil
+        ;; 去掉 * 和 /, 使它们不再具有强调含义
+        org-emphasis-alist
+        '(("_" underline)
+         ("=" org-verbatim verbatim)
+         ("~" org-code verbatim)
+         ("+" (:strike-through t)))
+        ;; 隐藏 block
+        org-hide-block-startup t
         org-hidden-keywords '(title)
         org-cycle-separator-lines 2
-        org-default-notes-file "~/docs/orgs/note.org"
-        org-log-into-drawer t
-        org-log-done 'note
-        org-image-actual-width '(300)
-        org-export-with-broken-links t
-        org-agenda-start-day "-7d"
-        org-agenda-span 21
-        org-agenda-include-diary t
-        org-html-doctype "html5"
-        org-html-html5-fancy t
-        org-html-self-link-headlines t
-        org-html-preamble "<a name=\"top\" id=\"top\"></a>"
         org-cycle-level-faces t
         org-n-level-faces 4
+        org-log-into-drawer t
+        org-log-done 'note
+        ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300
+        org-image-actual-width '(300)
+        org-export-with-broken-links t
         org-startup-folded 'content
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
@@ -845,9 +851,6 @@
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-  (setq org-refile-targets
-        '(("~/docs/orgs/later.org" :level . 1)
-          ("~/docs/orgs/gtd.org" :maxlevel . 3)))
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -856,12 +859,23 @@
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
-(use-package htmlize)
-
 ;; 自动创建和更新目录
 (use-package org-make-toc
   :config
   (add-hook 'org-mode-hook #'org-make-toc-mode))
+
+(use-package htmlize)
+(setq org-html-doctype "html5")
+(setq org-html-html5-fancy t)
+(setq org-html-self-link-headlines t)
+(setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
+(use-package org-html-themify
+  :straight (org-html-themify :repo "DogLooksGood/org-html-themify" :files ("*.el" "*.js" "*.css"))
+  :hook (org-mode . org-html-themify-mode)
+  :custom
+  (org-html-themify-themes
+   '((dark . doom-palenight)
+     (light . doom-one-light))))
 
 (defun my/org-faces ()
   (setq-default line-spacing 1)
@@ -928,85 +942,7 @@
   ;; 文字缩放时自动调整 visual-fill-column-width
   (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
 
-(use-package org-tree-slide
-  :after (org)
-  :commands org-tree-slide-mode
-  :bind
-  (:map org-mode-map
-        ("<f8>" . org-tree-slide-mode)
-        :map org-tree-slide-mode-map
-        ("<f9>" . org-tree-slide-content)
-        ("<left>" . org-tree-slide-move-previous-tree)
-        ("<right>" . org-tree-slide-move-next-tree))
-  :hook
-  ((org-tree-slide-play . (lambda ()
-                            (blink-cursor-mode -1)
-                            (setq-default x-stretch-cursor -1)
-                            (beacon-mode -1)
-                            (redraw-display)
-                            (org-display-inline-images)
-                            (text-scale-increase 2)
-                            (read-only-mode 1)))
-   (org-tree-slide-stop . (lambda ()
-                            (blink-cursor-mode +1)
-                            (setq-default x-stretch-cursor t)
-                            (text-scale-increase 0)
-                            (beacon-mode +1)
-                            (read-only-mode -1))))
-  :config
-  (setq org-tree-slide-slide-in-effect t)
-  (setq org-tree-slide-activate-message "Presentation started.")
-  (setq org-tree-slide-deactivate-message "Presentation ended.")
-  (setq org-tree-slide-content-margin-top 0)
-  (setq org-tree-slide-heading-emphasis t)
-  (setq org-tree-slide-header t)
-
-    ;; https://github.com/takaxp/org-tree-slide/issues/42#issuecomment-936481999
-  (defvar my-hide-org-meta-line-p nil)
-  (defun my-hide-org-meta-line ()
-    (interactive)
-    (setq my-hide-org-meta-line-p t)
-    (set-face-attribute 'org-meta-line nil :foreground (face-attribute 'default :background)))
-  (defun my-show-org-meta-line ()
-    (interactive)
-    (setq my-hide-org-meta-line-p nil)
-    (set-face-attribute 'org-meta-line nil :foreground nil))
-  (defun my-toggle-org-meta-line ()
-    (interactive)
-    (if my-hide-org-meta-line-p
-        (my-show-org-meta-line) (my-hide-org-meta-line)))
-
-  (add-hook 'org-tree-slide-play-hook #'my-hide-org-meta-line)
-  (add-hook 'org-tree-slide-stop-hook #'my-show-org-meta-line))
-
-(require 'org-protocol)
-(require 'org-capture)
-(add-to-list 'org-capture-templates
-             '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
-               "* %^{Title}\nDate: %U\nSource: %:annotation\nContent:\n%:initial"
-               :empty-lines 1))
-(add-to-list 'org-capture-templates
-             '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
-               "* ☞ TODO [#B] %U %i%?"))
-(add-to-list 'org-capture-templates
-             '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
-               "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
-(add-to-list 'org-capture-templates
-             '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
-               "* ☞ TODO [#B] %U %i%?"))
-
-(use-package org-download
-  :ensure-system-package pngpaste
-  :bind
-  ("<f6>" . org-download-screenshot)
-  :config
-  (setq-default org-download-image-dir "./images/")
-  (setq org-download-method 'directory
-        org-download-display-inline-images 'posframe
-        org-download-screenshot-method "pngpaste %s"
-        org-download-image-attr-list '("#+ATTR_HTML: :width 400 :align center"))
-  (add-hook 'dired-mode-hook 'org-download-enable)
-  (org-download-enable))
+(setq org-default-notes-file "~/docs/orgs/note.org")
 
 (setq org-agenda-time-grid
       (quote ((daily today require-timed)
@@ -1014,14 +950,19 @@
               "......"
               "-----------------------------------------------------"
               )))
+
 ;; org-agenda 展示的文件
 (setq org-agenda-files
       '("~/docs/orgs/inbox.org"
         "~/docs/orgs/gtd.org"
+        "~/docs/orgs/note.org"
         "~/docs/orgs/later.org"
         "~/docs/orgs/capture.org"))
 
-(setq diary-file "~/docs/orgs/diary")
+(setq org-agenda-start-day "-7d")
+(setq org-agenda-span 21)
+(setq org-agenda-include-diary t)
+(setq diary-file "~/docs/orgs/diary.org")
 (setq diary-mail-addr "geekard@qq.com")
 ;; 获取经纬度：https://www.latlong.net/
 (setq calendar-latitude +39.904202)
@@ -1030,7 +971,7 @@
 (setq calendar-remove-frame-by-deleting t)
 ;; 每周第一天是周一
 (setq calendar-week-start-day 1)
-;; 标记有记录的日子
+;; 标记有记录的日期
 (setq mark-diary-entries-in-calendar t)
 ;; 标记节假日
 (setq mark-holidays-in-calendar nil)
@@ -1067,12 +1008,51 @@
 
 (use-package org-super-agenda)
 
+;; refile 的位置是 agenda 文件的前三层 headline
+(setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
+;; 使用文件路径的形式显示 filename 和 headline, 方便在文件的 top-head 添加内容
+(setq org-refile-use-outline-path 'file)
+;; 必须设置为 nil 才能显示 headline, 否则只显示 filename.
+(setq org-outline-path-complete-in-steps nil)
+;; 支持为 subtree 在 refile target 文件指定一个新的 parent node.
+(setq org-refile-allow-creating-parent-nodes 'confirm)
+
+(require 'org-protocol)
+(require 'org-capture)
+
+(add-to-list 'org-capture-templates
+             '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
+               "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial"
+               :empty-lines 1))
+(add-to-list 'org-capture-templates
+             '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
+               "* ☞ TODO [#B] %U %i%?"))
+(add-to-list 'org-capture-templates
+             '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
+               "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
+(add-to-list 'org-capture-templates
+             '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
+               "* ☞ TODO [#B] %U %i%?"))
+
+(use-package org-download
+  :ensure-system-package pngpaste
+  :bind
+  ("<f6>" . org-download-screenshot)
+  :config
+  (setq-default org-download-image-dir "./images/")
+  (setq org-download-method 'directory
+        org-download-display-inline-images 'posframe
+        org-download-screenshot-method "pngpaste %s"
+        org-download-image-attr-list '("#+ATTR_HTML: :width 400 :align center"))
+  (add-hook 'dired-mode-hook 'org-download-enable)
+  (org-download-enable))
+
 (setq org-confirm-babel-evaluate nil
       org-src-fontify-natively t
       ;; add a special face to #+begin_quote and #+begin_verse block
       org-fontify-quote-and-verse-blocks t
       ;; 不自动缩进
-      org-src-preserve-indentation t
+      ;;org-src-preserve-indentation t
       org-edit-src-content-indentation 0
       ;; 在当前 window 编辑 SRC Block
       org-src-window-setup 'current-window
@@ -1172,14 +1152,54 @@
 
 (require 'org-tempo)
 
-(add-to-list 'org-structure-template-alist '("sh" . "src sh"))
+(add-to-list 'org-structure-template-alist '("sh" . "src shell"))
 (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-(add-to-list 'org-structure-template-alist '("sc" . "src scheme"))
-(add-to-list 'org-structure-template-alist '("ts" . "src typescript"))
 (add-to-list 'org-structure-template-alist '("py" . "src python"))
 (add-to-list 'org-structure-template-alist '("go" . "src go"))
 (add-to-list 'org-structure-template-alist '("yaml" . "src yaml"))
 (add-to-list 'org-structure-template-alist '("json" . "src json"))
+
+(use-package org-tree-slide
+  :after (org)
+  :commands org-tree-slide-mode
+  :bind
+  (:map org-mode-map
+        ("<f8>" . org-tree-slide-mode)
+        :map org-tree-slide-mode-map
+        ("<f9>" . org-tree-slide-content)
+        ("<left>" . org-tree-slide-move-previous-tree)
+        ("<right>" . org-tree-slide-move-next-tree))
+  :hook
+  ((org-tree-slide-play . (lambda ()
+                            (blink-cursor-mode -1)
+                            (setq-default x-stretch-cursor -1)
+                            (beacon-mode -1)
+                            (redraw-display)
+                            (org-display-inline-images)
+                            (text-scale-increase 2)
+                            (read-only-mode 1)))
+   (org-tree-slide-stop . (lambda ()
+                            (blink-cursor-mode +1)
+                            (setq-default x-stretch-cursor t)
+                            (text-scale-increase 0)
+                            (beacon-mode +1)
+                            (read-only-mode -1))))
+  :config
+  (setq org-tree-slide-slide-in-effect nil)
+  (setq org-tree-slide-content-margin-top 0)
+  (setq org-tree-slide-activate-message " ")
+  (setq org-tree-slide-deactivate-message " ")
+  (setq org-tree-slide-modeline-display nil)
+  (setq org-tree-slide-breadcrumbs " 👉 ")
+  (setq org-tree-slide-heading-emphasis t)
+  (setq org-tree-slide-header t)
+  ;; 隐藏 #+ KEYWORD 行内容。
+  (defun +org-present-hide-blocks-h ()
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^[[:space:]]*\\(#\\+\\)\\(\\(?:BEGIN\\|END\\|ATTR\\|DOWNLOADED\\)[^[:space:]]+\\).*" nil t)
+        (org-flag-region (match-beginning 0) (match-end 0) org-tree-slide-mode t))))
+  (add-hook 'org-tree-slide-play-hook #'+org-present-hide-blocks-h))
 
 (use-package pdf-tools
   :demand t
@@ -1483,8 +1503,8 @@
   ((java-mode . lsp)
    (python-mode . lsp)
    (go-mode . lsp)
-   (yaml-mode . lsp)
-   (js-mode . lsp)
+   ;;(yaml-mode . lsp)
+   ;;(js-mode . lsp)
    (web-mode . lsp)
    (tide-mode . lsp)
    (typescript-mode . lsp)
@@ -1556,6 +1576,9 @@
       (when flake8
         (flycheck-set-checker-executable "python-flake8" flake8)))))
 
+(setq indent-tabs-mode nil)
+(setq tab-width 4)
+(setq python-indent-offset 4)
 (use-package python
   :after (flycheck)
   :ensure-system-package
@@ -1565,10 +1588,7 @@
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
-                   (my/python-setup-checkers)
-                   (setq indent-tabs-mode nil)
-                   (setq tab-width 4)
-                   (setq python-indent-offset 4))))
+                   (my/python-setup-checkers))))
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
 (use-package lsp-pyright
@@ -2221,6 +2241,30 @@ mermaid.initialize({
              (delete-window (treemacs-get-local-window)))))
    (progn)))
 
+(defun org-sketch-xournal-edit (sketch-file-path)
+  (call-process-shell-command (format "%s %s" org-sketch-xournal-bin sketch-file-path)))
+
+(use-package org-contrib
+  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
+  :demand
+)
+
+;; (use-package org-xournalpp
+;;   :ensure t
+;;   :straight (org-xournalpp :host gitlab :repo "vherrmann/org-xournalpp" :files ("*.el" "resources"))
+;;   :config
+;;   (add-hook 'org-mode-hook 'org-xournalpp-mode))
+
+(use-package org-sketch
+  :hook (org-mode . org-sketch-mode)
+  :straight (:host github :repo "yuchen-lea/org-sketch")
+  :init
+  (setq org-sketch-note-dir "~/docs/images" ;; xopp， drawio 文件存储目录
+        org-sketch-xournal-template-dir "~/.emacs.d/resources/"  ;; xournal 模板存储目录
+        org-sketch-xournal-default-template-name "template.xopp" ;; 默认笔记模版名称，应该位于 org-sketch-xournal-template-dir
+        org-sketch-apps '("drawio" "xournal")  ;; 设置使用的sketch应用
+        ))
+
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
 
@@ -2254,6 +2298,7 @@ mermaid.initialize({
 
 ;; 智能括号
 (use-package smartparens
+  :demand
   :config
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
@@ -2382,6 +2427,8 @@ mermaid.initialize({
 ;; 避免执行 ns-open-file-using-panel 命令。
 (global-unset-key (kbd "s-o"))
 (global-unset-key (kbd "s-t"))
+;; 关闭 suspend-frame
+(global-unset-key (kbd "C-z"))
 
 (recentf-mode +1)
 
