@@ -2,20 +2,31 @@
 (when (fboundp 'native-compile-async)
   (setenv "LIBRARY_PATH"
           (concat (getenv "LIBRARY_PATH")
-                  "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin20/11.2.0"))
+                  "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin20/11"))
   (setq native-comp-speed 2)
   (setq native-comp-async-jobs-number 4)
   (setq native-comp-deferred-compilation nil)
   (setq native-comp-deferred-compilation-deny-list '())
   (setq native-comp-async-report-warnings-errors 'silent))
 
+;; 加载最新版本字节码
+(setq load-prefer-newer t)
+
+;; 关闭 cl 告警
 (setq byte-compile-warnings '(cl-functions))
 
 ;; 关闭 package.el(后续使用 straight.el)
 (setq package-enable-at-startup nil)
+;; 不从 package cahce 中加载 package
+(setq package-quickstart nil)
 
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
+
+;; 第一个 frame 规格
+(setq initial-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
+;; 后续 frame 规格
+(setq default-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
 
 ;; 不缩放 frame
 (setq frame-inhibit-implied-resize t)
@@ -29,17 +40,9 @@
 (set-frame-parameter (selected-frame) 'maximized 'fullscreen)
 (add-hook 'after-init-hook #'toggle-frame-maximized)
 
-;; 第一个 frame 规格
-(setq initial-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
-;; 后续 frame 规格
-(setq default-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
-
 ;; 在单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
-
-;; 按中文折行
-(setq word-wrap-by-category t)
 
 ;; 个人信息
 (setq user-full-name "zhangjun")

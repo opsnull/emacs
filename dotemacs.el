@@ -2,9 +2,6 @@
 (setq package-archives '(("elpa" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "https://melpa.org/packages/")))
 
-;; 加载最新版本字节码
-(setq load-prefer-newer t)
-
 ;; use-package 默认使用 straight 安装包
 (setq straight-use-package-by-default t)
 (setq straight-vc-git-default-clone-depth 1)
@@ -37,6 +34,8 @@
 (use-package exec-path-from-shell
   :demand
   :custom
+  ;; 去掉 -i 参数来加快启动
+  (exec-path-from-shell-arguments '("-l"))
   (exec-path-from-shell-check-startup-files nil)
   (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
   :config
@@ -70,9 +69,10 @@
   (gcmh-mode)
   (gcmh-set-high-threshold))
 
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
-(menu-bar-mode -1)
+(when (window-system)
+  (tool-bar-mode -1)
+  (scroll-bar-mode -1)
+  (menu-bar-mode -1))
 
 ;; 指针不闪动
 (blink-cursor-mode -1)
@@ -110,7 +110,7 @@
   ;; modeline 两边各加 4px 空白
   (doom-themes-padded-modeline t)
   :config
-  ;;(load-theme 'doom-gruvbox t)
+  ;;(load-theme 'doom-palenight t)
   ;; 出错时 modeline 闪动
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
@@ -170,6 +170,49 @@
   (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
+(use-package centaur-tabs
+  :hook (emacs-startup . centaur-tabs-mode)
+  :init
+  (setq centaur-tabs-set-icons t)
+  (setq centaur-tabs-height 30)
+  (setq centaur-tabs-gray-out-icons 'buffer)
+  (setq centaur-tabs-set-modified-marker t)
+  (setq centaur-tabs-cycle-scope 'tabs)
+  (setq centaur-tabs-enable-ido-completion nil)
+  (setq centaur-tabs-set-bar 'under)
+  (setq x-underline-at-descent-line t)
+  :config
+  (centaur-tabs-mode t)
+  (centaur-tabs-headline-match)
+  (centaur-tabs-group-by-projectile-project)
+  (defun centaur-tabs-hide-tab (x)
+    "Do no to show buffer X in tabs."
+    (let ((name (format "%s" x)))
+      (or
+       ;; Current window is not dedicated window.
+       (window-dedicated-p (selected-window))
+       ;; Buffer name not match below blacklist.
+       (string-prefix-p "*epc" name)
+       (string-prefix-p "*helm" name)
+       (string-prefix-p "*Helm" name)
+       (string-prefix-p "*Compile-Log*" name)
+       (string-prefix-p "*lsp" name)
+       (string-prefix-p "*company" name)
+       (string-prefix-p "*Flycheck" name)
+       (string-prefix-p "*tramp" name)
+       (string-prefix-p "*Mini" name)
+       (string-prefix-p "*help" name)
+       (string-prefix-p "*straight" name)
+       (string-prefix-p "*temp" name)
+       (string-prefix-p "*Help" name)
+       (string-prefix-p "*mybuf" name)
+       (string-prefix-p "*Message" name)
+       (string-prefix-p "*dashboard" name)
+       (string-prefix-p "*scratch" name)
+       ;; Is not magit buffer.
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name)))))))
+
 ;; 显示光标位置
 (use-package beacon :config (beacon-mode 1))
 
@@ -178,6 +221,13 @@
   (interactive)
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
   (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
+
+;; 在 frame 底部显示帮助窗口
+(setq display-buffer-alist
+      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*") (0+ not-newline))
+         (display-buffer-reuse-mode-window display-buffer-below-selected)
+         (window-height . 0.33)
+         (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
 
 (use-package cnfonts
   :demand
@@ -361,11 +411,11 @@
   :hook
   (completion-list-mode . consult-preview-at-point-mode)
   :init
-  ;; 如果搜索字符少于 5，可以添加后缀#开始搜索，如 #gr#。
-  (setq consult-async-min-input 5)
+  ;; 如果搜索字符少于 3，可以添加后缀#开始搜索，如 #gr#。
+  (setq consult-async-min-input 3)
   (setq consult-async-refresh-delay 0.15)
-  (setq consult-async-input-debounce 0.1)
-  (setq consult-async-input-throttle 0.2)
+  (setq consult-async-input-debounce 0.3)
+  (setq consult-async-input-throttle 0.4)
   ;; 预览 register
   (setq register-preview-delay 0.1
         register-preview-function #'consult-register-format)
@@ -381,6 +431,7 @@
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
+  (global-set-key [remap repeat-complex-command] #'consult-complex-command)
 
   ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
   (autoload 'projectile-project-root "projectile")
@@ -412,6 +463,8 @@
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
+  (setq embark-collect-live-update-delay 0.5)
+  (setq embark-collect-live-initial-delay 0.8)
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
@@ -425,10 +478,11 @@
   :after (embark consult))
 
 (use-package consult-dir
-  :bind (("C-x C-d" . consult-dir)
-         :map minibuffer-local-completion-map
-         ("C-x C-d" . consult-dir)
-         ("C-x C-j" . consult-dir-jump-file)))
+  :bind
+  (("C-x C-d" . consult-dir)
+   :map minibuffer-local-completion-map
+   ("C-x C-d" . consult-dir)
+   ("C-x C-j" . consult-dir-jump-file)))
 
 (use-package cape
   :demand
@@ -442,7 +496,8 @@
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  )
+  :config
+  (setq cape-dabbrev-min-length 2))
 
 (use-package corfu
   :demand
@@ -816,8 +871,8 @@
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :demand
-  ;; latext pdf 代码高亮
   :ensure-system-package
+  ;; latext pdf 代码高亮
   ((pygmentize . pygments)
    (magick . imagemagick))
   :config
@@ -847,6 +902,7 @@
         org-use-sub-superscripts nil
         org-startup-indented t
         org-link-file-path-type 'absolute)
+  (setq org-catch-invisible-edits 'show)
   (setq org-todo-keywords
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
@@ -888,13 +944,14 @@
                   (org-level-7 . 1.1)
                   (org-level-8 . 1.1)))
     (set-face-attribute (car face) nil :weight 'medium :height (cdr face)))
+  (setq org-fontify-whole-block-delimiter-line nil)
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
    '(org-block ((t (:font "JuliaMono-15" :inherit fixed-pitch))))
-   ;; 调小 height
-   '(org-block-begin-line ((t (:underline "#A7A6AA" :height 0.8))))
-   '(org-block-end-line ((t (:underline "#A7A6AA" :height 0.8))))
+   ;; 调小 height, 加 :underline "#A7A6AA" 显示下划线
+   '(org-block-begin-line ((t (:height 0.8))))
+   '(org-block-end-line ((t (:height 0.8))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
    '(org-document-info ((t (:foreground "dark orange"))))
    '(org-document-info-keyword ((t (:height 0.8))))
@@ -922,6 +979,15 @@
   :config
   (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
 
+;; 美化代码块
+(setq-default prettify-symbols-alist
+              '(("#+BEGIN_SRC" . "»")
+                ("#+END_SRC" . "«")
+                ("#+begin_src" . "»")
+                ("#+end_src" . "«")))
+(setq prettify-symbols-unprettify-at-point 'right-edge)
+(add-hook 'org-mode-hook 'prettify-symbols-mode)
+
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
    ;; 自动换行的字符数
@@ -942,8 +1008,6 @@
   ;; 文字缩放时自动调整 visual-fill-column-width
   (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
 
-(setq org-default-notes-file "~/docs/orgs/note.org")
-
 (setq org-agenda-time-grid
       (quote ((daily today require-timed)
               (300 600 900 1200 1500 1800 2100 2400)
@@ -955,14 +1019,12 @@
 (setq org-agenda-files
       '("~/docs/orgs/inbox.org"
         "~/docs/orgs/gtd.org"
-        "~/docs/orgs/note.org"
         "~/docs/orgs/later.org"
         "~/docs/orgs/capture.org"))
-
 (setq org-agenda-start-day "-7d")
 (setq org-agenda-span 21)
 (setq org-agenda-include-diary t)
-(setq diary-file "~/docs/orgs/diary.org")
+(setq diary-file "~/docs/orgs/diary")
 (setq diary-mail-addr "geekard@qq.com")
 ;; 获取经纬度：https://www.latlong.net/
 (setq calendar-latitude +39.904202)
@@ -1052,7 +1114,7 @@
       ;; add a special face to #+begin_quote and #+begin_verse block
       org-fontify-quote-and-verse-blocks t
       ;; 不自动缩进
-      ;;org-src-preserve-indentation t
+      org-src-preserve-indentation t
       org-edit-src-content-indentation 0
       ;; 在当前 window 编辑 SRC Block
       org-src-window-setup 'current-window
@@ -1150,15 +1212,6 @@
           (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}")))
   (setq org-latex-listings 'listings))
 
-(require 'org-tempo)
-
-(add-to-list 'org-structure-template-alist '("sh" . "src shell"))
-(add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-(add-to-list 'org-structure-template-alist '("py" . "src python"))
-(add-to-list 'org-structure-template-alist '("go" . "src go"))
-(add-to-list 'org-structure-template-alist '("yaml" . "src yaml"))
-(add-to-list 'org-structure-template-alist '("json" . "src json"))
-
 (use-package org-tree-slide
   :after (org)
   :commands org-tree-slide-mode
@@ -1177,12 +1230,14 @@
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 2)
+                            (centaur-tabs-mode 0)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
                             (beacon-mode +1)
+                            (centaur-tabs-mode 1)
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-slide-in-effect nil)
@@ -1191,13 +1246,13 @@
   (setq org-tree-slide-deactivate-message " ")
   (setq org-tree-slide-modeline-display nil)
   (setq org-tree-slide-breadcrumbs " 👉 ")
-  (setq org-tree-slide-heading-emphasis t)
-  (setq org-tree-slide-header t)
-  ;; 隐藏 #+ KEYWORD 行内容。
+  (setq org-tree-slide-heading-emphasis nil)
+  (setq org-tree-slide-header nil)
+  ;; 隐藏 #+KEYWORD 行内容。
   (defun +org-present-hide-blocks-h ()
     (save-excursion
       (goto-char (point-min))
-      (while (re-search-forward "^[[:space:]]*\\(#\\+\\)\\(\\(?:BEGIN\\|END\\|ATTR\\|DOWNLOADED\\)[^[:space:]]+\\).*" nil t)
+      (while (re-search-forward "^[[:space:]]*\\(#\\+\\)\\(\\(?:BEGIN\\|END\\|begin\\|end\\|ATTR\\|DOWNLOADED\\)[^[:space:]]+\\).*" nil t)
         (org-flag-region (match-beginning 0) (match-end 0) org-tree-slide-mode t))))
   (add-hook 'org-tree-slide-play-hook #'+org-present-hide-blocks-h))
 
@@ -1393,9 +1448,20 @@
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
 
+(use-package diff-mode
+  :straight (:type built-in)
+  :init
+  (setq diff-default-read-only t)
+  (setq diff-advance-after-apply-hunk t)
+  (setq diff-update-on-the-fly t)
+  (setq diff-refine nil)
+  ;; better for patches
+  (setq diff-font-lock-prettify nil))
+
 (use-package ediff
   :straight (:type built-in)
   :config
+  (setq ediff-keep-variants nil)
   ;; 忽略空格
   (setq ediff-diff-options "-w")
   (setq ediff-split-window-function 'split-window-horizontally)
@@ -1474,7 +1540,8 @@
   (lsp-completion-provider :none) ;; 使用 corfu.el
   ;;(lsp-completion-provider :capf) ;; 使用 company.el
   (lsp-enable-symbol-highlighting t)
-  (lsp-headerline-breadcrumb-enable t)
+  ;; 不显示面包屑
+  (lsp-headerline-breadcrumb-enable nil)
   (lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
   ;; 启用 snippet 后才支持函数或方法的 placeholder 提示
   (lsp-enable-snippet t)
@@ -1576,9 +1643,9 @@
       (when flake8
         (flycheck-set-checker-executable "python-flake8" flake8)))))
 
-(setq indent-tabs-mode nil)
-(setq tab-width 4)
-(setq python-indent-offset 4)
+(setq-default indent-tabs-mode nil)
+(setq-default tab-width 4)
+(setq-default  python-indent-offset 4)
 (use-package python
   :after (flycheck)
   :ensure-system-package
@@ -1947,6 +2014,7 @@ mermaid.initialize({
 
 ;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
+  :demand
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -2184,44 +2252,45 @@ mermaid.initialize({
 (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
 
-(setq  tramp-ssh-controlmaster-options
-       (concat "-o ControlMaster=auto "
-               "-o ControlPath='tramp.%%C' "
-               "-o ControlPersist=600 "
-               "-o ServerAliveCountMax=60 "
-               "-o ServerAliveInterval=10 ")
-       ;; Disable version control on tramp buffers to avoid freezes.
-       vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
-       ;; Don’t clean up recentf tramp buffers.
-       recentf-auto-cleanup 'never
-       ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能
-       remote-file-name-inhibit-cache 600
-       ;;tramp-verbose 10
-       ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
-       tramp-inline-compress-start-size (* 1024 8)
-       ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
-       tramp-copy-size-limit (* 1024 1024 2)
-       ;; Store TRAMP auto-save files locally.
-       tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
-       ;; A more representative name for this file.
-       tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory)
-       ;; Cache SSH passwords during the whole Emacs session.
-       password-cache-expiry nil
-       tramp-default-method "ssh"
-       tramp-default-remote-shell "/bin/bash"
-       tramp-default-user "root"
-       tramp-terminal-type "tramp")
+(use-package tramp
+  :straight (tramp :files ("lisp/*"))
+  :config
+  (setq  tramp-ssh-controlmaster-options
+         (concat "-o ControlMaster=auto "
+                 "-o ControlPath='tramp.%%C' "
+                 "-o ControlPersist=600 "
+                 "-o ServerAliveCountMax=60 "
+                 "-o ServerAliveInterval=10 ")
+         ;; Disable version control on tramp buffers to avoid freezes.
+         vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
+         ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能
+         remote-file-name-inhibit-cache 600
+         ;;tramp-verbose 10
+         ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
+         tramp-inline-compress-start-size (* 1024 8)
+         ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
+         tramp-copy-size-limit (* 1024 1024 2)
+         ;; Store TRAMP auto-save files locally.
+         tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
+         ;; A more representative name for this file.
+         tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory)
+         ;; Cache SSH passwords during the whole Emacs session.
+         password-cache-expiry nil
+         tramp-default-method "ssh"
+         tramp-default-remote-shell "/bin/bash"
+         tramp-default-user "root"
+         tramp-terminal-type "tramp")
 
-;; 自定义远程环境变量
-(let ((process-environment tramp-remote-process-environment))
-  ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置 VTERM 参数。
-  (setenv "VTERM_TRAMP" "true")
-  (setq tramp-remote-process-environment process-environment))
+  ;; 远程机器列表
+  (require 'epa-file)
+  (epa-file-enable)
+  (load "~/.emacs.d/sshenv.el.gpg")
 
-;; 远程机器列表
-(require 'epa-file)
-(epa-file-enable)
-(load "~/.emacs.d/sshenv.el.gpg")
+  ;; 自定义远程环境变量
+  (let ((process-environment tramp-remote-process-environment))
+    ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置 VTERM 参数。
+    (setenv "VTERM_TRAMP" "true")
+    (setq tramp-remote-process-environment process-environment)))
 
 ;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程环境中。远程
 ;; 机器的 ~/.emacs_bashrc 根据这个变量设置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的问题。
@@ -2247,7 +2316,7 @@ mermaid.initialize({
 (use-package org-contrib
   :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
   :demand
-)
+  )
 
 ;; (use-package org-xournalpp
 ;;   :ensure t
@@ -2265,20 +2334,22 @@ mermaid.initialize({
         org-sketch-apps '("drawio" "xournal")  ;; 设置使用的sketch应用
         ))
 
+;; 按中文折行
+(setq word-wrap-by-category t)
+
 ;; Editing of grep buffers, can be used together with consult-grep via embark-export.
 (use-package wgrep)
 
 ;; 退出自动杀掉进程
 (setq confirm-kill-processes nil)
 
-;;启动 isearch 进行搜索时，M-<, M->, C-v 和 M-v 这些按键不会打断搜索
-(setq isearch-allow-motion t)
-
 ;; 直接在 minibuffer 中编辑 query(rime 探测到 minibuffer 时自动关闭输入法)
 (use-package isearch-mb
   :demand t
   :config
   (setq-default
+   ;;启动 isearch 进行搜索时，M-<, M->, C-v 和 M-v 这些按键不会打断搜索
+   isearch-allow-motion t
    ;; Match count next to the minibuffer prompt
    isearch-lazy-count t
    ;; Don't be stingy with history; default is to keep just 16 entries
@@ -2361,9 +2432,6 @@ mermaid.initialize({
 ;; Provide undo/redo commands for window changes.
 (winner-mode t)
 
-;; Don't lock files.
-(setq create-lockfiles nil)
-
 ;; 剪贴板历史记录数量
 (setq kill-ring-max 100)
 
@@ -2374,8 +2442,19 @@ mermaid.initialize({
 ;; fn 作为 Hyper 键(按键绑定用 H- 表示)
 (setq ns-function-modifier 'hyper)
 
-(require 'server)
-(unless (server-running-p) (server-start))
+(use-package emacs
+  :straight (:type built-in)
+  :init
+  (setq use-short-answers t)
+  (setq confirm-kill-emacs #'y-or-n-p)
+  ;; 关闭出错提示声
+  (setq ring-bell-function 'ignore)
+  ;; Don't lock files.
+  (setq create-lockfiles nil)
+  ;; 启动 Server
+  (unless (and (fboundp 'server-running-p)
+               (server-running-p))
+    (server-start)))
 
 ;; 记录最近 100 次按键，可以通过 M-x view-lossage 来查看输入的内容。
 (lossage-size 100)
@@ -2403,47 +2482,57 @@ mermaid.initialize({
 (require 'saveplace)
 (save-place-mode t)
 
-;; Better unique buffer names for files with the same base name.
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'forward)
-
-(setq use-short-answers t)
-(setq confirm-kill-emacs #'y-or-n-p)
+(use-package uniquify
+  :straight (:type built-in)
+  :config
+  ;; Better unique buffer names for files with the same base name.
+  (setq uniquify-buffer-name-style 'forward)
+  (setq uniquify-strip-common-suffix t)
+  (setq uniquify-after-kill-buffer-p t))
 
 ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）
 (setq bookmark-save-flag 1)
 
-;; 关闭出错提示声
-(setq ring-bell-function 'ignore)
-
 (setq ad-redefinition-action 'accept)
 
-;; Make Finder's "Open with Emacs" create a buffer in the existing Emacs frame.
+;; Finder 的 "Open with Emacs" 在当前 Frame 中打开文件
 (setq ns-pop-up-frames nil)
 
 ;; 避免执行 ns-print-buffer 命令。
 (global-unset-key (kbd "s-p"))
-
 ;; 避免执行 ns-open-file-using-panel 命令。
 (global-unset-key (kbd "s-o"))
 (global-unset-key (kbd "s-t"))
 ;; 关闭 suspend-frame
 (global-unset-key (kbd "C-z"))
 
-(recentf-mode +1)
-
-;;Preserve Minibuffer History
-(use-package savehist
-  :demand t
+(use-package recentf
+  :straight (:type built-in)
   :config
-  (setq history-length 25)
-  (savehist-mode 1))
+  ;; Don’t clean up recentf tramp buffers.
+  (setq recentf-auto-cleanup 'never)
+  (setq recentf-max-menu-items 100)
+  (setq recentf-max-saved-items 100)
+  (setq recentf-exclude `(,(expand-file-name "straight/build/" user-emacs-directory)
+                          ,(expand-file-name "eln-cache/" user-emacs-directory)
+                          ,(expand-file-name "etc/" user-emacs-directory)
+                          ,(expand-file-name "var/" user-emacs-directory)
+                          "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log"
+                          ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
+  (recentf-mode +1))
+
+;; Minibuffer history (savehist-mode)
+(use-package savehist
+  :straight (:type built-in)
+  :config
+  (setq history-length 10000)
+  (setq history-delete-duplicates t)
+  (setq savehist-save-minibuffer-history t)
+  (add-hook 'after-init-hook #'savehist-mode))
 
 ;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100
               comment-fill-column 0
-              recentf-max-menu-items 100
-              recentf-max-saved-items 100
               tab-width 4
               ;; Make it impossible to insert tabs.
               indent-tabs-mode nil
@@ -2452,14 +2541,7 @@ mermaid.initialize({
               load-prefer-newer t
               ad-redefinition-action 'accept)
 
-(setq recentf-exclude `(,(expand-file-name "straight/build/" user-emacs-directory)
-                        ,(expand-file-name "eln-cache/" user-emacs-directory)
-                        ,(expand-file-name "etc/" user-emacs-directory)
-                        ,(expand-file-name "var/" user-emacs-directory)
-                        "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log"
-                        ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
-
-;; 使用系统剪贴板，这样可以和其它程序相互粘贴。
+;; 使用系统剪贴板，实现与其它程序相互粘贴。
 (setq x-select-enable-clipboard t)
 (setq select-enable-clipboard t)
 (setq x-select-enable-primary t)
@@ -2488,8 +2570,11 @@ mermaid.initialize({
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(with-eval-after-load 'ibuffer
+(use-package ibuffer
+  :straight (:type built-in)
+  :bind
+  ("C-x C-b" . ibuffer)
+  :config
   (setq ibuffer-expert t)
   (setq ibuffer-display-summary nil)
   (setq ibuffer-use-other-window nil)
@@ -2502,7 +2587,9 @@ mermaid.initialize({
   (setq ibuffer-old-time 48)
   (add-hook 'ibuffer-mode-hook #'hl-line-mode))
 
-(with-eval-after-load 'dired
+(use-package dired
+  :straight (:type built-in)
+  :config
   ;; re-use dired buffer, available in Emacs 28
   ;; @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
   (setq dired-kill-when-opening-new-dired-buffer t)
@@ -2519,12 +2606,14 @@ mermaid.initialize({
   (dired-async-mode 1)
   (put 'dired-find-alternate-file 'disabled nil))
 
+;; dired 显示高亮增强
+(use-package diredfl
+  :config
+  (diredfl-global-mode))
+
 (use-package undo-tree
   :init
   (global-undo-tree-mode 1))
-
-;; dired 显示高亮增强
-(use-package diredfl :config (diredfl-global-mode))
 
 ;; ESC Cancels All
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
@@ -2535,29 +2624,32 @@ mermaid.initialize({
 
 ;;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
-(setq backup-by-copying t
-      backup-directory-alist (list (cons ".*" backup-dir))
-      delete-old-versions t
-      kept-new-versions 6
-      kept-old-versions 2
-      version-control t)
+(setq backup-by-copying t)
+(setq backup-directory-alist (list (cons ".*" backup-dir)))
+(setq delete-old-versions t)
+(setq kept-new-versions 6)
+(setq kept-old-versions 2)
+(setq version-control t)
 
 ;;(shell-command "mkdir -p ~/.emacs.d/autosave")
 (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
-(setq auto-save-list-file-prefix autosave-dir
-      auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+(setq auto-save-list-file-prefix autosave-dir)
+(setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 
 ;; UTF8 stuff.
-(prefer-coding-system 'utf-8)
 (setq locale-coding-system 'utf-8)
 (setq default-buffer-file-coding-system 'utf-8)
+(set-default buffer-file-coding-system 'utf8)
+(prefer-coding-system 'utf-8)
 (set-buffer-file-coding-system 'utf-8)
 (set-language-environment "UTF-8")
-(set-default buffer-file-coding-system 'utf8)
 (set-default-coding-systems 'utf-8)
 (setenv "LANG" "zh_CN.UTF-8")
 (setenv "LC_ALL" "zh_CN.UTF-8")
 (setenv "LC_CTYPE" "zh_CN.UTF-8")
+
+;; 选中内容后输入时会删除选中的内容
+(delete-selection-mode t)
 
 (use-package osx-trash
   :ensure-system-package trash
@@ -2604,4 +2696,5 @@ mermaid.initialize({
   (global-set-key (kbd "C-h C") #'helpful-command))
 
 ;; 在 Finder 中打开当前文件
-(use-package reveal-in-osx-finder :commands (reveal-in-osx-finder))
+(use-package reveal-in-osx-finder
+  :commands (reveal-in-osx-finder))
