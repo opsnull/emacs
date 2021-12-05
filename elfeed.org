@@ -84,6 +84,7 @@
 *** [[https://github.com/tumashu/vertico-posframe/commits/main][vertico-posframe:main]]
 
 ** emacs-conf                                                    :emacs:conf:
+*** [[https://github.com/natecox/dotfiles/][natecox/dotfiles]]
 *** [[https://github.com/bbatsov/prelude/commits/master.atom][prelude:master]]
 *** [[https://gitlab.com/protesilaos/dotfiles/-/commits/master?format=atom][protesilaos/dotfiles]]
 *** [[https://github.com/seagle0128/.emacs.d/commits/master.atom][seagle0128/.emacs.d]]
