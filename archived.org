@@ -1,4 +1,53 @@
 #+begin_src emacs-lisp :tangle no
+;; 管理 minior mode
+(use-package manage-minor-mode)
+(defvar hidden-minor-modes '(whitespace-mode))
+
+(use-package treemacs-projectile :after (treemacs projectile))
+(use-package treemacs-magit :after (treemacs magit))
+
+(use-package posframe-project-term
+  :straight (posframe-project-term :host github :repo "zwpaper/posframe-project-term")
+  :bind
+  (("C-c t" . posframe-project-term-toggle)))
+
+;; 还是 go-translate 提供的 bing 翻译较为准确
+(use-package youdao-dictionary
+  :bind
+  (("C-c y" . youdao-dictionary-search-at-point))
+  :init
+  (setq url-automatic-caching t)
+  (setq youdao-dictionary-use-chinese-word-segmentation t)
+  :config
+  ;; 使用 jieba 进行中文分词: pip install jieba
+  (use-package chinese-word-at-point :demand t))
+
+(use-package consult-dir
+  :bind
+  (("C-x C-d" . consult-dir)
+   :map minibuffer-local-completion-map
+   ("C-x C-d" . consult-dir)
+   ("C-x C-j" . consult-dir-jump-file)))
+
+(use-package posframe :demand)
+(use-package vertico-posframe
+  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
+  :disabled
+  :config
+  (setq vertico-posframe-parameters
+        '((left-fringe . 8)
+          (right-fringe . 8)
+          ;;(alpha . 80)
+          ))
+  ;; 在光标位置的上方显示 posframe, 避免遮住光标下方的内容
+  (defun my/posframe-poshandler-p0.5p0-to-f0.5p1 (info)
+    (let ((x (car (posframe-poshandler-p0.5p0-to-f0.5f0 info)))
+          ;; 第三个参数 t 表示 upward
+          (y (cdr (posframe-poshandler-point-1 info nil t))))
+      (cons x y)))
+  (setq vertico-posframe-poshandler 'my/posframe-poshandler-p0.5p0-to-f0.5p1)
+  (vertico-posframe-mode 1))
+
 ;; no-littering 会导致 recentf 等不工作, 故关闭.
 (use-package no-littering
   :demand
@@ -88,6 +137,17 @@
   )
 
 #+end_src
+
+书签管理器:
+#+begin_src emacs-lisp
+(use-package ebuku
+  :ensure-system-package (buku . "pip3 install buku")
+  :config
+  ;; 不限制结果
+  (setq ebuku-results-limit 0))
+#+end_src
++ =buku --ai= 导入 Firefox/Chrome 书签;
++ =M-x ebuku= : 浏览和编辑导入的书签, 点击 URL 使用 Mac 浏览器打开。
 
 #+begin_src emacs-lisp :tangle no
 (use-package company
@@ -820,4 +880,19 @@ DIR must include a .project file to be considered a project."
 ;;   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
 ;;   ;; right-hand segment list，尾部增加空格，避免溢出。
 ;;   '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package ansible
+  :after (yaml-mode)
+  :config
+  (add-hook 'yaml-mode-hook (lambda () (ansible 1))))
+
+;; ansible-doc 使用系统的 ansible-doc 命令搜索文档
+(use-package ansible-doc
+  :ensure-system-package (ansible-doc . "pip install ansible")
+  :after (ansible yasnippet)
+  :config
+  (add-hook 'ansible-hook (lambda() (ansible-doc-mode) (yas-minor-mode-on)))
+  (define-key ansible-doc-mode-map (kbd "M-?") #'ansible-doc))
 #+end_src

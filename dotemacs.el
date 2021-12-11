@@ -86,8 +86,8 @@
 (setq inhibit-startup-message t)
 (setq inhibit-startup-echo-area-message t)
 
-(setq initial-major-mode 'fundamental-mode)
 (setq initial-scratch-message nil)
+(setq initial-major-mode 'fundamental-mode)
 
 ;; 默认上下分屏
 (setq split-width-threshold nil)
@@ -95,8 +95,6 @@
 ;; 高亮匹配的括号
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
-
-(setq-default indicate-empty-lines t)
 
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
@@ -111,7 +109,6 @@
   (doom-themes-padded-modeline t)
   :config
   ;;(load-theme 'doom-palenight t)
-  ;; 出错时 modeline 闪动
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
@@ -137,16 +134,17 @@
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
-;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
+;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
+;; 否则 doom-modeline 右下角内容会溢出。
 (use-package doom-modeline
   :demand t
   :after(doom-themes)
   :custom
   ;; 不显示换行和编码（节省空间）
   (doom-modeline-buffer-encoding nil)
-  ;; 使用 HUD 显式光标位置(默认是 bar)
+  ;; 使用 HUD 显式光标位置
   (doom-modeline-hud t)
-  ;; 显示语言环境版本（如 go/python)
+  ;; 显示语言版本
   (doom-modeline-env-version t)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
   (doom-modeline-buffer-file-name-style 'file-name)
@@ -160,7 +158,7 @@
   :demand t
   :after (projectile)
   :config
-  (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
+  (setq dashboard-banner-logo-title "Happy hacking!")
   ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
   (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
   (setq dashboard-center-content t)
@@ -191,25 +189,9 @@
       (or
        ;; Current window is not dedicated window.
        (window-dedicated-p (selected-window))
-       ;; Buffer name not match below blacklist.
-       (string-prefix-p "*epc" name)
-       (string-prefix-p "*helm" name)
-       (string-prefix-p "*Helm" name)
-       (string-prefix-p "*Compile-Log*" name)
-       (string-prefix-p "*lsp" name)
-       (string-prefix-p "*company" name)
-       (string-prefix-p "*Flycheck" name)
-       (string-prefix-p "*tramp" name)
-       (string-prefix-p "*Mini" name)
-       (string-prefix-p "*help" name)
-       (string-prefix-p "*straight" name)
-       (string-prefix-p "*temp" name)
-       (string-prefix-p "*Help" name)
-       (string-prefix-p "*mybuf" name)
-       (string-prefix-p "*Message" name)
-       (string-prefix-p "*dashboard" name)
-       (string-prefix-p "*scratch" name)
-       ;; Is not magit buffer.
+       ;; 以 * 开头的 buffer 不显示 tab
+       (string-prefix-p "*" name)
+       (string-prefix-p "vterm" name)
        (and (string-prefix-p "magit" name)
             (not (file-name-extension name)))))))
 
@@ -259,16 +241,16 @@
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode))
 
-(defun my/minibuffer-backward-kill (arg)
-  (interactive "p")
-  (if minibuffer-completing-file-name
-      (if (string-match-p "/." (minibuffer-contents))
-          (zap-up-to-char (- arg) ?/)
-        (delete-minibuffer-contents))
-    (backward-kill-word arg)))
-
 (use-package vertico
   :demand
+  :init
+  (defun my/minibuffer-backward-kill (arg)
+    (interactive "p")
+    (if minibuffer-completing-file-name
+        (if (string-match-p "/." (minibuffer-contents))
+            (zap-up-to-char (- arg) ?/)
+          (delete-minibuffer-contents))
+      (backward-kill-word arg)))
   :bind
   (:map vertico-map
         :map minibuffer-local-map
@@ -280,38 +262,10 @@
   ;; Vertico commands are hidden in normal buffers.
   (setq read-extended-command-predicate #'command-completion-default-include-p)
   (setq enable-recursive-minibuffers t)
-  (setq vertico-count 20)
+  (setq vertico-count 15)
   (setq vertico-cycle t)
   (vertico-mode 1))
 
-(use-package posframe :demand)
-(use-package vertico-posframe
-  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
-  :config
-  (setq vertico-posframe-parameters
-        '((left-fringe . 8)
-          (right-fringe . 8)
-          ;;(alpha . 80)
-          ))
-  ;; 在光标位置的上方显示 posframe, 避免遮住光标下方的内容
-  (defun my/posframe-poshandler-p0.5p0-to-f0.5p1 (info)
-    (let ((x (car (posframe-poshandler-p0.5p0-to-f0.5f0 info)))
-          ;; 第三个参数 t 表示 upward
-          (y (cdr (posframe-poshandler-point-1 info nil t))))
-      (cons x y)))
-  (setq vertico-posframe-poshandler 'my/posframe-poshandler-p0.5p0-to-f0.5p1)
-  (vertico-posframe-mode 1))
-
-;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang$
-;; Recognizes the following patterns:
-;; * ~flex flex~
-;; * =literal literal=
-;; * %char-fold char-fold%
-;; * `initialism initialism`
-;; * !without-literal without-literal!
-;; * .ext (file extension)
-;; * regexp$ (regexp matching at end)
-;; https://github.com/minad/consult/wiki
 (use-package orderless
   :demand
   :config
@@ -366,7 +320,6 @@
    ("C-c h" . consult-history)
    ("C-c m" . consult-mode-command)
    ("C-c b" . consult-bookmark)
-   ("C-c k" . consult-kmacro)
    ;; C-x bindings (ctl-x-map)
    ("C-x M-:" . consult-complex-command)
    ("C-x b" . consult-buffer)
@@ -390,7 +343,6 @@
    ("M-g i" . consult-imenu)
    ("M-g I" . consult-project-imenu)
    ;; M-s bindings (search-map)
-   ;; consult-find 不支持预览
    ("M-s f" . consult-find)
    ("M-s L" . consult-locate)
    ("M-s F" . consult-locate)
@@ -417,33 +369,35 @@
   (setq consult-async-input-debounce 0.3)
   (setq consult-async-input-throttle 0.4)
   ;; 预览 register
-  (setq register-preview-delay 0.1
-        register-preview-function #'consult-register-format)
+  (setq register-preview-delay 0.2)
+  (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
 
   ;; Optionally replace `completing-read-multiple' with an enhanced version.
   (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
 
   ;; Use Consult to select xref locations with preview
-  (setq xref-show-xrefs-function #'consult-xref
-        xref-show-definitions-function #'consult-xref)
+  (setq xref-show-xrefs-function #'consult-xref)
+  (setq xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (global-set-key [remap repeat-complex-command] #'consult-complex-command)
 
-  ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
   (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function
-        (lambda ()
-          (unless (file-remote-p default-directory)
-            ;; 使用 projectile.el:
-            (projectile-project-root)
-            ;; 使用 project.el：
-            ;;(when-let (project (project-current))
-            ;; (car (project-roots project)))
-            ))))
+  (setq consult-project-root-function 'projectile-project-root)
+  ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
+  ;; (setq consult-project-root-function
+  ;;       (lambda ()
+  ;;         (unless (file-remote-p default-directory)
+  ;;           ;; 使用 projectile.el:
+  ;;           (projectile-project-root)
+  ;;           ;; 使用 project.el：
+  ;;           ;;(when-let (project (project-current))
+  ;;           ;; (car (project-roots project)))
+  ;;           )))
+  )
 
 (use-package marginalia
   :init
@@ -459,7 +413,6 @@
 
 (use-package embark
   :init
-  ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
@@ -477,24 +430,22 @@
 (use-package embark-consult
   :after (embark consult))
 
-(use-package consult-dir
-  :bind
-  (("C-x C-d" . consult-dir)
-   :map minibuffer-local-completion-map
-   ("C-x C-d" . consult-dir)
-   ("C-x C-j" . consult-dir-jump-file)))
-
 (use-package cape
   :demand
   :straight '(cape :host github :repo "minad/cape")
   :init
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;; Complete word from current buffers
   ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;; Complete Elisp symbol
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;; Complete abbreviation
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;; Complete word from dictionary file
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;; Complete entire line from file
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   :config
   (setq cape-dabbrev-min-length 2))
@@ -546,7 +497,7 @@
   :after corfu
   :demand
   :custom
-  (kind-icon-default-face 'corfu-default) ;; to compute blended backgrounds correctly
+  (kind-icon-default-face 'corfu-default)
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
@@ -592,7 +543,6 @@
      ((t (:inherit ace-jump-face-foreground :foreground "red" :height 2.0))))))
 
 (use-package rime
-  ;; 为程序设置默认系统输入法
   :ensure-system-package ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
   :custom
   (rime-user-data-dir "~/Library/Rime/")
@@ -600,7 +550,7 @@
   (rime-emacs-module-header-root "/usr/local/Cellar/emacs-plus@28/28.0.50/include")
   :bind
   ( :map rime-active-mode-map
-    ;; 强制切换到英文模式，直到按回车。
+    ;; 强制切换到英文模式，直到按回车
     ("M-j" . 'rime-inline-ascii)
     :map rime-mode-map
     ;; 中英文切换
@@ -616,13 +566,7 @@
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
-  ;; 使用 [SwitchKey](https://github.com/itsuhane/SwitchKey) 将 Emacs 的默认系统输入法设置为英文，避免干扰 RIME。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
-  ;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
-  (defadvice switch-to-buffer (after activate-input-method activate)
-    (if (string-match "vterm-mode" (symbol-name major-mode))
-        (activate-input-method nil)
-      (activate-input-method "rime")))
   ;; modline 输入法图标高亮, 用来区分中英文输入状态
   (setq mode-line-mule-info '((:eval (rime-lighter))))
   ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
@@ -637,27 +581,27 @@
           rime-predicate-punctuation-after-space-cc-p
           rime-predicate-prog-in-code-p
           rime-predicate-after-ascii-char-p))
-  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
+  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 2))
   (setq rime-show-candidate 'posframe))
 
-(use-package youdao-dictionary
-  :bind
-  (("C-c y" . youdao-dictionary-search-at-point))
-  :init
-  (setq url-automatic-caching t)
-  (setq youdao-dictionary-use-chinese-word-segmentation t)
-  :config
-  ;; 使用 jieba 进行中文分词: pip install jieba
-  (use-package chinese-word-at-point :demand t))
+;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
+(defadvice switch-to-buffer (after activate-input-method activate)
+  (if (string-match "vterm-mode" (symbol-name major-mode))
+      (activate-input-method nil)
+    (activate-input-method "rime")))
 
 (use-package go-translate
+  :bind
+  (("C-c t" . gts-do-translate))
   :config
   (setq gts-translate-list '(("en" "zh")))
   (setq gts-default-translator
         (gts-translator
          :picker (gts-prompt-picker)
-         :engines (list (gts-google-engine) (gts-google-rpc-engine))
-         :render (gts-posframe-pin-render))))
+         :engines (list (gts-bing-engine) (gts-google-engine))
+         :render (gts-buffer-render)
+         ;;(gts-posframe-pin-render)
+         )))
 
 (use-package emacs
   :straight (:type built-in)
@@ -669,7 +613,7 @@
    (openssl . openssl@1.1)))
 
 (use-package mu4e
-  :demand t
+  ;;:demand
   ;; 使用 mu4e/* 目录下的 lisp 文件, 跳过 straight 的 build 过程;
   :straight (:host github :repo "djcb/mu" :branch "master" :files ("mu4e/*") :build nil)
   :config
@@ -871,10 +815,7 @@
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :demand
-  :ensure-system-package
-  ;; latext pdf 代码高亮
-  ((pygmentize . pygments)
-   (magick . imagemagick))
+  :ensure-system-package ((pygmentize . pygments) (magick . imagemagick))
   :config
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
@@ -928,10 +869,7 @@
 (use-package org-html-themify
   :straight (org-html-themify :repo "DogLooksGood/org-html-themify" :files ("*.el" "*.js" "*.css"))
   :hook (org-mode . org-html-themify-mode)
-  :custom
-  (org-html-themify-themes
-   '((dark . doom-palenight)
-     (light . doom-one-light))))
+  :custom (org-html-themify-themes '((dark . doom-palenight) (light . doom-one-light))))
 
 (defun my/org-faces ()
   (setq-default line-spacing 1)
@@ -948,7 +886,7 @@
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
-   '(org-block ((t (:font "JuliaMono-15" :inherit fixed-pitch))))
+   '(org-block ((t (:font "JuliaMono-14" :inherit fixed-pitch))))
    ;; 调小 height, 加 :underline "#A7A6AA" 显示下划线
    '(org-block-begin-line ((t (:height 0.8))))
    '(org-block-end-line ((t (:height 0.8))))
@@ -1003,7 +941,7 @@
   :demand t
   :after (org)
   :hook
-  (org-mode . (lambda () (my/org-mode-visual-fill 120 140)))
+  (org-mode . (lambda () (my/org-mode-visual-fill 110 130)))
   :config
   ;; 文字缩放时自动调整 visual-fill-column-width
   (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
@@ -1018,8 +956,6 @@
 ;; org-agenda 展示的文件
 (setq org-agenda-files
       '("~/docs/orgs/inbox.org"
-        "~/docs/orgs/gtd.org"
-        "~/docs/orgs/later.org"
         "~/docs/orgs/capture.org"))
 (setq org-agenda-start-day "-7d")
 (setq org-agenda-span 21)
@@ -1088,13 +1024,7 @@
                :empty-lines 1))
 (add-to-list 'org-capture-templates
              '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
-               "* ☞ TODO [#B] %U %i%?"))
-(add-to-list 'org-capture-templates
-             '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
-               "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
-(add-to-list 'org-capture-templates
-             '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
-               "* ☞ TODO [#B] %U %i%?"))
+               "* ☞ TODO [#B] %U %i%?" :empty-lines 1))
 
 (use-package org-download
   :ensure-system-package pngpaste
@@ -1229,7 +1159,7 @@
                             (beacon-mode -1)
                             (redraw-display)
                             (org-display-inline-images)
-                            (text-scale-increase 2)
+                            (text-scale-increase 1)
                             (centaur-tabs-mode 0)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
@@ -1257,7 +1187,6 @@
   (add-hook 'org-tree-slide-play-hook #'+org-present-hide-blocks-h))
 
 (use-package pdf-tools
-  :demand t
   :ensure-system-package
   ((pdfinfo . poppler)
    (automake . automake)
@@ -1336,7 +1265,7 @@
   (setq elfeed-goodies/powerline-default-separator 'arrow)
   (elfeed-goodies/setup))
 
-;; feed 收藏， http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+;; feed 收藏，http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
 (require 'elfeed)
 (defalias 'elfeed-toggle-star
   (elfeed-expose #'elfeed-search-toggle-all 'star))
@@ -1416,7 +1345,7 @@
 (use-package twittering-mode
   :commands (twit)
   :init
-  ;; 解决报错"epa--decode-coding-string not defined"
+  ;; 解决报错 "epa--decode-coding-string not defined"
   (defalias 'epa--decode-coding-string 'decode-coding-string)
   (setq twittering-icon-mode t)
   (setq twittering-use-icon-storage t)
@@ -1798,19 +1727,6 @@ mermaid.initialize({
   :config
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 
-(use-package ansible
-  :after (yaml-mode)
-  :config
-  (add-hook 'yaml-mode-hook (lambda () (ansible 1))))
-
-;; ansible-doc 使用系统的 ansible-doc 命令搜索文档
-(use-package ansible-doc
-  :ensure-system-package (ansible-doc . "pip install ansible")
-  :after (ansible yasnippet)
-  :config
-  (add-hook 'ansible-hook (lambda() (ansible-doc-mode) (yas-minor-mode-on)))
-  (define-key ansible-doc-mode-map (kbd "M-?") #'ansible-doc))
-
 (defun my/use-eslint-from-node-modules ()
   ;; use local eslint from node_modules before global
   ;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
@@ -1922,15 +1838,10 @@ mermaid.initialize({
   (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map))
 
 (use-package dap-mode
-  :disabled t
+  :disabled
   :config
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
-
-(use-package posframe-project-term
-  :straight (posframe-project-term :host github :repo "zwpaper/posframe-project-term")
-  :bind
-  (("C-c t" . posframe-project-term-toggle)))
 
 (use-package projectile
   :config
@@ -2010,9 +1921,6 @@ mermaid.initialize({
           (projectile-add-known-project file)
           (message "add project %s..." file)))))
 
-(use-package treemacs-projectile :after (treemacs projectile))
-
-;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
   :demand
   :init
@@ -2020,7 +1928,8 @@ mermaid.initialize({
   :config
   (progn
     (setq
-     treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+     ;; 不折叠目录(提升性能)
+     treemacs-collapse-dirs                 0
      treemacs-deferred-git-apply-delay      0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
@@ -2032,7 +1941,7 @@ mermaid.initialize({
      treemacs-indentation                   1
      treemacs-indentation-string            " "
      treemacs-is-never-other-window         t
-     treemacs-max-git-entries               1000
+     treemacs-max-git-entries               100
      treemacs-missing-project-action        'ask
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
@@ -2065,9 +1974,8 @@ mermaid.initialize({
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
-    (pcase (cons (not (null (executable-find "git"))) (not (null treemacs-python-executable)))
-      (`(t . t) (treemacs-git-mode 'deferred))
-      (`(t . _) (treemacs-git-mode 'simple)))
+    ;; 不显示 git 修改状态（很少用到）
+    (treemacs-git-mode -1)
     (treemacs-hide-gitignored-files-mode nil))
   :bind
   (:map global-map
@@ -2081,8 +1989,6 @@ mermaid.initialize({
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
-(use-package treemacs-magit :after (treemacs magit))
-
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
 (use-package ripgrep
   :ensure-system-package (rg . ripgrep))
@@ -2090,8 +1996,6 @@ mermaid.initialize({
 (use-package deadgrep
   :ensure-system-package (rg . ripgrep)
   :bind ("<f5>" . deadgrep))
-
-(setq grep-highlight-matches t)
 
 ;; 执行 browser-url 时使用 Mac 默认浏览器
 (setq browse-url-browser-function 'browse-url-default-macosx-browser)
@@ -2121,12 +2025,6 @@ mermaid.initialize({
     "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s"
     :keybinding "w"
     :docstring "Searchin' the wikis."))
-
-(use-package ebuku
-  :ensure-system-package (buku . "pip3 install buku")
-  :config
-  ;; 不限制结果
-  (setq ebuku-results-limit 0))
 
 ;; 添加环境变量 export PATH="/usr/local/opt/curl/bin:$PATH"
 (use-package emacs
@@ -2198,6 +2096,7 @@ mermaid.initialize({
    (glibtool . libtool)
    (exiftran . exiftran))
   :config
+  (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 100000)
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND）。
   (setq vterm-buffer-name-string "vterm: %s")
@@ -2318,12 +2217,6 @@ mermaid.initialize({
   :demand
   )
 
-;; (use-package org-xournalpp
-;;   :ensure t
-;;   :straight (org-xournalpp :host gitlab :repo "vherrmann/org-xournalpp" :files ("*.el" "resources"))
-;;   :config
-;;   (add-hook 'org-mode-hook 'org-xournalpp-mode))
-
 (use-package org-sketch
   :hook (org-mode . org-sketch-mode)
   :straight (:host github :repo "yuchen-lea/org-sketch")
@@ -2343,7 +2236,7 @@ mermaid.initialize({
 ;; 退出自动杀掉进程
 (setq confirm-kill-processes nil)
 
-;; 直接在 minibuffer 中编辑 query(rime 探测到 minibuffer 时自动关闭输入法)
+;; 直接在 minibuffer 中编辑 query(RIME 探测到 minibuffer 时自动关闭输入法)
 (use-package isearch-mb
   :demand t
   :config
@@ -2383,6 +2276,8 @@ mermaid.initialize({
 (use-package expand-region
   :bind
   ("M-@" . er/expand-region))
+
+(setq grep-highlight-matches t)
 
 ;; 显示缩进
 (use-package highlight-indent-guides
@@ -2433,7 +2328,7 @@ mermaid.initialize({
 (winner-mode t)
 
 ;; 剪贴板历史记录数量
-(setq kill-ring-max 100)
+(setq kill-ring-max 60)
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
@@ -2511,9 +2406,9 @@ mermaid.initialize({
   :config
   ;; Don’t clean up recentf tramp buffers.
   (setq recentf-auto-cleanup 'never)
-  (setq recentf-max-menu-items 100)
-  (setq recentf-max-saved-items 100)
-  (setq recentf-exclude `(,(expand-file-name "straight/build/" user-emacs-directory)
+  (setq recentf-max-menu-items 200)
+  (setq recentf-max-saved-items 200)
+  (setq recentf-exclude `(,(expand-file-name "straight/" user-emacs-directory)
                           ,(expand-file-name "eln-cache/" user-emacs-directory)
                           ,(expand-file-name "etc/" user-emacs-directory)
                           ,(expand-file-name "var/" user-emacs-directory)
@@ -2618,11 +2513,6 @@ mermaid.initialize({
 ;; ESC Cancels All
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-;; 管理 minior mode
-(use-package manage-minor-mode)
-(defvar hidden-minor-modes '(whitespace-mode))
-
-;;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (setq backup-by-copying t)
 (setq backup-directory-alist (list (cons ".*" backup-dir)))
@@ -2631,7 +2521,6 @@ mermaid.initialize({
 (setq kept-old-versions 2)
 (setq version-control t)
 
-;;(shell-command "mkdir -p ~/.emacs.d/autosave")
 (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
@@ -2659,6 +2548,10 @@ mermaid.initialize({
   ;; Delete files to trash
   (setq-default delete-by-moving-to-trash t))
 
+;; 在 Finder 中打开当前文件
+(use-package reveal-in-osx-finder
+  :commands (reveal-in-osx-finder))
+
 ;; 在帮助文档底部显示 lisp demo
 (use-package elisp-demos
   :config
@@ -2671,30 +2564,9 @@ mermaid.initialize({
 ;; 相比 Emacs 内置 Help, 提供更多上下文信息。
 (use-package helpful
   :config
-  ;; Note that the built-in `describe-function' includes both functions
-  ;; and macros. `helpful-function' is functions only, so we provide
-  ;; `helpful-callable' as a drop-in replacement.
   (global-set-key (kbd "C-h f") #'helpful-callable)
   (global-set-key (kbd "C-h v") #'helpful-variable)
   (global-set-key (kbd "C-h k") #'helpful-key)
-
-  ;; Lookup the current symbol at point. C-c C-d is a common keybinding
-  ;; for this in lisp modes.
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
-
-  ;; Look up *F*unctions (excludes macros).
-  ;;
-  ;; By default, C-h F is bound to `Info-goto-emacs-command-node'. Helpful
-  ;; already links to the manual, if a function is referenced there.
   (global-set-key (kbd "C-h F") #'helpful-function)
-
-  ;; Look up *C*ommands.
-  ;;
-  ;; By default, C-h C is bound to describe `describe-coding-system'. I
-  ;; don't find this very useful, but it's frequently useful to only
-  ;; look at interactive functions.
   (global-set-key (kbd "C-h C") #'helpful-command))
-
-;; 在 Finder 中打开当前文件
-(use-package reveal-in-osx-finder
-  :commands (reveal-in-osx-finder))
