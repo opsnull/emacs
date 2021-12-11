@@ -42,7 +42,7 @@
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
-;; 增加 IO 性能
+;; 增加单次读取进程输出数据流（缺省 4KB)
 (setq read-process-output-max (* 1024 1024))
 
 ;; 增加长行处理性能
@@ -57,6 +57,8 @@
 ;; 使用字体缓存，避免卡顿
 (setq inhibit-compacting-font-caches t)
 
+(setq idle-update-delay 0.3)
+
 ;; Garbage Collector Magic Hack
 (use-package gcmh
   :demand t
@@ -64,9 +66,9 @@
   ;; Debug：Show garbage collections in minibuffer
   ;;(setq garbage-collection-messages t)
   ;;(setq gcmh-verbose t)
-  (setq gcmh-idle-delay 0.5)
+  (setq gcmh-idle-delay 5)
   (setq gcmh-high-cons-threshold (* 64 1024 1024))
-  (gcmh-mode)
+  (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
 (when (window-system)
@@ -76,7 +78,6 @@
 
 ;; 指针不闪动
 (blink-cursor-mode -1)
-
 ;; 指针宽度与字符一致
 (setq-default x-stretch-cursor t)
 
@@ -89,12 +90,63 @@
 (setq initial-scratch-message nil)
 (setq initial-major-mode 'fundamental-mode)
 
+(setq-default cursor-in-non-selected-windows nil)
+(setq highlight-nonselected-windows nil)
+
+;;Disable dialog boxes since they weren't working in Mac OSX
+(setq use-file-dialog nil)
+(setq use-dialog-box nil)
+
+;; Display dividers between windows
+(setq window-divider-default-places t)
+(setq window-divider-default-bottom-width 1)
+(setq window-divider-default-right-width 1)
+(add-hook 'window-setup-hook #'window-divider-mode)
+
 ;; 默认上下分屏
 (setq split-width-threshold nil)
+;; 切换到已有的 frame
+(setq display-buffer-reuse-frames t)
 
-;; 高亮匹配的括号
-(show-paren-mode t)
-(setq show-paren-style 'parentheses)
+;; Highlight current line.
+(global-hl-line-mode t)
+
+(with-no-warnings
+  (when (memq window-system '(mac ns x))
+    ;; Render thinner fonts
+    (setq ns-use-thin-smoothing t)
+    ;; Don't open a file in a new frame
+    (setq ns-pop-up-frames nil)))
+
+(when window-system
+  ;; Scroll one line at a time (less "jumpy" than defaults)
+  (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
+        mouse-wheel-scroll-amount-horizontal 1
+        mouse-wheel-follow-mouse t
+        mouse-wheel-progressive-speed nil)
+  (xterm-mouse-mode t)
+  ;; 默认执行 mouse-wheel-text-scale 命令, 容易触碰误操作，故关闭。
+  (global-unset-key (kbd "C-<wheel-down>"))
+  (global-unset-key (kbd "C-<wheel-up>")))
+
+(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "S-C-<down>") 'shrink-window)
+(global-set-key (kbd "S-C-<up>") 'enlarge-window)
+
+(setq fast-but-imprecise-scrolling t)
+(setq redisplay-skip-fontification-on-input t)
+(setq auto-window-vscroll nil)
+(setq next-screen-context-lines 5)
+;; 平滑地进行半屏滚动，避免滚动后 recenter 操作
+(setq scroll-step 1)
+(setq scroll-conservatively 10000)
+(setq scroll-margin 2)
+;; Keep cursor position when scrolling.
+(setq scroll-preserve-screen-position 1)
+
+(if (boundp 'pixel-scroll-precision-mode)
+    (pixel-scroll-precision-mode t))
 
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
@@ -143,9 +195,12 @@
   ;; 不显示换行和编码（节省空间）
   (doom-modeline-buffer-encoding nil)
   ;; 使用 HUD 显式光标位置
-  (doom-modeline-hud t)
+  ;;(doom-modeline-hud t)
   ;; 显示语言版本
   (doom-modeline-env-version t)
+  (doom-modeline-unicode-fallback t)
+  ;; 不显示 project 名称
+  (doom-modeline-project-detection nil)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
   (doom-modeline-buffer-file-name-style 'file-name)
   (doom-modeline-vcs-max-length 30)
@@ -206,7 +261,7 @@
 
 ;; 在 frame 底部显示帮助窗口
 (setq display-buffer-alist
-      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*") (0+ not-newline))
+      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*" "*lsp-help*") (0+ not-newline))
          (display-buffer-reuse-mode-window display-buffer-below-selected)
          (window-height . 0.33)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
@@ -603,6 +658,11 @@
          ;;(gts-posframe-pin-render)
          )))
 
+;; OSX dictionary
+(use-package osx-dictionary
+  :bind (("C-c d i" . osx-dictionary-search-input)
+         ("C-c d x" . osx-dictionary-search-pointer)))
+
 (use-package emacs
   :straight (:type built-in)
   :ensure-system-package
@@ -817,7 +877,7 @@
   :demand
   :ensure-system-package ((pygmentize . pygments) (magick . imagemagick))
   :config
-  (setq org-ellipsis "▾"
+  (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
         ;; 不显示下面 alist 中的强调字符(但高亮内容)
         org-hide-emphasis-markers t
@@ -882,14 +942,15 @@
                   (org-level-7 . 1.1)
                   (org-level-8 . 1.1)))
     (set-face-attribute (car face) nil :weight 'medium :height (cdr face)))
-  (setq org-fontify-whole-block-delimiter-line nil)
+  ;; 美化 BEGIN_SRC 整行
+  (setq org-fontify-whole-block-delimiter-line t)
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
    '(org-block ((t (:font "JuliaMono-14" :inherit fixed-pitch))))
-   ;; 调小 height, 加 :underline "#A7A6AA" 显示下划线
-   '(org-block-begin-line ((t (:height 0.8))))
-   '(org-block-end-line ((t (:height 0.8))))
+   ;; 调小 height
+   '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
+   '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
    '(org-document-info ((t (:foreground "dark orange"))))
    '(org-document-info-keyword ((t (:height 0.8))))
@@ -899,8 +960,17 @@
    '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
    '(org-table ((t (:foreground "#83a598"))))
-   '(org-tag ((t (:weight bold :height 0.8))))))
+   '(org-tag ((t (:weight bold :height 0.8))))
+   ;;'(org-ellipsis ((t (:foreground nil))))
+   )
+   (setq-default prettify-symbols-alist
+                 '(("#+BEGIN_SRC" . "»")
+                   ("#+END_SRC" . "«")
+                   ("#+begin_src" . "»")
+                   ("#+end_src" . "«")))
+  (setq prettify-symbols-unprettify-at-point 'right-edge))
 (add-hook 'org-mode-hook 'my/org-faces)
+(add-hook 'org-mode-hook 'prettify-symbols-mode)
 
 (use-package org-superstar
   :after (org)
@@ -915,16 +985,7 @@
   :hook
   (org-mode . org-fancy-priorities-mode)
   :config
-  (setq org-fancy-priorities-list '("[A] ⚡" "[B] ⬆" "[C] ⬇" "[D] ☕")))
-
-;; 美化代码块
-(setq-default prettify-symbols-alist
-              '(("#+BEGIN_SRC" . "»")
-                ("#+END_SRC" . "«")
-                ("#+begin_src" . "»")
-                ("#+end_src" . "«")))
-(setq prettify-symbols-unprettify-at-point 'right-edge)
-(add-hook 'org-mode-hook 'prettify-symbols-mode)
+  (setq org-fancy-priorities-list '("[A]" "[B]" "[C]")))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -1360,17 +1421,22 @@
   :custom
   ;; 在当前 window 中显示 magit buffer
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-  ;; 自动 kill magit buffers
-  (defun mu-magit-kill-buffers ()
+  :config
+  ;; kill 所有 magit buffer
+  (defun my-magit-kill-buffers (&rest _)
     "Restore window configuration and kill all Magit buffers."
     (interactive)
+    (magit-restore-window-configuration)
     (let ((buffers (magit-mode-get-buffers)))
-      (magit-restore-window-configuration)
-      (mapc #'kill-buffer buffers)))
-
-  (bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
-  (bind-key "q" #'mu-magit-kill-buffers magit-log-mode-map)
-  (bind-key "q" #'mu-magit-kill-buffers magit-mode-map))
+      (when (eq major-mode 'magit-status-mode)
+        (mapc (lambda (buf)
+                (with-current-buffer buf
+                  (if (and magit-this-process
+                           (eq (process-status magit-this-process) 'run))
+                      (bury-buffer buf)
+                    (kill-buffer buf))))
+              buffers))))
+  (setq magit-bury-buffer-function #'my-magit-kill-buffers))
 
 (use-package git-link
   :config
@@ -1453,48 +1519,49 @@
   :custom
   ;; 调试模式（开启后非常影响性能）
   ;;(lsp-log-io t)
-  (lsp-enable-folding t)
-  ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
-  ;; https://github.com/hlissner/doom-emacs/issues/2911
-  ;; https://github.com/Alexander-Miller/treemacs/issues/626
-  (lsp-enable-links nil)
-  ;; 不在 modeline 上显示 code-actions 信息
-  (lsp-modeline-code-actions-enable nil)
   (lsp-keymap-prefix "C-c l")
-  (lsp-auto-guess-root t)
   (lsp-diagnostics-provider :flycheck)
   (lsp-diagnostics-flycheck-default-level 'warning)
-  ;; flycheck 会在 modeline 展示检查情况, 故没必要再展示
-  (lsp-modeline-diagnostics-enable nil)
-  (lsp-completion-provider :none) ;; 使用 corfu.el
-  ;;(lsp-completion-provider :capf) ;; 使用 company.el
-  (lsp-enable-symbol-highlighting t)
+  (lsp-completion-provider :none) ;; corfu.el: :none, company: :capf
+  (lsp-enable-symbol-highlighting nil)
   ;; 不显示面包屑
   (lsp-headerline-breadcrumb-enable nil)
   (lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
   ;; 启用 snippet 后才支持函数或方法的 placeholder 提示
   (lsp-enable-snippet t)
+  ;; eldoc 和 lsp-ui-doc 功能重复, lsp-ui-doc 同时支持 mouse 和 cursor hover,
+  ;; 故这里关闭 eldoc 。
+  (lsp-eldoc-enable-hover nil)
   (lsp-eldoc-render-all t)
-  ;; 使用 posframe 在光标位置处显示函数签名
-  (lsp-signature-function 'lsp-signature-posframe)
-  (lsp-signature-doc-lines 20)
   ;; 增加 IO 性能
   (process-adaptive-read-buffering nil)
   ;; refresh the highlights, lenses, links
-  (lsp-idle-delay 0.1)
+  (lsp-idle-delay 0.2)
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
+  (lsp-enable-folding nil)
+  ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
+  (lsp-enable-links nil)
+  (lsp-enable-indentation nil)
+  ;; flycheck 会在 modeline 展示检查情况, 故没必要再展示
+  (lsp-modeline-diagnostics-enable nil)
+  ;; 不在 modeline 上显示 code-actions 信息
+  (lsp-modeline-code-actions-enable nil)
+  (lsp-modeline-workspace-status-enable nil)
   (lsp-restart 'auto-restart)
   :init
   ;; https://github.com/minad/corfu/wiki
-  (defun my/orderless-dispatch-passthrough-first (_pattern index _total)
-         (if (eq index 0) 'orderless-flex))
+  (defun my/orderless-dispatch-flex-first (_pattern index _total)
+    (and (eq index 0) 'orderless-flex))
+
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless))
-    (make-local-variable 'orderless-style-dispatchers)
-    (cl-pushnew #'my/orderless-dispatch-passthrough-first orderless-style-dispatchers)
-    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
+          '(orderless)))
+
+  ;; Optionally configure the first word as flex filtered.
+  (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+  ;; Optionally configure the cape-capf-buster.
+  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
   :hook
   ((java-mode . lsp)
    (python-mode . lsp)
@@ -1522,7 +1589,9 @@
         ("C-c f" . lsp-format-region)
         ("C-c d" . lsp-describe-thing-at-point)
         ("C-c a" . lsp-execute-code-action)
-        ("C-c r" . lsp-rename)))
+        ("C-c r" . lsp-rename)
+        ([remap xref-find-definitions] . lsp-find-definition)
+        ([remap xref-find-references] . lsp-find-references)))
 
 (use-package consult-lsp
   :after (lsp-mode consult)
@@ -1532,13 +1601,12 @@
 (use-package lsp-ui
   :after (lsp-mode flycheck)
   :custom
-  ;; 关闭 cursor hover, 但 mouse hover 时显示文档
-  (lsp-ui-doc-show-with-cursor nil)
-  ;; 不显示目录(一般比较长被截断)
+  ;; 显示目录
   (lsp-ui-peek-show-directory t)
   ;; 文件列表宽度
-  (lsp-ui-peek-list-width 70)
+  (lsp-ui-peek-list-width 80)
   (lsp-ui-doc-delay 0.1)
+  ;;(lsp-ui-doc-position 'at-point)
   ;; 启用 flycheck 集成
   (lsp-ui-flycheck-enable t)
   (lsp-ui-sideline-enable nil)
@@ -1575,12 +1643,16 @@
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 4)
 (setq-default  python-indent-offset 4)
+
 (use-package python
   :after (flycheck)
   :ensure-system-package
   ((pylint . pylint)
    (flake8 . flake8)
    (ipython . "pip install ipython"))
+  :init
+  (with-eval-after-load 'exec-path-from-shell
+    (exec-path-from-shell-copy-env "PYTHONPATH"))
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
@@ -1629,8 +1701,9 @@
 
 (use-package go-mode
   :after (lsp-mode)
-  :ensure-system-package (gopls . "go get golang.org/x/tools/gopls@latest")
+  :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
   :init
+  (setq godoc-at-point-function #'godoc-gogetdoc)
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
@@ -1639,13 +1712,82 @@
   (lsp-gopls-complete-unimported t)
   :hook
   (go-mode . lsp-go-install-save-hooks)
+  :bind (:map go-mode-map
+              ("C-c R" . go-remove-unused-imports)
+              ("<f1>" . godoc-at-point))
   :config
+  (with-eval-after-load 'exec-path-from-shell
+    (exec-path-from-shell-copy-envs '("GOPATH" "GO111MODULE" "GOPROXY")))
   (lsp-register-custom-settings
    `(("gopls.completeUnimported" t t)
      ("gopls.experimentalWorkspaceModule" t t)
      ("gopls.allExperiments" t t))))
 
-(use-package go-playground :demand t)
+;; Install or update tools
+(defvar go--tools '("golang.org/x/tools/gopls"
+                    "golang.org/x/tools/cmd/goimports"
+                    "honnef.co/go/tools/cmd/staticcheck"
+                    "github.com/go-delve/delve/cmd/dlv"
+                    "github.com/zmb3/gogetdoc"
+                    "github.com/josharian/impl"
+                    "github.com/cweill/gotests/..."
+                    "github.com/fatih/gomodifytags"
+                    "github.com/davidrjenni/reftools/cmd/fillstruct")
+  "All necessary go tools.")
+
+(defun go-update-tools ()
+  "Install or update go tools."
+  (interactive)
+  (unless (executable-find "go")
+    (user-error "Unable to find `go' in `exec-path'!"))
+  (message "Installing go tools...")
+  (dolist (pkg go--tools)
+    (set-process-sentinel
+     (start-process "go-tools" "*Go Tools*" "go" "install" "-v" "-x" (concat pkg "@latest"))
+     (lambda (proc _)))))
+
+;; Misc
+(use-package go-fill-struct)
+(use-package go-impl)
+
+(use-package go-tag
+  :bind (:map go-mode-map
+              ("C-c t a" . go-tag-add)
+              ("C-c t r" . go-tag-remove))
+  :init (setq go-tag-args (list "-transform" "camelcase")))
+
+(use-package go-gen-test
+  :bind (:map go-mode-map
+              ("C-c t g" . go-gen-test-dwim)))
+
+(use-package gotest
+  :bind (:map go-mode-map
+              ("C-c t f" . go-test-current-file)
+              ("C-c t t" . go-test-current-test)
+              ("C-c t j" . go-test-current-project)
+              ("C-c t b" . go-test-current-benchmark)
+              ("C-c t c" . go-test-current-coverage)
+              ("C-c t x" . go-run)))
+
+(use-package go-playground
+  :diminish
+  :commands (go-playground-mode))
+
+;; Install: See https://github.com/golangci/golangci-lint#install
+(use-package flycheck-golangci-lint
+  :ensure-system-package (golangci-lint)
+  :after flycheck
+  :defines flycheck-disabled-checkers
+  :hook (go-mode . (lambda ()
+                     "Enable golangci-lint."
+                     (setq flycheck-disabled-checkers '(go-gofmt
+                                                        go-golint
+                                                        go-vet
+                                                        go-build
+                                                        go-test
+                                                        go-staticcheck
+                                                        go-errcheck))
+                     (flycheck-golangci-lint-setup))))
 
 (use-package markdown-mode
   :ensure-system-package multimarkdown
@@ -1843,6 +1985,48 @@ mermaid.initialize({
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
 
+;; Kill & Mark things easily
+(use-package easy-kill-extras
+  :bind
+  (([remap kill-ring-save] . easy-kill)
+   ([remap mark-sexp] . easy-mark-sexp)
+   ([remap mark-word] . easy-mark-word)
+
+   ;; Integrate `zap-to-char'
+   ([remap zap-to-char] . easy-mark-to-char)
+   ([remap zap-up-to-char] . easy-mark-up-to-char))
+  :init
+  (setq kill-ring-max 200
+        ;; Save clipboard contents before replacement
+        save-interprogram-paste-before-kill t
+        easy-kill-alist '((?w word           " ")
+                          (?s sexp           "\n")
+                          (?l list           "\n")
+                          (?d defun          "\n\n")
+                          (?D defun-name     " ")
+                          (?e line           "\n")
+                          (?b buffer-file-name)
+
+                          (?^ backward-line-edge "")
+                          (?$ forward-line-edge "")
+                          (?h buffer "")
+                          (?< buffer-before-point "")
+                          (?> buffer-after-point "")
+                          (?f string-to-char-forward "")
+                          (?F string-up-to-char-forward "")
+                          (?t string-to-char-backward "")
+                          (?T string-up-to-char-backward ""))))
+
+;; Move to the beginning/end of line or code
+(use-package mwim
+  :bind (([remap move-beginning-of-line] . mwim-beginning-of-code-or-line)
+         ([remap move-end-of-line] . mwim-end-of-code-or-line)))
+
+;; Framework for mode-specific buffer indexes
+(use-package imenu
+  :straight (:type built-in)
+  :bind (("C-c i" . imenu)))
+
 (use-package projectile
   :config
   (projectile-global-mode)
@@ -1907,7 +2091,9 @@ mermaid.initialize({
   ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
   (setq projectile-file-exists-remote-cache-expire (* 10 60))
+  (setq projectile-mode-line-prefix "")
   (setq projectile-dynamic-mode-line nil)
+  (setq projectile-sort-order 'recentf)
   ;; Make projectile to be usable in every directory (even without the presence of project file):
   ;;(setq projectile-require-project-root nil)
   (setq projectile-require-project-root 'prompt))
@@ -2272,10 +2458,14 @@ mermaid.initialize({
   :hook
   (prog-mode . rainbow-delimiters-mode))
 
-;; 智能扩展区域
-(use-package expand-region
-  :bind
-  ("M-@" . er/expand-region))
+;; 高亮匹配的括号
+(use-package paren
+  :straight (:type built-in)
+  :hook
+  (after-init . show-paren-mode)
+  :init
+  (setq show-paren-when-point-inside-paren t
+        show-paren-when-point-in-periphery t))
 
 (setq grep-highlight-matches t)
 
@@ -2283,7 +2473,8 @@ mermaid.initialize({
 (use-package highlight-indent-guides
   :custom
   (highlight-indent-guides-method 'character)
-  (highlight-indent-guides-responsive 'stack)
+  (highlight-indent-guides-responsive 'top)
+  (highlight-indent-guides-suppress-auto-error t)
   (highlight-indent-guides-delay 0.1)
   :config
   (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
@@ -2291,25 +2482,45 @@ mermaid.initialize({
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; 使用 fundamental-mode 打开大文件。
-(defun my/large-file-hook ()
-  "If a file is over a given size, make the buffer read only."
-  (when (and (> (buffer-size) (* 1024 1))
-             (or (string-equal (file-name-extension (buffer-file-name)) "json")
-                 (string-equal (file-name-extension (buffer-file-name)) "yaml")
-                 (string-equal (file-name-extension (buffer-file-name)) "yml")
-                 (string-equal (file-name-extension (buffer-file-name)) "log")))
-    (fundamental-mode)
-    (setq buffer-read-only t)
-    (font-lock-mode -1)
-    (rainbow-delimiters-mode -1)
-    (smartparens-global-mode -1)
-    (show-smartparens-mode -1)
-    (smartparens-mode -1)))
-(add-hook 'find-file-hook 'my/large-file-hook)
-;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
-(add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
-(add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
+(use-package symbol-overlay
+  :diminish
+  :functions
+  (turn-off-symbol-overlay turn-on-symbol-overlay)
+  :custom-face
+  (symbol-overlay-default-face ((t (:inherit (region bold)))))
+  :bind
+  (("M-i" . symbol-overlay-put)
+   ("M-n" . symbol-overlay-jump-next)
+   ("M-p" . symbol-overlay-jump-prev)
+   ("M-N" . symbol-overlay-switch-forward)
+   ("M-P" . symbol-overlay-switch-backward)
+   ("M-C" . symbol-overlay-remove-all)
+   ([M-f3] . symbol-overlay-remove-all))
+  :hook
+  (((prog-mode yaml-mode) . symbol-overlay-mode)
+   (iedit-mode . turn-off-symbol-overlay)
+   (iedit-mode-end . turn-on-symbol-overlay))
+  :init
+  (setq symbol-overlay-idle-time 0.1)
+  :config
+  ;; Disable symbol highlighting while selecting
+  (defun turn-off-symbol-overlay (&rest _)
+    "Turn off symbol highlighting."
+    (interactive)
+    (symbol-overlay-mode -1))
+  (advice-add #'set-mark :after #'turn-off-symbol-overlay)
+
+  (defun turn-on-symbol-overlay (&rest _)
+    "Turn on symbol highlighting."
+    (interactive)
+    (when (derived-mode-p 'prog-mode 'yaml-mode)
+      (symbol-overlay-mode 1)))
+  (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay))
+
+(use-package so-long
+  :straight (:type built-in)
+  :hook (after-init . global-so-long-mode)
+  :config (setq so-long-threshold 400))
 
 ;; 大文件不显示行号
 (setq large-file-warning-threshold nil)
@@ -2324,11 +2535,23 @@ mermaid.initialize({
 
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
-;; Provide undo/redo commands for window changes.
-(winner-mode t)
-
-;; 剪贴板历史记录数量
-(setq kill-ring-max 60)
+(use-package winner
+  :straight (:type built-in)
+  :commands (winner-undo winner-redo)
+  :hook (after-init . winner-mode)
+  :init
+  (setq winner-boring-buffers '("*Completions*"
+                                "*Compile-Log*"
+                                "*inferior-lisp*"
+                                "*helpful"
+                                "*lsp-help*"
+                                "*Fuzzy Completions*"
+                                "*Apropos*"
+                                "*Help*"
+                                "*cvs*"
+                                "*Buffer List*"
+                                "*Ibuffer*"
+                                "*esh command on file*")))
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
@@ -2353,25 +2576,6 @@ mermaid.initialize({
 
 ;; 记录最近 100 次按键，可以通过 M-x view-lossage 来查看输入的内容。
 (lossage-size 100)
-
-;; Highlight current line.
-;;(global-hl-line-mode t)
-
-;; It's nice to maintain a little margin
-(setq scroll-margin 2)
-
-;; Keep cursor position when scrolling.
-(setq scroll-preserve-screen-position 1)
-
-;; 切换到已有的 frame
-(setq display-buffer-reuse-frames t)
-
-(setq auto-window-vscroll nil)
-;; 平滑地进行半屏滚动，避免滚动后 recenter 操作
-(setq scroll-step 1)
-(setq scroll-conservatively 10000)
-(setq scroll-margin 0)
-(setq auto-window-vscroll nil)
 
 ;; Remember point position between sessions.
 (require 'saveplace)
@@ -2412,6 +2616,7 @@ mermaid.initialize({
                           ,(expand-file-name "eln-cache/" user-emacs-directory)
                           ,(expand-file-name "etc/" user-emacs-directory)
                           ,(expand-file-name "var/" user-emacs-directory)
+                          ,(expand-file-name ".cache/" user-emacs-directory)
                           "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log"
                           ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
   (recentf-mode +1))
@@ -2419,11 +2624,16 @@ mermaid.initialize({
 ;; Minibuffer history (savehist-mode)
 (use-package savehist
   :straight (:type built-in)
+  :hook (after-init . savehist-mode)
   :config
   (setq history-length 10000)
   (setq history-delete-duplicates t)
   (setq savehist-save-minibuffer-history t)
-  (add-hook 'after-init-hook #'savehist-mode))
+  (setq savehist-additional-variables '(mark-ring
+                                        global-mark-ring
+                                        search-ring
+                                        regexp-search-ring
+                                        extended-command-history)))
 
 ;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100
@@ -2445,26 +2655,6 @@ mermaid.initialize({
 ;; 粘贴于光标处, 而不是鼠标指针处。
 (setq mouse-yank-at-point t)
 
-(when window-system
-  ;; Scroll one line at a time (less "jumpy" than defaults)
-  (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
-        mouse-wheel-scroll-amount-horizontal 1
-        mouse-wheel-follow-mouse t
-        mouse-wheel-progressive-speed nil)
-  (xterm-mouse-mode t)
-  ;; 默认执行 mouse-wheel-text-scale 命令, 容易触碰误操作，故关闭。
-  (global-unset-key (kbd "C-<wheel-down>"))
-  (global-unset-key (kbd "C-<wheel-up>"))
-  ;;Disable dialog boxes since they weren't working in Mac OSX
-  (setq use-file-dialog nil
-        use-dialog-box nil
-        next-screen-context-lines 5))
-
-(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "S-C-<down>") 'shrink-window)
-(global-set-key (kbd "S-C-<up>") 'enlarge-window)
-
 (use-package ibuffer
   :straight (:type built-in)
   :bind
@@ -2481,6 +2671,26 @@ mermaid.initialize({
   (setq ibuffer-saved-filter-groups nil)
   (setq ibuffer-old-time 48)
   (add-hook 'ibuffer-mode-hook #'hl-line-mode))
+
+;; Group ibuffer's list by project root
+(use-package ibuffer-projectile
+  :after (ibuffer projectile)
+  :hook
+  ((ibuffer . (lambda ()
+                (ibuffer-projectile-set-filter-groups)
+                (unless (eq ibuffer-sorting-mode 'alphabetic)
+                  (ibuffer-do-sort-by-alphabetic)))))
+  :config
+  ;; display filenames relative to the project root
+  (setq ibuffer-formats
+        '((mark modified read-only " "
+                (name 18 18 :left :elide)
+                " "
+                (size 9 -1 :right)
+                " "
+                (mode 16 16 :left :elide)
+                " "
+                project-relative-file))))
 
 (use-package dired
   :straight (:type built-in)
