@@ -31,7 +31,7 @@
 ;; 不缩放 frame
 (setq frame-inhibit-implied-resize t)
 
-;; 设置缩放的模式,避免 Mac 系统最大化窗口后右边和下边有空隙。
+;; 设置缩放的模式, 避免 MacOS 最大化窗口后右边和下边有空隙。
 (setq frame-resize-pixelwise t)
 
 ;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
@@ -48,7 +48,7 @@
 (setq user-full-name "zhangjun")
 (setq user-mail-address "geekard@qq.com")
 
-;; 缺省使用我的 email 地址来加密
+;; 缺省 email 地址来加密
 (setq-default epa-file-select-keys nil)
 (setq-default epa-file-encrypt-to user-mail-address)
 
@@ -64,5 +64,3 @@
 ;; auth 不过期, 默认 7200(2h)
 (setq auth-source-cache-expiry nil)
 ;;(setq auth-source-debug t)
-
-(defun org-clocking-buffer (&rest _))

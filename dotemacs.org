@@ -20,6 +20,15 @@
 - [[#face][face]]
 - [[#font][font]]
 - [[#completion][completion]]
+  - [[#vertico][vertico]]
+  - [[#orderless][orderless]]
+  - [[#consult][consult]]
+  - [[#marginalia][marginalia]]
+  - [[#embark][embark]]
+  - [[#cape][cape]]
+  - [[#corfu][corfu]]
+  - [[#kind-icon][kind-icon]]
+  - [[#yasnippet][yasnippet]]
 - [[#goto][goto]]
 - [[#rime][rime]]
 - [[#dict][dict]]
@@ -58,7 +67,6 @@
   - [[#go][go]]
   - [[#markdown][markdown]]
   - [[#dockerfile][dockerfile]]
-  - [[#ansible][ansible]]
   - [[#web][web]]
     - [[#typescript][typescript]]
     - [[#js2-mode][js2-mode]]
@@ -71,7 +79,7 @@
 - [[#project][project]]
 - [[#treemacs][treemacs]]
 - [[#web][web]]
-- [[#vterm][vterm]]
+- [[#term][term]]
 - [[#eshell][eshell]]
 - [[#tramp][tramp]]
 - [[#others][others]]
@@ -151,7 +159,7 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 不缩放 frame
 (setq frame-inhibit-implied-resize t)
 
-;; 设置缩放的模式,避免 Mac 系统最大化窗口后右边和下边有空隙。
+;; 设置缩放的模式, 避免 MacOS 最大化窗口后右边和下边有空隙。
 (setq frame-resize-pixelwise t)
 
 ;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
@@ -168,7 +176,7 @@ npm config set registry=http://registry.npm.taobao.org
 (setq user-full-name "zhangjun")
 (setq user-mail-address "geekard@qq.com")
 
-;; 缺省使用我的 email 地址来加密
+;; 缺省 email 地址来加密
 (setq-default epa-file-select-keys nil)
 (setq-default epa-file-encrypt-to user-mail-address)
 
@@ -184,8 +192,6 @@ npm config set registry=http://registry.npm.taobao.org
 ;; auth 不过期, 默认 7200(2h)
 (setq auth-source-cache-expiry nil)
 ;;(setq auth-source-debug t)
-
-(defun org-clocking-buffer (&rest _))
 #+end_src
 
 * package
@@ -294,8 +300,8 @@ npm config set registry=http://registry.npm.taobao.org
 (setq inhibit-startup-message t)
 (setq inhibit-startup-echo-area-message t)
 
-(setq initial-major-mode 'fundamental-mode)
 (setq initial-scratch-message nil)
+(setq initial-major-mode 'fundamental-mode)
 
 ;; 默认上下分屏
 (setq split-width-threshold nil)
@@ -303,8 +309,6 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 高亮匹配的括号
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
-
-(setq-default indicate-empty-lines t)
 
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
@@ -319,7 +323,6 @@ npm config set registry=http://registry.npm.taobao.org
   (doom-themes-padded-modeline t)
   :config
   ;;(load-theme 'doom-palenight t)
-  ;; 出错时 modeline 闪动
   (doom-themes-visual-bell-config)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
@@ -345,16 +348,17 @@ npm config set registry=http://registry.npm.taobao.org
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
-;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons, 否则 doom-modeline 右下角内容会溢出。
+;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
+;; 否则 doom-modeline 右下角内容会溢出。
 (use-package doom-modeline
   :demand t
   :after(doom-themes)
   :custom
   ;; 不显示换行和编码（节省空间）
   (doom-modeline-buffer-encoding nil)
-  ;; 使用 HUD 显式光标位置(默认是 bar)
+  ;; 使用 HUD 显式光标位置
   (doom-modeline-hud t)
-  ;; 显示语言环境版本（如 go/python)
+  ;; 显示语言版本
   (doom-modeline-env-version t)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
   (doom-modeline-buffer-file-name-style 'file-name)
@@ -368,7 +372,7 @@ npm config set registry=http://registry.npm.taobao.org
   :demand t
   :after (projectile)
   :config
-  (setq dashboard-banner-logo-title "Happy hacking, Zhang Jun - Emacs ♥ you!")
+  (setq dashboard-banner-logo-title "Happy hacking!")
   ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
   (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
   (setq dashboard-center-content t)
@@ -399,25 +403,9 @@ npm config set registry=http://registry.npm.taobao.org
       (or
        ;; Current window is not dedicated window.
        (window-dedicated-p (selected-window))
-       ;; Buffer name not match below blacklist.
-       (string-prefix-p "*epc" name)
-       (string-prefix-p "*helm" name)
-       (string-prefix-p "*Helm" name)
-       (string-prefix-p "*Compile-Log*" name)
-       (string-prefix-p "*lsp" name)
-       (string-prefix-p "*company" name)
-       (string-prefix-p "*Flycheck" name)
-       (string-prefix-p "*tramp" name)
-       (string-prefix-p "*Mini" name)
-       (string-prefix-p "*help" name)
-       (string-prefix-p "*straight" name)
-       (string-prefix-p "*temp" name)
-       (string-prefix-p "*Help" name)
-       (string-prefix-p "*mybuf" name)
-       (string-prefix-p "*Message" name)
-       (string-prefix-p "*dashboard" name)
-       (string-prefix-p "*scratch" name)
-       ;; Is not magit buffer.
+       ;; 以 * 开头的 buffer 不显示 tab
+       (string-prefix-p "*" name)
+       (string-prefix-p "vterm" name)
        (and (string-prefix-p "magit" name)
             (not (file-name-extension name)))))))
 
@@ -482,19 +470,18 @@ npm config set registry=http://registry.npm.taobao.org
 + 更新 icon 字体： =M-x all-the-icons-install-fonts=
 
 * completion
-
-增量补全：
+** vertico
 #+begin_src emacs-lisp
-(defun my/minibuffer-backward-kill (arg)
-  (interactive "p")
-  (if minibuffer-completing-file-name
-      (if (string-match-p "/." (minibuffer-contents))
-          (zap-up-to-char (- arg) ?/)
-        (delete-minibuffer-contents))
-    (backward-kill-word arg)))
-
 (use-package vertico
   :demand
+  :init
+  (defun my/minibuffer-backward-kill (arg)
+    (interactive "p")
+    (if minibuffer-completing-file-name
+        (if (string-match-p "/." (minibuffer-contents))
+            (zap-up-to-char (- arg) ?/)
+          (delete-minibuffer-contents))
+      (backward-kill-word arg)))
   :bind
   (:map vertico-map
         :map minibuffer-local-map
@@ -506,38 +493,23 @@ npm config set registry=http://registry.npm.taobao.org
   ;; Vertico commands are hidden in normal buffers.
   (setq read-extended-command-predicate #'command-completion-default-include-p)
   (setq enable-recursive-minibuffers t)
-  (setq vertico-count 20)
+  (setq vertico-count 15)
   (setq vertico-cycle t)
   (vertico-mode 1))
+#+end_src
 
-(use-package posframe :demand)
-(use-package vertico-posframe
-  :straight (vertico-posframe :host github :repo "tumashu/vertico-posframe")
-  :config
-  (setq vertico-posframe-parameters
-        '((left-fringe . 8)
-          (right-fringe . 8)
-          ;;(alpha . 80)
-          ))
-  ;; 在光标位置的上方显示 posframe, 避免遮住光标下方的内容
-  (defun my/posframe-poshandler-p0.5p0-to-f0.5p1 (info)
-    (let ((x (car (posframe-poshandler-p0.5p0-to-f0.5f0 info)))
-          ;; 第三个参数 t 表示 upward
-          (y (cdr (posframe-poshandler-point-1 info nil t))))
-      (cons x y)))
-  (setq vertico-posframe-poshandler 'my/posframe-poshandler-p0.5p0-to-f0.5p1)
-  (vertico-posframe-mode 1))
+** orderless
 
-;; 使用 orderless 过滤候选者, 支持多种 dispatch 组合, 如 !zhangjun hang$
-;; Recognizes the following patterns:
-;; * ~flex flex~
-;; * =literal literal=
-;; * %char-fold char-fold%
-;; * `initialism initialism`
-;; * !without-literal without-literal!
-;; * .ext (file extension)
-;; * regexp$ (regexp matching at end)
-;; https://github.com/minad/consult/wiki
+使用 orderless 过滤候选者, [[https://github.com/minad/consult/wiki][支持多种 dispatch 组合]], 如 =!zhangjun hang$=:
++ =~flex flex~=
++ ==literal literal==
++ %char-fold char-fold%
++ `initialism initialism`
++ !without-literal without-literal!
++ .ext (file extension)
++ regexp$ (regexp matching at end)
+
+#+begin_src  emacs-lisp
 (use-package orderless
   :demand
   :config
@@ -584,7 +556,10 @@ npm config set registry=http://registry.npm.taobao.org
         ;; allow escaping space with backslash!
         orderless-component-separator #'orderless-escapable-split-on-space
         orderless-style-dispatchers '(+orderless-dispatch)))
+#+end_src
 
+** consult
+#+begin_src  emacs-lisp
 (use-package consult
   :ensure-system-package (rg . ripgrep)
   :bind
@@ -592,7 +567,6 @@ npm config set registry=http://registry.npm.taobao.org
    ("C-c h" . consult-history)
    ("C-c m" . consult-mode-command)
    ("C-c b" . consult-bookmark)
-   ("C-c k" . consult-kmacro)
    ;; C-x bindings (ctl-x-map)
    ("C-x M-:" . consult-complex-command)
    ("C-x b" . consult-buffer)
@@ -616,7 +590,6 @@ npm config set registry=http://registry.npm.taobao.org
    ("M-g i" . consult-imenu)
    ("M-g I" . consult-project-imenu)
    ;; M-s bindings (search-map)
-   ;; consult-find 不支持预览
    ("M-s f" . consult-find)
    ("M-s L" . consult-locate)
    ("M-s F" . consult-locate)
@@ -643,34 +616,39 @@ npm config set registry=http://registry.npm.taobao.org
   (setq consult-async-input-debounce 0.3)
   (setq consult-async-input-throttle 0.4)
   ;; 预览 register
-  (setq register-preview-delay 0.1
-        register-preview-function #'consult-register-format)
+  (setq register-preview-delay 0.2)
+  (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
 
   ;; Optionally replace `completing-read-multiple' with an enhanced version.
   (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
 
   ;; Use Consult to select xref locations with preview
-  (setq xref-show-xrefs-function #'consult-xref
-        xref-show-definitions-function #'consult-xref)
+  (setq xref-show-xrefs-function #'consult-xref)
+  (setq xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (global-set-key [remap repeat-complex-command] #'consult-complex-command)
 
-  ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
   (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function
-        (lambda ()
-          (unless (file-remote-p default-directory)
-            ;; 使用 projectile.el:
-            (projectile-project-root)
-            ;; 使用 project.el：
-            ;;(when-let (project (project-current))
-            ;; (car (project-roots project)))
-            ))))
+  (setq consult-project-root-function 'projectile-project-root)
+  ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
+  ;; (setq consult-project-root-function
+  ;;       (lambda ()
+  ;;         (unless (file-remote-p default-directory)
+  ;;           ;; 使用 projectile.el:
+  ;;           (projectile-project-root)
+  ;;           ;; 使用 project.el：
+  ;;           ;;(when-let (project (project-current))
+  ;;           ;; (car (project-roots project)))
+  ;;           )))
+  )
+#+end_src
+** marginalia
 
+#+begin_src  emacs-lisp
 (use-package marginalia
   :init
   ;; 显示绝对时间
@@ -682,10 +660,12 @@ npm config set registry=http://registry.npm.taobao.org
         (assq-delete-all 'file marginalia-annotator-registry))
   (setq marginalia-annotator-registry
         (assq-delete-all 'project-file marginalia-annotator-registry)))
+#+end_src
 
+** embark
+#+begin_src emacs-lisp
 (use-package embark
   :init
-  ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
@@ -702,17 +682,10 @@ npm config set registry=http://registry.npm.taobao.org
 
 (use-package embark-consult
   :after (embark consult))
-
-(use-package consult-dir
-  :bind
-  (("C-x C-d" . consult-dir)
-   :map minibuffer-local-completion-map
-   ("C-x C-d" . consult-dir)
-   ("C-x C-j" . consult-dir-jump-file)))
 #+end_src
 + 使用 gnu find 命令, 需要加环境变量 ~export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"~
 
-自动补全：
+** cape
 #+begin_src emacs-lisp
 (use-package cape
   :demand
@@ -720,15 +693,23 @@ npm config set registry=http://registry.npm.taobao.org
   :init
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;; Complete word from current buffers
   ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;; Complete Elisp symbol
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;; Complete abbreviation
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;; Complete word from dictionary file
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;; Complete entire line from file
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   :config
   (setq cape-dabbrev-min-length 2))
+#+end_src
 
+** corfu
+#+begin_src  emacs-lisp
 (use-package corfu
   :demand
   :straight '(corfu :host github :repo "minad/corfu")
@@ -770,18 +751,21 @@ npm config set registry=http://registry.npm.taobao.org
 ;; `completion-at-point' is often bound to M-TAB.
 (setq tab-always-indent 'complete)
 (setq c-tab-always-indent 'complete)
+#+end_src
 
+** kind-icon
+#+begin_src emacs-lisp
 (use-package kind-icon
   :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
   :after corfu
   :demand
   :custom
-  (kind-icon-default-face 'corfu-default) ;; to compute blended backgrounds correctly
+  (kind-icon-default-face 'corfu-default)
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 #+end_src
 
-片段：
+** yasnippet
 #+begin_src emacs-lisp
 ;;(shell-command "mkdir -p ~/.emacs.d/snippets")
 (use-package yasnippet
@@ -863,7 +847,6 @@ sudo spctl --master-disable
 配置 Emacs:
 #+begin_src emacs-lisp
 (use-package rime
-  ;; 为程序设置默认系统输入法
   :ensure-system-package ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
   :custom
   (rime-user-data-dir "~/Library/Rime/")
@@ -871,7 +854,7 @@ sudo spctl --master-disable
   (rime-emacs-module-header-root "/usr/local/Cellar/emacs-plus@28/28.0.50/include")
   :bind
   ( :map rime-active-mode-map
-    ;; 强制切换到英文模式，直到按回车。
+    ;; 强制切换到英文模式，直到按回车
     ("M-j" . 'rime-inline-ascii)
     :map rime-mode-map
     ;; 中英文切换
@@ -887,13 +870,7 @@ sudo spctl --master-disable
   :config
   ;; Emacs will automatically set default-input-method to rfc1345 if locale is
   ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
-  ;; 使用 [SwitchKey](https://github.com/itsuhane/SwitchKey) 将 Emacs 的默认系统输入法设置为英文，避免干扰 RIME。
   (add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
-  ;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
-  (defadvice switch-to-buffer (after activate-input-method activate)
-    (if (string-match "vterm-mode" (symbol-name major-mode))
-        (activate-input-method nil)
-      (activate-input-method "rime")))
   ;; modline 输入法图标高亮, 用来区分中英文输入状态
   (setq mode-line-mule-info '((:eval (rime-lighter))))
   ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
@@ -908,9 +885,16 @@ sudo spctl --master-disable
           rime-predicate-punctuation-after-space-cc-p
           rime-predicate-prog-in-code-p
           rime-predicate-after-ascii-char-p))
-  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 6))
+  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 2))
   (setq rime-show-candidate 'posframe))
+
+;; 切换到 vterm-mode 类型外的 buffer 时激活 rime 输入法。
+(defadvice switch-to-buffer (after activate-input-method activate)
+  (if (string-match "vterm-mode" (symbol-name major-mode))
+      (activate-input-method nil)
+    (activate-input-method "rime")))
 #+end_src
++  使用 [[https://github.com/itsuhane/SwitchKey][SwitchKey]] 将 Emacs 的默认系统输入法设置为英文，防止搜狗输入法干扰 RIME。
 
 RIME 输入法自定义缺省配置中文：
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
@@ -1019,24 +1003,18 @@ import_tables:
 * dict
 
 #+BEGIN_SRC  emacs-lisp
-(use-package youdao-dictionary
-  :bind
-  (("C-c y" . youdao-dictionary-search-at-point))
-  :init
-  (setq url-automatic-caching t)
-  (setq youdao-dictionary-use-chinese-word-segmentation t)
-  :config
-  ;; 使用 jieba 进行中文分词: pip install jieba
-  (use-package chinese-word-at-point :demand t))
-
 (use-package go-translate
+  :bind
+  (("C-c t" . gts-do-translate))
   :config
   (setq gts-translate-list '(("en" "zh")))
   (setq gts-default-translator
         (gts-translator
          :picker (gts-prompt-picker)
-         :engines (list (gts-google-engine) (gts-google-rpc-engine))
-         :render (gts-posframe-pin-render))))
+         :engines (list (gts-bing-engine) (gts-google-engine))
+         :render (gts-buffer-render)
+         ;;(gts-posframe-pin-render)
+         )))
 #+end_src
 + Google 翻译: =M-x gts-do-translate=;
 
@@ -1280,7 +1258,7 @@ $ mu info
 
 #+begin_src emacs-lisp
 (use-package mu4e
-  :demand t
+  ;;:demand
   ;; 使用 mu4e/* 目录下的 lisp 文件, 跳过 straight 的 build 过程;
   :straight (:host github :repo "djcb/mu" :branch "master" :files ("mu4e/*") :build nil)
   :config
@@ -1514,10 +1492,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :demand
-  :ensure-system-package
-  ;; latext pdf 代码高亮
-  ((pygmentize . pygments)
-   (magick . imagemagick))
+  :ensure-system-package ((pygmentize . pygments) (magick . imagemagick))
   :config
   (setq org-ellipsis "▾"
         org-highlight-latex-and-related '(latex)
@@ -1563,7 +1538,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   :config
   (add-hook 'org-mode-hook #'org-make-toc-mode))
 #+END_SRC
-+ org-make-toc: [[https://github.com/alphapapa/org-make-toc][参考官方文档]]。
++ pygments 实现 Latex PDF 代码语法高亮；
++ imagemagick 用于图片分辨率装换；
 
 ** html
 #+begin_src emacs-lisp
@@ -1575,10 +1551,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 (use-package org-html-themify
   :straight (org-html-themify :repo "DogLooksGood/org-html-themify" :files ("*.el" "*.js" "*.css"))
   :hook (org-mode . org-html-themify-mode)
-  :custom
-  (org-html-themify-themes
-   '((dark . doom-palenight)
-     (light . doom-one-light))))
+  :custom (org-html-themify-themes '((dark . doom-palenight) (light . doom-one-light))))
 #+end_src
 + =C-c C-e hh= 或 =M-x org-html-export-to-html= 来生成对应主题的 HTML 页面。
 
@@ -1599,7 +1572,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
-   '(org-block ((t (:font "JuliaMono-15" :inherit fixed-pitch))))
+   '(org-block ((t (:font "JuliaMono-14" :inherit fixed-pitch))))
    ;; 调小 height, 加 :underline "#A7A6AA" 显示下划线
    '(org-block-begin-line ((t (:height 0.8))))
    '(org-block-end-line ((t (:height 0.8))))
@@ -1659,7 +1632,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   :demand t
   :after (org)
   :hook
-  (org-mode . (lambda () (my/org-mode-visual-fill 120 140)))
+  (org-mode . (lambda () (my/org-mode-visual-fill 110 130)))
   :config
   ;; 文字缩放时自动调整 visual-fill-column-width
   (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
@@ -1679,8 +1652,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 ;; org-agenda 展示的文件
 (setq org-agenda-files
       '("~/docs/orgs/inbox.org"
-        "~/docs/orgs/gtd.org"
-        "~/docs/orgs/later.org"
         "~/docs/orgs/capture.org"))
 (setq org-agenda-start-day "-7d")
 (setq org-agenda-span 21)
@@ -1761,13 +1732,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
                :empty-lines 1))
 (add-to-list 'org-capture-templates
              '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
-               "* ☞ TODO [#B] %U %i%?"))
-(add-to-list 'org-capture-templates
-             '("l" "Later" entry (file+headline "~/docs/orgs/later.org" "Later")
-               "* ☞ TODO [#C] %U %i%?" :empty-lines 1))
-(add-to-list 'org-capture-templates
-             '("g" "GTD" entry (file+datetree "~/docs/orgs/gtd.org")
-               "* ☞ TODO [#B] %U %i%?"))
+               "* ☞ TODO [#B] %U %i%?" :empty-lines 1))
 #+end_src
 
 ** image
@@ -2047,7 +2012,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
                             (beacon-mode -1)
                             (redraw-display)
                             (org-display-inline-images)
-                            (text-scale-increase 2)
+                            (text-scale-increase 1)
                             (centaur-tabs-mode 0)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
@@ -2079,7 +2044,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 
 #+begin_src emacs-lisp
 (use-package pdf-tools
-  :demand t
   :ensure-system-package
   ((pdfinfo . poppler)
    (automake . automake)
@@ -2167,7 +2131,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (setq elfeed-goodies/powerline-default-separator 'arrow)
   (elfeed-goodies/setup))
 
-;; feed 收藏， http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+;; feed 收藏，http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
 (require 'elfeed)
 (defalias 'elfeed-toggle-star
   (elfeed-expose #'elfeed-search-toggle-all 'star))
@@ -2274,7 +2238,7 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
 (use-package twittering-mode
   :commands (twit)
   :init
-  ;; 解决报错"epa--decode-coding-string not defined"
+  ;; 解决报错 "epa--decode-coding-string not defined"
   (defalias 'epa--decode-coding-string 'decode-coding-string)
   (setq twittering-icon-mode t)
   (setq twittering-use-icon-storage t)
@@ -2838,23 +2802,6 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 #+end_src
 
-** ansible
-
-#+begin_src emacs-lisp
-(use-package ansible
-  :after (yaml-mode)
-  :config
-  (add-hook 'yaml-mode-hook (lambda () (ansible 1))))
-
-;; ansible-doc 使用系统的 ansible-doc 命令搜索文档
-(use-package ansible-doc
-  :ensure-system-package (ansible-doc . "pip install ansible")
-  :after (ansible yasnippet)
-  :config
-  (add-hook 'ansible-hook (lambda() (ansible-doc-mode) (yas-minor-mode-on)))
-  (define-key ansible-doc-mode-map (kbd "M-?") #'ansible-doc))
-#+end_src
-
 ** web
 *** typescript
 
@@ -2974,8 +2921,8 @@ js/jsx/ts/tsx 等类型文件。
 
 *** prettier
 
-保存文件时自动格式化, 支持 html/java/js/js2/typescript/json/yaml/python/sh 等语
-言, 详情参考变量 prettier-major-mode-parsers:
+保存文件时自动格式化, 支持 html/java/js/js2/typescript/json/yaml/python/sh 等语言, 详情参考变量
+prettier-major-mode-parsers:
 
 #+begin_src emacs-lisp
 (use-package prettier
@@ -3051,7 +2998,7 @@ lsp-workspace-restart= 来重启 lsp 。
 
 #+begin_src emacs-lisp
 (use-package dap-mode
-  :disabled t
+  :disabled
   :config
   (dap-auto-configure-mode 1)
   (require 'dap-chrome))
@@ -3061,11 +3008,6 @@ lsp-workspace-restart= 来重启 lsp 。
 * project
 
 #+begin_src emacs-lisp
-(use-package posframe-project-term
-  :straight (posframe-project-term :host github :repo "zwpaper/posframe-project-term")
-  :bind
-  (("C-c t" . posframe-project-term-toggle)))
-
 (use-package projectile
   :config
   (projectile-global-mode)
@@ -3143,14 +3085,11 @@ lsp-workspace-restart= 来重启 lsp 。
       (when (file-directory-p file)
           (projectile-add-known-project file)
           (message "add project %s..." file)))))
-
-(use-package treemacs-projectile :after (treemacs projectile))
 #+end_src
 
 * treemacs
 
 #+begin_src emacs-lisp
-;;(shell-command "mkdir -p ~/.emacs.d/.cache")
 (use-package treemacs
   :demand
   :init
@@ -3158,7 +3097,8 @@ lsp-workspace-restart= 来重启 lsp 。
   :config
   (progn
     (setq
-     treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+     ;; 不折叠目录(提升性能)
+     treemacs-collapse-dirs                 0
      treemacs-deferred-git-apply-delay      0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
@@ -3170,7 +3110,7 @@ lsp-workspace-restart= 来重启 lsp 。
      treemacs-indentation                   1
      treemacs-indentation-string            " "
      treemacs-is-never-other-window         t
-     treemacs-max-git-entries               1000
+     treemacs-max-git-entries               100
      treemacs-missing-project-action        'ask
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
@@ -3203,9 +3143,8 @@ lsp-workspace-restart= 来重启 lsp 。
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
-    (pcase (cons (not (null (executable-find "git"))) (not (null treemacs-python-executable)))
-      (`(t . t) (treemacs-git-mode 'deferred))
-      (`(t . _) (treemacs-git-mode 'simple)))
+    ;; 不显示 git 修改状态（很少用到）
+    (treemacs-git-mode -1)
     (treemacs-hide-gitignored-files-mode nil))
   :bind
   (:map global-map
@@ -3219,8 +3158,6 @@ lsp-workspace-restart= 来重启 lsp 。
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
-(use-package treemacs-magit :after (treemacs magit))
-
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
 (use-package ripgrep
   :ensure-system-package (rg . ripgrep))
@@ -3228,8 +3165,6 @@ lsp-workspace-restart= 来重启 lsp 。
 (use-package deadgrep
   :ensure-system-package (rg . ripgrep)
   :bind ("<f5>" . deadgrep))
-
-(setq grep-highlight-matches t)
 #+end_src
 
 * web
@@ -3274,19 +3209,8 @@ open -a 'Google Chrome' $*
     :keybinding "w"
     :docstring "Searchin' the wikis."))
 #+end_src
-+ 搜索前缀命令： =C-x /= 。可以先选中 region 再执行上面的搜索。
++ 搜索前缀命令： =C-x /= , 可以先选中 region 再执行上面的搜索。
 + 修复启动报错:  =rm ~/.emacs.d/elpa/engine-mode*/engine-mode-*.el*=;
-
-书签管理器:
-#+begin_src emacs-lisp
-(use-package ebuku
-  :ensure-system-package (buku . "pip3 install buku")
-  :config
-  ;; 不限制结果
-  (setq ebuku-results-limit 0))
-#+end_src
-+ =buku --ai= 导入 Firefox/Chrome 书签;
-+ =M-x ebuku= : 浏览和编辑导入的书签, 点击 URL 使用 Mac 浏览器打开。
 
 全局 socks5 代理：
 #+begin_src emacs-lisp
@@ -3359,7 +3283,7 @@ open -a 'Google Chrome' $*
 + [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
 + 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
 
-* vterm
+* term
 
 #+begin_src emacs-lisp
 (use-package vterm
@@ -3368,6 +3292,7 @@ open -a 'Google Chrome' $*
    (glibtool . libtool)
    (exiftran . exiftran))
   :config
+  (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 100000)
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND）。
   (setq vterm-buffer-name-string "vterm: %s")
@@ -3506,12 +3431,6 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
   :demand
   )
 
-;; (use-package org-xournalpp
-;;   :ensure t
-;;   :straight (org-xournalpp :host gitlab :repo "vherrmann/org-xournalpp" :files ("*.el" "resources"))
-;;   :config
-;;   (add-hook 'org-mode-hook 'org-xournalpp-mode))
-
 (use-package org-sketch
   :hook (org-mode . org-sketch-mode)
   :straight (:host github :repo "yuchen-lea/org-sketch")
@@ -3531,7 +3450,7 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
 ;; 退出自动杀掉进程
 (setq confirm-kill-processes nil)
 
-;; 直接在 minibuffer 中编辑 query(rime 探测到 minibuffer 时自动关闭输入法)
+;; 直接在 minibuffer 中编辑 query(RIME 探测到 minibuffer 时自动关闭输入法)
 (use-package isearch-mb
   :demand t
   :config
@@ -3571,6 +3490,8 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
 (use-package expand-region
   :bind
   ("M-@" . er/expand-region))
+
+(setq grep-highlight-matches t)
 
 ;; 显示缩进
 (use-package highlight-indent-guides
@@ -3621,7 +3542,7 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
 (winner-mode t)
 
 ;; 剪贴板历史记录数量
-(setq kill-ring-max 100)
+(setq kill-ring-max 60)
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
@@ -3699,9 +3620,9 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
   :config
   ;; Don’t clean up recentf tramp buffers.
   (setq recentf-auto-cleanup 'never)
-  (setq recentf-max-menu-items 100)
-  (setq recentf-max-saved-items 100)
-  (setq recentf-exclude `(,(expand-file-name "straight/build/" user-emacs-directory)
+  (setq recentf-max-menu-items 200)
+  (setq recentf-max-saved-items 200)
+  (setq recentf-exclude `(,(expand-file-name "straight/" user-emacs-directory)
                           ,(expand-file-name "eln-cache/" user-emacs-directory)
                           ,(expand-file-name "etc/" user-emacs-directory)
                           ,(expand-file-name "var/" user-emacs-directory)
@@ -3806,11 +3727,6 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
 ;; ESC Cancels All
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-;; 管理 minior mode
-(use-package manage-minor-mode)
-(defvar hidden-minor-modes '(whitespace-mode))
-
-;;(shell-command "mkdir -p ~/.emacs.d/backup")
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (setq backup-by-copying t)
 (setq backup-directory-alist (list (cons ".*" backup-dir)))
@@ -3819,7 +3735,6 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
 (setq kept-old-versions 2)
 (setq version-control t)
 
-;;(shell-command "mkdir -p ~/.emacs.d/autosave")
 (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
@@ -3847,6 +3762,10 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
   ;; Delete files to trash
   (setq-default delete-by-moving-to-trash t))
 
+;; 在 Finder 中打开当前文件
+(use-package reveal-in-osx-finder
+  :commands (reveal-in-osx-finder))
+
 ;; 在帮助文档底部显示 lisp demo
 (use-package elisp-demos
   :config
@@ -3859,33 +3778,12 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
 ;; 相比 Emacs 内置 Help, 提供更多上下文信息。
 (use-package helpful
   :config
-  ;; Note that the built-in `describe-function' includes both functions
-  ;; and macros. `helpful-function' is functions only, so we provide
-  ;; `helpful-callable' as a drop-in replacement.
   (global-set-key (kbd "C-h f") #'helpful-callable)
   (global-set-key (kbd "C-h v") #'helpful-variable)
   (global-set-key (kbd "C-h k") #'helpful-key)
-
-  ;; Lookup the current symbol at point. C-c C-d is a common keybinding
-  ;; for this in lisp modes.
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
-
-  ;; Look up *F*unctions (excludes macros).
-  ;;
-  ;; By default, C-h F is bound to `Info-goto-emacs-command-node'. Helpful
-  ;; already links to the manual, if a function is referenced there.
   (global-set-key (kbd "C-h F") #'helpful-function)
-
-  ;; Look up *C*ommands.
-  ;;
-  ;; By default, C-h C is bound to describe `describe-coding-system'. I
-  ;; don't find this very useful, but it's frequently useful to only
-  ;; look at interactive functions.
   (global-set-key (kbd "C-h C") #'helpful-command))
-
-;; 在 Finder 中打开当前文件
-(use-package reveal-in-osx-finder
-  :commands (reveal-in-osx-finder))
 #+end_src
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行 rm 命令。
 
