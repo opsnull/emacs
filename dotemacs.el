@@ -76,11 +76,6 @@
   (scroll-bar-mode -1)
   (menu-bar-mode -1))
 
-;; 指针不闪动
-(blink-cursor-mode -1)
-;; 指针宽度与字符一致
-(setq-default x-stretch-cursor t)
-
 (set-fringe-mode 10)
 
 (setq inhibit-startup-screen t)
@@ -90,6 +85,8 @@
 (setq initial-scratch-message nil)
 (setq initial-major-mode 'fundamental-mode)
 
+;; 指针不闪动
+(blink-cursor-mode -1)
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
@@ -1984,6 +1981,7 @@ mermaid.initialize({
 
 ;; Kill & Mark things easily
 (use-package easy-kill-extras
+  :demand
   :bind
   (([remap kill-ring-save] . easy-kill)
    ([remap mark-sexp] . easy-mark-sexp)
@@ -2012,7 +2010,25 @@ mermaid.initialize({
                           (?f string-to-char-forward "")
                           (?F string-up-to-char-forward "")
                           (?t string-to-char-backward "")
-                          (?T string-up-to-char-backward ""))))
+                          (?T string-up-to-char-backward "")
+
+                          (?W  WORD " ")
+                          (?\' squoted-string "")
+                          (?\" dquoted-string "")
+                          (?\` bquoted-string "")
+                          (?q  quoted-string "")
+                          (?Q  quoted-string-universal "")
+                          (?\) parentheses-pair-content "\n")
+                          (?\( parentheses-pair "\n")
+                          (?\] brackets-pair-content "\n")
+                          (?\[ brackets-pair "\n")
+                          (?}  curlies-pair-content "\n")
+                          (?{  curlies-pair "\n")
+                          (?>  angles-pair-content "\n")
+                          (?<  angles-pair "\n")))
+:config
+;; 加载 extra-things 后, 上面 WORD 开始的 alist 才生效
+(require 'extra-things))
 
 ;; Move to the beginning/end of line or code
 (use-package mwim
