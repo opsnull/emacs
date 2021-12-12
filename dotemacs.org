@@ -485,21 +485,17 @@ npm config set registry=http://registry.npm.taobao.org
 
 * font
 
-+  中文：更纱等宽黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
-+  英文: JuliaMono: https://juliamono.netlify.app/download/
-+  英文：Iosevka SS14(Monospace & JetBrains Mono Style): https://github.com/be5invis/Iosevka
++  中英文：更纱黑体 Sarasa Term SC: https://github.com/be5invis/Sarasa-Gothic
++  中英文(PDF): Noto CJK SC: https://github.com/googlefonts/noto-cjk.git
 +  花園明朝：HanaMinB：http://fonts.jp/hanazono/
 +  Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 
 #+begin_src emacs-lisp
 (use-package cnfonts
   :demand
-  :ensure-system-package
-  ("/Users/zhangjun/Library/Fonts/JuliaMono-Regular.ttf" .
-   "brew tap homebrew/cask-fonts; brew install --cask font-juliamono")
   :after (doom-modeline)
   :init
-  (setq cnfonts-personal-fontnames '(("JuliaMono" "Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
+  (setq cnfonts-personal-fontnames '(("Sarasa Term SC") ("Sarasa Term SC") ("HanaMinB")))
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
   :config
@@ -523,8 +519,10 @@ npm config set registry=http://registry.npm.taobao.org
     :hook prog-mode))
 #+end_src
 + 查看 emacs 支持的字体： =(print (font-family-list))=;
-+ 更新 fire-code 字体： =M-x fira-code-mode-install-fonts=
-+ 更新 icon 字体： =M-x all-the-icons-install-fonts=
++ 安装、更新 fire-code 字体： =M-x fira-code-mode-install-fonts=
++ 安装、更新 icon 字体： =M-x all-the-icons-install-fonts=, 包括
+  file-icons/fontawesome/octicons/weathericons/material-design 字体。
++ 安装 Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
 
 * completion
 ** vertico
@@ -1558,7 +1556,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   :config
   (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
-        ;; 不显示下面 alist 中的强调字符(但高亮内容)
         org-hide-emphasis-markers t
         ;; 去掉 * 和 /, 使它们不再具有强调含义
         org-emphasis-alist
@@ -1572,6 +1569,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
         org-cycle-separator-lines 2
         org-cycle-level-faces t
         org-n-level-faces 4
+        org-tags-column -80
         org-log-into-drawer t
         org-log-done 'note
         ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300
@@ -1587,6 +1585,11 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+  ;; 中文不加空格使用行内格式, 如强调
+  (setq org-emphasis-regexp-components
+        '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
+  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
+  (org-element-update-syntax)
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -1635,7 +1638,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
-   '(org-block ((t (:font "JuliaMono-14" :inherit fixed-pitch))))
+   '(org-block ((t (:font "Sarasa Term SC-15" :inherit fixed-pitch))))
    ;; 调小 height
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
@@ -1651,11 +1654,11 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
    '(org-tag ((t (:weight bold :height 0.8))))
    ;;'(org-ellipsis ((t (:foreground nil))))
    )
-   (setq-default prettify-symbols-alist
-                 '(("#+BEGIN_SRC" . "»")
-                   ("#+END_SRC" . "«")
-                   ("#+begin_src" . "»")
-                   ("#+end_src" . "«")))
+  (setq-default prettify-symbols-alist
+                '(("#+BEGIN_SRC" . "»")
+                  ("#+END_SRC" . "«")
+                  ("#+begin_src" . "»")
+                  ("#+end_src" . "«")))
   (setq prettify-symbols-unprettify-at-point 'right-edge))
 (add-hook 'org-mode-hook 'my/org-faces)
 (add-hook 'org-mode-hook 'prettify-symbols-mode)
@@ -1819,16 +1822,16 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 ** babel
 
 #+begin_src emacs-lisp
-(setq org-confirm-babel-evaluate nil
-      org-src-fontify-natively t
-      ;; add a special face to #+begin_quote and #+begin_verse block
-      org-fontify-quote-and-verse-blocks t
-      ;; 不自动缩进
-      org-src-preserve-indentation t
-      org-edit-src-content-indentation 0
-      ;; 在当前 window 编辑 SRC Block
-      org-src-window-setup 'current-window
-      org-src-tab-acts-natively t)
+(setq org-confirm-babel-evaluate nil)
+(setq org-src-fontify-natively t)
+(setq org-src-tab-acts-natively t)
+ ;; add a special face to #+begin_quote and #+begin_verse block
+(setq org-fontify-quote-and-verse-blocks t)
+;; 不自动缩进
+(setq org-src-preserve-indentation t)
+(setq org-edit-src-content-indentation 0)
+;; 在当前 window 编辑 SRC Block
+(setq org-src-window-setup 'current-window)
 
 (require 'org)
 (use-package ob-go)
@@ -1992,10 +1995,9 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 
 \usepackage{fontspec}
 \usepackage[utf8]{inputenc}
-\setmainfont{Sarasa Mono SC}
-\setsansfont{Sarasa Mono SC}[Scale=MatchLowercase]
-\setmonofont{Sarasa Mono SC}[Scale=MatchLowercase]
-% \setCJKmainfont[BoldFont={Adobe Heiti Std}, ItalicFont={Adobe Kaiti Std}]{Adobe Song Std}
+\setmainfont{Noto Serif SC}
+\setsansfont{Noto Sans SC}[Scale=MatchLowercase]
+\setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
 \setCJKmainfont[BoldFont = Noto Serif SC]{Noto Serif SC}
 \setCJKsansfont{Noto Sans SC}
 \setCJKmonofont{Noto Sans Mono CJK SC}
@@ -2086,14 +2088,14 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
                             (centaur-tabs-mode 1)
                             (read-only-mode -1))))
   :config
-  (setq org-tree-slide-slide-in-effect nil)
+  (setq org-tree-slide-header nil)
+  (setq org-tree-slide-heading-emphasis nil)
+  (setq org-tree-slide-slide-in-effect t)
   (setq org-tree-slide-content-margin-top 0)
   (setq org-tree-slide-activate-message " ")
   (setq org-tree-slide-deactivate-message " ")
   (setq org-tree-slide-modeline-display nil)
   (setq org-tree-slide-breadcrumbs " 👉 ")
-  (setq org-tree-slide-heading-emphasis nil)
-  (setq org-tree-slide-header nil)
   ;; 隐藏 #+KEYWORD 行内容。
   (defun +org-present-hide-blocks-h ()
     (save-excursion
@@ -2503,6 +2505,7 @@ flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flym
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
                  "[/\\\\]vendor\\'"
+                 "[/\\\\]node_modules\\'"
                  "[/\\\\]\\.settings\\'"
                  "[/\\\\]\\.project\\'"
                  "[/\\\\]\\.travis\\'"
