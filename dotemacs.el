@@ -214,7 +214,7 @@
   :after (projectile)
   :config
   (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
-  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
+  (setq dashboard-startup-banner (expand-file-name "~/.emacs.d/emacs-e.svg"))
   (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
@@ -954,7 +954,7 @@
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
-   '(org-document-info ((t (:foreground "dark orange"))))
+   '(org-document-info ((t (:foreground "dark orange" :height 0.8))))
    '(org-document-info-keyword ((t (:height 0.8))))
    '(org-link ((t (:foreground "royal blue" :underline t))))
    '(org-meta-line ((t ( :height 0.8))))
@@ -1018,7 +1018,8 @@
 
 ;; org-agenda 展示的文件
 (setq org-agenda-files
-      '("~/docs/orgs/inbox.org"
+      '("~/docs/orgs/journal.org"
+        "~/docs/orgs/gtd.org"
         "~/docs/orgs/capture.org"))
 (setq org-agenda-start-day "-7d")
 (setq org-agenda-span 21)
@@ -1081,13 +1082,13 @@
 (require 'org-protocol)
 (require 'org-capture)
 
-(add-to-list 'org-capture-templates
-             '("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
-               "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial"
-               :empty-lines 1))
-(add-to-list 'org-capture-templates
-             '("i" "Inbox" entry (file+headline "~/docs/orgs/inbox.org" "Inbox")
-               "* ☞ TODO [#B] %U %i%?" :empty-lines 1))
+(setq org-capture-templates
+      '(("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
+         "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial" :empty-lines 1)
+        ("j" "Journal" entry (file+olp+datetree "~/docs/orgs/journal.org")
+         "*  %?\n %U %a\n %i")
+        ("t" "Todo" entry (file+headline "~/docs/orgs/gtd.org" "Tasks")
+         "* TODO %?\n %U %a\n %i" :empty-lines 1)))
 
 (use-package org-download
   :ensure-system-package pngpaste
@@ -2584,6 +2585,7 @@ mermaid.initialize({
   (setq use-short-answers t)
   (setq confirm-kill-emacs #'y-or-n-p)
   ;; 关闭出错提示声
+  (setq visible-bell nil)
   (setq ring-bell-function 'ignore)
   ;; Don't lock files.
   (setq create-lockfiles nil)
