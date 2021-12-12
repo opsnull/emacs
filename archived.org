@@ -1,3 +1,15 @@
+离线查询 devdocs 文档（已被 dash 替代）:
+#+begin_src emacs-lisp
+(use-package devdocs
+  :bind ("C-c b" . devdocs-lookup)
+  :config
+  (add-to-list 'completion-category-defaults '(devdocs (styles . (flex))))
+  (add-hook 'python-mode-hook (lambda () (setq-local devdocs-current-docs '("python~3.9"))))
+  (add-hook 'go-mode-hook (lambda () (setq-local devdocs-current-docs '("go")))))
+#+end_src
++ 安装文档: M-x devdocs-install
++ 更新当前使用的文档目录: C-u M-x dovdocs-lookup
+
 #+begin_src emacs-lisp :tangle no
 ;; 被 so-long 取代
 ;; 使用 fundamental-mode 打开大文件。

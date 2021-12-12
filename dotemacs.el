@@ -1970,13 +1970,6 @@ mermaid.initialize({
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
   (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode)))
 
-(use-package devdocs
-  :bind ("C-c b" . devdocs-lookup)
-  :config
-  (add-to-list 'completion-category-defaults '(devdocs (styles . (flex))))
-  (add-hook 'python-mode-hook (lambda () (setq-local devdocs-current-docs '("python~3.9"))))
-  (add-hook 'go-mode-hook (lambda () (setq-local devdocs-current-docs '("go")))))
-
 (use-package envrc
   :ensure-system-package direnv
   :hook (after-init . envrc-global-mode)
@@ -2030,6 +2023,11 @@ mermaid.initialize({
 (use-package imenu
   :straight (:type built-in)
   :bind (("C-c i" . imenu)))
+
+(use-package dash-at-point
+  :config
+  (global-set-key "\C-cd" 'dash-at-point)
+  (global-set-key "\C-cb" 'dash-at-point-with-docset))
 
 (use-package projectile
   :config
