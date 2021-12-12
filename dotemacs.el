@@ -213,7 +213,7 @@
   :demand t
   :after (projectile)
   :config
-  (setq dashboard-banner-logo-title "Happy hacking!")
+  (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
   ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
   (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
   (setq dashboard-center-content t)
@@ -2520,10 +2520,25 @@ mermaid.initialize({
       (symbol-overlay-mode 1)))
   (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay))
 
-(use-package so-long
-  :straight (:type built-in)
-  :hook (after-init . global-so-long-mode)
-  :config (setq so-long-threshold 400))
+;; 使用 fundamental-mode 打开大文件。
+(defun my/large-file-hook ()
+  "If a file is over a given size, make the buffer read only."
+  (when (and (> (buffer-size) (* 1024 1))
+             (or (string-equal (file-name-extension (buffer-file-name)) "json")
+                 (string-equal (file-name-extension (buffer-file-name)) "yaml")
+                 (string-equal (file-name-extension (buffer-file-name)) "yml")
+                 (string-equal (file-name-extension (buffer-file-name)) "log")))
+    (fundamental-mode)
+    (setq buffer-read-only t)
+    (font-lock-mode -1)
+    (rainbow-delimiters-mode -1)
+    (smartparens-global-mode -1)
+    (show-smartparens-mode -1)
+    (smartparens-mode -1)))
+(add-hook 'find-file-hook 'my/large-file-hook)
+;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
+(add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
+(add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
 
 ;; 大文件不显示行号
 (setq large-file-warning-threshold nil)
