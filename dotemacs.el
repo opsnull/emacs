@@ -268,12 +268,9 @@
 
 (use-package cnfonts
   :demand
-  :ensure-system-package
-  ("/Users/zhangjun/Library/Fonts/JuliaMono-Regular.ttf" .
-   "brew tap homebrew/cask-fonts; brew install --cask font-juliamono")
   :after (doom-modeline)
   :init
-  (setq cnfonts-personal-fontnames '(("JuliaMono" "Iosevka SS14" "Fira Code") ("Sarasa Mono SC") ("HanaMinB")))
+  (setq cnfonts-personal-fontnames '(("Sarasa Term SC") ("Sarasa Term SC") ("HanaMinB")))
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
   :config
@@ -879,7 +876,6 @@
   :config
   (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
-        ;; 不显示下面 alist 中的强调字符(但高亮内容)
         org-hide-emphasis-markers t
         ;; 去掉 * 和 /, 使它们不再具有强调含义
         org-emphasis-alist
@@ -893,6 +889,7 @@
         org-cycle-separator-lines 2
         org-cycle-level-faces t
         org-n-level-faces 4
+        org-tags-column -80
         org-log-into-drawer t
         org-log-done 'note
         ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300
@@ -908,6 +905,11 @@
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+  ;; 中文不加空格使用行内格式, 如强调
+  (setq org-emphasis-regexp-components
+        '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
+  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
+  (org-element-update-syntax)
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -947,7 +949,7 @@
   (custom-theme-set-faces
    'user
    ;; 调大 org-block 字体
-   '(org-block ((t (:font "JuliaMono-14" :inherit fixed-pitch))))
+   '(org-block ((t (:font "Sarasa Term SC-15" :inherit fixed-pitch))))
    ;; 调小 height
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
@@ -963,11 +965,11 @@
    '(org-tag ((t (:weight bold :height 0.8))))
    ;;'(org-ellipsis ((t (:foreground nil))))
    )
-   (setq-default prettify-symbols-alist
-                 '(("#+BEGIN_SRC" . "»")
-                   ("#+END_SRC" . "«")
-                   ("#+begin_src" . "»")
-                   ("#+end_src" . "«")))
+  (setq-default prettify-symbols-alist
+                '(("#+BEGIN_SRC" . "»")
+                  ("#+END_SRC" . "«")
+                  ("#+begin_src" . "»")
+                  ("#+end_src" . "«")))
   (setq prettify-symbols-unprettify-at-point 'right-edge))
 (add-hook 'org-mode-hook 'my/org-faces)
 (add-hook 'org-mode-hook 'prettify-symbols-mode)
@@ -1100,16 +1102,16 @@
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
-(setq org-confirm-babel-evaluate nil
-      org-src-fontify-natively t
-      ;; add a special face to #+begin_quote and #+begin_verse block
-      org-fontify-quote-and-verse-blocks t
-      ;; 不自动缩进
-      org-src-preserve-indentation t
-      org-edit-src-content-indentation 0
-      ;; 在当前 window 编辑 SRC Block
-      org-src-window-setup 'current-window
-      org-src-tab-acts-natively t)
+(setq org-confirm-babel-evaluate nil)
+(setq org-src-fontify-natively t)
+(setq org-src-tab-acts-natively t)
+ ;; add a special face to #+begin_quote and #+begin_verse block
+(setq org-fontify-quote-and-verse-blocks t)
+;; 不自动缩进
+(setq org-src-preserve-indentation t)
+(setq org-edit-src-content-indentation 0)
+;; 在当前 window 编辑 SRC Block
+(setq org-src-window-setup 'current-window)
 
 (require 'org)
 (use-package ob-go)
@@ -1231,14 +1233,14 @@
                             (centaur-tabs-mode 1)
                             (read-only-mode -1))))
   :config
-  (setq org-tree-slide-slide-in-effect nil)
+  (setq org-tree-slide-header nil)
+  (setq org-tree-slide-heading-emphasis nil)
+  (setq org-tree-slide-slide-in-effect t)
   (setq org-tree-slide-content-margin-top 0)
   (setq org-tree-slide-activate-message " ")
   (setq org-tree-slide-deactivate-message " ")
   (setq org-tree-slide-modeline-display nil)
   (setq org-tree-slide-breadcrumbs " 👉 ")
-  (setq org-tree-slide-heading-emphasis nil)
-  (setq org-tree-slide-header nil)
   ;; 隐藏 #+KEYWORD 行内容。
   (defun +org-present-hide-blocks-h ()
     (save-excursion
@@ -1577,6 +1579,7 @@
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
                  "[/\\\\]vendor\\'"
+                 "[/\\\\]node_modules\\'"
                  "[/\\\\]\\.settings\\'"
                  "[/\\\\]\\.project\\'"
                  "[/\\\\]\\.travis\\'"
