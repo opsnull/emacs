@@ -429,7 +429,7 @@ npm config set registry=http://registry.npm.taobao.org
   :demand t
   :after (projectile)
   :config
-  (setq dashboard-banner-logo-title "Happy hacking!")
+  (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
   ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/myself.png"))
   (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
   (setq dashboard-center-content t)
