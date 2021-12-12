@@ -73,11 +73,11 @@
     - [[#web-mode][web-mode]]
     - [[#prettier][prettier]]
   - [[#yaml][yaml]]
-  - [[#devdocs][devdocs]]
   - [[#direnv][direnv]]
   - [[#dap][dap]]
   - [[#easy-kill][easy-kill]]
   - [[#others][others]]
+  - [[#dash][dash]]
 - [[#project][project]]
 - [[#treemacs][treemacs]]
 - [[#web][web]]
@@ -3090,20 +3090,6 @@ prettier-major-mode-parsers:
   (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode)))
 #+end_src
 
-** devdocs
-
-离线查询 devdocs 文档:
-#+begin_src emacs-lisp
-(use-package devdocs
-  :bind ("C-c b" . devdocs-lookup)
-  :config
-  (add-to-list 'completion-category-defaults '(devdocs (styles . (flex))))
-  (add-hook 'python-mode-hook (lambda () (setq-local devdocs-current-docs '("python~3.9"))))
-  (add-hook 'go-mode-hook (lambda () (setq-local devdocs-current-docs '("go")))))
-#+end_src
-+ 安装文档: M-x devdocs-install
-+ 更新当前使用的文档目录: C-u M-x dovdocs-lookup
-
 ** direnv
 
 目录变量是只对特定目录及子目录有效的 shell 环境变量，主要使用场景是根据目录变量
@@ -3194,6 +3180,14 @@ lsp-workspace-restart= 来重启 lsp 。
 (use-package imenu
   :straight (:type built-in)
   :bind (("C-c i" . imenu)))
+#+end_src
+
+** dash
+#+begin_src emacs-lisp
+(use-package dash-at-point
+  :config
+  (global-set-key "\C-cd" 'dash-at-point)
+  (global-set-key "\C-cb" 'dash-at-point-with-docset))
 #+end_src
 
 * project
