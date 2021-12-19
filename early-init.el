@@ -48,7 +48,7 @@
 (setq user-full-name "zhangjun")
 (setq user-mail-address "geekard@qq.com")
 
-;; 缺省 email 地址来加密
+;; 缺省使用 email 地址加密
 (setq-default epa-file-select-keys nil)
 (setq-default epa-file-encrypt-to user-mail-address)
 
