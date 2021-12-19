@@ -34,10 +34,8 @@
 (use-package exec-path-from-shell
   :demand
   :custom
-  ;; 去掉 -i 参数来加快启动
-  (exec-path-from-shell-arguments '("-l"))
   (exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE"))
+  (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE" "GOFLAGS"))
   :config
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
@@ -1517,8 +1515,8 @@
 (use-package lsp-mode
   :after (cape orderless)
   :custom
-  ;; 调试模式（开启后非常影响性能）
-  ;;(lsp-log-io t)
+  ;; 日志记录行数
+  (lsp-log-max 10000)
   (lsp-keymap-prefix "C-c l")
   (lsp-diagnostics-provider :flycheck)
   (lsp-diagnostics-flycheck-default-level 'warning)
@@ -1549,6 +1547,8 @@
   (lsp-modeline-code-actions-enable nil)
   (lsp-modeline-workspace-status-enable nil)
   (lsp-restart 'auto-restart)
+  ;; 使用 projectile/project 来自动探测项目根目录
+  (lsp-auto-guess-root t)
   :init
   ;; https://github.com/minad/corfu/wiki
   (defun my/orderless-dispatch-flex-first (_pattern index _total)
@@ -1708,21 +1708,26 @@
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  :custom
-  (lsp-gopls-staticcheck t)
-  (lsp-gopls-complete-unimported t)
   :hook
   (go-mode . lsp-go-install-save-hooks)
-  :bind (:map go-mode-map
-              ("C-c R" . go-remove-unused-imports)
-              ("<f1>" . godoc-at-point))
+  :bind
+  (:map go-mode-map
+        ("C-c R" . go-remove-unused-imports)
+        ("<f1>" . godoc-at-point))
   :config
-  (with-eval-after-load 'exec-path-from-shell
-    (exec-path-from-shell-copy-envs '("GOPATH" "GO111MODULE" "GOPROXY")))
+  ;; 配置 -mod=mod, 防止带有 vendor 目录的项目报错: go: inconsistent vendoring
+  (setq lsp-go-env '((GOFLAGS . "-mod=mod")))
   (lsp-register-custom-settings
-   `(("gopls.completeUnimported" t t)
+   `(("gopls.allExperiments" t t)
+     ("gopls.completeUnimported" t t)
+     ;; opts a user into the experimental support for multi-module workspaces
      ("gopls.experimentalWorkspaceModule" t t)
-     ("gopls.allExperiments" t t))))
+     ;;disables -mod=readonly, allowing imports from out-of-scope module
+     ("gopls.allowModfileModifications" t t)
+     ;;disables GOPROXY=off, allowing implicit module downloads rather than requiring user action
+     ("gopls.allowImplicitNetworkAccess" t t)
+     ;; enables gopls to fall back on outdated package metadata
+     ("gopls.experimentalUseInvalidMetadata" t t))))
 
 ;; Install or update tools
 (defvar go--tools '("golang.org/x/tools/gopls"
@@ -2046,6 +2051,7 @@ mermaid.initialize({
   (global-set-key "\C-cb" 'dash-at-point-with-docset))
 
 (use-package projectile
+  :demand
   :config
   (projectile-global-mode)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
@@ -2114,11 +2120,17 @@ mermaid.initialize({
   (setq projectile-sort-order 'recentf)
   ;; Make projectile to be usable in every directory (even without the presence of project file):
   ;;(setq projectile-require-project-root nil)
-  (setq projectile-require-project-root 'prompt))
+  (setq projectile-require-project-root 'prompt)
+  ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)的根目录
+  (projectile-register-project-type 'go projectile-go-project-test-function
+                                    :project-file "go.mod"
+                                    :compile "go build"
+                                    :test "go test ./..."
+                                    :test-suffix "_test"))
 
 (defun my/project-discover ()
   (interactive)
-  (dolist (search-path '("~/codes/" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
       (message "-> %s" file)
       (when (file-directory-p file)
@@ -2132,8 +2144,7 @@ mermaid.initialize({
   :config
   (progn
     (setq
-     ;; 不折叠目录(提升性能)
-     treemacs-collapse-dirs                 0
+     treemacs-collapse-dirs                 3
      treemacs-deferred-git-apply-delay      0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
@@ -2173,13 +2184,11 @@ mermaid.initialize({
     (treemacs-resize-icons 11)
     (treemacs-follow-mode t)
     ;;(treemacs-tag-follow-mode t)
-    ;; 自动切换到当前 buffer 的 project
-    (treemacs-project-follow-mode t)
+    ;;(treemacs-project-follow-mode t)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
-    ;; 不显示 git 修改状态（很少用到）
-    (treemacs-git-mode -1)
+    (treemacs-git-mode t)
     (treemacs-hide-gitignored-files-mode nil))
   :bind
   (:map global-map
@@ -2192,6 +2201,9 @@ mermaid.initialize({
 
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
+
+(use-package treemacs-projectile
+  :after (treemacs projectile))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
 (use-package ripgrep
