@@ -270,8 +270,8 @@
 
 (use-package cnfonts
   :demand
-  :after (doom-modeline)
   :init
+  ;; 中英文均使用 Sarasa Term SC 字体
   (setq cnfonts-personal-fontnames '(("Sarasa Term SC") ("Sarasa Term SC") ("HanaMinB")))
   ;; 允许字体缩放(部分主题如 lenven 依赖)
   (setq cnfonts-use-face-font-rescale t)
@@ -419,9 +419,8 @@
   :init
   ;; 如果搜索字符少于 3，可以添加后缀#开始搜索，如 #gr#。
   (setq consult-async-min-input 3)
-  (setq consult-async-refresh-delay 0.15)
-  (setq consult-async-input-debounce 0.3)
-  (setq consult-async-input-throttle 0.4)
+  (setq consult-async-input-debounce 0.4)
+  (setq consult-async-input-throttle 0.5)
   ;; 预览 register
   (setq register-preview-delay 0.2)
   (setq register-preview-function #'consult-register-format)
@@ -440,18 +439,7 @@
   (global-set-key [remap repeat-complex-command] #'consult-complex-command)
 
   (autoload 'projectile-project-root "projectile")
-  (setq consult-project-root-function 'projectile-project-root)
-  ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
-  ;; (setq consult-project-root-function
-  ;;       (lambda ()
-  ;;         (unless (file-remote-p default-directory)
-  ;;           ;; 使用 projectile.el:
-  ;;           (projectile-project-root)
-  ;;           ;; 使用 project.el：
-  ;;           ;;(when-let (project (project-current))
-  ;;           ;; (car (project-roots project)))
-  ;;           )))
-  )
+  (setq consult-project-root-function 'projectile-project-root))
 
 (use-package marginalia
   :init
@@ -950,9 +938,8 @@
   (setq org-fontify-whole-block-delimiter-line t)
   (custom-theme-set-faces
    'user
-   ;; 调大 org-block 字体
-   '(org-block ((t (:font "Sarasa Term SC-15" :inherit fixed-pitch))))
-   ;; 调小 height
+   '(org-block ((t (:font "Sarasa Term SC-14" :inherit fixed-pitch))))
+   ;; 调小 height, 并设置下划线
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
@@ -2126,8 +2113,6 @@ mermaid.initialize({
   (setq projectile-mode-line-prefix "")
   (setq projectile-dynamic-mode-line nil)
   (setq projectile-sort-order 'recentf)
-  ;; Make projectile to be usable in every directory (even without the presence of project file):
-  ;;(setq projectile-require-project-root nil)
   (setq projectile-require-project-root 'prompt)
   ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)根目录
   (projectile-register-project-type 'go projectile-go-project-test-function
@@ -2143,7 +2128,7 @@ mermaid.initialize({
       (message "-> %s" file)
       (when (file-directory-p file)
           (projectile-add-known-project file)
-          (message "add project %s..." file)))))
+          (message "added project %s" file)))))
 
 (use-package treemacs
   :demand
