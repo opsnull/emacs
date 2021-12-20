@@ -11,6 +11,19 @@
 + 更新当前使用的文档目录: C-u M-x dovdocs-lookup
 
 #+begin_src emacs-lisp :tangle no
+;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
+;; -- 更好的解决办法是在 projectile 中集中修改 projectile-project-root 的实现, 如果时远程 project, 直接返回 default-directory
+;; (setq consult-project-root-function
+;;       (lambda ()
+;;         (unless (file-remote-p default-directory)
+;;           ;; 使用 projectile.el:
+;;           (projectile-project-root)
+;;           ;; 使用 project.el：
+;;           ;;(when-let (project (project-current))
+;;           ;; (car (project-roots project)))
+;;           )))
+
+
 ;; 指针宽度与字符一致
 (setq-default x-stretch-cursor t)
 
