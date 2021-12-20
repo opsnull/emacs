@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+Options: toc:nil h:4
-#+STARTUP: overview hideblocks
+#+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
 #+TOC: headlines 4
 #+LATEX_COMPILER: xelatex
@@ -397,8 +397,6 @@ npm config set registry=http://registry.npm.taobao.org
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
-;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
-;; 否则 doom-modeline 右下角内容会溢出。
 (use-package doom-modeline
   :demand t
   :after(doom-themes)
@@ -409,16 +407,25 @@ npm config set registry=http://registry.npm.taobao.org
   ;;(doom-modeline-hud t)
   ;; 显示语言版本
   (doom-modeline-env-version t)
+  ;; 不显示 Go 版本
+  (doom-modeline-env-enable-go nil)
   (doom-modeline-unicode-fallback t)
   ;; 不显示 project 名称
-  (doom-modeline-project-detection nil)
+  ;;(doom-modeline-project-detection nil)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
-  (doom-modeline-buffer-file-name-style 'file-name)
+  ;(doom-modeline-buffer-file-name-style 'file-name)
+  (doom-modeline-buffer-file-name-style 'relative-from-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1))
+  (doom-modeline-mode 1)
+  :config
+  (doom-modeline-def-modeline 'main
+    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  ")))
 
 (use-package dashboard
   :demand t
@@ -480,10 +487,11 @@ npm config set registry=http://registry.npm.taobao.org
 
 * font
 
-+  中英文：更纱黑体 Sarasa Term SC: https://github.com/be5invis/Sarasa-Gothic
-+  中英文(PDF): Noto CJK SC: https://github.com/googlefonts/noto-cjk.git
-+  花園明朝：HanaMinB：http://fonts.jp/hanazono/
-+  Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
++ 中英文：更纱黑体 Sarasa Term SC: https://github.com/be5invis/Sarasa-Gothic
++ 中英文(PDF): Noto CJK SC: https://github.com/googlefonts/noto-cjk.git
++ Symbols 字体:  Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
++ 花園明朝：HanaMinB：http://fonts.jp/hanazono/
++ Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 
 #+begin_src emacs-lisp
 (use-package cnfonts
@@ -513,11 +521,10 @@ npm config set registry=http://registry.npm.taobao.org
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode))
 #+end_src
-+ 查看 emacs 支持的字体： =(print (font-family-list))=;
++ 查看 emacs 支持的字体名称： =(print (font-family-list))=;
 + 安装、更新 fire-code 字体： =M-x fira-code-mode-install-fonts=
 + 安装、更新 icon 字体： =M-x all-the-icons-install-fonts=, 包括
   file-icons/fontawesome/octicons/weathericons/material-design 字体。
-+ 安装 Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
 
 * completion
 ** vertico
@@ -1793,7 +1800,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
       '(("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
          "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial" :empty-lines 1)
         ("j" "Journal" entry (file+olp+datetree "~/docs/orgs/journal.org")
-         "*  %?\n %U %a\n %i")
+         "*  %?\n %U\n %i")
         ("t" "Todo" entry (file+headline "~/docs/orgs/gtd.org" "Tasks")
          "* TODO %?\n %U %a\n %i" :empty-lines 1)))
 #+end_src
@@ -2652,10 +2659,10 @@ lsp-pyright。
     (setq lsp-pyright-python-executable-cmd "python3")))
 #+end_src
 
-pyright _不使用_ pyenv 的 ~.python-version~ 指定的 python 版本或 venv，需要在项目 =pyrightconfig.json= 文件中配置
-venv 和 venvPath 参数来指定 python 环境：
+pyright _不使用_ pyenv 的 ~.python-version~ 指定的 python 版本或 venv 来搜索依赖的 module，而是使用
+=pyrightconfig.json= 文件中配置的 venv 和 venvPath:
 + venvPath：指定查找 venv 目录的上级目录，可以包含多个 venv 环境；
-+ venv：指定 venvPath 目录下的、使用的虚拟环境名称, pyright 在 venv 中搜索 pip 安装的包;
++ venv：指定 venvPath 目录下的、使用的虚拟环境名称, pyright 在该 venv 中搜索依赖的 package;
 
 安装 =pyenv-pyright= 插件来方便的创建和更新 =pyrightconfig.json= 文件：
 #+begin_src shell :results none
@@ -2669,7 +2676,7 @@ git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins
 pyright 假设源文件位于项目 scr 目录下，但实际可能会在多个其它子目录（甚至嵌套情况）中放置项目源码，即
 =multi-root= 模式（对应于 vscode 中的多 worksapce 目录)，这时可能出现大量 import 错误，可以通过在项目根目录配置
 =pyrightconfig.json= 文件来解决，例如（参考：python module [[https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md][Import Resolution]]）：
-#+begin_src json :results none
+#+begin_src javascript :results none
 {
     "venv": "venv-2.7.18",
     "venvPath": "/Users/zhangjun/.pyenv/versions",
@@ -2698,8 +2705,8 @@ executionEnvironments：
 
 [[https://github.com/Microsoft/pyright/issues/21][pyright 不支持 python 2.x]]，如果在上面文件配置 ="pythonVersion": "2.7"= 则会报错。
 
-修改 pyrightconfig.json 后，需要执行 ~M-x lsp-workspace-restart~ 来重启 lsp，如果还是有问题，则可以查看
-=*lsp-log*= buffer 的日志。
+修改 pyrightconfig.json 后，需要执行 ~M-x lsp-workspace-restart~ 来重启 lsp，如果还是有问题，则可以查看=*lsp-log*=
+buffer 的日志。
 
 ** java
 
@@ -3284,7 +3291,7 @@ lsp-workspace-restart= 来重启 lsp 。
   ;; Make projectile to be usable in every directory (even without the presence of project file):
   ;;(setq projectile-require-project-root nil)
   (setq projectile-require-project-root 'prompt)
-  ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)的根目录
+  ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)根目录
   (projectile-register-project-type 'go projectile-go-project-test-function
                                     :project-file "go.mod"
                                     :compile "go build"
@@ -3380,8 +3387,8 @@ lsp-workspace-restart= 来重启 lsp 。
   :ensure-system-package (rg . ripgrep)
   :bind ("<f5>" . deadgrep))
 #+end_src
-+ 不启用 (treemacs-tag-follow-mode t), 因为启用后每次 treemacs 只会自动显示一个 project, 对于 Go 等有多个
-  module project的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
++ 不启用 (treemacs-tag-follow-mode t), 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module project
+  的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
 * web
 
