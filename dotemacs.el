@@ -181,8 +181,6 @@
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
-;; 加载顺序: doom-theme -> doom-modeline -> cnfonts -> all-the-icons
-;; 否则 doom-modeline 右下角内容会溢出。
 (use-package doom-modeline
   :demand t
   :after(doom-themes)
@@ -193,16 +191,25 @@
   ;;(doom-modeline-hud t)
   ;; 显示语言版本
   (doom-modeline-env-version t)
+  ;; 不显示 Go 版本
+  (doom-modeline-env-enable-go nil)
   (doom-modeline-unicode-fallback t)
   ;; 不显示 project 名称
-  (doom-modeline-project-detection nil)
+  ;;(doom-modeline-project-detection nil)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
-  (doom-modeline-buffer-file-name-style 'file-name)
+  ;(doom-modeline-buffer-file-name-style 'file-name)
+  (doom-modeline-buffer-file-name-style 'relative-from-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1))
+  (doom-modeline-mode 1)
+  :config
+  (doom-modeline-def-modeline 'main
+    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  ")))
 
 (use-package dashboard
   :demand t
@@ -1081,7 +1088,7 @@
       '(("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
          "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial" :empty-lines 1)
         ("j" "Journal" entry (file+olp+datetree "~/docs/orgs/journal.org")
-         "*  %?\n %U %a\n %i")
+         "*  %?\n %U\n %i")
         ("t" "Todo" entry (file+headline "~/docs/orgs/gtd.org" "Tasks")
          "* TODO %?\n %U %a\n %i" :empty-lines 1)))
 
@@ -1719,6 +1726,7 @@
   (setq lsp-go-env '((GOFLAGS . "-mod=mod")))
   (lsp-register-custom-settings
    `(("gopls.allExperiments" t t)
+     ("gopls.staticcheck" t t)
      ("gopls.completeUnimported" t t)
      ;; opts a user into the experimental support for multi-module workspaces
      ("gopls.experimentalWorkspaceModule" t t)
@@ -2121,7 +2129,7 @@ mermaid.initialize({
   ;; Make projectile to be usable in every directory (even without the presence of project file):
   ;;(setq projectile-require-project-root nil)
   (setq projectile-require-project-root 'prompt)
-  ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)的根目录
+  ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)根目录
   (projectile-register-project-type 'go projectile-go-project-test-function
                                     :project-file "go.mod"
                                     :compile "go build"
