@@ -205,7 +205,6 @@ npm config set registry=http://registry.npm.taobao.org
 (setq straight-vc-git-default-clone-depth 1)
 (setq straight-recipes-gnu-elpa-use-mirror t)
 (setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
-(setq straight-check-for-modifications nil)
 (setq straight-host-usernames '((github . "opsnull")))
 
 (defvar bootstrap-version)
@@ -1068,10 +1067,16 @@ import_tables:
          ;;(gts-posframe-pin-render)
          )))
 
+;; pip install jieba
+(use-package chinese-word-at-point)
+
 ;; OSX dictionary
 (use-package osx-dictionary
-  :bind (("C-c d i" . osx-dictionary-search-input)
-         ("C-c d x" . osx-dictionary-search-pointer)))
+  :bind
+  (("C-c d i" . osx-dictionary-search-input)
+   ("C-c d x" . osx-dictionary-search-pointer))
+  :config
+  (setq osx-dictionary-use-chinese-text-segmentation t))
 #+end_src
 
 * email
@@ -1548,7 +1553,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :demand
-  :ensure-system-package ((pygmentize . pygments) (magick . imagemagick))
+  :ensure-system-package ((watchexec . watchexec) (pygmentize . pygments) (magick . imagemagick))
   :config
   (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
@@ -3206,9 +3211,8 @@ lsp-workspace-restart= 来重启 lsp 。
 ** dash
 #+begin_src emacs-lisp
 (use-package dash-at-point
-  :config
-  (global-set-key "\C-cd" 'dash-at-point)
-  (global-set-key "\C-cb" 'dash-at-point-with-docset))
+  :bind(("C-c d p" . dash-at-point)
+        ("C-c d b" . dash-at-point-with-docset)))
 #+end_src
 
 * project
@@ -3825,18 +3829,19 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
   :commands (winner-undo winner-redo)
   :hook (after-init . winner-mode)
   :init
-  (setq winner-boring-buffers '("*Completions*"
-                                "*Compile-Log*"
-                                "*inferior-lisp*"
-                                "*helpful"
-                                "*lsp-help*"
-                                "*Fuzzy Completions*"
-                                "*Apropos*"
-                                "*Help*"
-                                "*cvs*"
-                                "*Buffer List*"
-                                "*Ibuffer*"
-                                "*esh command on file*")))
+  (setq winner-boring-buffers
+        '("*Completions*"
+          "*Compile-Log*"
+          "*inferior-lisp*"
+          "*helpful"
+          "*lsp-help*"
+          "*Fuzzy Completions*"
+          "*Apropos*"
+          "*Help*"
+          "*cvs*"
+          "*Buffer List*"
+          "*Ibuffer*"
+          "*esh command on file*")))
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
