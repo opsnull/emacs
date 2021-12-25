@@ -23,22 +23,15 @@
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
-;; 第一个 frame 规格
-(setq initial-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
-;; 后续 frame 规格
-(setq default-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
-
 ;; 不缩放 frame
 (setq frame-inhibit-implied-resize t)
 
 ;; 设置缩放的模式, 避免 MacOS 最大化窗口后右边和下边有空隙。
 (setq frame-resize-pixelwise t)
 
-;;(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-;;(add-hook 'after-init-hook #'toggle-frame-fullscreen)
-
-(set-frame-parameter (selected-frame) 'maximized 'fullscreen)
-(add-hook 'after-init-hook #'toggle-frame-maximized)
+;; add-hook 的 t 参数让 togg-frame-fullscreen 最后运行，这样最大化才有效
+;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
+(add-hook 'window-setup-hook 'toggle-frame-maximized t)
 
 ;; 在单独文件保存自定义配置
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
