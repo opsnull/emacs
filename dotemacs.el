@@ -7,7 +7,6 @@
 (setq straight-vc-git-default-clone-depth 1)
 (setq straight-recipes-gnu-elpa-use-mirror t)
 (setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
-(setq straight-check-for-modifications nil)
 (setq straight-host-usernames '((github . "opsnull")))
 
 (defvar bootstrap-version)
@@ -372,6 +371,7 @@
 
 (use-package consult
   :ensure-system-package (rg . ripgrep)
+  :demand
   :bind
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
@@ -482,7 +482,7 @@
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;; Complete word from current buffers
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;; Complete Elisp symbol
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;; Complete abbreviation
@@ -550,12 +550,22 @@
 (use-package yasnippet
   :demand t
   :commands yas-minor-mode
+  :hook
+  ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
   :config
   ;;(global-set-key (kbd "C-c s") 'company-yasnippet)
+  (define-key yas-minor-mode-map (kbd "TAB") yas-maybe-expand)
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   (yas-global-mode 1))
+
 (use-package yasnippet-snippets :demand t)
 (use-package yasnippet-classic-snippets :demand t)
+(use-package consult-yasnippet
+  :demand
+  :after(consult yasnippet)
+  :bind
+  ( :map yas-minor-mode-map
+        ("C-c y" . 'consult-yasnippet)))
 
 (use-package goto-chg
   :config
@@ -648,10 +658,16 @@
          ;;(gts-posframe-pin-render)
          )))
 
+;; pip install jieba
+(use-package chinese-word-at-point)
+
 ;; OSX dictionary
 (use-package osx-dictionary
-  :bind (("C-c d i" . osx-dictionary-search-input)
-         ("C-c d x" . osx-dictionary-search-pointer)))
+  :bind
+  (("C-c d i" . osx-dictionary-search-input)
+   ("C-c d x" . osx-dictionary-search-pointer))
+  :config
+  (setq osx-dictionary-use-chinese-text-segmentation t))
 
 (use-package emacs
   :straight (:type built-in)
@@ -865,7 +881,7 @@
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :demand
-  :ensure-system-package ((pygmentize . pygments) (magick . imagemagick))
+  :ensure-system-package ((watchexec . watchexec) (pygmentize . pygments) (magick . imagemagick))
   :config
   (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
@@ -1274,6 +1290,8 @@
 ;; pdf 转为 png 时使用更高分辨率（默认 90）
 (setq doc-view-resolution 144)
 
+(use-package org-noter)
+
 (use-package elfeed
   :demand t
   :config
@@ -1586,7 +1604,7 @@
   :bind
   (:map lsp-mode-map
         ("C-c f" . lsp-format-region)
-        ("C-c d" . lsp-describe-thing-at-point)
+        ("C-c e" . lsp-describe-thing-at-point)
         ("C-c a" . lsp-execute-code-action)
         ("C-c r" . lsp-rename)
         ([remap xref-find-definitions] . lsp-find-definition)
@@ -2045,9 +2063,8 @@ mermaid.initialize({
   :bind (("C-c i" . imenu)))
 
 (use-package dash-at-point
-  :config
-  (global-set-key "\C-cd" 'dash-at-point)
-  (global-set-key "\C-cb" 'dash-at-point-with-docset))
+  :bind(("C-c d p" . dash-at-point)
+        ("C-c d b" . dash-at-point-with-docset)))
 
 (use-package projectile
   :demand
@@ -2357,6 +2374,14 @@ mermaid.initialize({
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
+(use-package vterm-extra
+  :straight (:host github :repo "Sbozzolo/vterm-extra")
+  :bind (("s-t" . vterm-extra-dispatcher)
+         :map vterm-mode-map
+         (("C-c C-e" . vterm-extra-edit-command-in-new-buffer)))
+  :config
+  (advice-add #'vterm-extra-edit-done :after #'winner-undo))
+
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "/bin/bash")
 (setq shell-command-prompt-show-cwd t)
@@ -2599,18 +2624,19 @@ mermaid.initialize({
   :commands (winner-undo winner-redo)
   :hook (after-init . winner-mode)
   :init
-  (setq winner-boring-buffers '("*Completions*"
-                                "*Compile-Log*"
-                                "*inferior-lisp*"
-                                "*helpful"
-                                "*lsp-help*"
-                                "*Fuzzy Completions*"
-                                "*Apropos*"
-                                "*Help*"
-                                "*cvs*"
-                                "*Buffer List*"
-                                "*Ibuffer*"
-                                "*esh command on file*")))
+  (setq winner-boring-buffers
+        '("*Completions*"
+          "*Compile-Log*"
+          "*inferior-lisp*"
+          "*helpful"
+          "*lsp-help*"
+          "*Fuzzy Completions*"
+          "*Apropos*"
+          "*Help*"
+          "*cvs*"
+          "*Buffer List*"
+          "*Ibuffer*"
+          "*esh command on file*")))
 
 ;; macOS modifiers.
 (setq mac-command-modifier 'meta)
@@ -2779,6 +2805,14 @@ mermaid.initialize({
 (use-package undo-tree
   :init
   (global-undo-tree-mode 1))
+
+;; visual feedback on some operations.(undo/yank/kill/occur)
+(use-package volatile-highlights
+  :after(undo-tree)
+  :config
+  (volatile-highlights-mode t)
+  (vhl/define-extension 'undo-tree 'undo-tree-yank 'undo-tree-move)
+  (vhl/install-extension 'undo-tree))
 
 ;; ESC Cancels All
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)

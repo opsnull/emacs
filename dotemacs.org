@@ -2141,6 +2141,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 
 ;; pdf 转为 png 时使用更高分辨率（默认 90）
 (setq doc-view-resolution 144)
+
+(use-package org-noter)
 #+end_src
 
 + pdf-tools 默认是白底黑字，可以：
@@ -2521,7 +2523,7 @@ flycheck 是现代的在线语法检查工具, 用于取代 emacs 内置的 flym
   :bind
   (:map lsp-mode-map
         ("C-c f" . lsp-format-region)
-        ("C-c d" . lsp-describe-thing-at-point)
+        ("C-c e" . lsp-describe-thing-at-point)
         ("C-c a" . lsp-execute-code-action)
         ("C-c r" . lsp-rename)
         ([remap xref-find-definitions] . lsp-find-definition)
@@ -4010,6 +4012,14 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
 (use-package undo-tree
   :init
   (global-undo-tree-mode 1))
+
+;; visual feedback on some operations.(undo/yank/kill/occur)
+(use-package volatile-highlights
+  :after(undo-tree)
+  :config
+  (volatile-highlights-mode t)
+  (vhl/define-extension 'undo-tree 'undo-tree-yank 'undo-tree-move)
+  (vhl/install-extension 'undo-tree))
 
 ;; ESC Cancels All
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
