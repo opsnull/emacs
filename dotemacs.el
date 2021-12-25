@@ -162,7 +162,7 @@
 
 ;; 跟随 Mac 自动切换深浅主题
 (defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
@@ -177,7 +177,7 @@
 (setq display-time-24hr-format t)
 (setq display-time-default-load-average nil)
 (setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%d[%u]%H:%M")
+(setq display-time-format "%m/%d[%u] %H:%M%p")
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
@@ -229,7 +229,7 @@
   :hook (emacs-startup . centaur-tabs-mode)
   :init
   (setq centaur-tabs-set-icons t)
-  (setq centaur-tabs-height 30)
+  (setq centaur-tabs-height 25)
   (setq centaur-tabs-gray-out-icons 'buffer)
   (setq centaur-tabs-set-modified-marker t)
   (setq centaur-tabs-cycle-scope 'tabs)
@@ -253,7 +253,10 @@
             (not (file-name-extension name)))))))
 
 ;; 显示光标位置
-(use-package beacon :config (beacon-mode 1))
+(use-package beacon
+  :config
+  (setq beacon-blink-duration 0.6)
+  (beacon-mode 1))
 
 ;; 切换到透明背景
 (defun my/toggle-transparency ()
@@ -1240,6 +1243,7 @@
   (add-hook 'org-tree-slide-play-hook #'+org-present-hide-blocks-h))
 
 (use-package pdf-tools
+  :demand
   :ensure-system-package
   ((pdfinfo . poppler)
    (automake . automake)
@@ -2198,6 +2202,16 @@ mermaid.initialize({
 (use-package treemacs-projectile
   :after (treemacs projectile))
 
+(use-package treemacs-magit
+  :after (treemacs magit))
+
+;;lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects:
+(use-package lsp-treemacs
+  :after (lsp-mode treemacs)
+  :config
+  ;; bidirectional synchronization of lsp workspace folders and treemacs projects
+  (lsp-treemacs-sync-mode 1))
+
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
 (use-package ripgrep
   :ensure-system-package (rg . ripgrep))
@@ -2420,6 +2434,13 @@ mermaid.initialize({
 
 (defun org-sketch-xournal-edit (sketch-file-path)
   (call-process-shell-command (format "%s %s" org-sketch-xournal-bin sketch-file-path)))
+
+(use-package edraw-org
+  :straight (:host github :repo "misohena/el-easydraw")
+  :config
+  (with-eval-after-load 'org
+  (require 'edraw-org)
+  (edraw-org-setup-default)))
 
 (use-package org-contrib
   :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
