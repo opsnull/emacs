@@ -54,13 +54,11 @@
 ;; 使用字体缓存，避免卡顿
 (setq inhibit-compacting-font-caches t)
 
-(setq idle-update-delay 0.3)
-
 ;; Garbage Collector Magic Hack
 (use-package gcmh
   :demand t
   :init
-  ;; Debug：Show garbage collections in minibuffer
+  ;; Debug：在 minibuffer 显示 GC 信息
   ;;(setq garbage-collection-messages t)
   ;;(setq gcmh-verbose t)
   (setq gcmh-idle-delay 5)
@@ -87,14 +85,12 @@
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
-;;Disable dialog boxes since they weren't working in Mac OSX
+;; 关闭对话框
 (setq use-file-dialog nil)
 (setq use-dialog-box nil)
 
-;; Display dividers between windows
+;; 窗口间显示分割线
 (setq window-divider-default-places t)
-(setq window-divider-default-bottom-width 1)
-(setq window-divider-default-right-width 1)
 (add-hook 'window-setup-hook #'window-divider-mode)
 
 ;; 默认上下分屏
@@ -102,45 +98,47 @@
 ;; 切换到已有的 frame
 (setq display-buffer-reuse-frames t)
 
-;; Highlight current line.
+;; 高亮当前行
 (global-hl-line-mode t)
 
-(with-no-warnings
-  (when (memq window-system '(mac ns x))
-    ;; Render thinner fonts
-    (setq ns-use-thin-smoothing t)
-    ;; Don't open a file in a new frame
-    (setq ns-pop-up-frames nil)))
-
-(when window-system
-  ;; Scroll one line at a time (less "jumpy" than defaults)
+(when (memq window-system '(mac ns x))
+  ;; 使用更瘦字体
+  (setq ns-use-thin-smoothing t)
+  ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs")
+  (setq ns-pop-up-frames nil)
+  ;; 一次滚动一行，避免窗口跳动（缺省）
   (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
         mouse-wheel-scroll-amount-horizontal 1
         mouse-wheel-follow-mouse t
         mouse-wheel-progressive-speed nil)
-  (xterm-mouse-mode t)
-  ;; 默认执行 mouse-wheel-text-scale 命令, 容易触碰误操作，故关闭。
-  (global-unset-key (kbd "C-<wheel-down>"))
-  (global-unset-key (kbd "C-<wheel-up>")))
-
-(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "S-C-<down>") 'shrink-window)
-(global-set-key (kbd "S-C-<up>") 'enlarge-window)
+  (xterm-mouse-mode t))
 
 (setq fast-but-imprecise-scrolling t)
 (setq redisplay-skip-fontification-on-input t)
 (setq auto-window-vscroll nil)
-(setq next-screen-context-lines 5)
+;; 滚动一屏后, 显示 8 行上下文
+(setq next-screen-context-lines 8)
 ;; 平滑地进行半屏滚动，避免滚动后 recenter 操作
 (setq scroll-step 1)
 (setq scroll-conservatively 10000)
 (setq scroll-margin 2)
-;; Keep cursor position when scrolling.
+;; 滚动时保持光标位置
 (setq scroll-preserve-screen-position 1)
 
 (if (boundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode t))
+
+(setq idle-update-delay 0.3)
+
+;; 关闭 mouse-wheel-text-scale 快捷键 (容易触碰误操作)
+(global-unset-key (kbd "C-<wheel-down>"))
+(global-unset-key (kbd "C-<wheel-up>"))
+
+;; 窗口大小调整
+(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "S-C-<down>") 'shrink-window)
+(global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
@@ -196,7 +194,7 @@
   ;; 不显示 project 名称
   ;;(doom-modeline-project-detection nil)
   ;; 不显示项目目录，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
-  ;(doom-modeline-buffer-file-name-style 'file-name)
+  ;;(doom-modeline-buffer-file-name-style 'file-name)
   (doom-modeline-buffer-file-name-style 'relative-from-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
@@ -240,10 +238,9 @@
   (centaur-tabs-headline-match)
   (centaur-tabs-group-by-projectile-project)
   (defun centaur-tabs-hide-tab (x)
-    "Do no to show buffer X in tabs."
+    "隐藏 buffer x 的 tabs"
     (let ((name (format "%s" x)))
       (or
-       ;; Current window is not dedicated window.
        (window-dedicated-p (selected-window))
        ;; 以 * 开头的 buffer 不显示 tab
        (string-prefix-p "*" name)
@@ -312,7 +309,7 @@
         :map minibuffer-local-map
         ("M-h" . my/minibuffer-backward-kill))
   :config
-  ;; Do not allow the cursor in the minibuffer prompt
+  ;; 不允许在 minibuffer prompt 中出现光标
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
   ;; Vertico commands are hidden in normal buffers.
@@ -546,7 +543,10 @@
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
-;;(shell-command "mkdir -p ~/.emacs.d/snippets")
+(defvar snippet-directory "~/.emacs.d/snippets")
+(if (not (file-exists-p snippet-directory))
+    (make-directory snippet-directory t))
+
 (use-package yasnippet
   :demand t
   :commands yas-minor-mode
@@ -554,12 +554,12 @@
   ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
   :config
   ;;(global-set-key (kbd "C-c s") 'company-yasnippet)
-  (define-key yas-minor-mode-map (kbd "TAB") yas-maybe-expand)
-  (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
+  (add-to-list 'yas-snippet-dirs snippet-directory)
   (yas-global-mode 1))
 
 (use-package yasnippet-snippets :demand t)
 (use-package yasnippet-classic-snippets :demand t)
+
 (use-package consult-yasnippet
   :demand
   :after(consult yasnippet)
@@ -647,7 +647,7 @@
 
 (use-package go-translate
   :bind
-  (("C-c t" . gts-do-translate))
+  (("C-c d t" . gts-do-translate))
   :config
   (setq gts-translate-list '(("en" "zh")))
   (setq gts-default-translator
@@ -678,6 +678,10 @@
    (proxychains4 . proxychains-ng)
    (openssl . openssl@1.1)))
 
+(defvar attachments-directory "~/.mail/attachments")
+(if (not (file-exists-p attachments-directory))
+    (make-directory attachments-directory t))
+
 (use-package mu4e
   ;;:demand
   ;; 使用 mu4e/* 目录下的 lisp 文件, 跳过 straight 的 build 过程;
@@ -706,7 +710,7 @@
 
   ;; It is OK to use non-ascii characters
   (setq mu4e-use-fancy-chars t)
-  (setq mu4e-attachment-dir "~/.mail/attachments")
+  (setq mu4e-attachment-dir attachments-directory)
 
   ;; This enabled the thread like viewing of email similar to gmail's UI.
   (setq mu4e-headers-include-related t)
@@ -1457,6 +1461,21 @@
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
 
+;; diff 时显示空白字符
+(defun my/diff-spaces ()
+  (setq-local whitespace-style
+              '(face
+                tabs
+                tab-mark
+                spaces
+                space-mark
+                trailing
+                indentation::space
+                indentation::tab
+                newline
+                newline-mark))
+  (whitespace-mode 1))
+
 (use-package diff-mode
   :straight (:type built-in)
   :init
@@ -1465,7 +1484,9 @@
   (setq diff-update-on-the-fly t)
   (setq diff-refine nil)
   ;; better for patches
-  (setq diff-font-lock-prettify nil))
+  (setq diff-font-lock-prettify nil)
+  :config
+  (add-hook 'diff-mode-hook 'my/diff-spaces))
 
 (use-package ediff
   :straight (:type built-in)
@@ -1476,6 +1497,7 @@
   (setq ediff-split-window-function 'split-window-horizontally)
   ;; 不创建新的 frame 来显示 Control-Panel
   (setq ediff-window-setup-function #'ediff-setup-windows-plain)
+  (add-hook 'ediff-mode-hook 'my/diff-spaces)
   ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常
   (add-hook 'ediff-before-setup-hook
             (lambda ()
@@ -1675,7 +1697,10 @@
                    (my/python-setup-shell)
                    (my/python-setup-checkers))))
 
-;;(shell-command "mkdir -p ~/.emacs.d/.cache/lsp/npm/pyright/lib")
+(defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
+(if (not (file-exists-p pyright-directory))
+    (make-directory pyright-directory t))
+
 (use-package lsp-pyright
   :after (python)
   :ensure-system-package
@@ -2222,11 +2247,10 @@ mermaid.initialize({
 (use-package treemacs-magit
   :after (treemacs magit))
 
-;;lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects:
+;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects:
 (use-package lsp-treemacs
   :after (lsp-mode treemacs)
   :config
-  ;; bidirectional synchronization of lsp workspace folders and treemacs projects
   (lsp-treemacs-sync-mode 1))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
@@ -2464,8 +2488,8 @@ mermaid.initialize({
   :straight (:host github :repo "misohena/el-easydraw")
   :config
   (with-eval-after-load 'org
-  (require 'edraw-org)
-  (edraw-org-setup-default)))
+    (require 'edraw-org)
+    (edraw-org-setup-default)))
 
 (use-package org-contrib
   :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
@@ -2559,12 +2583,12 @@ mermaid.initialize({
   (symbol-overlay-default-face ((t (:inherit (region bold)))))
   :bind
   (("M-i" . symbol-overlay-put)
-   ("M-n" . symbol-overlay-jump-next)
-   ("M-p" . symbol-overlay-jump-prev)
-   ("M-N" . symbol-overlay-switch-forward)
-   ("M-P" . symbol-overlay-switch-backward)
-   ("M-C" . symbol-overlay-remove-all)
-   ([M-f3] . symbol-overlay-remove-all))
+    ("M-n" . symbol-overlay-jump-next)
+    ("M-p" . symbol-overlay-jump-prev)
+    ("M-N" . symbol-overlay-switch-forward)
+    ("M-P" . symbol-overlay-switch-backward)
+    ("M-C" . symbol-overlay-remove-all)
+    ([M-f3] . symbol-overlay-remove-all))
   :hook
   (((prog-mode yaml-mode) . symbol-overlay-mode)
    (iedit-mode . turn-off-symbol-overlay)
@@ -2618,6 +2642,7 @@ mermaid.initialize({
 (auto-image-file-mode t)
 
 (add-hook 'before-save-hook 'whitespace-cleanup)
+(add-hook 'prog-mode-hook (lambda () (interactive) (setq show-trailing-whitespace 1)))
 
 (use-package winner
   :straight (:type built-in)
@@ -2680,9 +2705,6 @@ mermaid.initialize({
 
 (setq ad-redefinition-action 'accept)
 
-;; Finder 的 "Open with Emacs" 在当前 Frame 中打开文件
-(setq ns-pop-up-frames nil)
-
 ;; 避免执行 ns-print-buffer 命令。
 (global-unset-key (kbd "s-p"))
 ;; 避免执行 ns-open-file-using-panel 命令。
@@ -2696,8 +2718,8 @@ mermaid.initialize({
   :config
   ;; Don’t clean up recentf tramp buffers.
   (setq recentf-auto-cleanup 'never)
-  (setq recentf-max-menu-items 200)
-  (setq recentf-max-saved-items 200)
+  (setq recentf-max-menu-items 30)
+  (setq recentf-max-saved-items 5000)
   (setq recentf-exclude `(,(expand-file-name "straight/" user-emacs-directory)
                           ,(expand-file-name "eln-cache/" user-emacs-directory)
                           ,(expand-file-name "etc/" user-emacs-directory)
@@ -2707,7 +2729,13 @@ mermaid.initialize({
                           ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
   (recentf-mode +1))
 
-;; Minibuffer history (savehist-mode)
+(setq global-mark-ring-max 5000)
+(setq mark-ring-max 5000 )
+(setq kill-ring-max 5000)
+
+(global-set-key (kbd "RET") 'newline-and-indent)
+
+;; Minibuffer 历史
 (use-package savehist
   :straight (:type built-in)
   :hook (after-init . savehist-mode)
@@ -2715,6 +2743,7 @@ mermaid.initialize({
   (setq history-length 10000)
   (setq history-delete-duplicates t)
   (setq savehist-save-minibuffer-history t)
+  (setq savehist-autosave-interval 60)
   (setq savehist-additional-variables '(mark-ring
                                         global-mark-ring
                                         search-ring
@@ -2725,9 +2754,8 @@ mermaid.initialize({
 (setq-default fill-column 100
               comment-fill-column 0
               tab-width 4
-              ;; Make it impossible to insert tabs.
+              ;; 不插入 tab (按照 tab-width 转换为空格插入)
               indent-tabs-mode nil
-              debug-on-error nil
               message-log-max t
               load-prefer-newer t
               ad-redefinition-action 'accept)
@@ -2748,7 +2776,7 @@ mermaid.initialize({
   :config
   (setq ibuffer-expert t)
   (setq ibuffer-display-summary nil)
-  (setq ibuffer-use-other-window nil)
+  (setq ibuffer-use-other-window t)
   (setq ibuffer-show-empty-filter-groups nil)
   (setq ibuffer-movement-cycle nil)
   (setq ibuffer-default-sorting-mode 'filename/process)
@@ -2784,13 +2812,13 @@ mermaid.initialize({
   ;; re-use dired buffer, available in Emacs 28
   ;; @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
   (setq dired-kill-when-opening-new-dired-buffer t)
+  ;; "always" means no asking
   (setq dired-recursive-copies 'always)
-  (setq dired-recursive-deletes 'always)
+  ;; "top" means ask once for top level directory
+  (setq dired-recursive-deletes 'top)
   ;; search file name only when focus is over file
   (setq dired-isearch-filenames 'dwim)
-  ;; when there is two dired buffer, Emacs will select another buffer
-  ;; as target buffer (target for copying files, for example).
-  ;; It's similar to windows commander.
+  ;; if another Dired buffer is visible in another window, use that directory as target for Rename/Copy
   (setq dired-dwim-target t)
   ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
   (setq dired-listing-switches "-laGh1v --group-directories-first")
@@ -2806,7 +2834,7 @@ mermaid.initialize({
   :init
   (global-undo-tree-mode 1))
 
-;; visual feedback on some operations.(undo/yank/kill/occur)
+;; 高亮粘贴的内容
 (use-package volatile-highlights
   :after(undo-tree)
   :config
@@ -2818,16 +2846,30 @@ mermaid.initialize({
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
+(if (not (file-exists-p backup-dir))
+    (make-directory backup-dir t))
+;; backup a file the first time it is saved
+(setq make-backup-files t)
 (setq backup-by-copying t)
 (setq backup-directory-alist (list (cons ".*" backup-dir)))
+;; version numbers for backup files
+(setq version-control t)
+;; delete unnecessary versions
 (setq delete-old-versions t)
 (setq kept-new-versions 6)
 (setq kept-old-versions 2)
-(setq version-control t)
 
 (defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
+(if (not (file-exists-p autosave-dir))
+    (make-directory autosave-dir t))
+;; auto-save every buffer that visits a file
+(setq auto-save-default t)
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+;; number of seconds idle time before auto-save (default: 30)
+(setq auto-save-timeout 20)
+;; number of keystrokes between auto-saves (default: 300))
+(setq auto-save-interval 200)
 
 ;; UTF8 stuff.
 (setq locale-coding-system 'utf-8)
