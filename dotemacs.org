@@ -615,6 +615,7 @@ npm config set registry=http://registry.npm.taobao.org
 #+begin_src  emacs-lisp
 (use-package consult
   :ensure-system-package (rg . ripgrep)
+  :demand
   :bind
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
@@ -736,7 +737,7 @@ npm config set registry=http://registry.npm.taobao.org
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;; Complete word from current buffers
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;; Complete Elisp symbol
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;; Complete abbreviation
@@ -813,14 +814,23 @@ npm config set registry=http://registry.npm.taobao.org
 (use-package yasnippet
   :demand t
   :commands yas-minor-mode
+  :hook
+  ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
   :config
   ;;(global-set-key (kbd "C-c s") 'company-yasnippet)
+  (define-key yas-minor-mode-map (kbd "TAB") yas-maybe-expand)
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
   (yas-global-mode 1))
+
 (use-package yasnippet-snippets :demand t)
 (use-package yasnippet-classic-snippets :demand t)
+(use-package consult-yasnippet
+  :demand
+  :after(consult yasnippet)
+  :bind
+  ( :map yas-minor-mode-map
+        ("C-c y" . 'consult-yasnippet)))
 #+end_src
-+ 关闭 company-snippets 候选提示，手动触发 snippets 补全（ =C-c s= ），否则提示太多的 snippets 候选项。
 
 * goto
 
@@ -3544,7 +3554,17 @@ open -a 'Google Chrome' $*
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
+
+(use-package vterm-extra
+  :straight (:host github :repo "Sbozzolo/vterm-extra")
+  :bind (("s-t" . vterm-extra-dispatcher)
+         :map vterm-mode-map
+         (("C-c C-e" . vterm-extra-edit-command-in-new-buffer)))
+  :config
+  (advice-add #'vterm-extra-edit-done :after #'winner-undo))
 #+end_src
++ vterm-extra 提供了 vterm buffer 命令行编辑的能力，结束后按 C-c C-c 自动粘贴到对应的 vterm 中，与
+  consult-yasnippet 结合使用，可以实现在 vterm 里粘贴 yasnippet 的功能。
 
 * eshell
 
