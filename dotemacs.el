@@ -219,7 +219,7 @@
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (bookmarks . 3) (agenda . 3)))
+  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
 (use-package centaur-tabs
@@ -1030,14 +1030,14 @@
 
 ;; org-agenda 展示的文件
 (setq org-agenda-files
-      '("~/docs/orgs/journal.org"
-        "~/docs/orgs/gtd.org"
+      '("~/docs/orgs/gtd.org"
         "~/docs/orgs/capture.org"))
 (setq org-agenda-start-day "-7d")
 (setq org-agenda-span 21)
 (setq org-agenda-include-diary t)
-(setq diary-file "~/docs/orgs/diary")
-(setq diary-mail-addr "geekard@qq.com")
+;; use org-journal
+;;(setq diary-file "~/docs/orgs/diary")
+;;(setq diary-mail-addr "geekard@qq.com")
 ;; 获取经纬度：https://www.latlong.net/
 (setq calendar-latitude +39.904202)
 (setq calendar-longitude +116.407394)
@@ -1097,8 +1097,6 @@
 (setq org-capture-templates
       '(("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
          "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial" :empty-lines 1)
-        ("j" "Journal" entry (file+olp+datetree "~/docs/orgs/journal.org")
-         "*  %?\n %U\n %i")
         ("t" "Todo" entry (file+headline "~/docs/orgs/gtd.org" "Tasks")
          "* TODO %?\n %U %a\n %i" :empty-lines 1)))
 
@@ -1261,6 +1259,73 @@
       (while (re-search-forward "^[[:space:]]*\\(#\\+\\)\\(\\(?:BEGIN\\|END\\|begin\\|end\\|ATTR\\|DOWNLOADED\\)[^[:space:]]+\\).*" nil t)
         (org-flag-region (match-beginning 0) (match-end 0) org-tree-slide-mode t))))
   (add-hook 'org-tree-slide-play-hook #'+org-present-hide-blocks-h))
+
+(use-package org-journal
+  :demand
+  :bind
+  (:map org-mode-map
+        ("C-c C-j" . 'org-journal-new-entry))
+  :init
+  (setq org-journal-prefix-key "C-c j ")
+  :config
+  (setq org-journal-file-type 'monthly)
+  (setq org-journal-dir "~/journal")
+  (setq org-journal-find-file 'find-file)
+  ;; automatically adds the current and all future journal entries to the agenda
+  ;; 在历史日记被删除的情况下, 可能导致 Dashbard 显示 agenda 时 hang, 故不使用该方式。
+  ;;(setq org-journal-enable-agenda-integration t)
+  ;; When =org-journal-file-pattern= has the default value, this would be the regex.
+  (setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
+  (add-to-list 'org-agenda-files org-journal-dir)
+  ;; 加密日记
+  (setq org-journal-enable-encryption t)
+  (setq org-journal-encrypt-journal t)
+
+  (defun org-journal-file-header-func (time)
+    "Custom function to create journal header."
+    (concat
+     (pcase org-journal-file-type
+       (`daily "#+TITLE: Daily Journal\n#+STARTUP: showeverything")
+       (`weekly "#+TITLE: Weekly Journal\n#+STARTUP: folded")
+       (`monthly "#+TITLE: Monthly Journal\n#+STARTUP: folded")
+       (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
+
+  (setq org-journal-file-header 'org-journal-file-header-func)
+
+  (defun org-journal-save-entry-and-exit()
+    "Simple convenience function.
+  Saves the buffer of the current day's entry and kills the window
+  Similar to org-capture like behavior"
+    (interactive)
+    (save-buffer)
+    (kill-buffer-and-window))
+  (define-key org-journal-mode-map (kbd "C-x C-s") 'org-journal-save-entry-and-exit)
+
+  (defun my-old-carryover (old_carryover)
+    (save-excursion
+      (let ((matcher (cdr (org-make-tags-matcher org-journal-carryover-items))))
+        (dolist (entry (reverse old_carryover))
+          (save-restriction
+            (narrow-to-region (car entry) (cadr entry))
+            (goto-char (point-min))
+            (org-scan-tags '(lambda ()
+                              (org-set-tags ":carried:"))
+                           matcher org--matcher-tags-todo-only))))))
+
+  (setq org-journal-handle-old-carryover 'my-old-carryover)
+
+  ;; org-capture 集成
+  (defun org-journal-find-location ()
+    ;; Open today's journal, but specify a non-nil prefix argument in order to
+    ;; inhibit inserting the heading; org-capture will insert the heading.
+    (org-journal-new-entry t)
+    (unless (eq org-journal-file-type 'daily)
+      (org-narrow-to-subtree))
+    (goto-char (point-max)))
+
+  (setq org-capture-templates (cons '("j" "Journal" plain (function org-journal-find-location)
+                                      "** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
+                                      :jump-to-captured t :immediate-finish t) org-capture-templates)))
 
 (use-package pdf-tools
   :demand
