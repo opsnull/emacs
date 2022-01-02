@@ -74,15 +74,14 @@
 
 *** [[https://github.com/vedang/pdf-tools/commits/master.atom][pdf-tools:master]]
 
-*** [[https://github.com/minad/consult/commits/main.atom][consult:main]]
 *** [[https://github.com/gagbo/consult-lsp/commits/main.atom][consult-lsp:main]]
 *** [[https://github.com/minad/marginalia/commits/main.atom][marginalia:main]]
 *** [[https://github.com/emacs-dashboard/emacs-dashboard/commits/master.atom][emacs-dashboard:master]]
 *** [[https://github.com/magit/magit/commits/master.atom][magit:master]]
 *** [[https://github.com/muffinmad/emacs-mini-frame/commits/master.atom][emacs-mini-frame:master]]
 
-*** [[https://github.com/tumashu/vertico-posframe/commits/main][vertico-posframe:main]]
-
+*** [[https://github.com/tumashu/vertico-posframe/commits/main.atom][vertico-posframe:main]]
+*** [[https://github.com/bastibe/org-journal/commits/master.atom][org-journal]]
 ** emacs-conf                                                    :emacs:conf:
 *** [[https://github.com/natecox/dotfiles/][natecox/dotfiles]]
 *** [[https://github.com/bbatsov/prelude/commits/master.atom][prelude:master]]

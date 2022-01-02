@@ -2981,3 +2981,10 @@ mermaid.initialize({
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
+
+;; 保存 Buffer 时自动更新 #+LASTMOD: 后面的时间戳；
+;; 注意: #+LASTMOD: 必须位于文件开头的 8 行内, 否则自动更新不生效
+(setq time-stamp-start "#\\+LASTMOD:[ \t]*"
+      time-stamp-end "$"
+      time-stamp-format " %Y-%m-%dT%02H:%02m:%02S%5z")
+(add-hook 'before-save-hook 'time-stamp t)
