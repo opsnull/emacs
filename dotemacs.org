@@ -1,4 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
+#+DATE: 2020-05-25T11:13:16+0800
+#+LASTMOD: 2022-01-02T14:01:49+0800
 #+Options: toc:nil h:4
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -4174,6 +4176,13 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
+
+;; 保存 Buffer 时自动更新 #+LASTMOD: 后面的时间戳；
+;; 注意: #+LASTMOD: 必须位于文件开头的 8 行内, 否则自动更新不生效
+(setq time-stamp-start "#\\+LASTMOD:[ \t]*"
+      time-stamp-end "$"
+      time-stamp-format " %Y-%m-%dT%02H:%02m:%02S%5z")
+(add-hook 'before-save-hook 'time-stamp t)
 #+end_src
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行 rm 命令。
 
