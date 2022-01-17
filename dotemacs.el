@@ -143,6 +143,8 @@
 ;; 主题预览: https://emacsthemes.com/
 (use-package doom-themes
   :demand
+  ;; 必须添加 "extensions/*", 否则 visual-bell/treemacs/org 等 config 失败。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
   :custom
@@ -164,7 +166,7 @@
           (lambda (appearance)
             (pcase appearance
               ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
+             ('dark (my/load-dark-theme)))))
 
 ;; modeline 显示电池和日期时间
 (display-battery-mode t)
@@ -206,7 +208,7 @@
     ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
     '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
     ;; right-hand segment list，尾部增加空格，避免溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  ")))
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
 
 (use-package dashboard
   :demand t
@@ -316,7 +318,7 @@
   (setq read-extended-command-predicate #'command-completion-default-include-p)
   (setq enable-recursive-minibuffers t)
   (setq vertico-count 15)
-  (setq vertico-cycle t)
+  (setq vertico-cycle nil)
   (vertico-mode 1))
 
 (use-package orderless
@@ -446,12 +448,13 @@
   ;; 显示绝对时间
   (setq marginalia-max-relative-age 0)
   (marginalia-mode)
-  :config
+  ;;:config
   ;; 不给 file 加注释，防止 TRAMP 变慢。
-  (setq marginalia-annotator-registry
-        (assq-delete-all 'file marginalia-annotator-registry))
-  (setq marginalia-annotator-registry
-        (assq-delete-all 'project-file marginalia-annotator-registry)))
+  ;; (setq marginalia-annotator-registry
+  ;;       (assq-delete-all 'file marginalia-annotator-registry))
+  ;; (setq marginalia-annotator-registry
+  ;;       (assq-delete-all 'project-file marginalia-annotator-registry))
+  )
 
 (use-package embark
   :init
@@ -683,7 +686,7 @@
     (make-directory attachments-directory t))
 
 (use-package mu4e
-  ;;:demand
+  :disabled
   ;; 使用 mu4e/* 目录下的 lisp 文件, 跳过 straight 的 build 过程;
   :straight (:host github :repo "djcb/mu" :branch "master" :files ("mu4e/*") :build nil)
   :config
@@ -912,7 +915,8 @@
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
         org-startup-indented t
-        org-link-file-path-type 'absolute)
+        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
+        org-link-file-path-type 'relative)
   (setq org-catch-invisible-edits 'show)
   (setq org-todo-keywords
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
@@ -961,19 +965,19 @@
   (setq org-fontify-whole-block-delimiter-line t)
   (custom-theme-set-faces
    'user
-   '(org-block ((t (:font "Sarasa Term SC-14" :inherit fixed-pitch))))
+   '(org-block ((t (:font "Sarasa Term SC-15" :inherit fixed-pitch))))
    ;; 调小 height, 并设置下划线
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
-   '(org-document-info ((t (:foreground "dark orange" :height 0.8))))
+   '(org-document-info ((t (:height 0.8))))
    '(org-document-info-keyword ((t (:height 0.8))))
    '(org-link ((t (:foreground "royal blue" :underline t))))
    '(org-meta-line ((t ( :height 0.8))))
    '(org-property-value ((t (:height 0.8))) t)
    '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
-   '(org-table ((t (:foreground "#83a598"))))
+   ;;'(org-table ((t (:foreground "#83a598"))))
    '(org-tag ((t (:weight bold :height 0.8))))
    ;;'(org-ellipsis ((t (:foreground nil))))
    )
@@ -1262,24 +1266,18 @@
 
 (use-package org-journal
   :demand
-  :bind
-  (:map org-mode-map
-        ("C-c C-j" . 'org-journal-new-entry))
+  :commands org-journal-new-entry
   :init
+  ;; 设置缺省 prefix key, 必须在加载 org-journal 前设置。
   (setq org-journal-prefix-key "C-c j ")
-  :config
-  (setq org-journal-file-type 'monthly)
-  (setq org-journal-dir "~/journal")
-  (setq org-journal-find-file 'find-file)
-  ;; automatically adds the current and all future journal entries to the agenda
-  ;; 在历史日记被删除的情况下, 可能导致 Dashbard 显示 agenda 时 hang, 故不使用该方式。
-  ;;(setq org-journal-enable-agenda-integration t)
-  ;; When =org-journal-file-pattern= has the default value, this would be the regex.
-  (setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
-  (add-to-list 'org-agenda-files org-journal-dir)
-  ;; 加密日记
-  (setq org-journal-enable-encryption t)
-  (setq org-journal-encrypt-journal t)
+
+  (defun org-journal-save-entry-and-exit()
+    "Simple convenience function.
+  Saves the buffer of the current day's entry and kills the window
+  Similar to org-capture like behavior"
+    (interactive)
+    (save-buffer)
+    (kill-buffer-and-window))
 
   (defun org-journal-file-header-func (time)
     "Custom function to create journal header."
@@ -1289,17 +1287,6 @@
        (`weekly "#+TITLE: Weekly Journal\n#+STARTUP: folded")
        (`monthly "#+TITLE: Monthly Journal\n#+STARTUP: folded")
        (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
-
-  (setq org-journal-file-header 'org-journal-file-header-func)
-
-  (defun org-journal-save-entry-and-exit()
-    "Simple convenience function.
-  Saves the buffer of the current day's entry and kills the window
-  Similar to org-capture like behavior"
-    (interactive)
-    (save-buffer)
-    (kill-buffer-and-window))
-  (define-key org-journal-mode-map (kbd "C-x C-s") 'org-journal-save-entry-and-exit)
 
   (defun my-old-carryover (old_carryover)
     (save-excursion
@@ -1311,9 +1298,6 @@
             (org-scan-tags '(lambda ()
                               (org-set-tags ":carried:"))
                            matcher org--matcher-tags-todo-only))))))
-
-  (setq org-journal-handle-old-carryover 'my-old-carryover)
-
   ;; org-capture 集成
   (defun org-journal-find-location ()
     ;; Open today's journal, but specify a non-nil prefix argument in order to
@@ -1322,10 +1306,40 @@
     (unless (eq org-journal-file-type 'daily)
       (org-narrow-to-subtree))
     (goto-char (point-max)))
-
+  :bind
+  (:map org-journal-mode-map
+        ("C-c C-j" . 'org-journal-new-entry)
+        ("C-c C-e" . 'org-journal-save-entry-and-exit))
+  :config
+  (setq org-journal-file-type 'monthly)
+  (setq org-journal-dir "~/journal")
+  (setq org-journal-find-file 'find-file)
+  ;; automatically adds the current and all future journal entries to the agenda
+  ;;(setq org-journal-enable-agenda-integration t)
+  ;; When org-journal-file-pattern has the default value, this would be the regex.
+  (setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
+  (add-to-list 'org-agenda-files org-journal-dir)
+  ;; 加密日记
+  (setq org-journal-enable-encryption t)
+  (setq org-journal-encrypt-journal t)
+  (setq org-journal-handle-old-carryover 'my-old-carryover)
+  (setq org-journal-file-header 'org-journal-file-header-func)
   (setq org-capture-templates (cons '("j" "Journal" plain (function org-journal-find-location)
                                       "** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
                                       :jump-to-captured t :immediate-finish t) org-capture-templates)))
+
+;; 保存 Buffer 时自动更新 #+LASTMOD: 后面的时间戳；
+(setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*"
+      time-stamp-end "$"
+      time-stamp-format "%Y-%m-%dT%02H:%02m:%02S%5z"
+      ;;  #+LASTMOD: 必须位于文件开头的 line-limit 行内, 否则自动更新不生效。
+      time-stamp-line-limit 30)
+(add-hook 'before-save-hook 'time-stamp t)
+
+;; New link type for Org-Hugo internal links
+(org-link-set-parameters "hugo"
+                         :complete (lambda ()
+                                     (concat "{{% ref "(file-name-nondirectory (read-file-name "File: "))" %}}")))
 
 (use-package pdf-tools
   :demand
@@ -1786,7 +1800,7 @@
     (setq lsp-pyright-python-executable-cmd "python3")))
 
 (use-package lsp-java
-  :disabled t
+  :disabled
   :after (lsp-mode)
   :init
   ;; 指定运行 jdtls 的 java 程序
@@ -2064,7 +2078,7 @@ mermaid.initialize({
 
 (use-package prettier
   ;; TRAMP 支持的有问题, 故关闭。
-  :disabled t
+  :disabled
   :ensure-system-package (prettier . "npm -g install prettier")
   :diminish
   :hook (prog-mode . prettier-mode)
@@ -2418,6 +2432,13 @@ mermaid.initialize({
   (if (bound-and-true-p socks-noproxy)
       (proxy-socks-disable)
     (proxy-socks-enable)))
+
+(use-package easy-hugo
+:init
+(setq easy-hugo-basedir "~/blog/my_website/")
+(setq easy-hugo-url "https://blog.opsnull.com")
+(setq easy-hugo-previewtime "300")
+:bind ("C-c C-e" . easy-hugo))
 
 (use-package vterm
   :ensure-system-package
@@ -2981,10 +3002,3 @@ mermaid.initialize({
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
-
-;; 保存 Buffer 时自动更新 #+LASTMOD: 后面的时间戳；
-;; 注意: #+LASTMOD: 必须位于文件开头的 8 行内, 否则自动更新不生效
-(setq time-stamp-start "#\\+LASTMOD:[ \t]*"
-      time-stamp-end "$"
-      time-stamp-format " %Y-%m-%dT%02H:%02m:%02S%5z")
-(add-hook 'before-save-hook 'time-stamp t)

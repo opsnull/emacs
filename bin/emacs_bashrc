@@ -49,6 +49,12 @@ if [[ "$TERM" == "tramp" || "$VTERM_TRAMP" == "true" ]]; then
         touch ~/.ssh/config
     fi
     if ! egrep 'ControlMaster|ControlPath' ~/.ssh/config &>/dev/null; then
-        sed -i '1s#^#Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n\n#' ~/.ssh/config
+       if [ ! -s ~/ssh/config ]; then
+         # 空文件， sed 命令不起作用，故使用 echo 来添加内容
+         echo $'Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n' >> ~/.ssh/config
+       else
+         # 非空文件，在第一行前插入内容
+         sed -i '1i Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n\n' ~/.ssh/config
+       fi
     fi
 fi

@@ -8,12 +8,12 @@
 
 * Bookmarks
 
- [u] Unread      ([[elfeed:+unread @1-months-ago][  7106]]/[[elfeed:@1-months-ago][  8812]])
- [b] Blog        ([[elfeed:+unread @1-months-ago -emacs +blog][   223]]/[[elfeed:@1-months-ago -emacs +blog][   228]])
- [e] Emacs       ([[elfeed:+unread @1-months-ago +emacs][   815]]/[[elfeed:@1-months-ago +emacs][  1955]])
-    - [b] blog   ([[elfeed:+unread @1-months-ago +blog][  20]]/[[elfeed:@1-months-ago +blog][  789]])
-    - [c] conf   ([[elfeed:+unread @1-months-ago +conf][   17]]/[[elfeed:@1-months-ago +conf][  202]])
-    - [p] project          ([[elfeed:+unread @1-months-ago +project][   778]]/[[elfeed:@1-months-ago +project][   964]])
+ [u] Unread      ([[elfeed:+unread @1-months-ago][  8058]]/[[elfeed:@1-months-ago][ 10049]])
+ [b] Blog        ([[elfeed:+unread @1-months-ago -emacs +blog][    73]]/[[elfeed:@1-months-ago -emacs +blog][    73]])
+ [e] Emacs       ([[elfeed:+unread @1-months-ago +emacs][   562]]/[[elfeed:@1-months-ago +emacs][  2126]])
+    - [b] blog   ([[elfeed:+unread @1-months-ago +blog][ 586]]/[[elfeed:@1-months-ago +blog][ 1170]])
+    - [c] conf   ([[elfeed:+unread @1-months-ago +conf][    0]]/[[elfeed:@1-months-ago +conf][  283]])
+    - [p] project          ([[elfeed:+unread @1-months-ago +project][    49]]/[[elfeed:@1-months-ago +project][   746]])
 
 * Configuration
   :PROPERTIES:
