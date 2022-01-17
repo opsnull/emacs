@@ -125,3 +125,9 @@
 *** [[https://oremacs.com/atom.xml][OrEmacs]]
 *** [[https://sachachua.com/blog/category/emacs-news/feed/][EmacsNews]]
 *** [[https://sachachua.com/blog/feed/][sachachua blog]]
+** v2ex                                                                   :v2ex:
+*** [[https://www.v2ex.com/feed/tab/tech.xml][v2ex-tech]]
+*** [[https://www.v2ex.com/feed/go.xml][v2ex-go]]
+*** [[https://www.v2ex.com/feed/programmer.xml][v2ex-programmer]]
+*** [[https://www.v2ex.com/feed/share.xml][v2ex-share]]
+*** [[https://www.v2ex.com/feed/k8s.xml][v2ex-k8s]]
