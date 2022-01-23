@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-01-16T21:01:09+0800
+#+LASTMOD: 2022-01-23T18:01:52+0800
 #+Options: toc:nil h:4
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -8,7 +8,6 @@
 #+LATEX_COMPILER: xelatex
 #+LATEX_CLASS: ctexart
 #+LATEX_HEADER: \usepackage{mystyle}
-#+OPTIONS: prop:t ^:nil
 
 * menu
 :PROPERTIES:
@@ -54,7 +53,6 @@
   - [[#tex][tex]]
   - [[#slide][slide]]
   - [[#journal][journal]]
-  - [[#web][web]]
 - [[#pdf][pdf]]
 - [[#rss][rss]]
 - [[#twitter][twitter]]
@@ -722,7 +720,7 @@ npm config set registry=http://registry.npm.taobao.org
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;; Complete word from current buffers
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;; Complete Elisp symbol
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;; Complete abbreviation
@@ -741,6 +739,12 @@ npm config set registry=http://registry.npm.taobao.org
 (use-package corfu
   :demand
   :straight '(corfu :host github :repo "minad/corfu")
+  :init
+  (defun corfu-enable-in-minibuffer ()
+    "Enable Corfu in the minibuffer only if Vertico is not active."
+    (unless (or (bound-and-true-p mct--active)
+                (bound-and-true-p vertico--input))
+      (corfu-mode 1)))
   :custom
   (corfu-cycle t)
   (corfu-auto t)
@@ -752,6 +756,7 @@ npm config set registry=http://registry.npm.taobao.org
   (corfu-auto-prefix 3)
   :config
   (corfu-global-mode)
+  (add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer 1)
   ;; https://github.com/minad/corfu/wiki#additional-movement-commands
   (defun corfu-beginning-of-prompt ()
     "Move to beginning of completion input."
@@ -1572,6 +1577,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
         org-startup-folded 'content
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
+        ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil
+        org-export-with-sub-superscripts nil
         org-startup-indented t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
         org-link-file-path-type 'relative)
@@ -1580,7 +1587,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-  ;; 中文不加空格使用行内格式, 如强调
+  ;; 中文不加空格使用行内格式, 如强调。（export pdf 时还是需要加空格)
   (setq org-emphasis-regexp-components
         '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
   (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
@@ -1841,6 +1848,10 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
    (python . t)
    (dot . t)
    (css . t)))
+
+(use-package org-contrib
+  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
+  :demand)
 #+end_src
 
 ** notify
@@ -1874,6 +1885,12 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+begin_src emacs-lisp
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
+  ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置
+  (setq org-latex-image-default-width "0.7\\linewidth")
+  ;; 默认使用 booktabs 来格式化表格
+  (setq org-latex-tables-booktabs t)
+  ;; Keep LaTeX logfiles
+  (setq org-latex-remove-logfiles nil)
   ;;https://yuchi.me/post/export-org-mode-in-chinese-to-pdf-with-custom-latex-class/
   ;; http://orgmode.org/worg/org-faq.html#using-xelatex-for-pdf-export
   ;; latexmk runs pdflatex/xelatex (whatever is specified) multiple times
@@ -1889,7 +1906,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   ;;               ("AUTO" "inputenc" t))))
   (add-to-list 'org-latex-classes
                '("ctexart"
-                 "\\documentclass[lang=cn,11pt,a4paper]{ctexart}
+                 "\\documentclass[lang=cn,11pt,a4paper,table]{ctexart}
                  [NO-DEFAULT-PACKAGES]
                  [PACKAGES]
                  [EXTRA]"
@@ -1928,14 +1945,22 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (setq org-latex-listings 'listings))
 #+end_src
 + minted 包提供代码语法高亮的功能(TexLive 默认安装), 它依赖 pygements 。
-+ 变量 =org-latex-minted-langs= 列出 Emacs Major-Mode 与 minted 语言类型
-  （pygmentize -L lexers）的关系, 如果两者一致（如 go-[mod] 和 go), 则不需要列出。
++ 变量 =org-latex-minted-langs= 列出 Emacs Major-Mode 与 minted 语言类型（pygmentize -L lexers）的关系, 如果两者
+  一致（如 go-[mod] 和 go), 则不需要列出。
 + minted 的 fontfamily 只对预定义的 tt/courier/helvetica 有效。
 
 安装 noto-cjk 中文字体: =git clone https://github.com/googlefonts/noto-cjk.git=
 
 自定义样式 mystyle.sty:
 #+begin_src latex :tangle  ~/.emacs.d/mystyle.sty
+\usepackage{color}
+\usepackage{xcolor}
+\definecolor{winered}{rgb}{0.5,0,0}
+\definecolor{lightgrey}{rgb}{0.9,0.9,0.9}
+\definecolor{tableheadcolor}{gray}{0.92}
+\definecolor{commentcolor}{RGB}{0,100,0}
+\definecolor{frenchplum}{RGB}{190,20,83}
+
 % 安装荧光笔效果的强调宏包 breakfbox(https://blog.shimanoke.com/ja/posts/change-latex-emph/)
 % 1. 克隆 https://github.com/doraTeX/breakfbox 到 /usr/local/texlive/texmf-local/tex/latex
 % 2. 刷新数据库:  sudo mktexlsr
@@ -1961,14 +1986,16 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   minted style=emacs,
   minted language=#2,
   minted options={autogobble,fontsize=\footnotesize,breaklines,breakanywhere,baselinestretch=1.2,linenos,numbersep=3mm},
-  title={\sffamily\bfseries 代码块 \thetcbcounter},
+  % 不显示 title
+  %title={\sffamily\bfseries 代码块 \thetcbcounter},
   %title={\sffamily\bfseries 代码块 \thetcbcounter #3},
   after,
   breakable=true,
   lowerbox=ignored,
   hyphenationfix=true,
-  colback=blue!5!white,
-  colframe=blue!85!black,
+  %边框颜色
+  %colback=blue!5!white,
+  %colframe=blue!85!black,
   listing only,
   enhanced,
   drop fuzzy shadow southeast,
@@ -1977,7 +2004,13 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   #1
 }
 
-\usepackage{hyperref}
+% 提示 title
+\usepackage[explicit]{titlesec}
+\usepackage{titling}
+\setlength{\droptitle}{-6em}
+
+% 超链接
+\usepackage[colorlinks]{hyperref}
 \hypersetup{
   pdfborder={0 0 0},
   colorlinks=true,
@@ -1987,8 +2020,9 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   citecolor={winered},
   linktoc=all}
 
+% 字体
 \usepackage{fontspec}
-\usepackage[utf8]{inputenc}
+\usepackage[utf8x]{inputenc}
 \setmainfont{Noto Serif SC}
 \setsansfont{Noto Sans SC}[Scale=MatchLowercase]
 \setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
@@ -2002,17 +2036,18 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 % add the email cmd
 \newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
 
-\usepackage{color}
-% define the hyperref color
-\usepackage{xcolor}
-\definecolor{winered}{rgb}{0.5,0,0}
-\definecolor{lightgrey}{rgb}{0.95,0.95,0.95}
-\definecolor{commentcolor}{RGB}{0,100,0}
-\definecolor{frenchplum}{RGB}{190,20,83}
-% 代码块使用的背景
-\definecolor{LightGray}{gray}{0.9}
+% tabularx 的特殊 align 参数 X 用来对指定列内容自动换行，表格前需要加如下属性：
+% #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|X
+\usepackage{tabularx}
+% 美化表格显示效果
+\usepackage{booktabs}
+% 表格隔行颜色, {1} 开始行, {lightgrep} 奇数行颜色, {} 偶数行颜色(空表示白色)
+\rowcolors{1}{lightgrey}{}
 
 \usepackage{parskip}
+\setlength{\parskip}{1em}
+\setlength{\parindent}{0pt}
+
 \usepackage{etoolbox}
 \usepackage{calc}
 
@@ -2023,7 +2058,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{indentfirst}
-\usepackage{booktabs}
 \usepackage{multicol}
 \usepackage{multirow}
 \usepackage{linegoal}
@@ -2032,15 +2066,24 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 \usepackage{abstract}
 \usepackage{hologo}
 
-\linespread{1.35}
+\linespread{1.25}
 \graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
 
 \usepackage[font=small,labelfont={bf}]{caption}
 \captionsetup[table]{skip=3pt}
 \captionsetup[figure]{skip=3pt}
 
+% 下划线、强调和删除线等
+\usepackage[normalem]{ulem}
+% 列表
 \usepackage[shortlabels,inline]{enumitem}
 \setlist{nolistsep}
+% xeCJK 默认会把黑点用汉字显示，而 Noto 没有这个字体，所以显示效果为一个小点。
+% 解决办法是将它设置为 \bullet, 这样显示为实心黑点。Windows 带的开题、仿宋没有这个问题。
+\setlist[itemize]{label=$\bullet$}
+% 或者：
+%\renewcommand\labelitemi{\ensuremath{\bullet}}
+
 #+end_src
 
 在 org 文档的头部添加参数：
@@ -3459,7 +3502,7 @@ lsp-workspace-restart= 来重启 lsp 。
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
-    (treemacs-git-mode t)
+    (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
   :bind
   (:map global-map
@@ -3470,6 +3513,7 @@ lsp-workspace-restart= 来重启 lsp 。
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
+;; 单击打开或折叠目录
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
@@ -3493,8 +3537,8 @@ lsp-workspace-restart= 来重启 lsp 。
   :ensure-system-package (rg . ripgrep)
   :bind ("<f5>" . deadgrep))
 #+end_src
-+ 不启用 (treemacs-tag-follow-mode t), 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module project
-  的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
++ 不启用 (treemacs-project-follow-mode t), 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
+  project的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
 * web
 
@@ -3781,11 +3825,6 @@ xournalapp 有 bug 不能直接在 MacOS Finder 中打开 xopp 格式文件，�
   (with-eval-after-load 'org
     (require 'edraw-org)
     (edraw-org-setup-default)))
-
-(use-package org-contrib
-  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
-  :demand
-  )
 
 (use-package org-sketch
   :hook (org-mode . org-sketch-mode)

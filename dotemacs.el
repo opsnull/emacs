@@ -482,7 +482,7 @@
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;; Complete word from current buffers
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;; Complete Elisp symbol
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;; Complete abbreviation
@@ -498,6 +498,12 @@
 (use-package corfu
   :demand
   :straight '(corfu :host github :repo "minad/corfu")
+  :init
+  (defun corfu-enable-in-minibuffer ()
+    "Enable Corfu in the minibuffer only if Vertico is not active."
+    (unless (or (bound-and-true-p mct--active)
+                (bound-and-true-p vertico--input))
+      (corfu-mode 1)))
   :custom
   (corfu-cycle t)
   (corfu-auto t)
@@ -509,6 +515,7 @@
   (corfu-auto-prefix 3)
   :config
   (corfu-global-mode)
+  (add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer 1)
   ;; https://github.com/minad/corfu/wiki#additional-movement-commands
   (defun corfu-beginning-of-prompt ()
     "Move to beginning of completion input."
@@ -914,6 +921,8 @@
         org-startup-folded 'content
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆)
         org-use-sub-superscripts nil
+        ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil
+        org-export-with-sub-superscripts nil
         org-startup-indented t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
         org-link-file-path-type 'relative)
@@ -922,7 +931,7 @@
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-  ;; 中文不加空格使用行内格式, 如强调
+  ;; 中文不加空格使用行内格式, 如强调。（export pdf 时还是需要加空格)
   (setq org-emphasis-regexp-components
         '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
   (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
@@ -1143,6 +1152,10 @@
    (dot . t)
    (css . t)))
 
+(use-package org-contrib
+  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
+  :demand)
+
 (use-package emacs
   :straight (:type built-in)
   :ensure-system-package terminal-notifier)
@@ -1167,6 +1180,12 @@
 
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
+  ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置
+  (setq org-latex-image-default-width "0.7\\linewidth")
+  ;; 默认使用 booktabs 来格式化表格
+  (setq org-latex-tables-booktabs t)
+  ;; Keep LaTeX logfiles
+  (setq org-latex-remove-logfiles nil)
   ;;https://yuchi.me/post/export-org-mode-in-chinese-to-pdf-with-custom-latex-class/
   ;; http://orgmode.org/worg/org-faq.html#using-xelatex-for-pdf-export
   ;; latexmk runs pdflatex/xelatex (whatever is specified) multiple times
@@ -1182,7 +1201,7 @@
   ;;               ("AUTO" "inputenc" t))))
   (add-to-list 'org-latex-classes
                '("ctexart"
-                 "\\documentclass[lang=cn,11pt,a4paper]{ctexart}
+                 "\\documentclass[lang=cn,11pt,a4paper,table]{ctexart}
                  [NO-DEFAULT-PACKAGES]
                  [PACKAGES]
                  [EXTRA]"
@@ -2306,7 +2325,7 @@ mermaid.initialize({
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
     (treemacs-indent-guide-mode t)
-    (treemacs-git-mode t)
+    (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
   :bind
   (:map global-map
@@ -2317,6 +2336,7 @@ mermaid.initialize({
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
+;; 单击打开或折叠目录
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
@@ -2577,11 +2597,6 @@ mermaid.initialize({
     (require 'edraw-org)
     (edraw-org-setup-default)))
 
-(use-package org-contrib
-  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
-  :demand
-  )
-
 (use-package org-sketch
   :hook (org-mode . org-sketch-mode)
   :straight (:host github :repo "yuchen-lea/org-sketch")
@@ -2796,6 +2811,7 @@ mermaid.initialize({
 ;; 避免执行 ns-open-file-using-panel 命令。
 (global-unset-key (kbd "s-o"))
 (global-unset-key (kbd "s-t"))
+(global-unset-key (kbd "s-n"))
 ;; 关闭 suspend-frame
 (global-unset-key (kbd "C-z"))
 
