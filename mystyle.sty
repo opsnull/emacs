@@ -1,3 +1,11 @@
+\usepackage{color}
+\usepackage{xcolor}
+\definecolor{winered}{rgb}{0.5,0,0}
+\definecolor{lightgrey}{rgb}{0.9,0.9,0.9}
+\definecolor{tableheadcolor}{gray}{0.92}
+\definecolor{commentcolor}{RGB}{0,100,0}
+\definecolor{frenchplum}{RGB}{190,20,83}
+
 % 安装荧光笔效果的强调宏包 breakfbox(https://blog.shimanoke.com/ja/posts/change-latex-emph/)
 % 1. 克隆 https://github.com/doraTeX/breakfbox 到 /usr/local/texlive/texmf-local/tex/latex
 % 2. 刷新数据库:  sudo mktexlsr
@@ -23,14 +31,16 @@
   minted style=emacs,
   minted language=#2,
   minted options={autogobble,fontsize=\footnotesize,breaklines,breakanywhere,baselinestretch=1.2,linenos,numbersep=3mm},
-  title={\sffamily\bfseries 代码块 \thetcbcounter},
+  % 不显示 title
+  %title={\sffamily\bfseries 代码块 \thetcbcounter},
   %title={\sffamily\bfseries 代码块 \thetcbcounter #3},
   after,
   breakable=true,
   lowerbox=ignored,
   hyphenationfix=true,
-  colback=blue!5!white,
-  colframe=blue!85!black,
+  %边框颜色
+  %colback=blue!5!white,
+  %colframe=blue!85!black,
   listing only,
   enhanced,
   drop fuzzy shadow southeast,
@@ -39,7 +49,13 @@
   #1
 }
 
-\usepackage{hyperref}
+% 提示 title
+\usepackage[explicit]{titlesec}
+\usepackage{titling}
+\setlength{\droptitle}{-6em}
+
+% 超链接
+\usepackage[colorlinks]{hyperref}
 \hypersetup{
   pdfborder={0 0 0},
   colorlinks=true,
@@ -49,8 +65,9 @@
   citecolor={winered},
   linktoc=all}
 
+% 字体
 \usepackage{fontspec}
-\usepackage[utf8]{inputenc}
+\usepackage[utf8x]{inputenc}
 \setmainfont{Noto Serif SC}
 \setsansfont{Noto Sans SC}[Scale=MatchLowercase]
 \setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
@@ -64,17 +81,18 @@
 % add the email cmd
 \newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
 
-\usepackage{color}
-% define the hyperref color
-\usepackage{xcolor}
-\definecolor{winered}{rgb}{0.5,0,0}
-\definecolor{lightgrey}{rgb}{0.95,0.95,0.95}
-\definecolor{commentcolor}{RGB}{0,100,0}
-\definecolor{frenchplum}{RGB}{190,20,83}
-% 代码块使用的背景
-\definecolor{LightGray}{gray}{0.9}
+% tabularx 的特殊 align 参数 X 用来对指定列内容自动换行，表格前需要加如下属性：
+% #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|X
+\usepackage{tabularx}
+% 美化表格显示效果
+\usepackage{booktabs}
+% 表格隔行颜色, {1} 开始行, {lightgrep} 奇数行颜色, {} 偶数行颜色(空表示白色)
+\rowcolors{1}{lightgrey}{}
 
 \usepackage{parskip}
+\setlength{\parskip}{1em}
+\setlength{\parindent}{0pt}
+
 \usepackage{etoolbox}
 \usepackage{calc}
 
@@ -85,7 +103,6 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{indentfirst}
-\usepackage{booktabs}
 \usepackage{multicol}
 \usepackage{multirow}
 \usepackage{linegoal}
@@ -94,12 +111,20 @@
 \usepackage{abstract}
 \usepackage{hologo}
 
-\linespread{1.35}
+\linespread{1.25}
 \graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
 
 \usepackage[font=small,labelfont={bf}]{caption}
 \captionsetup[table]{skip=3pt}
 \captionsetup[figure]{skip=3pt}
 
+% 下划线、强调和删除线等
+\usepackage[normalem]{ulem}
+% 列表
 \usepackage[shortlabels,inline]{enumitem}
 \setlist{nolistsep}
+% xeCJK 默认会把黑点用汉字显示，而 Noto 没有这个字体，所以显示效果为一个小点。
+% 解决办法是将它设置为 \bullet, 这样显示为实心黑点。Windows 带的开题、仿宋没有这个问题。
+\setlist[itemize]{label=$\bullet$}
+% 或者：
+%\renewcommand\labelitemi{\ensuremath{\bullet}}
