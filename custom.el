@@ -3,7 +3,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(warning-suppress-types '((straight))))
+ '(warning-suppress-types '((straight) (straight))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -11,7 +11,7 @@
  ;; If there is more than one, they won't work right.
  '(aw-leading-char-face ((t (:inherit ace-jump-face-foreground :foreground "red" :height 2.0))))
  '(doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
- '(org-block ((t (:font "Sarasa Term SC-14" :inherit fixed-pitch))))
+ '(org-block ((t (:font "Sarasa Term SC-15" :inherit fixed-pitch))))
  '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
  '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
  '(org-document-info ((t (:height 0.8))))

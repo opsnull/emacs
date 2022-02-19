@@ -39,7 +39,7 @@
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
-;; 增加单次读取进程输出数据流（缺省 4KB)
+;; 增加单次读取进程输出的数据量（缺省 4KB)
 (setq read-process-output-max (* 1024 1024))
 
 ;; 增加长行处理性能
@@ -53,6 +53,8 @@
 
 ;; 使用字体缓存，避免卡顿
 (setq inhibit-compacting-font-caches t)
+
+(setq idle-update-delay 0.3)
 
 ;; Garbage Collector Magic Hack
 (use-package gcmh
@@ -93,9 +95,9 @@
 (setq window-divider-default-places t)
 (add-hook 'window-setup-hook #'window-divider-mode)
 
-;; 默认上下分屏
-(setq split-width-threshold nil)
-;; 切换到已有的 frame
+;; 默认左右分屏
+(setq split-width-threshold 30)
+;; 复用当前 frame
 (setq display-buffer-reuse-frames t)
 
 ;; 高亮当前行
@@ -128,8 +130,6 @@
 (if (boundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode t))
 
-(setq idle-update-delay 0.3)
-
 ;; 关闭 mouse-wheel-text-scale 快捷键 (容易触碰误操作)
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
@@ -140,10 +140,10 @@
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
-;; 主题预览: https://emacsthemes.com/
+;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
   :demand
-  ;; 必须添加 "extensions/*", 否则 visual-bell/treemacs/org 等 config 失败。
+  ;; 添加 "extensions/*", 否则 visual-bell/treemacs/org 等配置会失败。
   :straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
@@ -176,7 +176,8 @@
 (setq display-time-24hr-format t)
 (setq display-time-default-load-average nil)
 (setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%d[%u] %H:%M%p")
+;;(setq display-time-format "%m/%d[%u] %H:%M%p")
+(setq display-time-format "%m/%dT%H:%M")
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
@@ -215,8 +216,8 @@
   :after (projectile)
   :config
   (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
-  (setq dashboard-startup-banner (expand-file-name "~/.emacs.d/emacs-e.svg"))
-  (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
+  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/emacs-e.svg"))
+  (setq dashboard-projects-backend #'projectile)
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
@@ -225,6 +226,7 @@
   (dashboard-setup-startup-hook))
 
 (use-package centaur-tabs
+  :disabled
   :hook (emacs-startup . centaur-tabs-mode)
   :init
   (setq centaur-tabs-set-icons t)
@@ -264,7 +266,7 @@
 
 ;; 在 frame 底部显示帮助窗口
 (setq display-buffer-alist
-      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*" "*lsp-help*") (0+ not-newline))
+      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*" "*lsp-help*" "vterm") (0+ not-newline))
          (display-buffer-reuse-mode-window display-buffer-below-selected)
          (window-height . 0.33)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
@@ -364,7 +366,7 @@
           (command (styles +orderless-with-initialism))
           (variable (styles +orderless-with-initialism))
           (symbol (styles +orderless-with-initialism)))
-        ;; allow escaping space with backslash!
+        ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义
         orderless-component-separator #'orderless-escapable-split-on-space
         orderless-style-dispatchers '(+orderless-dispatch)))
 
@@ -375,12 +377,12 @@
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
    ("C-c m" . consult-mode-command)
-   ("C-c b" . consult-bookmark)
    ;; C-x bindings (ctl-x-map)
    ("C-x M-:" . consult-complex-command)
    ("C-x b" . consult-buffer)
    ("C-x 4 b" . consult-buffer-other-window)
    ("C-x 5 b" . consult-buffer-other-frame)
+   ("C-x r b" . consult-bookmark)
    ;; Custom M-# bindings for fast register access
    ("M-#" . consult-register-load)
    ("M-'" . consult-register-store)
@@ -397,11 +399,10 @@
    ("M-g m" . consult-mark)
    ("M-g k" . consult-global-mark)
    ("M-g i" . consult-imenu)
-   ("M-g I" . consult-project-imenu)
+   ("M-g I" . consult-imenu)
    ;; M-s bindings (search-map)
-   ("M-s f" . consult-find)
-   ("M-s L" . consult-locate)
-   ("M-s F" . consult-locate)
+   ("M-s d" . consult-find)
+   ("M-s D" . consult-locate)
    ("M-s g" . consult-grep)
    ("M-s G" . consult-git-grep)
    ("M-s r" . consult-ripgrep)
@@ -411,11 +412,12 @@
    ("M-s k" . consult-keep-lines)
    ("M-s u" . consult-focus-lines)
    ;; Isearch integration
-   ("M-s e" . consult-isearch)
+   ("M-s e" . consult-isearch-history)
    :map isearch-mode-map
-   ("M-e" . consult-isearch)
-   ("M-s e" . consult-isearch)
-   ("M-s l" . consult-line))
+   ("M-e" . consult-isearch-history)
+   ("M-s e" . consult-isearch-history)
+   ("M-s l" . consult-line)
+   ("M-s L" . consult-line-multi))
   :hook
   (completion-list-mode . consult-preview-at-point-mode)
   :init
@@ -438,10 +440,23 @@
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
-  (global-set-key [remap repeat-complex-command] #'consult-complex-command)
+  (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
 
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function 'projectile-project-root))
+
+;; Call function consult-projectile. Narrow selection with B for buffer, F for file or P for project.
+(use-package consult-projectile
+  :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master")
+  :bind
+  ("C-x p p" . consult-projectile))
+
+(use-package consult-dir
+  :bind
+  (("C-x C-d" . consult-dir)
+   :map minibuffer-local-completion-map
+   ("C-x C-d" . consult-dir)
+   ("C-x C-j" . consult-dir-jump-file)))
 
 (use-package marginalia
   :init
@@ -455,6 +470,12 @@
   ;; (setq marginalia-annotator-registry
   ;;       (assq-delete-all 'project-file marginalia-annotator-registry))
   )
+
+(use-package all-the-icons-completion
+  :after (marginalia)
+  :config
+  (all-the-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 (use-package embark
   :init
@@ -473,27 +494,13 @@
    ("C-h B" . embark-bindings)))
 
 (use-package embark-consult
-  :after (embark consult))
-
-(use-package cape
-  :demand
-  :straight '(cape :host github :repo "minad/cape")
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;; Complete word from current buffers
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  ;; Complete Elisp symbol
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;; Complete abbreviation
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;; Complete word from dictionary file
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;; Complete entire line from file
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  :config
-  (setq cape-dabbrev-min-length 2))
+  :ensure t
+  :after (embark consult)
+  :demand t ; only necessary if you have the hook below
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package corfu
   :demand
@@ -504,31 +511,20 @@
     (unless (or (bound-and-true-p mct--active)
                 (bound-and-true-p vertico--input))
       (corfu-mode 1)))
+
+  ;; Transfer completion to the minibuffer
+  (defun corfu-move-to-minibuffer ()
+    (interactive)
+    (let ((completion-extra-properties corfu--extra)
+          completion-cycle-threshold completion-cycling)
+      (apply #'consult-completion-in-region completion-in-region--data)))
   :custom
-  (corfu-cycle t)
-  (corfu-auto t)
-  (corfu-commit-predicate nil)
-  (corfu-quit-at-boundary nil)
-  (corfu-quit-no-match t)
-  (corfu-scroll-margin 5)
-  (corfu-preview-current t)
-  (corfu-auto-prefix 3)
+  (corfu-scroll-margin 3)
+  (corfu-echo-documentation 0.2)
   :config
   (corfu-global-mode)
   (add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer 1)
-  ;; https://github.com/minad/corfu/wiki#additional-movement-commands
-  (defun corfu-beginning-of-prompt ()
-    "Move to beginning of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (car completion-in-region--data)))
-  (defun corfu-end-of-prompt ()
-    "Move to end of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (cadr completion-in-region--data)))
-  (define-key corfu-map [remap move-beginning-of-line] #'corfu-beginning-of-prompt)
-  (define-key corfu-map [remap move-end-of-line] #'corfu-end-of-prompt))
+  (define-key corfu-map "\M-m" #'corfu-move-to-minibuffer))
 
 ;; Dabbrev works with Corfu
 (use-package dabbrev
@@ -537,12 +533,38 @@
   (("M-/" . dabbrev-completion)
    ("C-M-/" . dabbrev-expand)))
 
-;; TAB cycle if there are only few candidates
+;; 当候选项不超过 3 个时, 不显示候选列表, 而是用 TAB 来循环选择;
 (setq completion-cycle-threshold 3)
-;; Enable indentation+completion using the TAB key.
-;; `completion-at-point' is often bound to M-TAB.
+
+;; 使用 TAB 来 indentation+completion, 默认使用 M-TAB 来 completion-at-point
 (setq tab-always-indent 'complete)
 (setq c-tab-always-indent 'complete)
+
+(use-package corfu-doc
+  :straight '(corfu-doc :host github :repo "galeo/corfu-doc")
+  :after (corfu)
+  :config
+  (add-hook 'corfu-mode-hook #'corfu-doc-mode))
+
+(use-package cape
+  :demand
+  :straight '(cape :host github :repo "minad/cape")
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;; Complete word from current buffers
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;; Complete Elisp symbol
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;; Complete abbreviation
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;; Complete word from dictionary file
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;; Complete entire line from file
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  :config
+  (setq cape-dabbrev-min-length 3))
 
 (use-package kind-icon
   :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
@@ -931,11 +953,6 @@
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-  ;; 中文不加空格使用行内格式, 如强调。（export pdf 时还是需要加空格)
-  (setq org-emphasis-regexp-components
-        '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
-  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
-  (org-element-update-syntax)
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -1361,7 +1378,6 @@
                                      (concat "{{% ref "(file-name-nondirectory (read-file-name "File: "))" %}}")))
 
 (use-package pdf-tools
-  :demand
   :ensure-system-package
   ((pdfinfo . poppler)
    (automake . automake)
@@ -2267,12 +2283,12 @@ mermaid.initialize({
 
 (defun my/project-discover ()
   (interactive)
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
-      (message "-> %s" file)
-      (when (file-directory-p file)
-          (projectile-add-known-project file)
-          (message "added project %s" file)))))
+      (when (file-directory-p (concat file "/.git"))
+        (message "-> %s" file)
+        (projectile-add-known-project file)
+        (message "added project %s" file)))))
 
 (use-package treemacs
   :demand
@@ -2429,7 +2445,7 @@ mermaid.initialize({
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
-        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
+        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
