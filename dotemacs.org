@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-01-23T18:01:52+0800
+#+LASTMOD: 2022-02-19T23:02:01+0800
 #+Options: toc:nil h:4
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -26,8 +26,8 @@
   - [[#consult][consult]]
   - [[#marginalia][marginalia]]
   - [[#embark][embark]]
-  - [[#cape][cape]]
   - [[#corfu][corfu]]
+  - [[#cape][cape]]
   - [[#kind-icon][kind-icon]]
   - [[#yasnippet][yasnippet]]
 - [[#goto][goto]]
@@ -53,6 +53,7 @@
   - [[#tex][tex]]
   - [[#slide][slide]]
   - [[#journal][journal]]
+  - [[#web][web]]
 - [[#pdf][pdf]]
 - [[#rss][rss]]
 - [[#twitter][twitter]]
@@ -94,8 +95,11 @@
 
 编译安装 Emacs 28：
 #+begin_src shell :tangle no
-brew reinstall gcc libgccjit
-brew install emacs-plus@28 --with-no-titlebar --with-no-frame-refocus --with-xwidgets --with-native-comp --with-nobu417-big-sur-icon
+# sudo xcode-select --reset
+# xcode-select --install
+# brew reinstall gcc libgccjit
+# brew uninstall emacs-plus
+brew install emacs-plus@28 --with-no-titlebar --with-no-frame-refocus --with-xwidgets --with-native-comp --with-imagemagick --with-nobu417-big-sur-icon
 brew link --overwrite emacs-plus@28
 ln -sf /usr/local/opt/emacs-plus@28/Emacs.app /Applications
 #+end_src
@@ -108,15 +112,15 @@ npm config set registry=http://registry.npm.taobao.org
 
 * init
 
- =early-init.el= 是 Emacs 启动时最开始执行的文件(先于加载 Package 和 UI 初始化)，由于很多包还没有加载，执行复杂
- 逻辑可能导致 Emacs 启动时悄无声息失败，所以该文件尽量以变量定义为主。
+ =early-init.el= 是 Emacs 启动时最开始执行的文件(在加载包和初始化 UI 之前)，执行复杂逻辑可能导致 Emacs 启动时悄
+ 无声息失败，所以该文件尽量以变量定义为主。
 
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 ;; Emacs 28
 (when (fboundp 'native-compile-async)
   (setenv "LIBRARY_PATH"
           (concat (getenv "LIBRARY_PATH")
-                  "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin20/11"))
+                  "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin21/11"))
   (setq native-comp-speed 2)
   (setq native-comp-async-jobs-number 4)
   (setq native-comp-deferred-compilation nil)
@@ -134,6 +138,7 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 不从 package cahce 中加载 package
 (setq package-quickstart nil)
 
+;; 启动报错则启动 debug
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
@@ -228,7 +233,7 @@ npm config set registry=http://registry.npm.taobao.org
 * tuning
 
 #+begin_src emacs-lisp
-;; 增加单次读取进程输出数据流（缺省 4KB)
+;; 增加单次读取进程输出的数据量（缺省 4KB)
 (setq read-process-output-max (* 1024 1024))
 
 ;; 增加长行处理性能
@@ -243,6 +248,8 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 使用字体缓存，避免卡顿
 (setq inhibit-compacting-font-caches t)
 
+(setq idle-update-delay 0.3)
+
 ;; Garbage Collector Magic Hack
 (use-package gcmh
   :demand t
@@ -255,7 +262,7 @@ npm config set registry=http://registry.npm.taobao.org
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 #+end_src
-+ 主要参考自 [[https://github.com/hlissner/doom-emacs/blob/develop/core/core.el][doom core.el]]:
++ 参考: [[https://github.com/hlissner/doom-emacs/blob/develop/core/core.el][doom core.el]]
 
 * face
 #+begin_src emacs-lisp
@@ -286,9 +293,9 @@ npm config set registry=http://registry.npm.taobao.org
 (setq window-divider-default-places t)
 (add-hook 'window-setup-hook #'window-divider-mode)
 
-;; 默认上下分屏
-(setq split-width-threshold nil)
-;; 切换到已有的 frame
+;; 默认左右分屏
+(setq split-width-threshold 30)
+;; 复用当前 frame
 (setq display-buffer-reuse-frames t)
 
 ;; 高亮当前行
@@ -321,8 +328,6 @@ npm config set registry=http://registry.npm.taobao.org
 (if (boundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode t))
 
-(setq idle-update-delay 0.3)
-
 ;; 关闭 mouse-wheel-text-scale 快捷键 (容易触碰误操作)
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
@@ -333,10 +338,10 @@ npm config set registry=http://registry.npm.taobao.org
 (global-set-key (kbd "S-C-<down>") 'shrink-window)
 (global-set-key (kbd "S-C-<up>") 'enlarge-window)
 
-;; 主题预览: https://emacsthemes.com/
+;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
   :demand
-  ;; 必须添加 "extensions/*", 否则 visual-bell/treemacs/org 等 config 失败。
+  ;; 添加 "extensions/*", 否则 visual-bell/treemacs/org 等配置会失败。
   :straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
@@ -369,7 +374,8 @@ npm config set registry=http://registry.npm.taobao.org
 (setq display-time-24hr-format t)
 (setq display-time-default-load-average nil)
 (setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%d[%u] %H:%M%p")
+;;(setq display-time-format "%m/%d[%u] %H:%M%p")
+(setq display-time-format "%m/%dT%H:%M")
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
@@ -408,8 +414,8 @@ npm config set registry=http://registry.npm.taobao.org
   :after (projectile)
   :config
   (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
-  (setq dashboard-startup-banner (expand-file-name "~/.emacs.d/emacs-e.svg"))
-  (setq dashboard-projects-backend #'projectile) ;; 或者 'project-el
+  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/emacs-e.svg"))
+  (setq dashboard-projects-backend #'projectile)
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
@@ -418,6 +424,7 @@ npm config set registry=http://registry.npm.taobao.org
   (dashboard-setup-startup-hook))
 
 (use-package centaur-tabs
+  :disabled
   :hook (emacs-startup . centaur-tabs-mode)
   :init
   (setq centaur-tabs-set-icons t)
@@ -457,7 +464,7 @@ npm config set registry=http://registry.npm.taobao.org
 
 ;; 在 frame 底部显示帮助窗口
 (setq display-buffer-alist
-      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*" "*lsp-help*") (0+ not-newline))
+      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*" "*lsp-help*" "vterm") (0+ not-newline))
          (display-buffer-reuse-mode-window display-buffer-below-selected)
          (window-height . 0.33)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
@@ -588,7 +595,7 @@ npm config set registry=http://registry.npm.taobao.org
           (command (styles +orderless-with-initialism))
           (variable (styles +orderless-with-initialism))
           (symbol (styles +orderless-with-initialism)))
-        ;; allow escaping space with backslash!
+        ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义
         orderless-component-separator #'orderless-escapable-split-on-space
         orderless-style-dispatchers '(+orderless-dispatch)))
 #+end_src
@@ -602,12 +609,12 @@ npm config set registry=http://registry.npm.taobao.org
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
    ("C-c m" . consult-mode-command)
-   ("C-c b" . consult-bookmark)
    ;; C-x bindings (ctl-x-map)
    ("C-x M-:" . consult-complex-command)
    ("C-x b" . consult-buffer)
    ("C-x 4 b" . consult-buffer-other-window)
    ("C-x 5 b" . consult-buffer-other-frame)
+   ("C-x r b" . consult-bookmark)
    ;; Custom M-# bindings for fast register access
    ("M-#" . consult-register-load)
    ("M-'" . consult-register-store)
@@ -624,11 +631,10 @@ npm config set registry=http://registry.npm.taobao.org
    ("M-g m" . consult-mark)
    ("M-g k" . consult-global-mark)
    ("M-g i" . consult-imenu)
-   ("M-g I" . consult-project-imenu)
+   ("M-g I" . consult-imenu)
    ;; M-s bindings (search-map)
-   ("M-s f" . consult-find)
-   ("M-s L" . consult-locate)
-   ("M-s F" . consult-locate)
+   ("M-s d" . consult-find)
+   ("M-s D" . consult-locate)
    ("M-s g" . consult-grep)
    ("M-s G" . consult-git-grep)
    ("M-s r" . consult-ripgrep)
@@ -638,11 +644,12 @@ npm config set registry=http://registry.npm.taobao.org
    ("M-s k" . consult-keep-lines)
    ("M-s u" . consult-focus-lines)
    ;; Isearch integration
-   ("M-s e" . consult-isearch)
+   ("M-s e" . consult-isearch-history)
    :map isearch-mode-map
-   ("M-e" . consult-isearch)
-   ("M-s e" . consult-isearch)
-   ("M-s l" . consult-line))
+   ("M-e" . consult-isearch-history)
+   ("M-s e" . consult-isearch-history)
+   ("M-s l" . consult-line)
+   ("M-s L" . consult-line-multi))
   :hook
   (completion-list-mode . consult-preview-at-point-mode)
   :init
@@ -665,10 +672,23 @@ npm config set registry=http://registry.npm.taobao.org
   ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
-  (global-set-key [remap repeat-complex-command] #'consult-complex-command)
+  (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
 
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-root-function 'projectile-project-root))
+
+;; Call function consult-projectile. Narrow selection with B for buffer, F for file or P for project.
+(use-package consult-projectile
+  :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master")
+  :bind
+  ("C-x p p" . consult-projectile))
+
+(use-package consult-dir
+  :bind
+  (("C-x C-d" . consult-dir)
+   :map minibuffer-local-completion-map
+   ("C-x C-d" . consult-dir)
+   ("C-x C-j" . consult-dir-jump-file)))
 #+end_src
 
 ** marginalia
@@ -686,6 +706,12 @@ npm config set registry=http://registry.npm.taobao.org
   ;; (setq marginalia-annotator-registry
   ;;       (assq-delete-all 'project-file marginalia-annotator-registry))
   )
+
+(use-package all-the-icons-completion
+  :after (marginalia)
+  :config
+  (all-the-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 #+end_src
 
 ** embark
@@ -707,32 +733,15 @@ npm config set registry=http://registry.npm.taobao.org
    ("C-h B" . embark-bindings)))
 
 (use-package embark-consult
-  :after (embark consult))
+  :ensure t
+  :after (embark consult)
+  :demand t ; only necessary if you have the hook below
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 + 使用 gnu find 命令, 需要加环境变量 ~export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"~
-
-** cape
-#+begin_src emacs-lisp
-(use-package cape
-  :demand
-  :straight '(cape :host github :repo "minad/cape")
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;; Complete word from current buffers
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  ;; Complete Elisp symbol
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;; Complete abbreviation
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;; Complete word from dictionary file
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;; Complete entire line from file
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  :config
-  (setq cape-dabbrev-min-length 2))
-#+end_src
 
 ** corfu
 #+begin_src  emacs-lisp
@@ -745,31 +754,20 @@ npm config set registry=http://registry.npm.taobao.org
     (unless (or (bound-and-true-p mct--active)
                 (bound-and-true-p vertico--input))
       (corfu-mode 1)))
+
+  ;; Transfer completion to the minibuffer
+  (defun corfu-move-to-minibuffer ()
+    (interactive)
+    (let ((completion-extra-properties corfu--extra)
+          completion-cycle-threshold completion-cycling)
+      (apply #'consult-completion-in-region completion-in-region--data)))
   :custom
-  (corfu-cycle t)
-  (corfu-auto t)
-  (corfu-commit-predicate nil)
-  (corfu-quit-at-boundary nil)
-  (corfu-quit-no-match t)
-  (corfu-scroll-margin 5)
-  (corfu-preview-current t)
-  (corfu-auto-prefix 3)
+  (corfu-scroll-margin 3)
+  (corfu-echo-documentation 0.2)
   :config
   (corfu-global-mode)
   (add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer 1)
-  ;; https://github.com/minad/corfu/wiki#additional-movement-commands
-  (defun corfu-beginning-of-prompt ()
-    "Move to beginning of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (car completion-in-region--data)))
-  (defun corfu-end-of-prompt ()
-    "Move to end of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (cadr completion-in-region--data)))
-  (define-key corfu-map [remap move-beginning-of-line] #'corfu-beginning-of-prompt)
-  (define-key corfu-map [remap move-end-of-line] #'corfu-end-of-prompt))
+  (define-key corfu-map "\M-m" #'corfu-move-to-minibuffer))
 
 ;; Dabbrev works with Corfu
 (use-package dabbrev
@@ -778,15 +776,47 @@ npm config set registry=http://registry.npm.taobao.org
   (("M-/" . dabbrev-completion)
    ("C-M-/" . dabbrev-expand)))
 
-;; TAB cycle if there are only few candidates
+;; 当候选项不超过 3 个时, 不显示候选列表, 而是用 TAB 来循环选择;
 (setq completion-cycle-threshold 3)
-;; Enable indentation+completion using the TAB key.
-;; `completion-at-point' is often bound to M-TAB.
+
+;; 使用 TAB 来 indentation+completion, 默认使用 M-TAB 来 completion-at-point
 (setq tab-always-indent 'complete)
 (setq c-tab-always-indent 'complete)
+
+(use-package corfu-doc
+  :straight '(corfu-doc :host github :repo "galeo/corfu-doc")
+  :after (corfu)
+  :config
+  (add-hook 'corfu-mode-hook #'corfu-doc-mode))
+#+end_src
+
+** cape
+
+cape 为 corfu 提供多种类型的 Completion At Point Extensions.
+#+begin_src emacs-lisp
+(use-package cape
+  :demand
+  :straight '(cape :host github :repo "minad/cape")
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;; Complete word from current buffers
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;; Complete Elisp symbol
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;; Complete abbreviation
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;; Complete word from dictionary file
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;; Complete entire line from file
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  :config
+  (setq cape-dabbrev-min-length 3))
 #+end_src
 
 ** kind-icon
+
 #+begin_src emacs-lisp
 (use-package kind-icon
   :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
@@ -1587,11 +1617,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-  ;; 中文不加空格使用行内格式, 如强调。（export pdf 时还是需要加空格)
-  (setq org-emphasis-regexp-components
-        '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
-  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
-  (org-element-update-syntax)
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -2232,7 +2257,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 
 #+begin_src emacs-lisp
 (use-package pdf-tools
-  :demand
   :ensure-system-package
   ((pdfinfo . poppler)
    (automake . automake)
@@ -3440,12 +3464,12 @@ lsp-workspace-restart= 来重启 lsp 。
 
 (defun my/project-discover ()
   (interactive)
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
-      (message "-> %s" file)
-      (when (file-directory-p file)
-          (projectile-add-known-project file)
-          (message "added project %s" file)))))
+      (when (file-directory-p (concat file "/.git"))
+        (message "-> %s" file)
+        (projectile-add-known-project file)
+        (message "added project %s" file)))))
 #+end_src
 
 * treemacs
@@ -3627,7 +3651,7 @@ open -a 'Google Chrome' $*
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
-        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com")
+        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)

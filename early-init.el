@@ -2,7 +2,7 @@
 (when (fboundp 'native-compile-async)
   (setenv "LIBRARY_PATH"
           (concat (getenv "LIBRARY_PATH")
-                  "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin20/11"))
+                  "/usr/local/opt/gcc/lib/gcc/11:/usr/local/opt/gcc/lib/gcc/11/gcc/x86_64-apple-darwin21/11"))
   (setq native-comp-speed 2)
   (setq native-comp-async-jobs-number 4)
   (setq native-comp-deferred-compilation nil)
@@ -20,6 +20,7 @@
 ;; 不从 package cahce 中加载 package
 (setq package-quickstart nil)
 
+;; 启动报错则启动 debug
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 

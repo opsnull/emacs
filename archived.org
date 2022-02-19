@@ -11,6 +11,14 @@
 + 更新当前使用的文档目录: C-u M-x dovdocs-lookup
 
 #+begin_src emacs-lisp :tangle no
+;; 中文不加空格使用行内格式, 如强调。（export pdf 时还是需要加空格)
+;; 由于分词不准确，故不再使用
+(setq org-emphasis-regexp-components
+       '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
+(org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
+(org-element-update-syntax)
+
+
 ;; 对于远程目录文件直接返回 nil（使用 default-directory)，防止 TRAMP 卡主。
 ;; -- 更好的解决办法是在 projectile 中集中修改 projectile-project-root 的实现, 如果时远程 project, 直接返回 default-directory
 ;; (setq consult-project-root-function
@@ -51,13 +59,6 @@
   :config
   ;; 使用 jieba 进行中文分词: pip install jieba
   (use-package chinese-word-at-point :demand t))
-
-(use-package consult-dir
-  :bind
-  (("C-x C-d" . consult-dir)
-   :map minibuffer-local-completion-map
-   ("C-x C-d" . consult-dir)
-   ("C-x C-j" . consult-dir-jump-file)))
 
 (use-package posframe :demand)
 (use-package vertico-posframe
@@ -591,13 +592,6 @@ DIR must include a .project file to be considered a project."
   :after (treemacs persp-mode)
   :config
   (treemacs-set-scope-type 'Perspectives))
-
-;; minibuffer 自动补全时显示图标会导致 TRAMP 变慢，故关闭。
-(use-package all-the-icons-completion
-  :after (marginalia)
-  :config
-  (all-the-icons-completion-mode)
-  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 ;; pyenv-mode 通过给项目设置环境变量 ~PYENV_VERSION~ 来达到指定 pyenv 环境的目的：
 (use-package pyenv-mode
