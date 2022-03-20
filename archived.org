@@ -1,3 +1,100 @@
+** dap
+
+#+begin_src emacs-lisp
+(use-package dap-mode
+  :disabled
+  :config
+  (dap-auto-configure-mode 1)
+  (require 'dap-chrome))
+#+end_src
++ 执行 =M-x dap-chrome-setup= 安装 VSCode Chrome Debug Extension.
+
+** prettier
+
+保存文件时自动格式化, 支持 html/java/js/js2/typescript/json/yaml/python/sh 等语言, 详情参考变量
+prettier-major-mode-parsers:
+#+begin_src emacs-lisp
+(use-package prettier
+  ;; TRAMP 支持的有问题, 故关闭。
+  :disabled
+  :ensure-system-package (prettier . "npm -g install prettier")
+  :diminish
+  :hook (prog-mode . prettier-mode)
+  :init (setq prettier-mode-sync-config-flag nil))
+#+end_src
+
+** java
+
+默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
+
+手动安装 lombok:
+#+begin_src shell :results none
+mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=1.18.6
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package lsp-java
+  :disabled
+  :after (lsp-mode)
+  :init
+  ;; 指定运行 jdtls 的 java 程序
+  (setq lsp-java-java-path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
+  ;; 指定 jdtls 编译源码使用的 jdk 版本（默认是启动 jdtls 的 java 版本）。
+  ;; https://marketplace.visualstudio.com/items?itemName=redhat.java
+  ;; 查看所有 java 版本：/usr/libexec/java_home -verbose
+  (setq lsp-java-configuration-runtimes
+        '[(:name "Java SE 8" :path "/Library/Java/JavaVirtualMachines/jdk1.8.0_271.jdk/Contents/Home" :default t)
+          (:name "Java SE 11.0.9" :path "/Library/Java/JavaVirtualMachines/jdk-11.0.9.jdk/Contents/Home")
+          (:name "Java SE 15.0.1" :path "/Library/Java/JavaVirtualMachines/jdk-15.0.1.jdk/Contents/Home")])
+  ;; jdk11 不支持 -Xbootclasspath/a: 参数。
+  (setq lsp-java-vmargs
+        (list "-noverify" "-Xmx2G" "-XX:+UseG1GC" "-XX:+UseStringDeduplication"
+              (concat "-javaagent:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.6/lombok-1.18.6.jar"))))
+  :hook (java-mode . lsp)
+  :config
+  (use-package dap-java :disabled t))
+#+end_src
+
+** other
+
+符号高亮和跳转, 已被 ctrlf 替代：
+#+begin_src emacs-lisp
+(use-package symbol-overlay
+  :diminish
+  :functions
+  (turn-off-symbol-overlay turn-on-symbol-overlay)
+  :custom-face
+  (symbol-overlay-default-face ((t (:inherit (region bold)))))
+  :bind
+  (("M-i" . symbol-overlay-put)
+   ("M-n" . symbol-overlay-jump-next)
+   ("M-p" . symbol-overlay-jump-prev)
+   ("M-N" . symbol-overlay-switch-forward)
+   ("M-P" . symbol-overlay-switch-backward)
+   ("M-C" . symbol-overlay-remove-all)
+   ([M-f3] . symbol-overlay-remove-all))
+  :hook
+  (((prog-mode yaml-mode) . symbol-overlay-mode)
+   (iedit-mode . turn-off-symbol-overlay)
+   (iedit-mode-end . turn-on-symbol-overlay))
+  :init
+  (setq symbol-overlay-idle-time 0.1)
+  :config
+  ;; Disable symbol highlighting while selecting
+  (defun turn-off-symbol-overlay (&rest _)
+    "Turn off symbol highlighting."
+    (interactive)
+    (symbol-overlay-mode -1))
+  (advice-add #'set-mark :after #'turn-off-symbol-overlay)
+
+  (defun turn-on-symbol-overlay (&rest _)
+    "Turn on symbol highlighting."
+    (interactive)
+    (when (derived-mode-p 'prog-mode 'yaml-mode)
+      (symbol-overlay-mode 1)))
+  (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay))
+#+end_src
+
 离线查询 devdocs 文档（已被 dash 替代）:
 #+begin_src emacs-lisp
 (use-package devdocs
@@ -11,6 +108,53 @@
 + 更新当前使用的文档目录: C-u M-x dovdocs-lookup
 
 #+begin_src emacs-lisp :tangle no
+;; 有了更好的 ctrlf 替换
+;; 直接在 minibuffer 中编辑 query(RIME 探测到 minibuffer 时自动关闭输入法)
+(use-package isearch-mb
+  :demand t
+  :config
+  (setq-default
+   ;;启动 isearch 进行搜索时，M-<, M->, C-v 和 M-v 这些按键不会打断搜索
+   isearch-allow-motion t
+   ;; Match count next to the minibuffer prompt
+   isearch-lazy-count t
+   ;; Don't be stingy with history; default is to keep just 16 entries
+   search-ring-max 200
+   regexp-search-ring-max 200)
+
+  ;; 习惯使用 regexp 类型的 isearch
+  (global-set-key (kbd "C-s") 'isearch-forward-regexp)
+  (global-set-key (kbd "C-r") 'isearch-backward-regexp)
+
+  (add-to-list 'isearch-mb--with-buffer #'consult-isearch)
+  (define-key isearch-mb-minibuffer-map (kbd "M-r") #'consult-isearch)
+
+  (add-to-list 'isearch-mb--after-exit #'consult-line)
+  (define-key isearch-mb-minibuffer-map (kbd "M-s l") 'consult-line)
+  (isearch-mb-mode t))
+
+
+(use-package visual-regexp
+  :config
+  (setq vr/match-separator-use-custom-face t)
+  (setq vr/match-separator-string "⇛")
+  (define-key global-map (kbd "C-c r") 'vr/replace)
+  (define-key global-map (kbd "C-c q") 'vr/query-replace))
+
+;; diff-hl 会导致 buffer 内容错乱
+(use-package diff-hl
+  :disabled
+  :after (magit)
+  :config
+  (setq diff-hl-disable-on-remote t)
+  (global-diff-hl-mode)
+  (diff-hl-flydiff-mode 1)
+  (diff-hl-show-hunk-mouse-mode 1)
+  (add-hook 'dired-mode-hook 'diff-hl-dired-mode)
+  (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  )
+
 ;; 中文不加空格使用行内格式, 如强调。（export pdf 时还是需要加空格)
 ;; 由于分词不准确，故不再使用
 (setq org-emphasis-regexp-components
@@ -181,6 +325,56 @@
 + =M-x ebuku= : 浏览和编辑导入的书签, 点击 URL 使用 Mac 浏览器打开。
 
 #+begin_src emacs-lisp :tangle no
+(use-package shackle
+  :demand
+  :config
+  (setq shackle-default-size 0.3)
+  (setq shackle-default-alignment 'below)
+  (setq shackle-default-rule nil)
+  (setq shackle-select-reused-windows t)
+  (setq shackle-rules
+        '((("*Warnings*" "*Messages*" "*Completions*" "*Alerts*") :size 0.3 :align 'below :autoclose t)
+          (compilation-mode :select t :size 0.3 :align 'below :autoclose t)
+          ("*quickrun*" :select t :size 15 :align 'below :autoclose t)
+          ("*Backtrace*" :select t :size 15 :align 'below :autoclose t)
+          (("*Help*" "*Apropos*" "*Occur*") :select t :size 0.3 :align 'below :autoclose t)
+          (helpful-mode :select t :size 0.5 :popup t :align 'below :autoclose t)
+          ("^\\*.*Shell Command.*\\*$" :regexp t :size 0.3 :align 'below :autoclose t)
+          (" *Flycheck checkers*" :select t :size 0.3 :align 'below :autoclose t)
+          ((flycheck-error-list-mode flymake-diagnostics-buffer-mode) :select t :size 0.25 :align 'below :autoclose t)
+          (("*lsp-help*" "*lsp session*" "*LSP Error List*") :size 0.3 :align 'below :autoclose t)
+          ("*DAP Templates*" :select t :size 0.4 :align 'below :autoclose t)
+          (dap-server-log-mode :size 15 :align 'below :autoclose t)
+          (profiler-report-mode :select t :size 0.5 :align 'below)
+          ("*ELP Profiling Restuls*" :select t :size 0.5 :align 'below)
+          (("*Gofmt Errors*" "*Go Test*") :select t :size 0.3 :align 'below :autoclose t)
+          (godoc-mode :select t :size 0.4 :align 'below :autoclose t)
+          ((grep-mode occur-mode rg-mode deadgrep-mode ag-mode pt-mode) :select t :size 0.4 :align 'below)
+          (hover-mode :select t :size 0.2 :align 'below :autoclose t)
+          (vterm-mode :select t :size 0.7 :align 'below)
+          (vc-annotate-mode :select t :size 0.8 :align 'below :autoclose t)
+          (special-mode :select t :size 0.5 :align 'below :autoclose t)
+          (git-log-view-mode :select t :size 0.5 :align 'below :autoclose t)
+          ("*tldr*" :size 0.4 :align 'below :autoclose t)
+          ("*Finder*" :select t :size 0.3 :align 'below :autoclose t)
+          ("^\\*elfeed-entry" :regexp t :size 0.7 :align 'below :autoclose t)
+          (" *Install vterm* " :size 0.35 :same t :align 'below)
+          ((youdao-dictionary-mode osx-dictionary-mode fanyi-mode) :select t :size 0.5 :align 'below :autoclose t)
+          ("*Calendar*" :select t :size 0.3 :align 'below)
+          (" *undo-tree*" :select t)
+          (("*Org Agenda*" " *Agenda Commands*" " *Org todo*" "*Org Dashboard*" "*Org Select*") :select t :size 0.1 :align 'below :autoclose t)
+          (("\\*Capture\\*" "^CAPTURE-.*\\.org*") :regexp t :select t :size 0.3 :align 'below :autoclose t)
+          (Buffer-menu-mode :select t :size 0.5 :align 'below :autoclose t)
+          ((process-menu-mode list-environment-mode) :select t :size 0.3 :align 'below)
+          (bookmark-bmenu-mode :select t :size 0.4 :align 'below)
+          (tabulated-list-mode :size 0.4 :autoclose t)
+          ((inferior-python-mode inf-ruby-mode swift-repl-mode) :size 0.4 :align 'below)
+          ("*prolog*" :size 0.4 :align 'below)))
+  (shackle-mode t))
+
+;; 高亮当前行。由于容易与候选者背景混淆, 所以不开启。
+(global-hl-line-mode t)
+
 (use-package company
   :bind
   (:map company-mode-map
@@ -227,7 +421,7 @@
                       (company-dabbrev-code company-keywords company-files)
                       company-dabbrev))
   :config
-  ;; 高亮候选者（orderless 排序）
+  ;; 高亮候选者（orderless 排序）。
   (defun just-one-face (fn &rest args)
     (let ((orderless-match-faces [completions-common-part]))
       (apply fn args)))
@@ -912,6 +1106,12 @@ DIR must include a .project file to be considered a project."
 #+end_src
 
 #+begin_src emacs-lisp
+;; 窗口大小调整快捷键。
+(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "S-C-<down>") 'shrink-window)
+(global-set-key (kbd "S-C-<up>") 'enlarge-window)
+
 (use-package ansible
   :after (yaml-mode)
   :config
@@ -925,3 +1125,626 @@ DIR must include a .project file to be considered a project."
   (add-hook 'ansible-hook (lambda() (ansible-doc-mode) (yas-minor-mode-on)))
   (define-key ansible-doc-mode-map (kbd "M-?") #'ansible-doc))
 #+end_src
+
+词典:
+#+begin_src emacs-lisp
+(use-package go-translate
+  :bind
+  (("C-c d t" . gts-do-translate))
+  :config
+  (setq gts-translate-list '(("en" "zh")))
+  (setq gts-default-translator
+        (gts-translator
+         :picker (gts-prompt-picker)
+         :engines (list (gts-bing-engine) (gts-google-engine))
+         :render (gts-buffer-render))))
+
+;; pip install jieba
+(use-package chinese-word-at-point)
+#+end_src
+
+在线搜索：
+#+begin_src emacs-lisp
+(use-package engine-mode
+  :config
+  (engine-mode t)
+  ;;(setq engine/browser-function 'eww-browse-url)
+  (defengine github
+    "https://github.com/search?ref=simplesearch&q=%s"
+    :keybinding "h")
+
+  (defengine google
+    "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s"
+    :keybinding "g")
+
+  (defengine twitter
+    "https://twitter.com/search?q=%s"
+    :keybinding "t")
+
+  (defengine wikipedia
+    "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s"
+    :keybinding "w"
+    :docstring "Searchin' the wikis."))
+#+end_src
++ 搜索前缀命令： =C-x /= , 可以先选中 region 再执行上面的搜索。
++ 修复启动报错:  =rm ~/.emacs.d/elpa/engine-mode*/engine-mode-*.el*=;
+
+使用 Mac 默认浏览器打开 URL:
+#+begin_src emacs-lisp
+;; 执行 browser-url 时使用 Mac 默认浏览器。
+(setq browse-url-browser-function 'browse-url-default-macosx-browser)
+
+;; 也可以使用自定义程序
+;; (setq browse-url-browser-function 'browse-url-generic
+;;       browse-url-generic-program "mychrome")
+;;(setq browse-url-chrome-program "mychrome")
+#+end_src
+
+上面引用的 mychrome 程序：
+#+begin_src bash  :tangle ~/go/bin/mychrome
+#!/bin/bash
+open -a 'Google Chrome' $*
+#+end_src
+
+
+#+begin_src emacs-lisp
+;; 记录最近 100 次按键，可以通过 M-x view-lossage 来查看输入的内容。
+(lossage-size 100)
+
+(use-package uniquify
+  :straight (:type built-in)
+  :config
+  ;; Better unique buffer names for files with the same base name.
+  (setq uniquify-buffer-name-style 'forward)
+  (setq uniquify-strip-common-suffix t)
+  (setq uniquify-after-kill-buffer-p t))
+
+;; Framework for mode-specific buffer indexes
+(use-package imenu
+  :straight (:type built-in)
+  :bind (("C-c i" . imenu)))
+#+end_src
+
+Org-mode Web 站点:
+#+begin_src emacs-lisp
+(use-package easy-hugo
+:init
+(setq easy-hugo-basedir "~/blog/my_website/")
+(setq easy-hugo-url "https://blog.opsnull.com")
+(setq easy-hugo-previewtime "300")
+:bind ("C-c C-e" . easy-hugo))
+#+end_src
+
+** hugo
+
+#+begin_src emacs-lisp
+;; New link type for Org-Hugo internal links
+(org-link-set-parameters "hugo"
+                         :complete (lambda ()
+                                     (concat "{{% ref "(file-name-nondirectory (read-file-name "File: "))" %}}")))
+#+end_src
+
+
+* email
+
+#+begin_src emacs-lisp
+(use-package emacs
+  :straight (:type built-in)
+  :ensure-system-package
+  ((mu . mu)
+   (mbsync . isync)
+   (gpg . gnupg)
+   (proxychains4 . proxychains-ng)
+   (openssl . openssl@1.1)))
+#+end_src
++ mbsync(isync): 同步邮件到本地；
++ mu(带 mu4e emacs 包): 索引和读取邮件；
++ proxychains-ng: 任意 socket 代理, 访问 gmail 使用;
++ gnupg: 加密；
++ openssl@1.1: 提供 isync 和 msmtp 所需的根证书；
+
+** gnupg
+
+参考: [[https://ruanyifeng.com/blog/2013/07/gpg.html][阮一峰 GPG 入门教程]]
+
+创建加密 key 。为了提高 key 安全系数，一般推荐在创建 key 时设置一个密码，这样即使密钥丢了，别人也无法使用:
+#+begin_src shell :tangle no
+# 生成加密 key
+$ gpg --gen-key
+# 生成吊销证书
+$ gpg --gen-revoke B1D06C306F507C66
+# 查看 key
+$ gpg --list-keys
+/Users/zhangjun/.gnupg/pubring.kbx
+----------------------------------
+pub   ed25519 2021-10-03 [SC] [有效至：2023-10-03]
+10BC65EE905F64CCAFF5E123B1D06C306F507C66
+uid             [ 绝对 ] zhangjun <geekard@qq.com>
+sub   cv25519 2021-10-03 [E] [有效至：2023-10-03]
+#+end_src
+
+uid 是 zhangjun 或 geekard@qq.com 或 hash 值。获取 hash 值：
++ =gpg -a --export |gpg --list-packets --verbose=
++ =M-x epa-list-keys=
+
+为了避免每次使用 key 时都输入密码，可以配置 =gpg-agent= 来记住密码，这样只需在系统第一次使用时输入即可：
+#+begin_src shell :tangle ~/.gnupg/gpg-agent.conf
+allow-emacs-pinentry
+allow-loopback-pinentry
+#+end_src
+
+为了让 Emacs 能在首次使用 GPG 时，捕获密码输入框，在 minibuffer 中输入密码，需要做如下的配置：
+#+begin_src emacs-lisp :tangle no
+(setq epa-pinentry-mode 'loopback)
+#+end_src
++ pinentry 是 GPG 提供的程序, [[https://sarata.com/manpages/pinentry-curses.1.html]["它会让用户输入的密码不会因内存不足而换出到磁盘"]] 。
+
+创建 qq 和 gmail 加密密码文件：
+ #+begin_src shell :tangle no
+$ mkdir ~/.mail
+$ echo my.qq.password >.mail/qq.pwd
+$ gpg --encrypt --recipient 'geekard@qq.com' ~/.mail/qq.pwd
+
+$ echo my.gmail.password >.mail/gmail/gmail.pwd
+$ gpg --encrypt --recipient 'geekard@qq.com' ~/.mail/gmail.pwd
+
+$ ls ~/.mail/*.gpg
+/Users/zhangjun/.mail/gmail.pwd.gpg  /Users/zhangjun/.mail/qq.pwd.gpg
+
+# 删除原始明文密码
+rm ~/.mail/{qq,gmail}.pwd
+ #+end_src
+
+解压密码文件: =gpg --quiet --for-your-eyes-only --no-tty --decrypt ~/.mail/qq.pwd.gpg=
+
+** mbsync
+
+#+begin_src txt :tangle ~/.mbsyncrc
+########################################
+# qq.com
+########################################
+IMAPAccount qq
+Host imap.qq.com
+User geekard@qq.com
+PassCmd "gpg --quiet --for-your-eyes-only --no-tty --decrypt \~/.mail/qq.pwd.gpg"
+Port 993
+AuthMechs LOGIN
+SSLType IMAPS
+#CertificateFile /etc/ssl/certs/ca-certificates.crt # Linux
+CertificateFile /usr/local/etc/openssl@1.1/cert.pem  # MacOS
+
+IMAPStore qq-remote
+Account qq
+
+MaildirStore qq-local
+# The trailing "/" is important
+Path ~/.mail/qq/
+Inbox ~/.mail/qq/Inbox/
+# The SubFolders option allows to represent all IMAP subfolders as local subfolders
+SubFolders Verbatim
+
+## Connections
+Channel qq-inbox
+Far :qq-remote:"INBOX"
+Near :qq-local:"Inbox"
+Create Near
+Expunge Both
+SyncState *
+
+Channel qq-drafts
+Far :qq-remote:"Drafts"
+Near :qq-local:"Drafts"
+Create Near
+Expunge Both
+SyncState *
+
+Channel qq-sent
+Far :qq-remote:"Sent Messages"
+Near :qq-local:"Sent"
+Create Near
+Expunge Both
+SyncState *
+
+Channel qq-trash
+Far :qq-remote:"Deleted Messages"
+Near :qq-local:"Trash"
+Create Near
+Expunge Both
+SyncState *
+
+## Groups
+Group qq
+Channel qq-inbox
+Channel qq-drafts
+Channel qq-sent
+Channel qq-trash
+
+########################################
+# gmail
+########################################
+IMAPAccount gmail
+Host imap.gmail.com
+User geekard@gmail.com
+PassCmd "gpg --quiet --for-your-eyes-only --no-tty --decrypt \~/.mail/gmail.pwd.gpg"
+SSLType IMAPS
+AuthMechs PLAIN
+CertificateFile /usr/local/etc/openssl@1.1/cert.pem  # MacOS
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+# The trailing "/" is important
+Path ~/.mail/gmail/
+Inbox ~/.mail/gmail/inbox
+
+Channel gmail-default
+Far :gmail-remote:
+Near :gmail-local:Inbox
+#Patterns INBOX
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-sent
+Far :gmail-remote:"[Gmail]/Sent Mail"
+Near  :gmail-local:Sent
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-trash
+Far :gmail-remote:"[Gmail]/Trash"
+Near  :gmail-local:Trash
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-archive
+Far :gmail-remote:"[Gmail]/All Mail"
+Near  :gmail-local:All
+Create Near
+Expunge Both
+SyncState *
+
+Channel gmail-junk
+Far :gmail-remote:"[Gmail]/Spam"
+Near  :gmail-local:Junk
+Create Near
+Expunge Both
+SyncState *
+
+Group gmail
+Channel gmail-default
+Channel gmail-trash
+Channel gmail-archive
+Channel gmail-sent
+Channel gmail-junk
+#+end_src
+
+同步邮件:
+#+begin_src shell
+$ mkdir -p ~/.mail/qq/{Sent,Drafts,Trash,Archive}
+$ mkdir -p ~/.mail/gmail/{All,Sent,Drafts,Junk,Trash}
+$ mbsync --all
+#+end_src
++ 使用 https://gitlab.com/shackra/goimapnotify 可以实现自动调用 mbsync 同步邮件。
+
+** proxychains
+
+proxychains 为不支持代理的命令行程序（如 mbsync )提供任意 socks 代理功能：
+#+begin_src shell :tangle no
+$ mkdir .proxychains/
+$ cp /usr/local/Cellar/proxychains-ng/4.14/.bottle/etc/proxychains.conf ~/.proxychains/proxychains.conf
+#+end_src
+
+在 proxychains.conf 的 ProxyList 中添加 socks5 代理地址:
+#+begin_src text :tangle no
+[ProxyList]
+socks5  127.0.0.1 13659
+#+end_src
+
+测试 gmail:
+#+begin_src shell :tangle no
+$ proxychains4 mbsync gmail
+#+end_src
+
+** mu4e
+
+#+begin_src shell
+# 初始化索引, 指定自己的 email 地址列表
+$ mu init --maildir ~/.mail/ --my-address=geekard@qq.com --my-address=geekard@gmail.com
+# 建立索引
+$ mu index
+# 检索索引
+$ mu find github
+# 查看信息
+$ mu info
+#+end_src
++ 索引位置： =~/.cache/mu=
+
+#+begin_src emacs-lisp
+(defvar attachments-directory "~/.mail/attachments")
+(if (not (file-exists-p attachments-directory))
+    (make-directory attachments-directory t))
+
+(use-package mu4e
+  :disabled
+  ;; 使用 mu4e/* 目录下的 lisp 文件, 跳过 straight 的 build 过程;
+  :straight (:host github :repo "djcb/mu" :branch "master" :files ("mu4e/*") :build nil)
+  :config
+  ;; Run mu4e in the background to sync mail periodically
+  (mu4e t)
+
+  (setq shr-color-visible-luminance-min 80)
+
+  ;; View images inline in message view buffer
+  (setq mu4e-view-show-images t)
+  (setq mu4e-view-image-max-width 800)
+  (when (fboundp 'imagemagick-register-types)
+    (imagemagick-register-types))
+
+  ;; show full addresses in view message (instead of just names)
+  (setq mu4e-view-show-addresses t)
+
+  ;; Do not insert signature in sent emails
+  (setq mu4e-compose-signature-auto-include nil)
+
+  ;; every new email composition using current frame
+  (setq mu4e-compose-in-new-frame nil)
+  (setq mu4e-compose-format-flowed nil)
+
+  ;; It is OK to use non-ascii characters
+  (setq mu4e-use-fancy-chars t)
+  (setq mu4e-attachment-dir attachments-directory)
+
+  ;; This enabled the thread like viewing of email similar to gmail's UI.
+  (setq mu4e-headers-include-related t)
+  ;; Do not display duplicate messages
+  (setq mu4e-headers-skip-duplicates t)
+  (setq mu4e-headers-date-format "%Y/%m/%d")
+
+  (setq mu4e-change-filenames-when-moving t)
+  (setq mu4e-display-update-status-in-modeline t)
+  (setq mu4e-hide-index-messages t)
+  (setq mu4e-date-format "%y/%m/%d")
+
+  ;; Do not confirm on quit
+  (setq mu4e-confirm-quit nil)
+
+  ;; use mu4e as MUA in emacs
+  (setq mail-user-agent 'mu4e-user-agent)
+
+  ;; Kill message buffer after email is sent
+  (setq message-kill-buffer-on-exit t)
+
+  ;; 回复邮件时，插入邮件引用信息
+  (setq message-citation-line-function 'message-insert-formatted-citation-line)
+  (setq message-citation-line-format "On %a, %b %d %Y, %f wrote:\n")
+
+  (setq gnus-unbuttonized-mime-types nil)
+
+  ;; mu find 搜索任意单个中文字符。
+  (setenv "XAPIAN_CJK_NGRAM" "yes")
+
+  (add-to-list 'mu4e-view-actions '("browser" . mu4e-action-view-in-browser) t)
+  (add-hook 'mu4e-view-mode-hook
+            (lambda()
+              ;; try to emulate some of the eww key-bindings
+              (local-set-key (kbd "<tab>") 'shr-next-link)
+              (local-set-key (kbd "<backtab>") 'shr-previous-link)))
+
+  ;; 使用 proxychains4 socks5 代理周期同步邮件
+  (setq mu4e-get-mail-command  "proxychains4 mbsync -a")
+  (setq mu4e-update-interval 3600)
+
+  ;; 使用 gnus 发送邮件
+  (setq message-send-mail-function 'smtpmail-send-it)
+  (setq smtpmail-debug-info t)
+  (setq smtpmail-debug-verb t)
+
+  (setq mu4e-user-mailing-lists '("geekard@qq.com" "geekard@gmail.com"))
+
+  ;; root maildir
+  (setq mu4e-maildir "~/.mail")
+
+  (setq mu4e-contexts
+        `( ,(make-mu4e-context
+             :name "gmail"
+             :enter-func (lambda () (mu4e-message "Switch to the gmail context"))
+             :match-func (lambda (msg)
+                           (when msg
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@gmail.com")
+                                 (string-match-p "^/gmail" (mu4e-message-field msg :maildir)))))
+             :leave-func (lambda () (mu4e-clear-caches))
+             :vars '((user-mail-address            . "geekard@gmail.com")
+                     (user-full-name               . "张俊(Jun Zhang)")
+                     (smtpmail-default-smtp-server . "smtp.gmail.com")
+                     (smtpmail-smtp-server         . "smtp.gmail.com")
+                     (smtpmail-smtp-user           . "geekard@gmail.com")
+                     (smtpmail-smtp-service        . 587)
+                     (smtpmail-stream-type         . starttls)
+                     (mu4e-compose-signature       . (concat "---\n zhangjun \n"))
+                     (mu4e-sent-folder      . "/gmail/Sent") ;; folder for sent messages
+                     (mu4e-drafts-folder    . "/gmail/Drafts") ;; unfinished messages
+                     (mu4e-trash-folder     . "/gmail/Junk") ;; trashed messages
+                     (mu4e-refile-folder    . "/gmail/Archive"))) ;; ;; saved messages
+           ,(make-mu4e-context
+             :name "qq"
+             :enter-func (lambda () (mu4e-message "Switch to the qq context"))
+             :match-func (lambda (msg)
+                           (when msg
+                             (or (mu4e-message-contact-field-matches msg '(:to :bcc :cc) "geekard@qq.com")
+                                 (string-match-p "^/qq" (mu4e-message-field msg :maildir)))))
+             :leave-func (lambda () (mu4e-clear-caches))
+             :vars '(
+                     (user-mail-address            . "geekard@qq.com")
+                     (user-full-name               . "张俊(Jun Zhang)")
+                     (smtpmail-default-smtp-server . "smtp.qq.com")
+                     (smtpmail-smtp-server         . "smtp.qq.com")
+                     (smtpmail-smtp-user           . "geekard@qq.com")
+                     (smtpmail-smtp-service        . 465)
+                     (smtpmail-stream-type         . ssl)
+                     (mu4e-compose-signature       . (concat "---\n Zhang Jun \n"))
+                     (mu4e-sent-folder      . "/qq/Sent")
+                     (mu4e-drafts-folder    . "/qq/Drafts")
+                     (mu4e-trash-folder     . "/qq/Trash")
+                     (mu4e-refile-folder    . "/qq/Archive")
+                     )))))
+;; 为 message 添加 Tag
+(with-eval-after-load 'mu4e
+  (add-to-list 'mu4e-marks
+               '(tag
+                 :char       "g"
+                 :prompt     "gtag"
+                 :ask-target (lambda () (read-string "Add Tag: "))
+                 :action      (lambda (docid msg target)
+                                (mu4e-action-retag-message msg (concat "+" target)))))
+  (mu4e~headers-defun-mark-for tag)
+  (define-key mu4e-headers-mode-map (kbd "g") 'mu4e-headers-mark-for-tag)
+
+  ;; 在 Dired 中标记文件, 然后 C-c RET C-a 来发送附件
+  (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
+
+  ;; 发送前确认
+  (add-hook 'message-send-hook
+            (lambda ()
+              (unless (yes-or-no-p "Sure you want to send this?")
+                (signal 'quit nil))))
+
+  ;; 先选择邮件, 然后按 r, 自动 refile 到对应目录
+  (setq mu4e-refile-folder
+        (lambda (msg)
+          (cond
+           ;; messages to the mu mailing list go to the /mu folder
+           ((mu4e-message-contact-field-matches msg :to "mu-discuss@googlegroups.com") "/mu")
+           ;; messages sent directly to some spefic address me go to /private
+           ((mu4e-message-contact-field-matches msg :to "me@example.com") "/private")
+           ;; messages with football or soccer in the subject go to /football
+           ((string-match "football\\|soccer" (mu4e-message-field msg :subject)) "/football")
+           ;; messages sent by me go to the sent folder
+           ((mu4e-message-sent-by-me msg (mu4e-personal-addresses)) mu4e-sent-folder)
+           ;; everything else goes to /archive
+           ;; important to have a catch-all at the end!
+           (t  "/archive")))))
+#+end_src
++ mu4e 的使用详情参考在线 Info 手册 [[info:mu4e#Top][mu4e#Top]]。
+
+mu4e 默认使用 gnus 发送 SMTP 邮件, 而 gnus 从 =~/.authinfo.gpg= 读取 SMTP 服务器的帐号信息:
+
+#+begin_src txt :tangle no
+machine smtp.qq.com login geekard@qq.com password {QQ 授权码}
+machine smtp.gmail.com login geekard@gmail.com password {Gmail 密码}
+#+end_src
+
+使用 mu4e-alert 和 notifier(通过 terminal-notifier 程序) 进行桌面通知:
+#+begin_src emacs-lisp
+(use-package mu4e-alert
+  :disabled
+  :after mu4e
+  :config
+  (mu4e-alert-set-default-style 'notifier)
+  ;; (mu4e-alert-set-default-style 'growl)
+  (add-hook 'after-init-hook #'mu4e-alert-enable-notifications)
+  ;; enable mode line display
+  (add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display)
+  (setq mu4e-alert-email-notification-types '(count)))
+#+end_src
+
+使用 mu4e-maildirs-extension 在 mu4e-main-view 展示 Maildirs 概览。
+#+begin_src emacs-lisp
+(use-package mu4e-maildirs-extension
+  :after mu4e
+  :config
+  (mu4e-maildirs-extension))
+#+end_src
+
+mu4e-views 使用 xwdigets 来显示 html 格式邮件：
+#+begin_src emacs-lisp
+(use-package mu4e-views
+  :after mu4e
+  :bind (:map mu4e-headers-mode-map
+              ("v" . mu4e-views-mu4e-select-view-msg-method) ;; 切换展示类型
+              ("M-n" . mu4e-views-cursor-msg-view-window-down) ;; from headers window scroll the email view
+              ("M-p" . mu4e-views-cursor-msg-view-window-up) ;; from headers window scroll the email view
+              ("f" . mu4e-views-toggle-auto-view-selected-message) ;; toggle opening messages automatically when moving in the headers view
+              ("i" . mu4e-views-mu4e-view-as-nonblocked-html) ;; show currently selected email with all remote content
+              )
+  :config
+  (setq mu4e-views-completion-method 'default) ;; use ivy for completion
+  (setq mu4e-views-default-view-method "html") ;; make xwidgets default
+  (mu4e-views-mu4e-use-view-msg-method "html") ;; select the default
+  (setq mu4e-views-next-previous-message-behaviour 'stick-to-current-window) ;; when pressing n and p stay in the current window
+  (setq mu4e-views-auto-view-selected-message t)) ;; automatically open messages when moving in the headers view
+#+end_src
++ 测试 Emacs 是否支持 xwdigets: (xwidget-webkit-browse-url "https://www.gnu.org/");
++ 在 mu4e-header 中使用 v 来切换邮件显示方式;
+
+** org-mime
+org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
+#+begin_src emacs-lisp
+(use-package org-mime
+  :after mu4e
+  :config
+  (setq org-mime-export-options '(:section-numbers nil :with-author nil :with-toc nil))
+  ;; Prompt for confirmation if message has no HTML
+  (add-hook 'message-send-hook 'org-mime-confirm-when-no-multipart))
+#+end_src
+
+使用方法：
++ M-x org-mime-htmlize
++ M-x org-mime-edit-mail-in-org-mode
++ M-x org-mime-revert-to-plain-text-mail
+* pdf
+
+#+begin_src emacs-lisp
+(use-package pdf-tools
+  :ensure-system-package
+  ((pdfinfo . poppler)
+   (automake . automake)
+   (mutool . mupdf)
+   ("/usr/local/opt/zlib" . zlib))
+  :init
+  ;; 使用 scaling 确保中文字体不模糊
+  (setq pdf-view-use-scaling t)
+  (setq pdf-view-use-imagemagick nil)
+  (setq pdf-annot-activate-created-annotations t)
+  (setq pdf-view-resize-factor 1.1)
+  (setq-default pdf-view-display-size 'fit-page)
+  (setq pdf-annot-activate-created-annotations t)
+  :hook
+  ((pdf-view-mode . pdf-view-themed-minor-mode)
+   (pdf-view-mode . pdf-view-auto-slice-minor-mode)
+   (pdf-view-mode . pdf-isearch-minor-mode))
+  :config
+  (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+  (add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1)))
+  (setq pdf-info-epdfinfo-program "/usr/local/bin/epdfinfo")
+  (setenv "PKG_CONFIG_PATH" "/usr/local/opt/zlib/lib/pkgconfig:/usr/local/opt/pkgconfig:/usr/local/lib/pkgconfig")
+  (pdf-tools-install))
+
+;; pdf 转为 png 时使用更高分辨率（默认 90）。
+(setq doc-view-resolution 144)
+
+(use-package org-noter)
+#+end_src
+
++ pdf-tools 默认是白底黑字，可以：
+  + 深色模式： =M-x pdf-view-midnight-minor-mode=
+  + 主题模式： =M-x pdf-view-themed-minor-mode=
++ 搜索中文时，需要使用系统中文输入法和 isearch 模式, 或者使用 =M-s o(occur)= ；phi-search 与 pdf-tools 不兼容；
+* twitter
+
+#+begin_src emacs-lisp
+(use-package twittering-mode
+  :commands (twit)
+  :init
+  ;; 解决报错 "epa--decode-coding-string not defined"
+  (defalias 'epa--decode-coding-string 'decode-coding-string)
+  (setq twittering-icon-mode t)
+  (setq twittering-use-icon-storage t)
+  ;; 解决内置的 twitter 根证书失效的问题。
+  (setq twittering-allow-insecure-server-cert t)
+  (setq twittering-use-master-password t))
+#+end_src
++ 默认将 OAuth Token 加密保存到 =~/.twittering-mode.gpg=, 第一次需要输入两次相同的加密密码。
