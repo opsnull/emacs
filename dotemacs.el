@@ -719,16 +719,6 @@
    '(aw-leading-char-face
      ((t (:inherit ace-jump-face-foreground :foreground "red" :height 1.5))))))
 
-(use-package key-chord
-  :demand
-  :config
-   (key-chord-mode 1)
-   (key-chord-define-global "ll" 'avy-goto-line)
-   (key-chord-define-global "cc" 'avy-goto-char-2)
-   (key-chord-define-global ",," 'indent-for-comment)
-   (setq key-chord-one-key-delay 0.4)
-   (setq key-chord-two-keys-delay 0.3))
-
 (use-package rime
   :ensure-system-package ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
   :custom
@@ -2421,9 +2411,6 @@ mermaid.initialize({
 ;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
 (add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
 (add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
-
-(add-hook 'before-save-hook 'whitespace-cleanup)
-(add-hook 'prog-mode-hook (lambda () (interactive) (setq show-trailing-whitespace 1)))
 
 (use-package winner
   :straight (:type built-in)

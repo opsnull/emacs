@@ -1224,6 +1224,23 @@ Org-mode Web 站点:
                                      (concat "{{% ref "(file-name-nondirectory (read-file-name "File: "))" %}}")))
 #+end_src
 
+#+begin_src emacs-lisp
+(add-hook 'before-save-hook 'whitespace-cleanup)
+(add-hook 'prog-mode-hook (lambda () (interactive) (setq show-trailing-whitespace 1)))
+#+end_src
+
+key chord 连续按键快捷键:
+#+begin_src emacs-lisp
+(use-package key-chord
+  :demand
+  :config
+   (key-chord-mode 1)
+   (key-chord-define-global "ll" 'avy-goto-line)
+   (key-chord-define-global "cc" 'avy-goto-char-2)
+   (key-chord-define-global ",," 'indent-for-comment)
+   (setq key-chord-one-key-delay 0.4)
+   (setq key-chord-two-keys-delay 0.3))
+#+end_src
 
 * email
 
