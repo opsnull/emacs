@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-03-23T09:03:34+0800
+#+LASTMOD: 2022-03-23T11:03:04+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -3197,7 +3197,10 @@ ctrlf 是 isearch 更好的替代品（搜索结果编号，支持： C-v, M-v, 
   ;; 切换到一个空闲的 vterm buffer 并插入一个 cd 命令， 或者创建一个新的 vterm buffer 。
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
-  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
+  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
+  (define-key vterm-copy-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
+  (define-key vterm-copy-mode-map (kbd "s-n") 'vterm-toggle-forward)
+  (define-key vterm-copy-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 (use-package vterm-extra
   :straight (:host github :repo "Sbozzolo/vterm-extra")

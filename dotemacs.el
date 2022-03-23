@@ -2287,7 +2287,10 @@ mermaid.initialize({
   ;; 切换到一个空闲的 vterm buffer 并插入一个 cd 命令， 或者创建一个新的 vterm buffer 。
   (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
   (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
-  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward))
+  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
+  (define-key vterm-copy-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
+  (define-key vterm-copy-mode-map (kbd "s-n") 'vterm-toggle-forward)
+  (define-key vterm-copy-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 (use-package vterm-extra
   :straight (:host github :repo "Sbozzolo/vterm-extra")
