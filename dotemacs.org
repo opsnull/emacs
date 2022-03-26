@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-03-26T23:03:16+0800
+#+LASTMOD: 2022-03-26T23:03:24+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -503,9 +503,9 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 (setq +font-family "Fira Code")
 (setq +modeline-font-family "Fira Code")
-(setq +font-unicode-family "LXGW WenKai Screen")
+(setq +font-unicode-family "LXGW WenKai Mono")
 (setq +fixed-pitch-family "Sarasa Mono SC")
-(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +variable-pitch-family "LXGW WenKai Mono")
 (setq +font-size-list '(10 11 12 13 14 15 16 17 18))
 (setq +font-size 14)
 

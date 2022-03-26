@@ -313,9 +313,9 @@
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 (setq +font-family "Fira Code")
 (setq +modeline-font-family "Fira Code")
-(setq +font-unicode-family "LXGW WenKai Screen")
+(setq +font-unicode-family "LXGW WenKai Mono")
 (setq +fixed-pitch-family "Sarasa Mono SC")
-(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +variable-pitch-family "LXGW WenKai Mono")
 (setq +font-size-list '(10 11 12 13 14 15 16 17 18))
 (setq +font-size 14)
 
