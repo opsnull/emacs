@@ -710,6 +710,16 @@ tramp 一般和 projectile 联合使用，对于远程项目，如果不是 git 
 为了加快查找效率，一般需要在远程机器上安装 fd 和 rg 命令。
 
 可以打开 ssh 的 ControlPersist 特性，这样编辑远程多个文件更高效。
+#+begin_src shell
+Host *
+  ControlMaster auto
+  ControlPath ~/.ssh/master-%r@%h:%p  # 设置了 ControlPath 后才会复用连接.
+  ControlPersist 120m
+  ServerAliveInterval 10
+  ServerAliveCountMax 60
+  TCPKeepAlive no
+  StrictHostKeyChecking no$ 
+#+end_src
 
 如果远程是 zsh，因为它一般会重新定义 PS1，则 tramp 会因为匹配不到 PS1 而 hang，
 解决办法是在远程机器的 ~/.zprofile 文件头部（而非 ~/.zshrc，因为 zsh 会首先执

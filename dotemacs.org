@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-03-23T11:03:04+0800
+#+LASTMOD: 2022-03-26T12:03:23+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -457,13 +457,13 @@ npm config set registry=http://registry.npm.taobao.org
   (setq x-underline-at-descent-line t)
   (setq centaur-tabs-show-navigation-buttons t)
   (setq centaur-tabs-enable-key-bindings t)
-  :bind
-  (("C-c t f" . centaur-tabs-forward)
-   ("C-c t b" . centaur-tabs-backward)
-   ;; 将 buffer 按 projectile 分组。
-   ("C-c t p" . centaur-tabs-group-by-projectile-project)
-   ;; 显示所有 buffer 。
-   ("C-c t g" . centaur-tabs-group-buffer-groups))
+  ;; :bind
+  ;; (("C-c t f" . centaur-tabs-forward)
+  ;;  ("C-c t b" . centaur-tabs-backward)
+  ;;  ;; 将 buffer 按 projectile 分组。
+  ;;  ("C-c t p" . centaur-tabs-group-by-projectile-project)
+  ;;  ;; 显示所有 buffer 。
+  ;;  ("C-c t g" . centaur-tabs-group-buffer-groups))
   :config
   (centaur-tabs-mode t)
   (centaur-tabs-headline-match)
@@ -587,7 +587,8 @@ npm config set registry=http://registry.npm.taobao.org
   (vertico-mode 1)
 
   ;; 重复上一次 vertico sesson;
-  (global-set-key "\M-r" #'vertico-repeat)
+  (global-set-key "\M-r" #'vertico-repeat-last)
+  (global-set-key "\M-R" #'vertico-repeat-select)
 
   ;; 开启 vertico-mouse 。
   (vertico-mouse-mode)
@@ -2003,6 +2004,7 @@ magit 是全宇宙最强大、最好用的 git 客户端，没有之一！
                       (bury-buffer buf)
                     (kill-buffer buf))))
               buffers))))
+  (setq auto-revert-check-vc-info t)
   (setq magit-bury-buffer-function #'my-magit-kill-buffers))
 #+end_src
 + =(setq auto-revert-check-vc-info t)= 自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU Profile 显示比
@@ -2292,7 +2294,6 @@ pyenv 工作流：
 
 
 (use-package python
-  :after (flycheck)
   :ensure-system-package
   ((pylint . pylint)
    (flake8 . flake8)
@@ -2314,6 +2315,10 @@ pyenv 工作流：
 lsp-pyright。
 
 #+begin_src emacs-lisp
+  ;; 使用 yapf 格式化 python 代码。
+(use-package yapfify
+  :straight (:host github :repo "JorisE/yapfify"))
+
 (use-package lsp-pyright
   :after (python)
   :ensure-system-package
@@ -2325,15 +2330,10 @@ lsp-pyright。
       (make-directory pyright-directory t))
   (when (executable-find "python3")
     (setq lsp-pyright-python-executable-cmd "python3"))
-  ;; 使用 yapf 格式化 python 代码。
-  (defun lsp-pyright-format-buffer ()
-    (interactive)
-    (when (and (executable-find "yapf") buffer-file-name)
-      (call-process "yapf" nil nil nil "-i" buffer-file-name)))
   :hook
   (python-mode . (lambda ()
                    (require 'lsp-pyright)
-                   (add-hook 'after-save-hook #'lsp-pyright-format-buffer t t))))
+                   (yapf-mode))))
 #+end_src
 
 pyright _不使用_ pyenv ~.python-version~ 指定的 python 版本或 venv 来搜索依赖的 module，而是使用
@@ -3031,9 +3031,10 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
 ;; OSX 词典。
 (use-package osx-dictionary
   :bind
-  (("C-c d i" . osx-dictionary-search-input)
-   ("C-c d w" . osx-dictionary-search-pointer))
+  (("C-c t i" . osx-dictionary-search-input)
+   ("C-c t w" . osx-dictionary-search-pointer))
   :config
+  (use-package chinese-word-at-point :demand t)
   (setq osx-dictionary-use-chinese-text-segmentation t))
 #+end_src
 
@@ -3536,6 +3537,7 @@ eshell 配置：
 (setq auto-save-default t)
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+;;(global-auto-revert-mode)
 
 ;; UTF8 中文字符。
 (setq locale-coding-system 'utf-8)
