@@ -1218,6 +1218,25 @@ Org-mode Web 站点:
 ** hugo
 
 #+begin_src emacs-lisp
+(use-package cnfonts
+  :demand
+  :disabled
+  :init
+  ;; 中英文均使用 Sarasa Term SC 字体。
+  (setq cnfonts-personal-fontnames '(("Sarasa Term SC") ("Sarasa Term SC") ("HanaMinB")))
+  ;; 允许字体缩放(部分主题如 lenven 依赖) 。
+  (setq cnfonts-use-face-font-rescale t)
+  :config
+  ;; emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 调用才会生效。
+  (defun my/set-fonts (&optional font)
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
+  (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
+  (cnfonts-enable))
+#+end_src
+
+#+begin_src emacs-lisp
 ;; New link type for Org-Hugo internal links
 (org-link-set-parameters "hugo"
                          :complete (lambda ()
