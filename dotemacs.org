@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-03-26T23:03:24+0800
+#+LASTMOD: 2022-03-27T00:03:52+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -495,17 +495,18 @@ npm config set registry=http://registry.npm.taobao.org
 + 中英文（显示）：更纱黑体 Sarasa Term SC: https://github.com/be5invis/Sarasa-Gothic
 + 中英文（显示）：霞鹜文楷屏幕阅读版 LXGW WenKai Screen: https://github.com/lxgw/LxgwWenKai-Screen
 + 中英文（PDF) ：Noto CJK SC: https://github.com/googlefonts/noto-cjk.git
++ 英文字体：Fira Code : https://github.com/tonsky/FiraCode/wiki/Installing
 + Symbols 字体:  Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
 + 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 + Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 
   #+begin_src emacs-lisp
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
-(setq +font-family "Fira Code")
-(setq +modeline-font-family "Fira Code")
-(setq +font-unicode-family "LXGW WenKai Mono")
-(setq +fixed-pitch-family "Sarasa Mono SC")
-(setq +variable-pitch-family "LXGW WenKai Mono")
+(setq +font-family "Fira Code Retina")
+(setq +modeline-font-family "Fira Code Retina")
+(setq +fixed-pitch-family "Fira Code Retina")
+(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +font-unicode-family "LXGW WenKai Screen")
 (setq +font-size-list '(10 11 12 13 14 15 16 17 18))
 (setq +font-size 14)
 
@@ -584,7 +585,7 @@ npm config set registry=http://registry.npm.taobao.org
   #+end_src
 
 + 查看 emacs 支持的字体名称： =(print (font-family-list))=
-+ 安装、更新 fire-code 字体： =M-x fira-code-mode-install-fonts=
++ 安装、更新 FiraCode Symbol 字体： =M-x fira-code-mode-install-fonts=
 + 安装、更新 icon 字体： =M-x all-the-icons-install-fonts=, 包括
   file-icons/fontawesome/octicons/weathericons/material-design 字体。
 
@@ -2140,6 +2141,8 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
     (f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
     (f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
 
+  ;; disable ligatures in ediff completely
+  (add-hook 'ediff-mode-hook (lambda () (setq auto-composition-mode nil)))
   (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
   (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree))
 #+end_src
