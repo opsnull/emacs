@@ -311,11 +311,11 @@
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
-(setq +font-family "Fira Code")
-(setq +modeline-font-family "Fira Code")
-(setq +font-unicode-family "LXGW WenKai Mono")
-(setq +fixed-pitch-family "Sarasa Mono SC")
-(setq +variable-pitch-family "LXGW WenKai Mono")
+(setq +font-family "Fira Code Retina")
+(setq +modeline-font-family "Fira Code Retina")
+(setq +fixed-pitch-family "Fira Code Retina")
+(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +font-unicode-family "LXGW WenKai Screen")
 (setq +font-size-list '(10 11 12 13 14 15 16 17 18))
 (setq +font-size 14)
 
@@ -1493,6 +1493,8 @@
     (f-ediff-org-showhide ediff-buffer-B 'hide-sublevels 1)
     (f-ediff-org-showhide ediff-buffer-C 'hide-sublevels 1))
 
+  ;; disable ligatures in ediff completely
+  (add-hook 'ediff-mode-hook (lambda () (setq auto-composition-mode nil)))
   (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
   (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree))
 
@@ -1666,7 +1668,7 @@
                    (my/python-setup-shell)
                    (my/python-setup-checkers))))
 
-  ;; 使用 yapf 格式化 python 代码。
+;; 使用 yapf 格式化 python 代码。
 (use-package yapfify
   :straight (:host github :repo "JorisE/yapfify"))
 
