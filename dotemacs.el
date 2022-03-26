@@ -2,14 +2,14 @@
 (setq package-archives '(("elpa" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "https://melpa.org/packages/")))
 
-;; 配置 use-package 默认使用 straight 安装包：
+;; 配置 use-package 默认使用 straight 安装包。
 (setq straight-use-package-by-default t)
 (setq straight-vc-git-default-clone-depth 1)
 (setq straight-recipes-gnu-elpa-use-mirror t)
 (setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
 (setq straight-host-usernames '((github . "opsnull")))
 
-;; 安装 straight.el:
+;; 安装 straight.el 。
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -60,9 +60,6 @@
 ;; 缩短更新 screen 的时间。
 (setq idle-update-delay 0.1)
 
-;; 使用字体缓存，避免卡顿。
-(setq inhibit-compacting-font-caches t)
-
 ;; Garbage Collector Magic Hack
 (use-package gcmh
   :demand
@@ -87,8 +84,11 @@
 (setq inhibit-startup-echo-area-message t)
 (setq initial-scratch-message nil)
 
-;; 指针不闪动。
-(blink-cursor-mode -1)
+;; 指针闪动。
+(blink-cursor-mode 1)
+
+;; 出错提示。
+(setq visible-bell t)
 
 ;; 未选中窗口。
 (setq-default cursor-in-non-selected-windows nil)
@@ -102,7 +102,7 @@
 (setq window-divider-default-places t)
 (add-hook 'window-setup-hook #'window-divider-mode)
 
-;; 分屏时使用左右分屏, nil: 上下分屏。
+;; 左右分屏, nil: 上下分屏。
 (setq split-width-threshold 30)
 
 ;; 复用当前 frame 。
@@ -147,7 +147,7 @@
 (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 1))))
 
-;; 自动根据窗口大小显示图片。
+;; 根据窗口自适应显示图片。
 (setq image-transform-resize t)
 (auto-image-file-mode t)
 
@@ -186,14 +186,16 @@
   ;; modeline 两边各加 4px 空白。
   (doom-themes-padded-modeline t)
   :config
-  ;;(load-theme 'doom-palenight t)
   (doom-themes-visual-bell-config)
+  ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch nil)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
 ;; 跟随 Mac 自动切换深浅主题。
 (defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-vibrant t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-zenburn t))
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
@@ -218,8 +220,6 @@
   :custom
   ;; 不显示换行和编码（节省空间）。
   (doom-modeline-buffer-encoding nil)
-  ;; 使用 HUD 显式光标位置。
-  ;;(doom-modeline-hud t)
   ;; 显示语言版本。
   (doom-modeline-env-version t)
   ;; 不显示 Go 版本。
@@ -247,7 +247,6 @@
   :after (projectile)
   :config
   (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
-  ;;(setq dashboard-startup-banner (expand-file-name "~/.emacs.d/emacs-e.svg"))
   (setq dashboard-projects-backend #'projectile)
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
@@ -269,13 +268,6 @@
   (setq x-underline-at-descent-line t)
   (setq centaur-tabs-show-navigation-buttons t)
   (setq centaur-tabs-enable-key-bindings t)
-  ;; :bind
-  ;; (("C-c t f" . centaur-tabs-forward)
-  ;;  ("C-c t b" . centaur-tabs-backward)
-  ;;  ;; 将 buffer 按 projectile 分组。
-  ;;  ("C-c t p" . centaur-tabs-group-by-projectile-project)
-  ;;  ;; 显示所有 buffer 。
-  ;;  ("C-c t g" . centaur-tabs-group-buffer-groups))
   :config
   (centaur-tabs-mode t)
   (centaur-tabs-headline-match)
@@ -302,42 +294,93 @@
 (defun my/toggle-transparency ()
   (interactive)
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (100 . 100))))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
 ;; 在 frame 底部显示窗口。
 (setq display-buffer-alist
       `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*" "*lsp-help*" "*vterm") (0+ not-newline))
          (display-buffer-reuse-mode-window display-buffer-below-selected)
-         (window-height . 0.33)
+         (window-height . 0.43)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
 
-(use-package cnfonts
-  :demand
-  :init
-  ;; 中英文均使用 Sarasa Term SC 字体。
-  (setq cnfonts-personal-fontnames '(("Sarasa Term SC") ("Sarasa Term SC") ("HanaMinB")))
-  ;; 允许字体缩放(部分主题如 lenven 依赖) 。
-  (setq cnfonts-use-face-font-rescale t)
-  :config
-  ;; emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 调用才会生效。
-  (defun my/set-fonts (&optional font)
-    (setq use-default-font-for-symbols nil)
-    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
-  (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
-  (cnfonts-enable))
-
-(use-package all-the-icons
-  :demand
-  :after (cnfonts))
-
-(use-package all-the-icons-ibuffer
-  :init (all-the-icons-ibuffer-mode 1))
-
+(use-package all-the-icons :demand)
+(use-package all-the-icons-ibuffer :init (all-the-icons-ibuffer-mode 1))
 (use-package all-the-icons-completion
   :config
   (all-the-icons-completion-mode)
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
+
+;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
+(setq +font-family "Fira Code")
+(setq +modeline-font-family "Fira Code")
+(setq +font-unicode-family "LXGW WenKai Screen")
+(setq +fixed-pitch-family "Sarasa Mono SC")
+(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +font-size-list '(10 11 12 13 14 15 16 17 18))
+(setq +font-size 14)
+
+(defun +load-base-font ()
+  (let* ((font-spec (format "%s-%d" +font-family +font-size)))
+    ;; 设置 emoji 字体。
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols"))
+    ;; 设置缺省字体。
+    (set-frame-parameter nil 'font font-spec)
+    (add-to-list 'default-frame-alist `(font . ,font-spec))))
+
+(defun +load-face-font (&optional frame)
+  (let ((font-spec (format "%s" +font-family))
+        (line-font-spec (format "%s" +modeline-font-family))
+        (variable-pitch-font-spec (format "%s" +variable-pitch-family))
+        (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
+    (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.2)
+    (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
+    (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
+    (set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
+    (set-face-attribute 'mode-line frame :font line-font-spec :height 1.0)
+    (set-face-attribute 'mode-line-inactive frame :font line-font-spec :height 1.0)))
+
+(defun +load-ext-font ()
+  (when window-system
+    (let ((font (frame-parameter nil 'font))
+          (font-spec (font-spec :family +font-unicode-family)))
+      (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
+        (set-fontset-font font charset font-spec)))))
+
+(defun +load-font ()
+  (+load-base-font)
+  (+load-face-font)
+  (+load-ext-font))
+
+(+load-font)
+(add-hook 'org-mode-hook 'variable-pitch-mode)
+(add-hook 'markdown-mode-hook 'variable-pitch-mode)
+(add-hook 'after-make-frame-functions (lambda (f) (+load-face-font f) (+load-ext-font)))
+
+(defun +larger-font ()
+  (interactive)
+  (if-let ((size (--find (> it +font-size) +font-size-list)))
+      (progn (setq +font-size size)
+             (+load-font)
+             (message "Font size: %s" +font-size))
+    (message "Using largest font")))
+
+(defun +smaller-font ()
+  (interactive)
+  (if-let ((size (--find (< it +font-size) (reverse +font-size-list))))
+      (progn (setq +font-size size)
+             (message "Font size: %s" +font-size)
+             (+load-font))
+    (message "Using smallest font")))
+
+(global-set-key (kbd "M-+") #'+larger-font)
+(global-set-key (kbd "M--") #'+smaller-font)
+
+(defun +use-fixed-pitch ()
+  (interactive)
+  (setq buffer-face-mode-face `(:family ,+fixed-pitch-family))
+  (buffer-face-mode +1))
 
 ;; fire-code-mode 只能在 GUI 模式下使用。
 (when (display-graphic-p)
@@ -345,6 +388,9 @@
     :custom
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode))
+
+;; 使用字体缓存，避免卡顿。
+(setq inhibit-compacting-font-caches t)
 
 (use-package vertico
   :demand
@@ -395,6 +441,7 @@
         ;; 在单独 buffer 中显示结果 consult-imenu 结果。
         '((consult-imenu buffer)
           (consult-line buffer)
+          (consult-mark buffer)
           (consult-find buffer)))
 
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
@@ -408,9 +455,7 @@
   ;; 在 minibuffer 中不显示光标。
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-
   (setq read-extended-command-predicate   #'command-completion-default-include-p)
-
   ;; 开启 minibuffer 递归编辑。
   (setq enable-recursive-minibuffers t))
 
@@ -522,10 +567,8 @@
   (setq register-preview-delay 0.2)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
-
   ;; 支持使用 Enter 来选择、反选候选项（例如 consult-multi-occur 场景）
   (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
-
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
   :config
@@ -706,19 +749,34 @@
 (use-package ace-window
   :init
   ;; 使用字母而非数字标记窗口，便于跳转。
-  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-  :config
-  ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择。
-  (setq aw-scope 'frame)
-  ;; 总是提示窗口选择，进而执行 ace 命令。
-  (setq aw-dispatch-always t)
-  (global-set-key (kbd "M-o") 'ace-window)
-  ;; 在窗口左上角显示位置字符。
-  (setq aw-char-position 'top-left)
-  ;; 调大窗口选择字符。
-  (custom-set-faces
-   '(aw-leading-char-face
-     ((t (:inherit ace-jump-face-foreground :foreground "red" :height 1.5))))))
+  (setq aw-keys '(?a ?w ?e ?g ?i ?j ?k ?l ?p))
+  ;; 根据自己的使用习惯来调整快捷键，这里使用大写字母避免与 aw-keys 冲突。
+  (setq aw-dispatch-alist
+        '((?0 aw-delete-window "Delete Window")
+          (?1 delete-other-windows "Delete Other Windows")
+          (?2 aw-split-window-vert "Split Vert Window")
+          (?3 aw-split-window-horz "Split Horz Window")
+          (?F aw-split-window-fair "Split Fair Window")
+          (?S aw-swap-window "Swap Windows")
+          (?M aw-move-window "Move Window")
+          (?C aw-copy-window "Copy Window")
+          (?B aw-switch-buffer-in-window "Select Buffer")
+          (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
+          (?N aw-flip-window)
+          (?T aw-transpose-frame "Transpose Frame")
+          (?? aw-show-dispatch-help))))
+:config
+;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择。
+(setq aw-scope 'frame)
+;; 总是提示窗口选择，进而执行 ace 命令。
+(setq aw-dispatch-always t)
+(global-set-key (kbd "M-o") 'ace-window)
+;; 在窗口左上角显示位置字符。
+(setq aw-char-position 'top-left)
+;; 调大窗口选择字符。
+(custom-set-faces
+ '(aw-leading-char-face
+   ((t (:inherit ace-jump-face-foreground :foreground "red" :height 1.5)))))
 
 (use-package rime
   :ensure-system-package ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
@@ -726,6 +784,8 @@
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
   (rime-emacs-module-header-root "/usr/local/Cellar/emacs-plus@28/28.0.50/include")
+  :hook
+  (emacs-startup . (lambda () (setq default-input-method "rime")))
   :bind
   ( :map rime-active-mode-map
     ;; 强制切换到英文模式，直到按回车
@@ -753,20 +813,18 @@
           rime-predicate-current-uppercase-letter-p
           rime-predicate-after-alphabet-char-p
           rime-predicate-space-after-cc-p
+          rime-predicate-space-after-ascii-p
           rime-predicate-prog-in-code-p
           rime-predicate-after-ascii-char-p))
-  (setq rime-posframe-properties (list :font "Sarasa Gothic SC" :internal-border-width 2))
-  (setq rime-show-candidate 'posframe))
+  ;;(setq rime-posframe-properties (list :font "Sarasa SC Gothic" :internal-border-width 2))
+  (setq rime-show-candidate 'posframe)
 
-;; 切换到 vterm-mode 类型外的 buffer 时激活 RIME 输入法。
-(defadvice switch-to-buffer (after activate-input-method activate)
-  (if (string-match "vterm-mode" (symbol-name major-mode))
-      (activate-input-method nil)
-    (activate-input-method "rime")))
-
-;; Emacs will automatically set default-input-method to rfc1345 if locale is
-;; UTF-8. https://github.com/purcell/emacs.d/issues/320
-(add-hook 'emacs-startup-hook (lambda () (setq default-input-method "rime")))
+  ;; 切换到 vterm-mode 类型外的 buffer 时激活 RIME 输入法。
+  (defadvice switch-to-buffer (after activate-input-method activate)
+    (if (or (string-match "vterm-mode" (symbol-name major-mode))
+            (string-match "minibuffer-mode" (symbol-name major-mode)))
+        (activate-input-method nil)
+      (activate-input-method "rime"))))
 
 (use-package org
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
@@ -839,7 +897,7 @@
   (org-html-themify-themes '((dark . doom-palenight) (light . doom-one-light))))
 
 (defun my/org-faces ()
-  (setq-default line-spacing 1)
+  (setq-default line-spacing 2)
   (dolist (face '((org-level-1 . 1.2)
                   (org-level-2 . 1.1)
                   (org-level-3 . 1.05)
@@ -848,24 +906,25 @@
                   (org-level-6 . 1.1)
                   (org-level-7 . 1.1)
                   (org-level-8 . 1.1)))
-    (set-face-attribute (car face) nil :weight 'medium :height (cdr face)))
+    ;;(set-face-attribute (car face) nil :font "LXGW WenKai Screen" :weight 'regular :height (cdr face)))
+    (set-face-attribute (car face) nil :height (cdr face)))
   ;; 美化 BEGIN_SRC 整行。
   (setq org-fontify-whole-block-delimiter-line t)
   (custom-theme-set-faces
    'user
-   '(org-block ((t (:font "Sarasa Term SC-15" :inherit fixed-pitch))))
+   '(org-block ((t (:inherit 'fixed-pitch :height 0.9))))
    ;; 调小高度 , 并设置下划线。
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
+   '(org-meta-line ((t ( :height 0.7))))
+   '(org-document-info-keyword ((t (:height 0.6))))
    '(org-document-info ((t (:height 0.8))))
-   '(org-document-info-keyword ((t (:height 0.8))))
    '(org-link ((t (:foreground "royal blue" :underline t))))
-   '(org-meta-line ((t ( :height 0.8))))
    '(org-property-value ((t (:height 0.8))) t)
    '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
-   ;;'(org-table ((t (:foreground "#83a598"))))
+   '(org-table ((t (:inherit 'fixed-pitch :height 0.9))))
    '(org-tag ((t (:weight bold :height 0.8))))
    ;;'(org-ellipsis ((t (:foreground nil))))
    )
@@ -883,8 +942,7 @@
   (org-mode . org-superstar-mode)
   :custom
   (org-superstar-remove-leading-stars t)
-  (org-superstar-headline-bullets-list '("✖" "✚" "◉" "○" "▶"))
-  ;; (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
+  (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
   )
 
 (use-package org-fancy-priorities
@@ -893,6 +951,11 @@
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A]" "[B]" "[C]")))
+
+;; org-mode table 中英文像素对齐。
+(use-package valign
+  :config
+  (add-hook 'org-mode-hook #'valign-mode))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -1123,7 +1186,7 @@
         ("<right>" . org-tree-slide-move-next-tree))
   :hook
   ((org-tree-slide-play . (lambda ()
-                            (blink-cursor-mode -1)
+                            (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor -1)
                             (beacon-mode -1)
                             (redraw-display)
@@ -1594,9 +1657,9 @@
    (flake8 . flake8)
    (ipython . "pip install ipython"))
   :init
-  (setq-default indent-tabs-mode nil)
-  (setq-default tab-width 4)
-  (setq-default python-indent-offset 4)
+  (setq python-indent-guess-indent-offset t)  
+  (setq python-indent-guess-indent-offset-verbose nil)
+  (setq python-indent-offset 4)
   (with-eval-after-load 'exec-path-from-shell (exec-path-from-shell-copy-env "PYTHONPATH"))
   :hook
   (python-mode . (lambda ()
@@ -2447,8 +2510,6 @@ mermaid.initialize({
   :init
   (setq use-short-answers t)
   (setq confirm-kill-emacs #'y-or-n-p)
-  ;; 关闭出错提示声。
-  (setq visible-bell nil)
   (setq ring-bell-function 'ignore)
   ;; 不创建 lock 文件。
   (setq create-lockfiles nil)
@@ -2653,3 +2714,7 @@ mermaid.initialize({
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
+
+;; 在另一个 panel buffer 中展示按键.
+(use-package command-log-mode
+  :commands command-log-mode)

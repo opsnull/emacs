@@ -178,8 +178,8 @@
 | C-x / |      | 同上     |
 |-------+------+----------|
 
-连续按 undo 时一直撤销，但是中间可以用非 undo 命令如 C-f 来终止，这样后续再 undo
-时，也会撤销刚才的 undo，达到 redo 的效果。
+连续按 undo 时一直撤销，但是中间可以用非 undo 命令如 C-f 来终止，这样后续再 undo时，也会撤销刚才的 undo，达到
+redo 的效果。
 
 * 缓冲区
 
@@ -368,8 +368,7 @@ Emacs 寄存器可以保存多种类型记录：
 | M-x view-register RET r | 查看寄存器 r 的内容              |                                                            |
 |-------------------------+----------------------------------+------------------------------------------------------------|
 
-对于保存的 frame 或 window，可以使用 =C-x r j= 来恢复，从而实现类似于多 frame 切换
-且保持 window 布局的效果。
+对于保存的 frame 或 window，可以使用 =C-x r j= 来恢复，从而实现类似于多 frame 切换且保持 window 布局的效果。
 
 安装了 consult 包后，在进行寄存器和书签跳转前，可以自动预览和过滤。
 
@@ -664,7 +663,9 @@ Query replace 过程中可以使用的快捷键：
 进入查找-替换模式后，按 C-r 进入递归编辑，或 C-w 删除此次内容并进入递归编辑模式：
 +  C-M-x 退出递归编辑模式，返回到查找/替换模式 (exist)
 +  C-M-c 同上(cancel)
-+  C-] 退出递归编辑和查找替换模式
++  C-]
+  
+  退出递归编辑和查找替换模式
 
 其它替换命令：
 + M-x projectile-replace：在 project 级别搜索或替换文件。
@@ -790,7 +791,8 @@ cache 中的目录自动添加 treemacs 中，这样会导致 treemacs 中添加
    #+begin_src sh
      replace (
          github.com/go-admin-team/go-admin-core => /Users/zhangjun/codes/github/go-admin-core
-         github.com/go-admin-team/go-admin-core/sdk => /Users/zhangjun/codes/github/go-admin-core/sdk
+         github.com/go-admin-team/go-admin-core/sdk =>
+         /Users/zhangjun/codes/github/go-admin-core/sdk
      )
    #+end_src
 3. 执行 M-x treemacs-display-current-project-exclusively 命令，创建一个新的
@@ -2872,8 +2874,8 @@ https://github.com/adobe-fonts/source-han-mono
 + 拉丁字体
   + Noto Sans - 无衬线
   + Noto Serif - 衬线
-  + Sarasa Term SC - 等宽（直接使用 Iosevka Term 会导致 emacs 中的蜜汁bug）
-+ 中文字体
+  + Sarasa Term SC - 等宽（直接使用 Iosevka Term 会导致 emacs 中的蜜汁+）
+bug 中文字体
   + Noto Sans CJK SC (又称 思源黑体）
   + Noto Serif CJK SC （又称 思源宋体）
 

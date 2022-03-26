@@ -9,33 +9,25 @@
   (setq native-comp-deferred-compilation-deny-list '())
   (setq native-comp-async-report-warnings-errors 'silent))
 
-;; 加载最新版本字节码。
-(setq load-prefer-newer t)
-
 ;; 关闭 cl 告警。
 (setq byte-compile-warnings '(cl-functions))
 
 ;; 关闭 package.el(后续使用 straight.el) 。
 (setq package-enable-at-startup nil)
 
-;; 不从 package cache 加载 package 。
-(setq package-quickstart nil)
-
 ;; 启动时开启 debug, 启动后关闭。
 (setq debug-on-error t)
 (add-hook 'emacs-startup-hook (lambda () (setq debug-on-error nil)))
 
-;; 不缩放 frame 。
-(setq frame-inhibit-implied-resize t)
-
 ;; 设置缩放模式, 避免 MacOS 最大化窗口后右边和下边有空隙。
+(setq frame-inhibit-implied-resize t)
 (setq frame-resize-pixelwise t)
 
-;; add-hook 的 t 参数让 togg-frame-fullscreen 最后运行，这样最大化才有效。
-;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
+;; 加 t 参数让 togg-frame-XX 最后运行，这样最大化才生效。
+;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
 (add-hook 'window-setup-hook 'toggle-frame-maximized t)
 
-;; 在单独文件保存自定义配置， 防止污染 ~/.emacs 文件。
+;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
