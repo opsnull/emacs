@@ -269,13 +269,13 @@
   (setq x-underline-at-descent-line t)
   (setq centaur-tabs-show-navigation-buttons t)
   (setq centaur-tabs-enable-key-bindings t)
-  :bind
-  (("C-c t f" . centaur-tabs-forward)
-   ("C-c t b" . centaur-tabs-backward)
-   ;; 将 buffer 按 projectile 分组。
-   ("C-c t p" . centaur-tabs-group-by-projectile-project)
-   ;; 显示所有 buffer 。
-   ("C-c t g" . centaur-tabs-group-buffer-groups))
+  ;; :bind
+  ;; (("C-c t f" . centaur-tabs-forward)
+  ;;  ("C-c t b" . centaur-tabs-backward)
+  ;;  ;; 将 buffer 按 projectile 分组。
+  ;;  ("C-c t p" . centaur-tabs-group-by-projectile-project)
+  ;;  ;; 显示所有 buffer 。
+  ;;  ("C-c t g" . centaur-tabs-group-buffer-groups))
   :config
   (centaur-tabs-mode t)
   (centaur-tabs-headline-match)
@@ -380,7 +380,8 @@
   (vertico-mode 1)
 
   ;; 重复上一次 vertico sesson;
-  (global-set-key "\M-r" #'vertico-repeat)
+  (global-set-key "\M-r" #'vertico-repeat-last)
+  (global-set-key "\M-R" #'vertico-repeat-select)
 
   ;; 开启 vertico-mouse 。
   (vertico-mouse-mode)
@@ -1358,6 +1359,7 @@
                       (bury-buffer buf)
                     (kill-buffer buf))))
               buffers))))
+  (setq auto-revert-check-vc-info t)
   (setq magit-bury-buffer-function #'my-magit-kill-buffers))
 
 (use-package git-link
@@ -1587,7 +1589,6 @@
 
 
 (use-package python
-  :after (flycheck)
   :ensure-system-package
   ((pylint . pylint)
    (flake8 . flake8)
@@ -1602,6 +1603,10 @@
                    (my/python-setup-shell)
                    (my/python-setup-checkers))))
 
+  ;; 使用 yapf 格式化 python 代码。
+(use-package yapfify
+  :straight (:host github :repo "JorisE/yapfify"))
+
 (use-package lsp-pyright
   :after (python)
   :ensure-system-package
@@ -1613,15 +1618,10 @@
       (make-directory pyright-directory t))
   (when (executable-find "python3")
     (setq lsp-pyright-python-executable-cmd "python3"))
-  ;; 使用 yapf 格式化 python 代码。
-  (defun lsp-pyright-format-buffer ()
-    (interactive)
-    (when (and (executable-find "yapf") buffer-file-name)
-      (call-process "yapf" nil nil nil "-i" buffer-file-name)))
   :hook
   (python-mode . (lambda ()
                    (require 'lsp-pyright)
-                   (add-hook 'after-save-hook #'lsp-pyright-format-buffer t t))))
+                   (yapf-mode))))
 
 (use-package go-mode
   :after (lsp-mode)
@@ -2145,9 +2145,10 @@ mermaid.initialize({
 ;; OSX 词典。
 (use-package osx-dictionary
   :bind
-  (("C-c d i" . osx-dictionary-search-input)
-   ("C-c d w" . osx-dictionary-search-pointer))
+  (("C-c t i" . osx-dictionary-search-input)
+   ("C-c t w" . osx-dictionary-search-pointer))
   :config
+  (use-package chinese-word-at-point :demand t)
   (setq osx-dictionary-use-chinese-text-segmentation t))
 
 ;; 当前 buffer 文本搜索, 替换 isearch.
@@ -2611,6 +2612,7 @@ mermaid.initialize({
 (setq auto-save-default t)
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+;;(global-auto-revert-mode)
 
 ;; UTF8 中文字符。
 (setq locale-coding-system 'utf-8)
