@@ -194,7 +194,7 @@
   (doom-themes-org-config))
 
 ;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
+(defun my/load-light-theme () (interactive) (load-theme 'doom-zenburn t))
 (defun my/load-dark-theme () (interactive) (load-theme 'doom-zenburn t))
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
@@ -313,7 +313,7 @@
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 (setq +font-family "Fira Code Retina")
 (setq +modeline-font-family "Fira Code Retina")
-(setq +fixed-pitch-family "Fira Code Retina")
+(setq +fixed-pitch-family "Sarasa Term SC")
 (setq +variable-pitch-family "LXGW WenKai Screen")
 (setq +font-unicode-family "LXGW WenKai Screen")
 (setq +font-size-list '(10 11 12 13 14 15 16 17 18))
@@ -321,10 +321,6 @@
 
 (defun +load-base-font ()
   (let* ((font-spec (format "%s-%d" +font-family +font-size)))
-    ;; 设置 emoji 字体。
-    (setq use-default-font-for-symbols nil)
-    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols"))
     ;; 设置缺省字体。
     (set-frame-parameter nil 'font font-spec)
     (add-to-list 'default-frame-alist `(font . ,font-spec))))
@@ -346,7 +342,11 @@
     (let ((font (frame-parameter nil 'font))
           (font-spec (font-spec :family +font-unicode-family)))
       (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
-        (set-fontset-font font charset font-spec)))))
+        (set-fontset-font font charset font-spec))
+      ;; 设置 emoji 字体。
+      (setq use-default-font-for-symbols nil)
+      (set-fontset-font font '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+      (set-fontset-font font 'symbol (font-spec :family "Symbola")))))
 
 (defun +load-font ()
   (+load-base-font)
@@ -356,7 +356,10 @@
 (+load-font)
 (add-hook 'org-mode-hook 'variable-pitch-mode)
 (add-hook 'markdown-mode-hook 'variable-pitch-mode)
-(add-hook 'after-make-frame-functions (lambda (f) (+load-face-font f) (+load-ext-font)))
+(add-hook 'after-make-frame-functions 
+          ( lambda (f) 
+            (+load-face-font f)
+            (+load-ext-font)))
 
 (defun +larger-font ()
   (interactive)
@@ -906,25 +909,26 @@
                   (org-level-6 . 1.1)
                   (org-level-7 . 1.1)
                   (org-level-8 . 1.1)))
-    ;;(set-face-attribute (car face) nil :font "LXGW WenKai Screen" :weight 'regular :height (cdr face)))
     (set-face-attribute (car face) nil :height (cdr face)))
   ;; 美化 BEGIN_SRC 整行。
   (setq org-fontify-whole-block-delimiter-line t)
   (custom-theme-set-faces
    'user
    '(org-block ((t (:inherit 'fixed-pitch :height 0.9))))
+   '(org-code ((t (:inherit 'fixed-pitch :height 0.9))))
    ;; 调小高度 , 并设置下划线。
-   '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
-   '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
-   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
-   '(org-meta-line ((t ( :height 0.7))))
-   '(org-document-info-keyword ((t (:height 0.6))))
+   '(org-block-begin-line ((t (:inherit 'fixed-pitch :height 0.8 :underline "#A7A6AA"))))
+   '(org-block-end-line ((t (:inherit 'fixed-pitch :height 0.8 :underline "#A7A6AA"))))
+   '(org-meta-line ((t (:inherit 'fixed-pitch :height 0.7))))
+   '(org-document-info-keyword ((t (:inherit 'fixed-pitch :height 0.6))))
    '(org-document-info ((t (:height 0.8))))
+   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
    '(org-link ((t (:foreground "royal blue" :underline t))))
    '(org-property-value ((t (:height 0.8))) t)
    '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
    '(org-table ((t (:inherit 'fixed-pitch :height 0.9))))
+   '(org-verbatim ((t (:inherit 'fixed-pitch :height 0.9))))
    '(org-tag ((t (:weight bold :height 0.8))))
    ;;'(org-ellipsis ((t (:foreground nil))))
    )
@@ -1668,7 +1672,7 @@
                    (my/python-setup-shell)
                    (my/python-setup-checkers))))
 
-;; 使用 yapf 格式化 python 代码。
+  ;; 使用 yapf 格式化 python 代码。
 (use-package yapfify
   :straight (:host github :repo "JorisE/yapfify"))
 
@@ -2032,8 +2036,9 @@ mermaid.initialize({
 
 ;; 开发文档。
 (use-package dash-at-point
-  :bind(("C-c d p" . dash-at-point)
-        ("C-c d b" . dash-at-point-with-docset)))
+  :bind
+  (("C-c d ." . dash-at-point)
+   ("C-c d d" . dash-at-point-with-docset)))
 
 (use-package projectile
   :demand

@@ -52,22 +52,22 @@
 
 * 文件
 
-|-----------+-------------------------+----------------------------------------------------------|
-| 按键      | 函数                    | 功能                                                     |
-|-----------+-------------------------+----------------------------------------------------------|
-| C-x i     | insert-file             | 在当前位置插入文件                                       |
-| C-x C-r   | find-file-read-only     | 只读打开文件(C-x r 是矩形编辑和寄存器的快捷键前缀)       |
-| C-x C-f   | find-file               | 打开文件（C-x f 是设置 fill column）                     |
-| C-x 4 C-f | find-file-other-window  | 在一个新窗口中打开文件                                   |
-| C-x 4 f   | find-file-other-window  | 同上                                                     |
-| C-x 5 C-f | find-file-other-frame   | 在一个新 frame 中打开文件                                |
-| C-x 5 f   | find-file-other-frame   | 同上                                                     |
-| C-x C-v   | find-alternate-file     | 打开一个文件，取代当前缓冲区。C-x v 是 VC 版本控制的前缀 |
-| C-x C-s   | save-buffer             | 保存当前缓冲区文件                                       |
-| C-x s     | save-some-buffers       | 保存某个缓冲区文件                                       |
-| C-x C-w   | write-file              | 另存为新文件                                             |
-| C-x C-c   | save-buffers-kill-emacs | 退出                                                     |
-|-----------+-------------------------+----------------------------------------------------------|
+|-----------+-------------------------+------------------------------------------------------------|
+| 按键      | 函数                    | 功能                                                       |
+|-----------+-------------------------+------------------------------------------------------------|
+| C-x i     | insert-file             | 在当前位置插入文件                                         |
+| C-x C-r   | find-file-read-only     | 只读打开文件(C-x r 是矩形编辑和寄存器的快捷键前缀)         |
+| C-x C-f   | find-file               | 打开文件（C-x f 是设置 fill column）                       |
+| C-x 4 C-f | find-file-other-window  | 在一个新窗口中打开文件                                     |
+| C-x 4 f   | find-file-other-window  | 同上                                                       |
+| C-x 5 C-f | find-file-other-frame   | 在一个新 frame 中打开文件                                  |
+| C-x 5 f   | find-file-other-frame   | 同上                                                       |
+| C-x C-v   | find-alternate-file     | 打开一个文件，取代当前缓冲区。C-x v 是 VC 版本控制的前缀。 |
+| C-x C-s   | save-buffer             | 保存当前缓冲区文件                                         |
+| C-x s     | save-some-buffers       | 保存某个缓冲区文件                                         |
+| C-x C-w   | write-file              | 另存为新文件                                               |
+| C-x C-c   | save-buffers-kill-emacs | 退出                                                       |
+|-----------+-------------------------+------------------------------------------------------------|
 
 =C-x C-f= 打开文件时，默认会加上当前目录，可以先删除该目录，也可以直接输入以下内容（忽略当前目录）：
 1. 连续两个 // : 绝对路径；
