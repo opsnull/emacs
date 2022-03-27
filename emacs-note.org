@@ -1,8 +1,6 @@
 #+TITLE:Emacs Note
 #+AUTHOR: zhangjun
 #+STARTUP: overview inlineimages shrink toc:2
-#+CATEGORY: emacs
-#+LANGUAGE: cn
 * 目录
 :PROPERTIES:
 :TOC:      :include all :depth 2 :force (depth) :ignore (this) :local (depth)
@@ -26,28 +24,23 @@
 - [[#替换][替换]]
 - [[#tab][Tab]]
 - [[#定制][定制]]
-- [[#tramp][tramp]]
 - [[#projectile][projectile]]
 - [[#treemacs][treemacs]]
-- [[#go-目录树][go 目录树]]
-- [[#vterm][vterm]]
+- [[#tramp][tramp]]
 - [[#termshell][term&shell]]
+- [[#vterm][vterm]]
 - [[#flycheck][flycheck]]
 - [[#lsp][lsp]]
 - [[#magit][magit]]
 - [[#org][org]]
 - [[#font][font]]
-- [[#folding][folding]]
 - [[#dired][dired]]
-- [[#selectrum][selectrum]]
 - [[#consult][consult]]
 - [[#embark][embark]]
 - [[#workflow][workflow]]
-- [[#termshell][term&shell]]
 - [[#image][image]]
-- [[#web-开发][web 开发]]
+- [[#web][web]]
 - [[#不常用][不常用]]
-- [[#footnotes][Footnotes]]
 :END:
 
 * 文件
@@ -70,13 +63,13 @@
 |-----------+-------------------------+------------------------------------------------------------|
 
 =C-x C-f= 打开文件时，默认会加上当前目录，可以先删除该目录，也可以直接输入以下内容（忽略当前目录）：
-1. 连续两个 // : 绝对路径；
-2. ~: Home 路径；
+1. 连续两个 ~//~: 绝对路径；
+2. ~~~: Home 路径；
 3. 在 TRAMP 模式下，如果要打开本地文件，则可以连续三个 =///= ;
 
-+ =C-c C-f /sudo::/path/to/file=: 以管理员权限编辑本地文件，:: 中的空格表示本地
-+ =C-c C-f /sudo:user@host:filepath= 以管理员权限打开本地编辑远程文件
-+ =C-c C-f /ssh:phil@remotehost#port:records/pizza-toppings.txt= 远程编辑文件
++ =C-c C-f /sudo::/path/to/file=: 以管理员权限编辑本地文件， ~::~ 中的空格表示本地。
++ =C-c C-f /sudo:user@host:filepath= 以管理员权限打开本地编辑远程文件。
++ =C-c C-f /ssh:phil@remotehost#port:records/pizza-toppings.txt= 远程编辑文件。
 
 =save-some-buffers= 可以使用的快捷键：
 + n、y、q、!
@@ -84,20 +77,21 @@
 
 * 重复
 
-|-------------+------------------------+-------------------------------------------------|
-| 按键        | 函数                   | 功能                                            |
-|-------------+------------------------+-------------------------------------------------|
-| M-N         | digit-argument         |                                                 |
-| C-u         | universal-argument     |                                                 |
-| C-x z       | repeat                 | 重复执行上一次名称，每多一个 z 字符就多执行一次 |
-| C-x ESC ESC | repeat-complex-command |                                                 |
-| M--CMD      |                        | 反向执行 CMD 一次                               |
-| C-u-- CMD   |                        | 同上                                            |
-| C-u--N CMD  |                        | 反向执行 CMD N 次                               |
-|-------------+------------------------+-------------------------------------------------|
+|-------------+-------------------------+---------------------------------------------------|
+| 按键        | 函数                    | 功能                                              |
+|-------------+-------------------------+---------------------------------------------------|
+| M-N         | digit-argument          |                                                   |
+| C-u         | universal-argument      |                                                   |
+| C-x z       | repeat k                | 重复执行上一次名称，每多一个 z 字符就多执行一次。 |
+| C-x ESC ESC | repeat-complex-command  |                                                   |
+| C-M-:       | consult-complex-command | 重复执行复杂命令。                                |
+| M--CMD      |                         | 反向执行 CMD 一次                                 |
+| C-u-- CMD   |                         | 同上                                              |
+| C-u--N CMD  |                         | 反向执行 CMD N 次                                 |
+|-------------+-------------------------+---------------------------------------------------|
 
-+ =C-x ESC ESC=: 适用于任何需要从 minibuff 读取输入的命令。
-+ =univeral-argument= 与 ~digit-argument~ 的区别是：
++ =C-x ESC ESC=: 适用于任何需要从 =minibuff= 读取输入的命令。
++ =univeral-argument= 与 =digit-argument= 的区别是：
   1. 它可以不带数字参数，表示重复 4 次;
   2. 除了表示重复次数，不带数字的 ~univeral-argument~ 还有改变命令行为的特殊含义;
 
@@ -120,6 +114,7 @@
 | M-g M-g | goto-line                    | 跳转到指定行号                         |
 | M-g g   | goto-line                    | 同上                                   |
 | M-g c   | goto-char                    | 跳转到指定字符位置                     |
+| M-g TAB | move-to-column               | 移动光标到当前行的第 N 列              |
 | C-v     | scroll-up-command            | 向下翻页                               |
 | M-v     | scroll-down-command          | 向上翻页                               |
 | C-M-v   |                              | 将临近的窗口中内容前翻                 |
@@ -150,7 +145,6 @@
 | M-g p   | previous-problem             |                                        |
 | C-x =   | what-cursor-position         | 显示光标位置                           |
 | C-\     | toogle-input-method          | 切换输入法(M-\ 是删除光标附近的空格)   |
-| M-g TAB | move-to-column               | 移动光标到当前行的第 N 列              |
 |---------+------------------------------+----------------------------------------|
 
 对于 =M-r= ，数字参数指定了光标的位置：
@@ -177,7 +171,7 @@
 | C-x / |      | 同上     |
 |-------+------+----------|
 
-连续按 undo 时一直撤销，但是中间可以用非 undo 命令如 C-f 来终止，这样后续再 undo时，也会撤销刚才的 undo，达到
+连续按 undo 时一直撤销，但是中间可以用非 undo 命令如 C-f 来终止，这样后续再 undo 时，也会撤销刚才的 undo，达到
 redo 的效果。
 
 * 缓冲区
@@ -194,11 +188,12 @@ redo 的效果。
 |         | kill-some-buffers             | 提示删除一些 buffers                               |
 |         | eval-buffer                   | 执行当前缓冲区中的 lisp 语句                       |
 |         | rename-buffer                 | 重命名 buffer，当要打开多个 eshell 或 info 时需要  |
-|         | revert-buffer                 | 丢弃缓冲区自上次保存以来的所有改变                 |
+| s-u     | revert-buffer                 | 丢弃缓冲区自上次保存以来的所有改变                 |
 | M-~     | not-modified                  | 清除当前缓冲区的修改标志(保存时不会提示保存该文件) |
 | C-x C-q | read-only-mode                | 切换缓冲区为只读或者读写模式                       |
 | C-q     | quoted-insert                 | quoted-insert                                      |
 | M-/     | dabbrev-expand                | 自动提示扩充当前单词                               |
+| C-M-/   | dabbrev-completion            | 动态补全                                           |
 |---------+-------------------------------+----------------------------------------------------|
 
 * 窗口
@@ -227,59 +222,45 @@ redo 的效果。
 + C-c  → :: 恢复下一个窗口布局
 
 也可以使用寄存器来保存 frame 和 window 的布局：
-+ C-c r f: 保存 frame 布局；
-+ C-c r w：保存 window 布局；
++ C-x r f: 保存 frame 布局；
++ C-x r w：保存 window 布局；
 
-自定义的、可以连续扩大和缩小窗口的快捷键（Shift-Control-xxx）：
-#+begin_src lisp
-(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "S-C-<down>") 'shrink-window)
-(global-set-key (kbd "S-C-<up>") 'enlarge-window)
-#+end_src
+ 安装了 avy 后，可以使用更高级的窗口切换和跳转模式：
+ + M-o 0 :: 关闭指定 window;
+ + M-o 1 :: 最大化指定 window;
+ + M-o 2 :: 垂直切分 window;
+ + M-o 3 :: 水平切分 window;
+ + M-o B :: 为指定 window 选择 buffer;
+ + M-o C :: 将当前 buffer 拷贝到 window;
+ + M-o M :: 将当前 buffer 移动到 window;
+ + M-o S :: 将当前 window 和指定 window 进行交换；
+ + M-o O ::  为指定 window 切换 buffer;
+ + M-o N :: 上一次操作的 window
 
 * 显示
- 
+
 |-----------------------------+---------------------------------+------------------------------------------|
 | C-xnn                       | narrow-to-region                |                                          |
-| C-xnw                       | widen                           |                                          |
 | C-xnp                       | narrow-to-page                  |                                          |
 | C-xnd                       | narrow-to-defun                 |                                          |
 | C-xns                       | org-narrow-to-subtree           |                                          |
+| C-xnw                       | widen                           |                                          |
 |-----------------------------+---------------------------------+------------------------------------------|
 | C-x C-+、s - +              | text-scale-increase             | 放大当前显示的字体大小                   |
 | C-x C--、s - -              | text-scale-decrease             | 缩小当前显示的字体大小                   |
 | C-x C-0、s - 0              | text-scale-adjust               | 恢复当前显示的字体大小                   |
 |-----------------------------+---------------------------------+------------------------------------------|
 | M-x follow-mode             |                                 | 用两个 window 来连续显示一个 buffer 内容 |
-| M-x view-buffer             |                                 |                                          |
 |-----------------------------+---------------------------------+------------------------------------------|
 | M-s h r regexp RET face RET | highlight-regexp                |                                          |
 | M-s h u regexp RET          | unhighlight-regexp              |                                          |
-| M-s h l regexp RET face RET | highlight-lines-matching-regexp |                                          |
+| M-s h l regexp RET face RET | highlight-lines-matching-regexp  |                                          |
 | M-s h .                     | highlight-symbol-at-point       |                                          |
 |-----------------------------+---------------------------------+------------------------------------------|
 | M-x whitespace-mode         |                                 | 显示 buffer 的空白字符（包括换行符）     |
 |-----------------------------+---------------------------------+------------------------------------------|
 
-执行 =M-x follow-mode= 命令前，需要在一个 frame 中将一个 buffer 用 C-x 3 显示为两
-个 window，然后才能滚动窗口 。
-
-=M-x view-buffer= ：将当前 buffer 置为只读：
-+ SPC：滚动
-+ S-SPC：反向滚动
-+ s：增量搜索
-+ q：退出 view mode，返回以前的 buffer 位置
-+ e：退出 view mode，但是保持当前位置；
-
-按一次 C-x C-+ 后，可以一直按 C-+，这样就持续放大或缩小。
-
-安装 symbol-overlay 包后，可以使用如下快捷键替换 M-s h r 的功能：
-1. M-i: symbol-overlay-put
-2. M-n：symbol-overlay-jump-next
-3. M-p：symbol-overlay-jump-prev
-4. <f7>：symbol-overlay-mode
-5. <f8>：symbol-overlay-remove-all
+执行 =M-x follow-mode= 命令前，需要在一个 frame 中将一个 buffer 用 C-x 3 显示为两个 window，然后才能滚动窗口 。
 
 * 标记
 
@@ -304,21 +285,15 @@ redo 的效果。
 | C-x h       | mark-whole-buffer       |                                                   |
 |-------------+-------------------------+---------------------------------------------------|
 
-在特定 buffer 中添加位置标记时，也会被自动添加到全局的标记环，使用它可以在多个
-buffer 中跳转。
-
-如果要临时跳转到其它位置，后续再返回当前位置，则通过 =C-SPC C-SPC= 做个快速标记，
-后续再通过 =C-u C-SPC=返回是个不错的方案。
-
-=Shift-Selection= ：按住 Shift 键的同时执行一些光标移动命令，如 =S-C-f S-C-n= 等，也
-可以用来标记区域。
-
-一般情况下，引起光标位置改变的操作，都会自动记录上一次位置，可以通过 =C-u C-SPC=
-跳转到以前的历史位置。
+在特定 buffer 中添加位置标记时，也会被自动添加到全局的标记环，使用它可以在多个 buffer 中跳转。如果要临时跳转到
+其它位置，后续再返回当前位置，则通过 =C-SPC C-SPC= 做个快速标记，后续再通过 =C-u C-SPC= 返回是个不错的方案。一般情
+况下，引起光标位置改变的操作，都会自动记录上一次位置，可以通过 =C-u C-SPC= 跳转到以前的历史位置。
 
 =consult= 提供跳转到 mark 和 global mark 的功能：
 + M-g m: 跳转到 mark；
 + M-g k：跳转到全局 mark；
+
+=Shift-Selection= ：按住 Shift 键的同时执行一些光标移动命令，如 =S-C-f S-C-n= 等，也可以用来标记区域。
 
 * 寄存器
 
@@ -327,49 +302,54 @@ Emacs 寄存器可以保存多种类型记录：
 2. frame 或 window 配置记录；
 3. bookmark 记录；
 4. rectangle 内容记录等；
+5. 选择的 region 内容；
 
-|-------------------------+----------------------------------+------------------------------------------------------------|
-| 按键                    | 函数                             | 功能                                                       |
-|-------------------------+----------------------------------+------------------------------------------------------------|
-| C-x r SPC r             | point-to-register                |                                                            |
-| C-x r j r               | jump-to-register                 | Jump to the position and buffer saved in register r        |
-|-------------------------+----------------------------------+------------------------------------------------------------|
-| C-x r s r               | copy-to-register                 | Copy region into register r                                |
-| C-x r i r               | insert-register                  | Insert text from register r                                |
-|                         | M-x append-to-register <RET> r   | Append region to text in register r.                       |
-|                         | M-x prepend-to-register <RET> r  | Prepend region to text in register r.                      |
-|-------------------------+----------------------------------+------------------------------------------------------------|
-| C-x r f r               | frameset-to-register             | 将当前 frame 配置保存到寄存器，后续可以恢复当前 frame 布局 |
-| C-x r w r               | window-configuration-to-register | 将当前 window 配置保存到寄存器                             |
-|-------------------------+----------------------------------+------------------------------------------------------------|
-| C-x r d                 | delete-rectangle                 |                                                            |
-| C-x r k                 | kill-rectangle                   |                                                            |
-| C-x r M-w               | copy-rectangle-as-kill           |                                                            |
-| C-x r y                 | yank-rectangle                   | 粘贴上一次删除的矩形区块，注意插入点位矩形的左上角         |
-| C-x r o                 | open-rectangle                   | 用空格插入选择的矩形块，选择的内容右移                     |
-| C-x r N                 | rectangle-number-lines           | 在选中的矩形块前插入序号                                   |
-| C-x r c                 | clear-rectangle                  | 用空格填充选择的矩形块                                     |
-| C-x r t                 | string-rectangle                 | 用指定字符填充选定的矩形区域                               |
-| C-x r r                 |                                  | 拷贝矩形区域到寄存器中                                     |
-| C-x r i r               |                                  | 使用寄存器 r 的内容                                        |
-|-------------------------+----------------------------------+------------------------------------------------------------|
-| C-x r m <RET>           |                                  | Set the bookmark for the visited file, at point.           |
-| C-x r m <bookmark>      | bookmark-set                     | 在当前位置设置书签                                         |
-| C-x r b                 | bookmark-jump                    | 跳转到书签                                                 |
-|                         | M-x bookmark-rename              | 重命名书签                                                 |
-|                         | M-x bookmard-delete              | 删除书签                                                   |
-|                         | M-x bookmark-load                | 从指定文件中加载书签                                       |
-|                         | M-x bookmark-insert              | 将书签指向的文件的内容插到光标处                           |
-|                         | M-x bookmard-write               | 把书签全部保存到指定文件                                   |
-|                         | M-x bookmark-save                | 将书签内容保存到文件，缺省为 ~/.emacs.d/bookmarks          |
-| C-x r l                 | bookmark-menu-list               | 列出所有的书签                                             |
-|-------------------------+----------------------------------+------------------------------------------------------------|
-| M-x view-register RET r | 查看寄存器 r 的内容              |                                                            |
-|-------------------------+----------------------------------+------------------------------------------------------------|
+|-------------------------+----------------------------------+---------------------------------------------------------|
+| 按键                    | 函数                             | 功能                                                    |
+|-------------------------+----------------------------------+---------------------------------------------------------|
+| C-x r SPC r             | point-to-register                |                                                         |
+| C-x r j r               | jump-to-register                 | Jump to the position and buffer saved in register r     |
+|-------------------------+----------------------------------+---------------------------------------------------------|
+| C-x r s r               | copy-to-register                 | Copy region into register r, 适合临时保存一些选择的内容 |
+| C-x r i r               | insert-register                  | Insert text from register r, 使用寄存器 r 中的内容      |
+|                         | M-x append-to-register <RET> r   | Append region to text in register r.                    |
+|                         | M-x prepend-to-register <RET> r  | Prepend region to text in register r.                   |
+|-------------------------+----------------------------------+---------------------------------------------------------|
+| C-x r f r               | frameset-to-register             | 将当前 frame 配置保存到寄存器                           |
+| C-x r w r               | window-configuration-to-register | 将当前 window 配置保存到寄存器                          |
+|-------------------------+----------------------------------+---------------------------------------------------------|
+| C-x r d                 | delete-rectangle                 |                                                         |
+| C-x r k                 | kill-rectangle                   |                                                         |
+| C-x r M-w               | copy-rectangle-as-kill           |                                                         |
+| C-x r y                 | yank-rectangle                   | 粘贴上一次删除的矩形区块，注意插入点位矩形的左上角      |
+| C-x r o                 | open-rectangle                   | 用空格插入选择的矩形块，选择的内容右移                  |
+| C-x r N                 | rectangle-number-lines           | 在选中的矩形块前插入序号                                |
+| C-x r c                 | clear-rectangle                  | 用空格填充选择的矩形块                                  |
+| C-x r t                 | string-rectangle                 | 用指定字符填充选定的矩形区域                            |
+| C-x r r                 |                                  | 拷贝矩形区域到寄存器中                                  |
+| C-x r i r               |                                  | 使用寄存器 r 的内容                                     |
+|-------------------------+----------------------------------+---------------------------------------------------------|
+| C-x r m <RET>           |                                  | Set the bookmark for the visited file, at point.        |
+| C-x r m <bookmark>      | bookmark-set                     | 在当前位置设置书签                                      |
+| C-x r b                 | bookmark-jump                    | 跳转到书签                                              |
+|                         | M-x bookmark-rename              | 重命名书签                                              |
+|                         | M-x bookmard-delete              | 删除书签                                                |
+|                         | M-x bookmark-load                | 从指定文件中加载书签                                    |
+|                         | M-x bookmark-insert              | 将书签指向的文件的内容插到光标处                        |
+|                         | M-x bookmard-write               | 把书签全部保存到指定文件                                |
+|                         | M-x bookmark-save                | 将书签内容保存到文件，缺省为 ~/.emacs.d/bookmarks       |
+| C-x r l                 | bookmark-menu-list               | 列出所有的书签                                          |
+|-------------------------+----------------------------------+---------------------------------------------------------|
+| M-x view-register RET r | 查看寄存器 r 的内容              |                                                         |
+|-------------------------+----------------------------------+---------------------------------------------------------|
 
 对于保存的 frame 或 window，可以使用 =C-x r j= 来恢复，从而实现类似于多 frame 切换且保持 window 布局的效果。
 
-安装了 consult 包后，在进行寄存器和书签跳转前，可以自动预览和过滤。
+可以使用寄存器快速保存部分临时内容，
+
+安装了 consult 包后，在进行寄存器和书签跳转前，可以自动预览和过滤。同时还支持如下快捷特性：
++ M-' :: consult-register-store, 根据上下文保存到寄存器；支持文件、window、frame、point;
++ M-# :: consult-register-load, Do what I mean with a REG;
 
 * 删除
 
@@ -401,31 +381,30 @@ Emacs 寄存器可以保存多种类型记录：
 |               | M-x append-to-file      |                                              |
 |---------------+-------------------------+----------------------------------------------|
 
-M-- 和 M-z 反向命令前缀联合使用，可以实现快速的删除光标前面连续字符的功能。
+~M--~ 和 ~M-z~ 反向命令前缀联合使用，可以实现快速的删除光标前面连续字符的功能。
 
 embark find-file 时，可以使用 =C-M-Backspace= 删除上级目录。
 
+安装了 easy-kill 包时, 可以使用快速选择和删除内容。
+
 * 填充和注释
 
-如果一行内容超过了屏幕长度，Emacs 会自动将它作多行显示，这时每行行尾有一个箭头示
-意。每行的原始内容称为 logical line，展示的多行称为 screen line，这种行为也称为
-line wrapping or continuation（一般是在 window edge 开始 wrapping 的。）
+如果一行内容超过了屏幕长度，Emacs 会自动将它作多行显示，这时每行行尾有一个箭头示意。每行的原始内容称为 logical
+line，展示的多行称为 screen line，这种行为也称为line wrapping or continuation（一般是在 window edge 开始
+wrapping 的。）
 
-如果想在行内容达到指定长度（而非默认的 window edge）自动添加回车，则可以使用
-=Auto-Fill Mode= 。
+如果想在行内容达到指定长度（而非默认的 window edge）自动添加回车，则可以使用=Auto-Fill Mode= 。
 
-Emacs 的命令，如 C-a、C-e 是按照 screen line 来移动的。如果想在 window edge 自动
-line wrapping，但是 C-n、C-p 等按照 logical line 来移动，则可以使用 =Visual Line
-Mode= 。
+Emacs 的命令，如 C-a、C-e 是按照 screen line 来移动的。如果想在 window edge 自动line wrapping，但是 C-n、C-p
+等按照 logical line 来移动，则可以使用 =Visual Line Mode= 。
 
-如果安装了 =visual-fill-column= ，则它提供的 =visual-fill-column-mode= 则结合了
-Visual Line Mode 和 Auto-Fill Mode 的特性，可以在行内容达到指定长度（默认使用
-fill-column，但如果设置了 visual-fill-column-width 则以它为准）后自动 line
-wrapping，同时按照 logical line 来执行命令。
+如果安装了 =visual-fill-column= ，则它提供的 =visual-fill-column-mode= 则结合了Visual Line Mode 和 Auto-Fill Mode
+的特性，可以在行内容达到指定长度（默认使用fill-column，但如果设置了 visual-fill-column-width 则以它为准）后自
+动 line wrapping，同时按照 logical line 来执行命令。
 
-Auto-Fill 或 fill-paragraph 都是针对当前 paragraph 的，而 Emacs 使用缩进或至少两
-个空行来识别 paragraph 的。如果一个 region 是多个缩进的 paragraph，但想把它们作
-为一个 paragraph 来 fill，则需要使用 =fill-indiviual-paragraphs= 命令。
+Auto-Fill 或 fill-paragraph 都是针对当前 paragraph 的，而 Emacs 使用缩进或至少两个空行来识别 paragraph 的。如
+果一个 region 是多个缩进的 paragraph，但想把它们作为一个 paragraph 来 fill，则需要使用
+=fill-indiviual-paragraphs= 命令。
 
 |---------+----------------------------------------+--------------------------------------|
 | 按键    | 函数                                   | 功能                                 |
@@ -441,8 +420,7 @@ Auto-Fill 或 fill-paragraph 都是针对当前 paragraph 的，而 Emacs 使用
 | M-;     | comment-dwim                           |                                      |
 |---------+----------------------------------------+--------------------------------------|
 
-lisp 注释：如果是两个以上 ; 开头，则格式化的时候不移动注释位置。否则，按照
-=comment-set-column= 的位置来移动注释。
+lisp 注释：如果是两个以上 ; 开头，则格式化的时候不移动注释位置，否则按照 =comment-set-column= 的位置来移动注释。
 
 * 格式化和缩进
 
@@ -469,6 +447,7 @@ lisp 注释：如果是两个以上 ; 开头，则格式化的时候不移动注
 |---------+-----------------+------------------------------------|
 
 * 大小写
+
 |---------+-----------------|
 | 按键    | 函数            |
 |---------+-----------------|
@@ -487,39 +466,34 @@ lisp 注释：如果是两个以上 ; 开头，则格式化的时候不移动注
 Search 默认大小写不敏感，但如果搜索字符串中包含大写字母，则大小写敏感。
 
 搜索过程中可以使用的快捷键：
-+ C-s 查找下一个，ENTER 停止搜索
-+ C-r 查找上一个，ENTER 停止搜索
-+ C-g C-g isearch-abort 停止搜索
++ C-s :: 查找下一个，ENTER 停止搜索
++ C-r :: 查找上一个，ENTER 停止搜索
++ C-g C-g :: isearch-abort 停止搜索
 + M-n、M-p 查找命令历史记录
-+ C-y isearch-yank-kill 粘贴删除环中文本
-+ M-y isearch-yank-pop 循环粘贴删除环中的文本
-+ C-w isearch-yank-word-or-char 将光标所在位置到下一个标点符号或空格符间的文本添
-  加到搜索字符串中
-+ C-M-w isearch-yank-symbol-or-char appends the next character or symbol at
-  point to the search string.
-+ C-M-y isearch-yank-char appends the character after point to the search string
-+ C-M-z isearch-yank-until-char appends to the search string everything from
-  point until the next occurrence of a specified character
-+ C-M-d isearch-del-char deletes the last character from the search string
-+ M-s C-e isearch-yank-line 将光标所在的位置到行尾的内容添加到搜索字符串中
-+ M-s o (isearch-occur): in incremental search invokes isearch-occur, which runs
-  occur with the current search string
-+ M-s h r (isearch-highlight-regexp): exit the search while leaving the matches
-  highlighted
-+ M-c 大小写敏感模式切换
-+ M-r 正则匹配模式切换
-+ M-% 切换到替换模式
++ C-y isearch-yank-kill :: 粘贴删除环中文本
++ M-y isearch-yank-pop :: 循环粘贴删除环中的文本
++ C-w isearch-yank-word-or-char :: 将光标所在位置到下一个标点符号或空格符间的文本添加到搜索字符串中
++ C-M-w isearch-yank-symbol-or-char :: appends the next character or symbol at point to the search string.
++ C-M-y isearch-yank-char :: appends the character after point to the search string
++ C-M-z isearch-yank-until-char :: appends to the search string everything from point until the next occurrence
+  of a specified character
++ C-M-d isearch-del-char :: deletes the last character from the search string
++ M-s C-e isearch-yank-line :: 将光标所在的位置到行尾的内容添加到搜索字符串中
++ M-s o (isearch-occur) :: in incremental search invokes isearch-occur, which runs occur with the current search
+  string
++ M-s h r (isearch-highlight-regexp) :: exit the search while leaving the matches highlighted
++ M-c :: 大小写敏感模式切换
++ M-r :: 正则匹配模式切换
++ M-% :: 切换到替换模式
 
 搜索过程中，可以使用 =M-e（isearch-edit-string）= 编辑搜索字符串。
-
 + C-s ENTER search-forward :: 非增量搜索模式
 + C-r ENTER search-backward :: 进入反向非增量搜索模式
 
-单词搜索模式：上面都是字符串完整匹配的搜索模式，如果要搜索多个字符串，同时忽略它
-们之间的标点和换行符，则可以使用单词搜索模式：
+单词搜索模式：上面都是字符串完整匹配的搜索模式，如果要搜索多个字符串，同时忽略它们之间的标点和换行符，则可以使
+用单词搜索模式：
 + M-s w 是单词搜索模式命令前缀：
-+ M-s w isearch-forward-word 增量式单词搜索（在 C-s 或 C-r 命令中使用时切换到单
-  词搜索模式）。
++ M-s w isearch-forward-word 增量式单词搜索（在 C-s 或 C-r 命令中使用时切换到单词搜索模式）。
 + M-s w <RET> words <RET> 非增量式单词搜索
 + M-s w C-r words 反向增量式单词搜索
 + M-s w C-r <RET> words <RET> 反向非增量式单词搜索
@@ -537,8 +511,7 @@ Search 默认大小写不敏感，但如果搜索字符串中包含大写字母�
 + C-M-r <RET> 向后非增量式正则搜索
 
 Occur:
-+ M-s o：Prompt for a regexp, and display a list showing each line in the buffer
-  that con- tains a match for it
++ M-s o：Prompt for a regexp, a list showing each line in the buffer that con- tains a match for it
 + M-x multi-occur：和 occur 类似，但是可以选择多个 buffer 来进行搜索
 + M-x multi-occur-in-matching-buffers：先执行 buffer name 的 regexp，然后搜索
 
@@ -555,52 +528,47 @@ Occur:
 + h：显示帮助
 + C-c C-f: next-error-follow-minor-mode
 
-安装 consult 后，可以通过 =M-s m= 来执行 =consult-multi-occur= ，利用它的自动补全功
-能快速选择多个 buffer。
+安装 consult 后，可以通过 =M-s m= 来执行 =consult-multi-occur= ，利用它的自动补全功能快速选择多个 buffer。
 
 *Grep mode*:
-+ M-x grep、M-x lgrep (local grep) Run grep asynchronously under Emacs, listing
-  matching lines in the buffer named *grep*.
-+ M-x grep-find、M-x find-grep、M-x rgrep (recursive grep) Run grep via find,
-  and collect output in the *grep* buffer.
-+ M-x zrgrep Run zgrep and collect output in the *grep* buffer.
-+ M-x kill-grep Kill the running grep subprocess.
++ M-x grep、M-x lgrep (local grep) :: Run grep asynchronously , listing matching lines in the buffer named
+  *grep*.
++ M-x grep-find、M-x find-grep、M-x rgrep (recursive grep)  :: Run grep via find, and collect output in the
+  *grep* buffer.
++ M-x zrgrep :: Run zgrep and collect output in the *grep* buffer.
++ M-x kill-grep :: Kill the running grep subprocess.
 
-Your command need not simply run grep; you can use any shell command that
-produces output in the same format. For instance, you can chain grep commands,
-like this: =grep -nH -e foo *.el | grep bar | grep toto=
+Your command need not simply run grep; you can use any shell command that produces output in the same
+format. For instance, you can chain grep commands, like this: =grep -nH -e foo *.el | grep bar | grep toto=
 
-The output from grep goes in the *grep* buffer. You can find the corresponding
-lines in the original files using M-g M-n, RET, and so forth, just like
-compilation errors. See Section 24.2 [Compilation Mode], page 290, for detailed
-description of commands and key bindings available in the *grep* buffer.
+The output from grep goes in the *grep* buffer. You can find the corresponding lines in the original files using
+M-g M-n, RET, and so forth, just like compilation errors. See Section 24.2 [Compilation Mode], page 290, for
+detailed description of commands and key bindings available in the *grep* buffer.
 
 grep、occur、riggrep 都是继承自 compile mode，它们的 buffer 快捷键类似：
-+ TAB             compilation-next-error
-+ RET             compile-goto-error
-+ C-o             compilation-display-error
-+ <               beginning-of-buffer
-+ >               end-of-buffer
-+ ?               describe-mode
-+ e               consult-compile-error
-+ g               recompile
-+ h               describe-mode
-+ q               quit-window
-+ C-c C-f         next-error-follow-minor-mode
-+ C-c C-p         wgrep-change-to-wgrep-mode
-+ n、p            上一个或下一个 error，会在其它窗口显示对应内容
-+ M-n             compilation-next-error，不显示内容
-+ M-p             compilation-previous-error，不显示内容
-+ { 或 M-{             compilation-previous-file
-+ } 或 M-}             compilation-next-file
-+ C-c C-c         compile-goto-error
-+ C-c C-k         kill-compilation
++ TAB :: compilation-next-error
++ RET :: compile-goto-error
++ C-o :: compilation-display-error
++ < :: beginning-of-buffer
++ > :: end-of-buffer
++ ? :: describe-mode
++ e :: consult-compile-error
++ g :: recompile
++ h :: describe-mode
++ q :: quit-window
++ C-c C-f :: next-error-follow-minor-mode
++ C-c C-p :: wgrep-change-to-wgrep-mode
++ n、p :: 上一个或下一个 error，会在其它窗口显示对应内容
++ M-n :: compilation-next-error，不显示内容
++ M-p :: compilation-previous-error，不显示内容
++ { 或 M-{ :: compilation-previous-file
++ } 或 M-} :: compilation-next-file
++ C-c C-c :: compile-goto-error
++ C-c C-k :: kill-compilation
 
 ** deadgrep
 
-<f5>：运行 deadgrep 搜索命令。搜索结果页面会列出所有匹配的文件和行，可以使用的快
-捷键如下：
-
+<f5>：运行 deadgrep 搜索命令。搜索结果页面会列出所有匹配的文件和行，可以使用的快捷键如下：
 + TAB：折叠当前文件匹配的内容
 + Enter：查看当前文件
 + o：在另一个 window 中查看光标位置的内容
@@ -616,8 +584,8 @@ grep、occur、riggrep 都是继承自 compile mode，它们的 buffer 快捷键
 
 ** projectile
 
-+ C-c p s r (projectile-ripgrep)：需要当前或远程机器安装 rg 工具，结果显示在
-  Ripgrep Mode buffer 中，快捷键与 compile mode 类似；
++ C-c p s r (projectile-ripgrep)：需要当前或远程机器安装 rg 工具，结果显示在Ripgrep Mode buffer 中，快捷键与
+  compile mode 类似；
 + C-c p s g (projectile-grep)：使用 grep 在 project 范围内搜索；
 
 ** consult
@@ -626,8 +594,8 @@ grep、occur、riggrep 都是继承自 compile mode，它们的 buffer 快捷键
 + M-s G: consult-git-grep
 + M-s r: consult-ripgrep
 
-对于上述搜索结果 Buffer，可以使用 embark-export 将其保存到一个特殊 buffer，然后
-批量进行编辑（C-c C-p，切换到 wgrep 模式）。
+对于上述搜索结果 Buffer，可以使用 embark-export 将其保存到一个 Grep 类型的 buffer，然后就可以使用 Grep Mode 的
+快捷键和命令进行处理，如 批量编辑（C-c C-p，切换到wgrep 模式）。
 
 consult 不支持 TRAMP 模式。
 
@@ -662,14 +630,11 @@ Query replace 过程中可以使用的快捷键：
 进入查找-替换模式后，按 C-r 进入递归编辑，或 C-w 删除此次内容并进入递归编辑模式：
 +  C-M-x 退出递归编辑模式，返回到查找/替换模式 (exist)
 +  C-M-c 同上(cancel)
-+  C-]
-  
-  退出递归编辑和查找替换模式
++  C-] 退出递归编辑和查找替换模式
 
 其它替换命令：
 + M-x projectile-replace：在 project 级别搜索或替换文件。
-+ M-x dired-do-find-regexp-and-replace：在 dired mode 上选中文件，按 Q 进行查询
-  替换；
++ M-x dired-do-find-regexp-and-replace：在 dired mode 上选中文件，按 Q 进行查询替换；
   
 * Tab
 
@@ -690,59 +655,20 @@ Emacs 支持 5 种 Modify key：
 + Alt：A-
 + Hyper：H-
 
-例如： (global-set-key (kbd "s-n") #'next-line)
-
-这些 keybinding 默认是不区分大小写的，例如 C-a 和 C-A 是一致的，但是在定义快捷键
-时使用 Shift，例如：（global-set-key (kbd "C-S-n") #'next-line)
-
+例如： ~(global-set-key (kbd "s-n") #'next-line)~ 。这些 keybinding 默认是不区分大小写的，例如 C-a 和 C-A 是一致
+的，但是在定义快捷键时可以使用 Shift，例如：（global-set-key (kbd "C-S-n") #'next-line)
 + C-x 8 RET：插入 unicode 字符。
-
-* tramp
-
-+ C-c C-f /sudo::/path/to/file 以管理员权限编辑本地文件，:: 中的空格表示本地
-+ C-c C-f /sudo:user@host:filepath 以管理员权限打开本地编辑远程文件
-+ C-c C-f /ssh:phil@remotehost#port:records/pizza-toppings.txt 远程编辑文件
-
-编辑远程文件时，tramp 自动将 auto-save 文件保存到本地。
-
-tramp 一般和 projectile 联合使用，对于远程项目，如果不是 git 类型，则最好在项目
-根目录创建一个空的 .projectile 文件，这样projectile 能正确识别项目根目录。另外，
-为了加快查找效率，一般需要在远程机器上安装 fd 和 rg 命令。
-
-可以打开 ssh 的 ControlPersist 特性，这样编辑远程多个文件更高效。
-#+begin_src shell
-Host *
-  ControlMaster auto
-  ControlPath ~/.ssh/master-%r@%h:%p  # 设置了 ControlPath 后才会复用连接.
-  ControlPersist 120m
-  ServerAliveInterval 10
-  ServerAliveCountMax 60
-  TCPKeepAlive no
-  StrictHostKeyChecking no$ 
-#+end_src
-
-如果远程是 zsh，因为它一般会重新定义 PS1，则 tramp 会因为匹配不到 PS1 而 hang，
-解决办法是在远程机器的 ~/.zprofile 文件头部（而非 ~/.zshrc，因为 zsh 会首先执
-行~/.zprofile 文件） 添加如下内容：
-
-#+begin_src bash
-  ➜ multiarch cat ~/.zprofile if [ $TERM = "tramp" ]; then unset RPROMPT unset RPS1 unset PROMPT_COMMAND PS1="$ " unsetopt
-  zle unsetopt rcs # Inhibit loading of further config files fi ➜ multiarch
-#+end_src
-+ 上面有效的前提是为 tramp 设置了如下变量：（setq tramp-terminal-type "tramp"）
 
 * projectile
 
-projectile 需要启用 cache，否则 TRAMP 有问题：
-https://github.com/bbatsov/projectile/issues/835
+projectile 需要启用 cache，否则 TRAMP 有问题：https://github.com/bbatsov/projectile/issues/835
 
-如果远程文件不是 projectile 创建或修改的，则使用 =C-c p f= 有可能找不到新的文件，
-这时可以 =M-x projectile-invalidate-cache= 清空 cache。
+如果远程文件不是 projectile 创建或修改的，则使用 =C-c p f= 有可能找不到新的文件，这时可以 =M-x
+projectile-invalidate-cache= 清空 cache。
 
-如果项目不是 git，则 projectile 会通过各种方式查找项目的 root 目录，为了提高性能，
-可以在项目的 root 目录中创建一个 .projectile 文件。在项目的根目录下创建
-.projectile 文件后，projectile 会无条件地将该目录作为项目的根目录，该文件可以定
-义一些忽略模式，这样后续操作，如搜索文件、搜索内容时会忽略这些文件或目录：
+如果项目不是 git，则 projectile 会通过各种方式查找项目的 root 目录，为了提高性能，可以在项目的 root 目录中创建
+一个 ~.projectile~ 文件。在项目的根目录下创建 .projectile 文件后，projectile 会无条件地将该目录作为项目的根目录，
+该文件可以定义一些忽略模式，这样后续操作，如搜索文件、搜索内容时会忽略这些文件或目录：
 
 #+begin_example
 /tmp
@@ -752,60 +678,132 @@ node_modules/yaml
 ! node_modules/yaml/v1.1
 #+end_example
 
-为了加快远程文件查找，可以在远程机器添加 rg 和 fd 命令。
-
-为了避免 preview TRAMP 书签时 hang，可以关闭 consult 的自动 preview 功能。
+与 TRAMP 协作时, 为了加快远程文件查找，可以在远程机器添加 rg 和 fd 命令。
 
 * treemacs
 
-在 TRAMP 时，关闭 treemacs mode，否则文件读取性能会比较慢。treemacs 在每个 frame
-里内嵌一个 buffer，显示某个 workspace 下的 project 列表。
+在 TRAMP 时，关闭 treemacs mode，否则文件读取性能会比较慢。
 
-可以编辑 treemacs workspace（每个 workspace 可以有多个 project），后续可以在不同
-workspace 中切换。
+treemacs 在每个 frame里内嵌一个 buffer，显示某个 workspace 下的 project 列表。
 
-+ M-0：显示并切换到 treemacs buffer，然后按 ? 可以显示 treemacs 的帮助快捷键，例
-  如：
+可以编辑 treemacs workspace（每个 workspace 可以有多个 project），后续可以在不同 workspace 中切换。
++ M-0：显示并切换到 treemacs buffer，然后按 ? 可以显示 treemacs 的帮助快捷键，例如：
   + C-c C-w 开头的添加、删除、切换当前 workspace 的。
   + C-c C-p 开头的添加、删除、重命名 project 到当前 workspace。
   + n、l、p、u 等在 treemacs buffer 中移动光标的命令
   + o  开头的打开文件的命令
-  + t 开头的 toggle 开关（特别是 tw 可以打开 treemacs buffer width 调整
-  的开关）
+  + t 开头的 toggle 开关（特别是 tw 可以打开 treemacs buffer width 调整的开关）
 + M-x treemacs-add-project：在当前 workspace 中添加 project；
-+ M-x treemacs-projectile： 从 projectile 项目列表中选择一个 project，然后添加到
-  workspace
++ M-x treemacs-projectile： 从 projectile 项目列表中选择一个 project，然后添加到workspace
 + M-x treemacs-add-and-display-current-project：将当前的 project 添加到workspace
-+ M-x treemacs-display-current-project-exclusively：只将当前 project 添加到当前
-  project。
++ M-x treemacs-display-current-project-exclusively：只将当前 project 添加到当前project。
+* tramp
 
-* go 目录树
++ C-c C-f /sudo::/path/to/file  :: 以管理员权限编辑本地文件，:: 中的空格表示本地
++ C-c C-f /sudo:user@host:filepath  :: 以管理员权限打开本地编辑远程文件
++ C-c C-f /ssh:phil@remotehost#port:records/pizza-toppings.txt  ::  编辑远程文件
 
-对于依赖其它 github project module 的 go 项目, 默认通过 lsp 跳转时, 会将 mod
-cache 中的目录自动添加 treemacs 中，这样会导致 treemacs 中添加太多单个目录。解决
-办法如下：
-1. 先将项目依赖的 module repo 克隆到本地目录；
-2. 修改项目的 go.mod 文件，添加 replace 指令，将依赖的 module repo 指向刚才保存
-   的本地目录；
-   #+begin_src sh
-     replace (
-         github.com/go-admin-team/go-admin-core => /Users/zhangjun/codes/github/go-admin-core
-         github.com/go-admin-team/go-admin-core/sdk =>
-         /Users/zhangjun/codes/github/go-admin-core/sdk
-     )
-   #+end_src
-3. 执行 M-x treemacs-display-current-project-exclusively 命令，创建一个新的
-   Treemacs Workspace, 并将当前 project 加入到该 workspace;
-4. 执行 M-x treemacs-add-project-to-workspace 将依赖 module repo 的本地目录添加到该 workspace;
-5. 执行 M-x treemacs-rename-workspace 重命名当前 workspace 为有意义的名称；
+tramp 一般和 projectile 联合使用，对于远程项目，如果不是 git 类型，则最好在项目根目录创建一个空的 ~.projectile~
+文件，这样 projectile 能正确识别项目根目录。另外，为了加快查找效率，一般需要在远程机器上安装 fd 和 rg 命令。
+
+需要打开本地和中间 ssh 的 ControlPersist 特性，这样连接可以复用，效率更高：
+#+begin_src shell
+Host *
+  ControlMaster auto
+  ControlPath ~/.ssh/master-%r@%h:%p  # 设置 ControlPath 后才会复用连接。
+  ControlPersist 120m
+  ServerAliveInterval 10
+  ServerAliveCountMax 60
+  TCPKeepAlive no
+  StrictHostKeyChecking no
+#+end_src
+
+如果远程是 zsh，因为它一般会重新定义 PS1，则 tramp 会因为匹配不到 PS1 而 hang，解决办法是在远程机器的
+~~/.zprofile~ 文件头部（而非 ~/.zshrc，因为 zsh 会首先执行 ~/.zprofile 文件） 添加如下内容：
+#+begin_src shell
+$ cat ~/.zprofile 
+if [ $TERM = "tramp" ]; then 
+    unset RPROMPT 
+    unset RPS1 
+    unset PROMPT_COMMAND 
+    PS1="$ " 
+    unsetopt zle 
+    unsetopt rcs # Inhibit loading of further config files
+fi
+#+end_src
+
++ 上面有效的前提是为 tramp 设置了如下变量：（setq tramp-terminal-type "tramp"）
+
+编辑远程文件时，tramp 自动将 auto-save 文件保存到本地。
+
+与 TRAMP 协作时:
++ 为了加快远程文件查找，可以在远程机器添加 rg 和 fd 命令。
++ 关闭远程 buffer 的 projectile 探测:
+    #+begin_src emacs-lisp
+  ;; Disable projectile on remote buffers
+  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
+  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
+  ;;(defadvice projectile-project-root (around ignore-remote first activate)
+  ;;  (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+    #+end_src
++ 为了避免 preview TRAMP 书签时 hang，可以关闭 consult 的自动 preview 功能。
+  #+begin_src emacs-lisp
+  ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
+  (setq consult-preview-key (kbd "C-l"))
+  #+end_src
++ treemacs 会变慢,  在打开远程文件时需要关闭 treemacs:
+  #+begin_src emacs-lisp
+(add-hook 'buffer-list-update-hook
+          (lambda ()
+            (when (file-remote-p default-directory)
+              ;; 关闭 treemacs, 避免建立新连接耗时。
+              (require 'treemacs)
+              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                  (delete-window (treemacs-get-local-window))))))
+  #+end_src
++  与 projectile 协作时, 在远程机器的常见目录下创建 .projectile 文件, 在远程机器上安装 rg 和 fd 命令.
+  
+* term&shell
+
++ M-! cmd RET :: Run the shell command cmd and display the output (shell-command).
++ M-| cmd RET :: Run the shell command cmd with region contents as input; optionally replace the region with
+  the output (shell-command-on-region).
++ M-& cmd RET :: Run the shell command cmd asynchronously, and display the output (async-shell-command).
++ M-x shell :: Run a subshell with input and output through an Emacs buffer. 
++ M-x term :: Run a subshell with input and output through an Emacs buffer. 
+
+A numeric argument to shell-command, e.g., =M-1 M-!=, causes it to insert terminal output =into the current
+buffer= instead of a separate buffer.
+
+To make multiple subshells, invoke =M-x shell= with a prefix argument (e.g., =C-u M-x shell=). Then the command
+will read =a buffer name=, and create (or reuse) a subshell in that buffer. You can also rename the *shell* buffer
+using =M-x rename-uniquely=, then create a new *shell* buffer using plain M-x shell. Subshells in different
+buffers run independently and in parallel.
+
+Shell mode：不支持终端转义字符， =不建议使用= ：
++ 在 M-x shell 环境中 emacs 创建环境变量 =INSIDE_EMACS= to ‘version,comint’,这样可以针对性的初始化 shell。
++ C-c C-u、C-c C-w、C-c C-c、C-c C-\、C-c C-z
++ C-c C-o：删除上一个命令的输出
++ C-c C-s：将上一个命令的输出保存到指定 buffer
++ C-c C-r 或 C-M-l：将上一个命令的输出置到 window 的顶部；
++ M-p、M-n、M-r、C-c C-n、C-c C-p：命令历史记录
++ C-c C-l：在另一个 buffer 中展示当前 shell buffer 的历史记录； 然后可以搜索，回车确定；
+
+Term mode： =建议使用= ，可以使用 top、vim 等：
++ C-c C-j：term-line-mode 切换到 Emacs 编辑模式直到按回车（将当前行发送给终端）。在粘贴拷贝的内容前不能回车。
++ C-c C-k：term-char-mode，切换到终端模式，输入的任何字符都会直接发送给终端（ 除了 C-c 字符外）。
++ C-c C-c: 向 shell 进程发送 C-c 命令；
+
+C-c C-q: Toggle the page-at-a-time feature (term-pager-toggle). 在 line和 char mode 都可以启用，当输出超过一页
+时会暂停，按 SPACE 继续。
 
 * vterm
 
-Emacs term 默认是非交互式 shell，不会调用 =~/.bash_profle= 文件，所以类似于 =PS1= 等
-环境变量需要设置在 =~/.bashrc= 文件中。
+Emacs term 默认是非交互式 shell，不会调用 =~/.bash_profle= 文件，所以类似于 =PS1= 等环境变量需要设置在 =~/.bashrc=
+文件中。
 
 在 ~/.zshrc 中添加如下内容，这样命令提示符追踪才能准确（复制内容时非常重要）：
-
++ 对于远程服务器，也需要在 ~/.zshrc 文件中添加如上内容才行。
 #+begin_src bash
 vterm_printf(){
     if [ -n "$TMUX" ]; then
@@ -832,8 +830,6 @@ if [[ "$INSIDE_EMACS" = 'vterm' ]]; then
     PROMPT=$PROMPT'%{$(vterm_prompt_end)%}'
 fi
 #+end_src
-
-对于远程服务器，也需要在 ~/.zshrc 文件中添加如上内容才行。
 
 对于 bash，内容如下：
 #+begin_src  bash
@@ -868,73 +864,48 @@ if [[ "$INSIDE_EMACS" = 'vterm' ]]; then
 fi
 #+end_src
 
-在安装了 vterm-toggle package 后，可以快捷地在当前 buffer、bottom buffer 或 side
-buffer 打开和关闭一个 vterm，定义的快捷键如下：
+在安装了 vterm-toggle package 后，可以快捷地在当前 buffer、bottom buffer 或 side buffer 打开和关闭一个 vterm，
+定义的快捷键如下：
 
 + C-`：为当前 buffer 打开一个 vterm；
-+ C-~：为当前 buffer 打开一个 vterm，并切换到当前工作目录；
 + s-n: 切换到下一个 vterm；
 + s-p：切换到前一个 vterm；
 
-可以在打开的 term buffer 中按 Control-Return 快捷键，将自动切换到对应 buffer 的
-目录。
+可以在打开的 term buffer 中按 Control-Return 快捷键，将自动切换到对应 buffer 的目录。
 
-如果打开多个 term，可以使用 M-x rename-buffer 命令重命名为有意义的名称， 或 M-x
-rename-uniquely 这样便于后续参考。
-
-+ C-c C-t :: 开启 copy mode 。当前 buffer 处于 readonly 状态，可以使用 emacs 各
-  种指令进行操作，最后如果有选择的区域，按 Enter 进行拷贝，没有选中的区域则则拷
-  贝最后一行。
-+ C-c C-n 或者 C-c C-p :: 在命令行历史记录中跳转到上一个命令或下一个命令， 匹配
-  的正则表达式为：
+如果打开多个 term，可以使用 M-x rename-buffer 重命名为有意义的名称或 M-x rename-uniquely 这样便于后续参考。
++ C-c C-t :: 开启 copy mode 。当前 buffer 处于 readonly 状态，可以使用 emacs 各种指令进行操作，最后如果有选择
+  的区域，按 Enter 进行拷贝，没有选中的区域则则拷贝最后一行。
++ C-c C-n 或者 C-c C-p :: 在命令行历史记录中跳转到上一个命令或下一个命令， 匹配的正则表达式为：
 + C-l :: clear 屏幕
 
-M-x projectile-run-vterm 在 projectile 级别打开一个 vterm（多次执行该命令打开的
-都是同一个 vterm buffer）
-
-* term&shell
-
-+ M-! cmd RET :: Run the shell command cmd and display the output (shell-command).
-+ M-| cmd RET :: Run the shell command cmd with region contents as input;
-  optionally replace the region with the output (shell-command-on-region).
-+ M-& cmd RET :: Run the shell command cmd asynchronously, and display the
-  output (async-shell-command).
-+ M-x shell :: Run a subshell with input and output through an Emacs buffer. You
-  can then give commands interactively.
-+ M-x term :: Run a subshell with input and output through an Emacs buffer. You
-  can then give commands interactively. Full terminal emulation is available.
-
-A numeric argument to shell-command, e.g., =M-1 M-!=, causes it to insert terminal
-output =into the current buffer= instead of a separate buffer.
-
-To make multiple subshells, invoke =M-x shell= with a prefix argument (e.g., =C-u
-M-x shell=). Then the command will read =a buffer name=, and create (or reuse) a
-subshell in that buffer. You can also rename the *shell* buffer using =M-x
-rename-uniquely=, then create a new *shell* buffer using plain M-x shell. Subshells
-in different buffers run independently and in parallel.
-
-Shell mode：不支持终端转义字符， =不建议使用= ：
-+ 如果在 M-x shell 环境，则 emacs 设置环境变量 =INSIDE_EMACS= in the subshell to
-    ‘version,comint’,这样可以针对性的初始化 shell。
-+ C-c C-u、C-c C-w、C-c C-c、C-c C-\、C-c C-z
-+ C-c C-o：删除上一个命令的输出
-+ C-c C-s：将上一个命令的输出保存到指定 buffer
-+ C-c C-r 或 C-M-l：将上一个命令的输出置到 window 的顶部；
-+ M-p、M-n、M-r、C-c C-n、C-c C-p：命令历史记录
-+ C-c C-l：在另一个 buffer 中展示当前 shell buffer 的历史记录； 然后可以搜索，
-    回车确定；
-
-Term mode： =建议使用= ，可以使用 top、vim 等：
-+ C-c C-j：term-line-mode，切换到 Emacs 编辑模式，直到按回车键（将当前行发送给
-    终端）。在粘贴拷贝的内容前，不能按回车。
-+ C-c C-k：term-char-mode，切换到终端模式，输入的任何字符都会直接发送给终端
-    （ 除了 C-c 字符外）。
-+ C-c C-c: 向 shell 进程发送 C-c 命令；
-
-C-c C-q: C-c C-q Toggle the page-at-a-time feature (term-pager-toggle). 在 line
-和 char mode 都可以启用，当 term 输出超过一页时会暂停，按 SPACE 继续。
+M-x projectile-run-vterm 在 projectile 级别打开一个 vterm（多次执行该命令打开的都是同一个 vterm buffer）
 
 * flycheck
+
+1. 语言 checker
+
+    语言 checker 的名称惯例是 Language-Tool, 如 go-vet, go-build 等，一般对应外部可执行程序（但也不是绝对的，如
+    go-vet 对应的可执行程序时 go, 但调用参数是 go vet）。
+
+    语言 checker 的可配置参数命名惯例是 flychecker-Language-xx, 如 flycheck-go-vet-executable.
+
+2. 为项目目录指定 checker
+
+   =flycheck-checker= 是目录本地变量（Directory Local Variables)，在项目根目录添加这个配置后，flycheck 会使用指
+   定的 checker 对相应 major mode 类型 buffer 进行检查：
+   1. M-x add-dir-local-variable, 指定 major-mode 或目录；
+   2. Add directory-local variable：选择 flycheck-checker；
+   3. 为 flycheck-checker 指定变量值，如 go-vet；
+
+    emacs 自动在对应目录添加 .dir-locals.el 文件，内容如下：
+     #+begin_src emacs-lisp
+     ;;; Directory Local Variables
+     ;;; For more information see (info "(emacs) Directory Variables")
+     ((go-mode . ((flycheck-checker . go-vet))))
+     #+end_src
+
+lsp-ui 使用 lsp-diagnose 来为 flycheck 自动配置 lsp checker 并自动关闭其它 checker 。
 
 + C-c ! v: 验证 buffer 使用的 checker（列表、二进制位置、优先级）
 + C-c ! C: 清理当前 buffer 的 error
@@ -947,91 +918,48 @@ C-c C-q: C-c C-q Toggle the page-at-a-time feature (term-pager-toggle). 在 line
 + C-c ! x: 关闭某一个 checker
 + C-c ! e: 解释光标位置的错误
 
-下面两个快捷键是自定义的:
-+ M-g n：下一个错误
-+ M-g p：上一个错误
-
-如果安装了 lsp-mode 和 lsp-ui 则，lsp-ui 会使用 lsp-diagnose 来为 flycheck 自动
-配置 lsp checker 并自动关闭其它 checker 。
-
+其它查看错误方式:
 + M-x lsp-treemacs-errors-list: 使用 treemacs 列出所有语法检查错误;
 + M-x consult-flycheck (M-g f): 使用 consult 预览 flycheck 结果列表；
-
-** 语言 checker
-
-语言 checker 的名称惯例是 Language-Tool, 如 go-vet, go-build 等，一般对应外部可
-执行程序（但也不是绝对的，如 go-vet 对应的可执行程序时 go, 但调用参数是 go vet）。
-
-语言 checker 的可配置参数命名惯例是 flychecker-Language-xx, 如
-flycheck-go-vet-executable.
-
-** 为项目目录指定 checker
-
-=flycheck-checker= 是目录本地变量（Directory Local Variables)，在项目根目录添
-加这个变量配置后，flycheck 会使用指定的 checker 对相应 major mode 类型 buffer 进
-行在线检查：
-1. M-x add-dir-local-variable, 指定 major-mode 或目录；
-2. Add directory-local variable：选择 flycheck-checker；
-3. 为 flycheck-checker 指定变量值，如 go-vet；
-   
-emacs 自动在对应目录，如 ~/.emacs.d/ 添加 .dir-locals.el 文件，内容如下：
-#+begin_src emacs-lisp
-;;; Directory Local Variables
-;;; For more information see (info "(emacs) Directory Variables")
-
-((go-mode . ((flycheck-checker . go-vet))))
-#+end_src
-
-** python
++ M-g n：下一个错误
++ M-g p：上一个错误
 
 python 的静态代码检查工具：
 1. pep8、pycodestyle：PEP 8 是一种 Python 代码规范指南，可以参阅官网：
    https://www.python.org/dev/peps/pep-0008/ 已经重命名为 pycodestyle；
-2. Pyflakes：一个用于检查 Python 源文件错误的简单程序。Pyflakes 分析程序并且检查
-   各种错误。它通过解析源文件实现，无需导入它，因此在模块中使用是安全的，没有任
-   何的副作用。
+2. Pyflakes：一个用于检查 Python 源文件错误的简单程序。Pyflakes 分析程序并且检查各种错误。它通过解析源文件实现，
+   无需导入它，因此在模块中使用是安全的，没有任何的副作用。
    + 不会检查代码风格
    + 由于它是单独检查各个文件，因此它也相当的快，当然检测范围也有一定的局限
-3. Pylint：PyLint 是 Python 源代码分析器，可以分析 Python 代码中的错误，查找不符
-   合代码风格标准和有潜在问题的代码，是一个可以用于验证多个文件的模块和包的工具。
-   缺省情况下，PyLint 启用许多规则。它具有高度可配置性，从代码内部处理程序控制它。
-   另外，编写插件添加到自己的检查中是可能的。
-4. flake8 Flake8 是由 Python 官方发布的一款辅助检测 Python 代码是否规范的工具，
-   相对于目前热度比较高的 Pylint 来说，Flake8 检查规则灵活，支持集成额外插件，扩
-   展性强。Flake8 是对下面三个工具的封装：
-
+3. Pylint：PyLint 是 Python 源代码分析器，可以分析 Python 代码中的错误，查找不符合代码风格标准和有潜在问题的代
+   码，是一个可以用于验证多个文件的模块和包的工具。缺省情况下，PyLint 启用许多规则。它具有高度可配置性，从代码
+   内部处理程序控制它。另外，编写插件添加到自己的检查中是可能的。
+4. flake8 Flake8 是由 Python 官方发布的一款辅助检测 Python 代码是否规范的工具，相对于目前热度比较高的 Pylint
+   来说，Flake8 检查规则灵活，支持集成额外插件，扩展性强。Flake8 是对下面三个工具的封装：
   + PyFlakes：静态检查 Python 代码逻辑错误的工具。
   + Pep8： 静态检查 PEP8 编码风格的工具。
   + NedBatchelder’s McCabe ：静态分析 Python 代码复杂度的工具。
 
-  不光对以上三个工具的封装，Flake8 还提供了扩展的开发接口。官方文档：
-   https://pypi.python.org/pypi/flake8/
+  不光对以上三个工具的封装，Flake8 还提供了扩展的开发接口。官方文档：https://pypi.python.org/pypi/flake8/
+
 * lsp
-
-lsp-rename 重新命令光标附近的 Symbol，如果是类名，则有可能自动重命名文件。java可
-以使用 M-x lsp-install-server 命令来安装 jdtls 语言服务器，不需要手动安装了。
-
-+ C-c a：执行 code action。
-+ C-c r: 执行代码重构
-+ C-c d：查看光标位置标识符的描述。（部分描述符需要先 C-a a 执行 import，然后才
-  能看到描述）
-
-+ lsp-treemacs-java-deps-list： 查看当前项目依赖
-+ lsp-treemacs-symbols： 查看当前文件中的结构（符号）
-+ lsp-treemacs-errors-list： 查看当前项目的错误列表。
 
 调试 lsp server： ~M-x lsp-describe-session~
 
++ lsp-treemacs-symbols： 查看当前文件中的结构（符号）
++ lsp-treemacs-errors-list： 查看当前项目的错误列表。
+
 ** python
-   :LOGBOOK:
-   CLOCK: [2021-03-13 Sat 18:37]--[2021-03-13 Sat 18:38] =>  0:01
-   :END:
 
-使用 pyenv 管理 python 环境和版本。如果项目位于虚拟环境中，则需要使用如下命令为
-该环境安装 pyls，否则打开该项目的 python 文件后提示 pyls 启动失败：
+微软不再维护 python-language-server，主力发展 pyright 和 pyglance，所以不再使用 lsp-python-ms 和 pyls，而使用
+lsp-pyright。
++ python-lanuage-server 的活跃 fork 版本: https://github.com/python-lsp/python-lsp-server
 
+使用 pyenv 管理 python 环境和版本。如果项目位于虚拟环境中，则需要使用如下命令为该环境安装 pyls，否则打开该项目
+的 python 文件后提示 pyls 启动失败：
++ 
 ``` bash
-pip -q install ipython 'python-language-server[all]
+pip -q install ipython 'python-lsp-server[all]
 ```
 
 为了让 python lsp 正确识别 project 的 python 版本，可以如下命令指定项目的 python 版本：
@@ -1060,19 +988,23 @@ LSP :: pyls:38780 initialized successfully
   pyenv global 3.8.13 27.17
 #+end_src
 
-不能自动补全：
-+ 需要先用 ~pip~ 安装项目的依赖 ~package~ ，然后才能正确的自动补全。
+不能自动补全：需要先用 ~pip~ 安装项目的依赖 ~package~ ，然后才能正确的自动补全。
 
-** 调试 java jdtls
+** java
+
+java可以使用 M-x lsp-install-server 命令来安装 jdtls 语言服务器，不需要手动安装了。
++ C-c a：执行 code action。
++ C-c r: 执行代码重构
++ C-c d：查看光标位置标识符的描述。（部分描述符需要先 C-a a 执行 import，然后才能看到描述）
++ lsp-treemacs-java-deps-list： 查看当前项目依赖
++ lsp-rename 重新命令光标附近的 Symbol，如果是类名，则有可能自动重命名文件。
 
 1. 可以查看 *lsp-log* buffer 的内容来定位报错的内容。
 2. 升级 jdtls：C-u M-x lsp-install-server;
-3. 报错：“jdt.ls-java-project does not exist”解决办法：删除
-   ~/.emacs.d/workspace/.* 目录（隐藏目录）的内容。
+3. 报错：“jdt.ls-java-project does not exist”解决办法：删除 ~/.emacs.d/workspace/.* 目录（隐藏目录）的内容。
 
 如果 jdtls 启动失败，可以手动启动，查看日志：
-
-``` bash ➜ .emacs.d git:(master) ✗
+#+begin_src shell
 /Library/Java/JavaVirtualMachines/jdk-11.0.8.jdk/Contents/Home/bin/java
 -Declipse.application=org.eclipse.jdt.ls.core.id1
 -Dosgi.bundles.defaultStartLevel=4
@@ -1083,12 +1015,11 @@ LSP :: pyls:38780 initialized successfully
 /Users/zhangjun/.emacs.d/.cache/lsp/eclipse.jdt.ls/plugins/org.eclipse.equinox.launcher_1.5.700.v20200207-2156.jar
 -configuration /Users/zhangjun/.emacs.d/.cache/lsp/eclipse.jdt.ls/config_mac -data
 /Users/zhangjun/.emacs.d/workspace/ --add-modules=ALL-SYSTEM --add-opens
-java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED ```
+java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED 
+#+end_src
 
-已知的问题是当前 workspace 中的部分 project 不存在导致启动失败，解决办法是清空
-jdtls 的 -data 目录，然后重启 jdtls（M-x lsp-workspace-restart）：
-
-```bash rm -rf ~/.emacs.d/workspace ```
+已知的问题是当前 workspace 中的部分 project 不存在导致启动失败，解决办法是清空jdtls 的 -data 目录，然后重启
+jdtls（M-x lsp-workspace-restart）： =rm -rf ~/.emacs.d/workspace=
 
 * magit 
 ** Core
@@ -2829,26 +2760,21 @@ generate-new-buffer(" *temp file*" t)
 
 指定 font 方式：
 1. a =Fontconfig= pattern. Fontconfig patterns have the following form:
-   fontname[-fontsize][:name1=values1][:name2=values2]... 示例：Sarasa Mono Slab
-   TC,等距更紗黑體 Slab TC,等距更紗黑體 Slab TC Light,Sarasa Mono Slab TC
-   Light:style=Light Italic,Italic
-2. use a GTK font pattern. These have the syntax fontname [properties]
-   [fontsize]示例： Monospace Bold Italic 12
-3. use an XLFD (X Logical Font
-   Description). -misc-fixed-medium-r-semicondensed--13-*-*-*-c-60-iso8859-1示
+   fontname[-fontsize][:name1=values1][:name2=values2]... 示例：Sarasa Mono Slab TC,等距更紗黑體 Slab TC,等距
+   更紗黑體 Slab TC Light,Sarasa Mono Slab TC Light:style=Light Italic,Italic
+2. use a GTK font pattern. These have the syntax fontname [properties] [fontsize]： Monospace Bold Italic 12
+3. use an XLFD (X Logical Font Description). -misc-fixed-medium-r-semicondensed--13-*-*-*-c-60-iso8859-1 示
    例：-*-Iosevka SS14-normal-normal-expanded-*-14-*-*-*-m-0-iso10646-1
 
-On X, Emacs recognizes two types of fonts: =client-side fonts=, which are provided
-by the =Xft and Fontconfig libraries=, and =server-side= fonts, which are provided
-by the X server itself.
+On X, Emacs recognizes two types of fonts: =client-side fonts=, which are provided by the =Xft and Fontconfig
+libraries=, and =server-side= fonts, which are provided by the X server itself.
 
-For Xft and Fontconfig fonts, you can use the =fc-list= command to list the
-     available fixed-width fonts, like this: fc-list :spacing=mono fc-list
-     :spacing=charcell
+For Xft and Fontconfig fonts, you can use the =fc-list= command to list the available fixed-width fonts, like
+this: fc-list :spacing=mono fc-list :spacing=charcell
 
 为图形 frame 指定缺省字体：
 #+begin_src lisp
-  (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-10"))
+(add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-10"))
 #+end_src
 
 不建议使用文泉驿字体了，很久没有更新了， 建议使用 Adobe 和 Google 合作的开源字体：
@@ -2873,8 +2799,8 @@ https://github.com/adobe-fonts/source-han-mono
 + 拉丁字体
   + Noto Sans - 无衬线
   + Noto Serif - 衬线
-  + Sarasa Term SC - 等宽（直接使用 Iosevka Term 会导致 emacs 中的蜜汁+）
-bug 中文字体
+  + Sarasa Term SC - 等宽（直接使用 Iosevka Term 会导致 emacs 中的蜜汁bug）
++ 中文字体
   + Noto Sans CJK SC (又称 思源黑体）
   + Noto Serif CJK SC （又称 思源宋体）
 
@@ -2886,44 +2812,8 @@ bug 中文字体
 在用 org-mode 显示表格时，如果字体不等宽，会导致表格不能对齐。设置字体和等宽：
 https://github.com/tumashu/cnfonts
 
-但是设置了等宽后，又存在中文和英文字体高度不一致的问题。emacs 字体等宽和等高不可
-兼得：http://baohaojun.github.io/blog/2012/12/19/perfect-emacs-chinese-font.html
-
-* folding
-
-emacs 的 hs-minor-mode 用来 block 的展开和关闭，对应的快捷键前缀是 C-c @ C-x
-
-https://www.gnu.org/software/emacs/manual/html_node/emacs/Hideshow.html
-
-Hideshow mode provides the following commands:
-
-C-c @ C-h
-C-c @ C-d
-Hide the current block (hs-hide-block).
-C-c @ C-s
-Show the current block (hs-show-block).
-C-c @ C-c
-C-c @ C-e
-Either hide or show the current block (hs-toggle-hiding).
-S-mouse-2
-Toggle hiding for the block you click on (hs-mouse-toggle-hiding).
-C-c @ C-M-h
-C-c @ C-t
-Hide all top-level blocks (hs-hide-all).
-C-c @ C-M-s
-C-c @ C-a
-Show all blocks in the buffer (hs-show-all).
-C-u n C-c @ C-l
-Hide all blocks n levels below this block (hs-hide-level).
-These variables can be used to customize Hideshow mode:
-
-+ hs-hide-comments-when-hiding-all :: If non-nil, C-c @ C-M-h (hs-hide-all)
-  hides comments too.
-+ hs-isearch-open :: This variable specifies the conditions under which
-  incremental search should unhide a hidden block when matching text occurs
-  within the block. Its value should be either code (unhide only code blocks),
-  comment (unhide only comments), t (unhide both code blocks and comments), or
-  nil (unhide neither code blocks nor comments). The default value is code.
+但是设置了等宽后，又存在中文和英文字体高度不一致的问题。emacs 字体等宽和等高不可兼得：
+http://baohaojun.github.io/blog/2012/12/19/perfect-emacs-chinese-font.html
 
 * dired
 
@@ -3047,108 +2937,35 @@ C-u C-x d：指定 dired 的显示方式，即传递给 ls 的参数，如 -lR�
 + M-x find-name-dired: 按照文件名查找，然后显示在 dired buffer 中；
 + M-x find-dired: 最通用的形式，可以指定 find 的参数，来实现按照文件名或内容来查找；
 
-Wdired(Writeable dired):在 Dired Buffer 中按 C-x C-q，然后可以对文件名进行编辑，移动（但是类型、用户、大小和时间等是只读的）。结束后 C-c C-c 保存，C-c
- C-k 丢弃修改。
+Wdired(Writeable dired):在 Dired Buffer 中按 C-x C-q，然后可以对文件名进行编辑，移动（但是类型、用户、大小和时
+ 间等是只读的）。结束后 C-c C-c 保存，C-c C-k 丢弃修改。
 
 + M-x grep
 + M-x grep-find
 + M-! find
 + M-x ffap
 
-* selectrum
-
-+ C-M-<backspace>") #'backward-kill-sexp) ：快速删除上一级目录
-+ C-j") #'selectrum-submit-exact-input) ：使用输入内容而非候选的内容，可以向上移
-  动候选的内容到输入行达到同样的效果； =C-m= ：选中并回车当前候选处的内容。
-+ TAB") #'selectrum-insert-current-candidate) ：在光标处插入选中的候选者，如果是
-  目录则选中目录。
-+ M-i") 'selectrum-quick-insert) ; 快速插入（快速选中，但是不回车）；
-+ M-m") 'selectrum-quick-select) ; 快速选择，并确定（自动回车）；
-  + M-i 和 M-m 快速操作，只会为当前可见的候选者显示快捷键，如果候选内容比较多，
-    则可以先输入一部分过滤内容，然后再使用这两个快捷键。
-+ M-q") 'selectrum-cycle-display-style) ：循环显示候选风格；
-
-+ To ~navigate~ to a candidate: use the standard motion commands (<up>, <down>,
-  C-v, M-v, M-<, M->). If you prefer, you can use C-p and C-n instead of the
-  arrow keys.
-+ To ~accept~ the currently selected candidate: type ~RET/C-m~. (With a prefix
-  argument, accept instead the candidate at that point in the list, counting
-  from one. See selectrum-show-indices. The value zero means to accept exactly
-  what you've typed, as in the next bullet point.) You can also click the left
-  mouse button on a candidate to choose it or use ~M-m~ to select one using
-  selectrum-quick-keys.
-+ To submit what you've typed, even if it's not a candidate: you can use ~<up> or
-  C-p~ to ~select the user input~ just like a regular candidate, and type RET as
-  usual. (Alternatively, you can type ~C-j~ to submit your exact input without
-  selecting it first.)
-+ To abort: as per usual, type C-g.
-+ To navigate into the currently selected directory while finding a file: type
-  ~TAB/C-i~. (What this actually does is insert the currently selected candidate
-  into the minibuffer, which for find-file has the effect of navigating into a
-  directory.) With a positive prefix argument, insert the candidate at that
-  display position (see selectrum-show-indices). You can also right click on a
-  candidate to insert it into the minibuffer or use ~M-i~ for inserting one using
-  selectrum-quick-keys.
-+ To copy the current candidate: type ~M-w~ or what is bound to
-  kill-ring-save. When there's an active region in your input, this still copies
-  the active region. The behavior of M-w is not modified when Transient Mark
-  mode is disabled.
-+ To select multiple candidates: separate them with =crm-separator (, by
-  default)=. To make this workflow more convenient, you can use TAB to complete
-  the currently selected candidate before typing crm-separator (for common
-  values of crm-separator it will be automatically inserted for you). This
-  feature ~only works~ in commands that use completing-read-multiple, such as
-  describe-face. (If multiple selection is enabled, it is shown in the
-  minibuffer prompt.)
-+ To change the display style of candidates: use ~M-q~ which will cycle from the
-  currently used style through the styles in
-  selectrum-display-style-cycle-list. With the default configuration this
-  command will toggle between the vertical and an icomplete like horizontal
-  display.
-+ All your standard horizontal motion, selection, insertion, and deletion
-  commands work as usual.
-+ To delete your current input, just use ~C-a C-k or C-S-backspace~ (bound to
-  kill-whole-line).
-  + C-a C-k 删除当前输入行；（光标不是先移动到行首）
-  + C-S-backspace：删除当前行
-  + C-M-backspace：删除上一级目录
-+ To edit by word units use M-DEL like usual. ~To go up a directory you can use
-  ~C-M-DEL~ (bound to backward-kill-sexp). Be aware that on some Linux
-  distributions, this binding is used to kill the X server, which can force-quit
-  all programs you opened. Therefore, accidentally killing the X server can
-  cause data corruption and loss of unsaved work. In such cases, you can instead
-  use ESC C-DEL, which Emacs helpfully binds by default.
-+ To navigate to your home directory, you can just use C-a C-k ~/. Alternatively,
-  like in default completion, you can ~type \~/ after a /~ to ignore the preceding
-  input and move to the home directory.
-  + 如果要切换到根路目录 /，则可以在当前目录后面连续输入两个 ////
-+ Minibuffer history navigation works as usual with =M-p= and =M-n=. M-r will invoke
-  an improved version of history search with completion.
-
 * consult
 
 consult 给 selectrum 提供了实时预览功能。
 
-consult-buffer (-other-window, -other-frame): Enhanced version of
-switch-to-buffer with support for =virtual buffers=. Supports =live preview= of
-buffers and narrowing to the virtual buffer types. You can type =f SPC= in order
-to narrow to recent files. Ephemeral buffers can be shown by pressing SPC - it
-works the same way as switch-buffer. Supported narrowing keys:
+consult-buffer (-other-window, -other-frame): Enhanced version of switch-to-buffer with support for =virtual
+buffers=. Supports =live preview= of buffers and narrowing to the virtual buffer types. You can type =f SPC= in
+order to narrow to recent files. Ephemeral buffers can be shown by pressing SPC - it works the same way as
+switch-buffer. Supported narrowing keys:
   + b Buffers
   + f Files
   + m Bookmarks
-  + p Project (only available if consult-project-root-function is configured as
-    shown in the example configuration).
+  + p Project (only available if consult-project-root-function is configured as shown in the example
+    configuration).
 
-By default =only buffers are preview= in order to ensure that consult-buffer is
-fast, but it is possible to configure =file and bookmark= preview.
-+ consult-bookmark: Select or create bookmark. You might use the powerful
-  consult-buffer as an alternative, which can include a bookmark virtual buffer
-  source. But note that consult-bookmark supports preview of bookmarks and
-  narrowing.
-+ consult-recent-file: Select from recent files with preview. You might prefer
-  the powerful consult-buffer instead, which can =include= recent files as a
-  virtual buffer source.
+By default =only buffers are preview= in order to ensure that consult-buffer is fast, but it is possible to
+configure =file and bookmark= preview.
++ consult-bookmark: Select or create bookmark. You might use the powerful consult-buffer as an alternative,
+  which can include a bookmark virtual buffer source. But note that consult-bookmark supports preview of
+  bookmarks and narrowing.
++ consult-recent-file: Select from recent files with preview. You might prefer the powerful consult-buffer
+  instead, which can =include= recent files as a virtual buffer source.
 
 + consult-grep 的参数是由 # 分隔的两部分字符串组成：
   + #async-regexp -- grep-opts#filter-string
@@ -3161,13 +2978,11 @@ consult 提供了一些 M-s 为前缀的命令，用于搜索：
 + M-s g、G、r：在 project 级别搜索文件内容；
 + M-s f：在 project 级别搜索文件名；
 + M-s k (consult-keep-lines): 在 buffer 中只显示匹配正则的行；
-+ M-s u (consult-focus-lines): 和 consult-keep-lines 类似，但是使用 overlays 的
-  显示方式；
-+ M-s e (consult-isearch): consult 列出 search history，可以选择一个搜索。在
-  isearch 过程中可以使用 M-e、M-s e 切换到 consult-isearch 来选择搜索历史；
++ M-s u (consult-focus-lines): 和 consult-keep-lines 类似，但是使用 overlays 的显示方式；
++ M-s e (consult-isearch): consult 列出 search history，可以选择一个搜索。在isearch 过程中可以使用 M-e、M-s e
+  切换到 consult-isearch 来选择搜索历史；
 
-在使用 minibuffer 时，M-r、M-s 用于对 minibuffer history 进行搜索，consult 提供
-了实时预览功能。
+在使用 minibuffer 时，M-r、M-s 用于对 minibuffer history 进行搜索，consult 提供了实时预览功能。
 
 consult 提供了一些 M-g 为前缀的命令，用于快速跳转：
 + M-g k：调转到全局 mark ring
@@ -3183,33 +2998,27 @@ consult-lsp 提供了两个非常好用的函数：
 
 * embark
 
-embark 用于给 consult 候选者提供一个快捷操作命令，对应的命令是 embark-act（快捷
-键 C-;)。可以在任何位置执行 embark-act 命令，然后使用 C-h 查看可用的上下文命令：
+embark 用于给 consult 候选者提供一个快捷操作命令，对应的命令是 embark-act（快捷键 C-;)。可以在任何位置执行
+embark-act 命令，然后使用 C-h 查看可用的上下文命令：
 + In the minibuffer, the target is the current best completion candidate.
 + In the *Completions* buffer the target is the completion at point.
-+ In a regular buffer, the target is the region if active, or else the file,
-  symbol or URL at point.
++ In a regular buffer, the target is the region if active, or else the file, symbol or URL at point.
 
-C-h 列出的 embark action 支持自动补全。但是如果安装了 =which-key= ，执行 C-; 命令
-后会自动提示可用的 action 快捷键。
+C-h 列出的 embark action 支持自动补全。但是如果安装了 =which-key= ，执行 C-; 命令后会自动提示可用的 action 快捷
+键。
 
-Embark’s default configuration has actions for the following target types:
-~files, buffers, symbols, packages, URLs, bookmarks~, and as a somewhat special
-case, actions for when ~the region~ is active. You can read about the default
-actions and their keybindings on the GitHub project wiki.
+Embark’s default configuration has actions for the following target types: ~files, buffers, symbols, packages,
+URLs, bookmarks~, and as a somewhat special case, actions for when ~the region~ is active. You can read about the
+default actions and their keybindings on the GitHub project wiki.
 
-Embark Collect：类似于 helm-occur、ivy-occur，用来对一批候选对象、搜索结果列表等
-进行操作。
-+ embark-collect-snapshot（S）：在 Embark Collect Buffer 中显示候选情况，不更新
-  Buffer 内容；
-+ embark-collect-live（L)：根据候选情况，实时更新 Embark Collect Live Buffer 中
-  的内容；
-+ embark-export（E）：根据当前候选者的不同（可以使用 b/f/m SPC 来缩小类型范围），
-  将结果显示在不同的 Buffer 中：
+Embark Collect：类似于 helm-occur、ivy-occur，用来对一批候选对象、搜索结果列表等进行操作。
++ embark-collect-snapshot（S）：在 Embark Collect Buffer 中显示候选情况，不更新Buffer 内容；
++ embark-collect-live（L)：根据候选情况，实时更新 Embark Collect Live Buffer 中的内容；
++ embark-export（E）：根据当前候选者的不同（可以使用 b/f/m SPC 来缩小类型范围），将结果显示在不同的 Buffer 中：
   + Dired： 如果候选者是文件，则将结果显示到 Dired Buffer 中；
   + Embark Export Ibuffer: 如果候选者是 Buffer；
-  + Embark Export Grep: 对consult-grep、consult-git-grep、consult-ripgrep 等搜索
-    结果进行 export 时，进入 Embark Export Grep 模式；
+  + Embark Export Grep: 对consult-grep、consult-git-grep、consult-ripgrep 等搜索结果进行 export 时，进入
+    Embark Export Grep 模式；
     +  该模式下，可以使用 =C-c C-p= 切换到 =wgrep= 模式，然后对结果进行批量编辑；
   + Embark Collect：如果没有指定候选者类型（如 Buffer、File、Project 等）；
   + Embark Collect Live：如果没有指定候选者类型（如 Buffer、File、Project 等）；
@@ -3217,9 +3026,9 @@ Embark Collect：类似于 helm-occur、ivy-occur，用来对一批候选对象�
 + embark-insert: 将当前候选内容(如文件名、Buffer 名称等)插入到光标处。
 + embark-save: 将当前候选内容保存到剪切环，后续可以用于粘贴；
 
-embark-become（B）：将当前执行的命令替换为另一个（输入内容不变）。如当前正在执行
-switch-to-buffer 命令，但是想切换到 find-file，则可以使用该命令。在执行 B action
-后，可以直接输入其它命令，或者，使用 embark-become 提供的快捷键；
+embark-become（B）：将当前执行的命令替换为另一个（输入内容不变）。如当前正在执行switch-to-buffer 命令，但是想
+切换到 find-file，则可以使用该命令。在执行 B action后，可以直接输入其它命令，或者，使用 embark-become 提供的快
+捷键；
 
 *** Default Actions
 
@@ -3313,10 +3122,9 @@ These actions are offered if there is an active region in the current buffer.
 
 输入法：
 1. 使用 sis 的 im-select 切换工具，只有这样才能正确激活中文输入法；
-2. sis 需要明确切换到搜狗时输入的是中文，所以需要关闭搜狗输入法英文切换功能，只
-   用于输入中文；
-4. 如果要手动切换输入法，使用系统快捷键(C-M-\)，而非 sis 绑定的 Emacs 快捷键，这
-   样即使 Emacs 处于全屏模式，也可以看到切换到的输入法类型；
+2. sis 需要明确切换到搜狗时输入的是中文，所以需要关闭搜狗输入法英文切换功能，只用于输入中文；
+4. 如果要手动切换输入法，使用系统快捷键(C-M-\)，而非 sis 绑定的 Emacs 快捷键，这样即使 Emacs 处于全屏模式，也
+   可以看到切换到的输入法类型；
 
 Clone 项目
 + magit-clone 指定 URL 和保存路径。
@@ -3355,54 +3163,9 @@ checkout 分支：
 + C-=：多按几次选择；
 + C-M-SPC：选择光标处 sexp
 
-<<<<<<< HEAD
-=======
-* term&shell
-
-+ M-! cmd RET :: Run the shell command cmd and display the output (shell-command).
-+ M-| cmd RET :: Run the shell command cmd with region contents as input;
-  optionally replace the region with the output (shell-command-on-region).
-+ M-& cmd RET :: Run the shell command cmd asynchronously, and display the
-  output (async-shell-command).
-+ M-x shell :: Run a subshell with input and output through an Emacs buffer. You
-  can then give commands interactively.
-+ M-x term :: Run a subshell with input and output through an Emacs buffer. You
-  can then give commands interactively. Full terminal emulation is available.
-
-A numeric argument to shell-command, e.g., =M-1 M-!=, causes it to insert terminal
-output =into the current buffer= instead of a separate buffer.
-
-To make multiple subshells, invoke =M-x shell= with a prefix argument (e.g., =C-u
-M-x shell=). Then the command will read =a buffer name=, and create (or reuse) a
-subshell in that buffer. You can also rename the *shell* buffer using =M-x
-rename-uniquely=, then create a new *shell* buffer using plain M-x shell. Subshells
-in different buffers run independently and in parallel.
-
-Shell mode：不支持终端转义字符， =不建议使用= ；
-+ 如果在 M-x shell 环境，则 emacs 设置环境变量 =INSIDE_EMACS= in the subshell to
-    ‘version,comint’,这样可以针对性的初始化 shell。
-+ C-c C-u、C-c C-w、C-c C-c、C-c C-\、C-c C-z
-+ C-c C-o：删除上一个命令的输出
-+ C-c C-s：将上一个命令的输出保存到指定 buffer
-+ C-c C-r 或 C-M-l：将上一个命令的输出置到 window 的顶部；
-+ M-p、M-n、M-r、C-c C-n、C-c C-p：命令历史记录
-+ C-c C-l：在另一个 buffer 中展示当前 shell buffer 的历史记录； 然后可以搜索，
-    回车确定；
-
-Term mode： =建议使用= ，可以使用 top、vim 等：
-+ C-c C-j：term-line-mode，切换到 Emacs 编辑模式，直到按回车键（将当前行发送给
-    终端）。在粘贴拷贝的内容前，不能按回车。
-+ C-c C-k：term-char-mode，切换到终端模式，输入的任何字符都会直接发送给终端
-    （ 除了 C-c 字符外）。
-+ C-c C-c: 向 shell 进程发送 C-c 命令；
-
-C-c C-q: C-c C-q Toggle the page-at-a-time feature (term-pager-toggle). 在 line
-  和 char mode 都可以启用，当 term 输出超过一页时会暂停，按 SPACE 继续。
-
 * image
 
-如果显示的照片比当前 window 大，则可以使用 C-n、C-p 等移动命令来查看文件的部分内
-容，也可以使用照片缩放快捷键：
+如果显示的照片比当前 window 大，则可以使用 C-n、C-p 等移动命令来查看文件的部分内容，也可以使用照片缩放快捷键：
 + s b (image-transform-fit-both)；
 + s s (image-transform-set-scale)；
 + s 0 (mage-transform-reset)；
@@ -3410,10 +3173,8 @@ C-c C-q: C-c C-q Toggle the page-at-a-time feature (term-pager-toggle). 在 line
 + p (image-previous-file)：访问目录中的上一个文件；
 + C-<鼠标滚轮>：放大或缩小照片；
 
-另外，通过 dired 也可以快速查看目录中各照片的 thumbnail，并对照片添加 tag、
-comment 等：
-+ 在 dired mode 中先 mark 照片，然后使用 C-t d (image-dired-display-thumbs) 来查
-  看这些照片的 thumbnail；
+另外，通过 dired 也可以快速查看目录中各照片的 thumbnail，并对照片添加 tag、comment 等：
++ 在 dired mode 中先 mark 照片，然后使用 C-t d (image-dired-display-thumbs) 来查看这些照片的 thumbnail；
 + 或者，直接使用 M-x image-dired 命令，来显示指定目录中所有照片的 thumbnail；
 
 这会打开一个 =*image-dired*= buffer，在这个 buffer 中，可以：
@@ -3425,63 +3186,56 @@ comment 等：
 
 org mode 情况下，可以使用 C-c C-x C-v 来显示图片。
 
-* web 开发
+* web
 
 Emacs 侧配置：
 1. typescript-mode: 编辑 ts/tsx 文件的 major-mode.
-2. js2-mode: 继续使用 Emacs 27 的 js-mode（major-mode) 来编辑 js/jsx 文件，但是
-   开启js2-minor-mode 来增强 jsx 的支持。
+2. js2-mode: 继续用 Emacs 27 js-mode（major-mode) 编辑 js/jsx 文件，但开启 js2-minor-mode 来增强 jsx 的支持。
 3. tide: 为 typescript-mode/js-mode/js2-mode 提供语法代码补全、符号跳转等特性；
 4. web-mode: 为 html/css/tmpl 等模板类型文件提供缩进、高亮等特性的 major-mode.
-5. dap-mode: 为 js/jsx/ts/tsx/go/python/java 等语言项目提供调试功能的
-   major-mode.
+5. dap-mode: 为 js/jsx/ts/tsx/go/python/java 等语言项目提供调试功能的 major-mode.
 
-建议使用 nvm 来管理 node/npm/yarn 版本：
+使用 nvm 来管理 node/npm/yarn 版本：
 #+begin_src bash
 # 安装最新版本
-zhangjun@zj-pc16:~$ nvm install node
+$ nvm install node
 # 安装指定版本
-zhangjun@zj-pc16:~$ nvm install v14.17.0 
+$ nvm install v14.17.0 
 # 当前 shell session 使用指定版本 node
-zhangjun@zj-pc16:~$ nvm use v14.17.0
+$ nvm use v14.17.0
 # 设置全局缺省 node 版本
-zhangjun@zj-pc16:~$ nvm alias default v14.17.0
+$ nvm alias default v14.17.0
 #+end_src
 
-通过在项目的根目录添加 .nvmrc 文件，其中指定 node 版本，可以实现各项目使用自己的
-版本：
-
+通过在项目的根目录添加 .nvmrc 文件来指定 node 版本，可以实现各项目使用自己的版本：
 #+begin_src bash
-  mkdir v1
-  echo 'v14.17.0' >v1/.nvmrc
-  cd v1
-  
-  # 这时, 在这个项目根目录和子目录执行的 nvm 命令, 如 nvm use, nvm install, nvm
-  # exec, nvm run, and nvm which 都会自动使用这个版本。如果要在当前 shell session
-  # 中使用这个版本，可以执行 nvm use 命令。
+mkdir v1
+echo 'v14.17.0' >v1/.nvmrc
+cd v1
+# 这时, 在这个项目根目录和子目录执行的 nvm 命令, 如 nvm use, nvm install, nvm
+# exec, nvm run, and nvm which 都会自动使用这个版本。如果要在当前 shell session
+# 中使用这个版本，可以执行 nvm use 命令。
 #+end_src
 
-上面需要在项目目录执行 nvm 命令才能切换到对应版本，通过使用 avn 会在 cd 到项目目
-录时自动切换版本：
+上面需要在项目目录执行 nvm 命令才能切换到对应版本，通过使用 avn 会在 cd 到项目目录时自动切换版本：
 #+begin_src bash
-rm -R ~/.avn
-nvm install 10.13.0
-nvm exec 10.13.0 npm install -g avn avn-nvm avn-n
-nvm exec 10.13.0 avn setup
+$ rm -R ~/.avn
+$ nvm install 10.13.0
+$ nvm exec 10.13.0 npm install -g avn avn-nvm avn-n
+$ nvm exec 10.13.0 avn setup
 #+end_src
 
 创建一个 react app:
 #+begin_src bash
-npx create-react-app my-app
-cd my-app
-npm start
+$ npx create-react-app my-app
+$ cd my-app
+$ npm start
 #+end_src
 
 执行 npm start 后，会自动打开一个 local http server 和浏览器，显示 web app 。
 
-tide 默认会根据项目的 jsconfig.json 和  tsconfig.json 文件来确定 project root 目
-录，所以一般需要在项目的根目录中包含其中一个文件，例如 jsconfig.json 文件内容如
-下：
+tide 根据项目的 jsconfig.json 和 tsconfig.json 文件来确定 project root 目录，所以一般需要在项目的根目录中包含
+其中一个文件，例如 jsconfig.json 文件内容如下：
 #+begin_src json
 {
     "compilerOptions": {
@@ -3521,33 +3275,33 @@ tide 默认会根据项目的 jsconfig.json 和  tsconfig.json 文件来确定 p
 
 安装 eslint: 
 #+begin_src bash
-npm install -g eslint babel-eslint eslint-plugin-react
-eslint -v
+$ npm install -g eslint babel-eslint eslint-plugin-react
+$ eslint -v
 #+end_src
 
-然后安装 eslint language server: M-x lsp-install-server RET eslint RET. 
+然后安装 eslint language server: =M-x lsp-install-server RET eslint RET=
 
-创建 .eslintrc.js: M-x lsp-eslint-create-default-configuration, 回答一些问题后自
-动创建配置文件并安装 eslint plugin。
+创建 .eslintrc.js: =M-x lsp-eslint-create-default-configuration= , 回答一些问题后自动创建配置文件并安装 eslint
+plugin。
  
 打开 tide 使用的 ts-ls debug 日志：
 #+begin_src lisp
 (setq tide-tsserver-process-environment '("TSS_LOG=-level verbose -file /tmp/tss.log"))
 #+end_src
 
-执行 M-x dap-chrome-setup 命令来安装 VSCode Chrome Debug Extension ，确认变量
-dap-chrome-debug-program 指向正确的 dap 文件。
+执行 =M-x dap-chrome-setup= 命令来安装 VSCode Chrome Debug Extension ，确认变量 =dap-chrome-debug-program= 指向正
+确的 dap 文件。
 
-执行 dap-debug, 从列表中选择上面的 "my-app debug 测试" 配置项目, 开始调试。关于
-dap-debug 的详情，可以参考：
+执行 dap-debug, 从列表中选择上面的 "my-app debug 测试" 配置项目, 开始调试。关于 dap-debug 的详情，可以参考：
 https://emacs-lsp.github.io/lsp-mode/tutorials/reactjs-tutorial/
 
-** 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead
-这时由于 js 文件中使用了 jsx 语法，例如 let x = <SomeComponent />; 但是没有
-import React 导致的错误，解决办法是在文件开头添加 import * as React from
-'react'; 参考：https://github.com/Microsoft/TypeScript/issues/14118
+'React' refers to a UMD global, but the current file is a module. Consider adding an import instead
 
-** 'React' must be in scope when using JSX react/react-in-jsx-scope?
+这时由于 js 文件中使用了 jsx 语法，例如 =let x = <SomeComponent />=; 但是没有 =import React= 导致的错误，解决办法
+是在文件开头添加 import * as React from 'react'; 参考：https://github.com/Microsoft/TypeScript/issues/14118
+
+'React' must be in scope when using JSX react/react-in-jsx-scope?
+
 解决办法：
 1. 在文件开头添加 import * as React from 'react';
 2. 或者，在 .eslintrc.js/.eslintrcc.json 文件中添加如下内容：
@@ -3564,11 +3318,9 @@ import React 导致的错误，解决办法是在文件开头添加 import * as 
 * 不常用
 ** 多光标编辑
 
-安装 iedit 后可以一次选中整个 buffer 或指定区域里匹配的 symbol、string 或选中的
-内容，然后并行编辑（也可以快速的匹配预览）。另外在 isearch 的过程中，也可以对
-search 的内容进行 multi-cursor 编辑（按 C-;）：
-+ C-; :: 对光标当前的 symbol 或选中的 region 进行 multi-cursor 编辑；再按 C-;
-  结束编辑。
+安装 iedit 后可以一次选中整个 buffer 或指定区域里匹配的 symbol、string 或选中的内容，然后并行编辑（也可以快速
+的匹配预览）。另外在 isearch 的过程中，也可以对search 的内容进行 multi-cursor 编辑（按 C-;）：
++ C-; :: 对光标当前的 symbol 或选中的 region 进行 multi-cursor 编辑；再按 C-; 结束编辑。
 + C-' :: 只显示匹配 multi-cursor 选中的那些行，*可以用作快速的匹配预览*。
 
 #+begin_verse
@@ -3583,7 +3335,6 @@ M-}：iedit-expand-down-a-line
 #+end_verse
 
 对选中的内容进行快速编辑：
-
 #+begin_verse
 M-SPC           iedit-blank-occurrences
 M-<             iedit-goto-first-occurrence
@@ -3605,149 +3356,9 @@ C-u F3：Re-execute last keyboard macro, then append keys to its definition.
 C-u C-u F3：Append keys to the last keyboard macro without re-executing it.
 #+end_verse
 
-** rime
-
-系统搜狗输入法设置：
-1. 开启搜狗输入法的中英文切换功能（通常是 Shift 按键）；
-2. 偏好设置-〉高级-〉智能输入 -〉自动切换到英文状态 的 App 清单中添加 Emacs。这
-   样系统输入法可以一直是搜狗，不会影响到 Emacs 内置的 RIME 输入法；
-
-
-3. 在 ~/Library/Rime 目录下创建一个名为 clover.custom.yaml 的文件，内容如下：
-#+begin_src yaml
-patch:
-  switches:
-  - name: zh_simp_s2t
-    reset: 0
-    states: [ 简, 繁 ]
-  - name: emoji_suggestion
-    reset: 0 # 不提示输出 emoji 符号
-    states: [ "🈚️️\uFE0E", "🈶️️\uFE0F" ]
-  - name: symbol_support # 安装包中默认值为 1, 必须设置为 0, 否则激活输入法后，emacs 卡死；
-    reset: 0
-    states: [ "无符", "符" ]
-  - name: ascii_punct
-    reset: 0
-    states: [ 。，, ．， ]
-  - name: full_shape
-    reset: 0
-    states: [ 半, 全 ]
-  - name: ascii_mode
-    reset: 0
-    states: [ 中, 英 ]
-  speller:
-    algebra:  # 开启模糊音，安装包默认没有开启 in ing 模糊音
-    - erase/^xx$/                      # 第一行保留
-
-    - derive/^([zcs])h/$1/             # zh, ch, sh => z, c, s
-    - derive/^([zcs])([^h])/$1h$2/     # z, c, s => zh, ch, sh
-
-    - derive/^n/l/                     # n => l
-    - derive/^l/n/                     # l => n
-
-    - derive/([ei])n$/$1ng/            # en => eng, in => ing
-    - derive/([ei])ng$/$1n/            # eng => en, ing => in
-#+end_src
-
-4. 在 ~/Library/Rime 目录下创建 default.custom.yaml 文件，内容如下：
-#+begin_src yaml
-patch:
-  schema_list:
-    - schema: clover  # 使用 clover 输入法方案
-  menu/page_size: 9
-  ascii_composer/good_old_caps_lock: true
-  ascii_composer/switch_key:
-    Caps_Lock: commit_code                    
-    Shift_L: inline_ascii
-    Shift_R: commit
-    Control_L: commit_code
-    Control_R: commit_code
-  switcher/hotkeys:
-    - "Control+grave"
-    - "Control+Shift+grave"
-    - F4
-    - "Control+exclam"  # 增加使用 C-! 快捷键来调出输入法菜单
-  key_binder/bindings:
-    - { when: composing, accept: ISO_Left_Tab, send: Page_Up }
-    - { when: composing, accept: Shift+Tab, send: Page_Up }
-    - { when: composing, accept: Tab, send: Page_Down }     
-    - { when: paging, accept: minus, send: Page_Up }
-    - { when: has_menu, accept: equal, send: Page_Down }
-    - { when: paging, accept: bracketleft, send: Page_Up }
-    - { when: has_menu, accept: bracketright, send: Page_Down }
-    - { when: always, accept: "Control+dollar", toggle: ascii_mode}  # 中英文切换
-    - { when: always, accept: "Control+period", toggle: ascii_punct} # 中英文标点切换
-    - { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
-#+end_src
-
-5. 配置 Emacs：
-#+begin_src lisp
-(use-package rime
-  :ensure :demand :after (which-key)
-  :custom
-  (rime-user-data-dir "~/Library/Rime/")
-  (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/Applications/Emacs.app/Contents/Resources/include")
-  :bind
-  ( :map rime-active-mode-map
-         ;; 强制切换到英文模式，直到按回车
-         ("M-j" . 'rime-inline-ascii)
-         :map rime-mode-map
-         ;; 中英文切换
-         ("C-$" . 'rime-send-keybinding)
-         ;; 中英文标点切换
-         ("C-." . 'rime-send-keybinding)
-         ;; 全半角切换
-         ("C-," . 'rime-send-keybinding)
-         ;; 输入法菜单
-         ("C-!" . 'rime-send-keybinding)
-         ;; 强制使用中文模式
-         ("M-j" . 'rime-force-enable))
-  :config
-  ;; Emacs will automatically set default-input-method to rfc1345 if locale is
-  ;; UTF-8. https://github.com/purcell/emacs.d/issues/320
-  (add-hook 'after-init-hook (lambda () (setq default-input-method "rime")))
-  ;; 在开启输入法的情况下，modline 输入法图标是否高亮来区分中文或英文状态中文
-  (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; Emacs 不支持 Shift 键切换输入法：https://github.com/DogLooksGood/emacs-rime/issues/130
-  ;; 所以下面的配置不生效：
-  ;;(setq rime-inline-ascii-trigger 'shift-l)
-  (setq rime-disable-predicates
-        '(rime-predicate-ace-window-p
-          rime-predicate-evil-mode-p
-          rime-predicate-hydra-p
-          rime-predicate-which-key-activate-p
-          rime-predicate-current-uppercase-letter-p
-          rime-predicate-after-alphabet-char-p
-          rime-predicate-space-after-cc-p
-          rime-predicate-punctuation-after-space-cc-p
-          rime-predicate-prog-in-code-p
-          rime-predicate-after-ascii-char-p
-          ))
-   (defun rime-predicate-which-key-activate-p ()
-     which-key--automatic-display)
-  (setq rime-posframe-properties
-        (list :font "Sarasa Gothic SC"
-              :internal-border-width 10))
-  (setq rime-show-candidate 'posframe))
-
-;; isearch 与 rime 不兼容，通过 phi-search 解决，参考：
-;; https://github.com/DogLooksGood/emacs-rime/issues/21
-(use-package phi-search
-  :ensure :after (rime)
-  :config
-  (global-set-key (kbd "C-s") 'phi-search)
-  (global-set-key (kbd "C-r") 'phi-search-backward))
-
-#+end_src
-
-6. 后续，只要修改了 ~/Library/Rime 目录中的文件，都需要执行 M-x rime-deploy 命令
-   生效。
-
 ** project
 
-Emacs 26.1 开始内置 project.el 并在 27.1 中得到增强，但是特性和活跃度不如
-projectile，建议使用 projectile。
+Emacs 26.1 开始内置 project.el 并在 27.1 中得到增强，但是特性和活跃度不如projectile，建议使用 projectile。
 
 如果项目是 VCS 则 project会自动识别，否则需要将目录注册到 project:
 #+begin_src emacs-lisp
@@ -3766,16 +3377,13 @@ DIR must include a .project file to be considered a project."
 
 或者，在项目根目录中创建一个 .project 文件。
 
-Files that belong to a project are typically stored in a hierarchy of
-directories; the top-level directory of the hierarchy is known as the =project
-root=.
+Files that belong to a project are typically stored in a hierarchy of directories; the top-level directory of
+the hierarchy is known as the =project root=.
 
-Whether a given directory is a root of some project is determined by the
-project-specific infrastructure, known as =project back-end=. Emacs currently
-supports two such back-ends: =VC= (see Section 25.1 [Version Control], page 310),
-whereby a VCS repository is considered a project; and =EDE= (see Section 25.5
-[EDE], page 342). This is expected to be extended in the future to support
-additional types of projects.
+Whether a given directory is a root of some project is determined by the project-specific infrastructure,
+known as =project back-end=. Emacs currently supports two such back-ends: =VC= (see Section 25.1 [Version
+Control], page 310), whereby a VCS repository is considered a project; and =EDE= (see Section 25.5 [EDE], page
+342). This is expected to be extended in the future to support additional types of projects.
 
 project 相关的命令前缀为 C-x p，帮助命令为 C-x p C-h：
 #+begin_verse
@@ -3800,109 +3408,125 @@ C-x p x         project-execute-extended-command
 
 project-find-regexp 的结果在 Xref mode buffer 中显示。
 
-project-search 默认搜索到第一个匹配就停下来，可以使用 M-x fileloop-continue RET
-继续。
+project-search 默认搜索到第一个匹配就停下来，可以使用 M-x fileloop-continue RET继续。
 
 ** compress
 
-Emacs =automatically uncompresses= compressed files when you visit them, and
-=automatically recompresses= them if you alter them and save them. Emacs
-recognizes compressed files by their file names. File names ending in =‘.gz’=
-indicate a file compressed with gzip. Other endings indicate other compression
-programs.
+Emacs =automatically uncompresses= compressed files when you visit them, and =automatically recompresses= them if
+you alter them and save them. Emacs recognizes compressed files by their file names. File names ending in
+=‘.gz’= indicate a file compressed with gzip. Other endings indicate other compression programs.
 
-A file whose name ends in =‘.tar’= is normally an archive made by the tar
-program. Emacs views these files in a special mode called =Tar mode= which
-provides a =Dired-like= list of the contents (see Chapter 27 [Dired], page
-350). You can move around through the list just as you would in Dired, and visit
-the subfiles contained in the archive. However, not all Dired commands are
-available in Tar mode.  If Auto Compression mode is enabled (see Section 15.13
-[Compressed Files], page 156), then Tar mode is used also for compressed
-archives—files with extensions ‘.tgz’, .tar.Z and .tar.gz.
+A file whose name ends in =‘.tar’= is normally an archive made by the tar program. Emacs views these files in a
+special mode called =Tar mode= which provides a =Dired-like= list of the contents (see Chapter 27 [Dired], page
+350). You can move around through the list just as you would in Dired, and visit the subfiles contained in the
+archive. However, not all Dired commands are available in Tar mode.  If Auto Compression mode is enabled (see
+Section 15.13 [Compressed Files], page 156), then Tar mode is used also for compressed archives—files with
+extensions ‘.tgz’, .tar.Z and .tar.gz.
 
-You =don’t need the tar program= to use Tar mode—Emacs reads the archives
-directly. However, accessing compressed archives =requires the appropriate
-uncompression program=.  A separate but similar Archive mode is used for =arc,
-jar, lzh, zip, rar, 7z, and zoo archives=, as well as exe files that are
-self-extracting executables
+You =don’t need the tar program= to use Tar mode—Emacs reads the archives directly. However, accessing
+compressed archives =requires the appropriate uncompression program=.  A separate but similar Archive mode is
+used for =arc, jar, lzh, zip, rar, 7z, and zoo archives=, as well as exe files that are self-extracting
+executables
 
 ** backup&autosave
 *** backup
 
-Emacs 只会在第一次打开文件时创建 backup 文件，后续默认不会创建新的 backup 文件，
-除非 kill 了 buffer 且重新打开这个文件。
+Emacs 只会在第一次打开文件时创建 backup 文件，后续默认不会创建新的 backup 文件，除非 kill 了 buffer 且重新打开
+这个文件。
 
-At your option, Emacs can keep either =a single backup= for each file, or make =a
-series of numbered backup files= for each file that you edit.
+At your option, Emacs can keep either =a single backup= for each file, or make =a series of numbered backup files=
+for each file that you edit.
 
 + C-u C-x C-s: 下次保存文件时，将要保存的文件内容保存到 backup 文件。
 + C-u C-u C-x C-s：先将原始内容保存到 backup 文件，然后再保存当前 buffer；
-+ C-u C-u C-u C-x C-s：和上面类似，但是下次保存文件时，先将原始内容保存到 back
-  文件；
++ C-u C-u C-u C-x C-s：和上面类似，但是下次保存文件时，先将原始内容保存到 back文件；
 
-You can customize the variable =backup-directory-alist= to specify that files
-=matching certain patterns= should be backed up =in specific directories=.
+You can customize the variable =backup-directory-alist= to specify that files =matching certain patterns= should
+be backed up =in specific directories=.
 
-When Emacs makes a backup file, its name is normally constructed by =appending
-‘~’= to the file name being edited; thus, the backup file for eval.c would be
-eval.c~.
+When Emacs makes a backup file, its name is normally constructed by =appending ‘~’= to the file name being
+edited; thus, the backup file for eval.c would be eval.c~.
 
-Emacs can also make =numbered backup files=. Numbered backup file names contain
-‘.~’, the number, and another ‘~’ after the original file name. Thus, the backup
-files of eval.c would be called =eval.c.~1~, eval.c.~2~=, and so on, all the way
-through names like eval.c.~259~ and beyond.
+Emacs can also make =numbered backup files=. Numbered backup file names contain ‘.~’, the number, and another
+‘~’ after the original file name. Thus, the backup files of eval.c would be called =eval.c.~1~, eval.c.~2~=, and
+so on, all the way through names like eval.c.~259~ and beyond.
 
-The variable =version-control= determines whether to make single backup files or
-mul- tiple numbered backup files.
+The variable =version-control= determines whether to make single backup files or mul- tiple numbered backup
+files.
 
-To prevent excessive consumption of disk space, Emacs can =delete numbered backup
-versions automatically=. Generally Emacs keeps the first few backups and the
-latest few backups, =deleting any in between=.
+To prevent excessive consumption of disk space, Emacs can =delete numbered backup versions
+automatically=. Generally Emacs keeps the first few backups and the latest few backups, =deleting any in
+between=.
 
 *** autosave
 
 Auto-Saving: Protection Against Disasters
 
-From time to time, Emacs =automatically saves= each visited file in a separate
-file, without altering the file you actually use. This is called =auto-saving=. It
-prevents you from losing more than a limited amount of work if the =system
-crashes=.
+From time to time, Emacs =automatically saves= each visited file in a separate file, without altering the file
+you actually use. This is called =auto-saving=. It prevents you from losing more than a limited amount of work
+if the =system crashes=.
 
 auto-saving 的文件一般保存在 autosave-dir 目录下，而不是原始文件目录或原始文件。
 
-If you want auto-saving to be done in the visited file rather than in a separate
-auto-save file, enable the global minor mode =auto-save-visited-mode=. In this
-mode, auto-saving is identical to explicit saving.You can use the variable
-=auto-save-visited-interval= to customize the interval between auto-save
-operations in =auto-save-visited-mode=; by default it’s =five
-seconds=. auto-save-interval and auto-save-timeout have =no effect= on auto-save-
-visited-mode.
+If you want auto-saving to be done in the visited file rather than in a separate auto-save file, enable the
+global minor mode =auto-save-visited-mode=. In this mode, auto-saving is identical to explicit saving.You can
+use the variable =auto-save-visited-interval= to customize the interval between auto-save operations in
+=auto-save-visited-mode=; by default it’s =five seconds=. auto-save-interval and auto-save-timeout have =no effect=
+on auto-save- visited-mode.
 
-当 save the buffer 后，emacs 自动删除对应的 auto-save 文件。变量
-auto-save-default 默认为 t，即默认开启 auto-save 模式。
+当 save the buffer 后，emacs 自动删除对应的 auto-save 文件。变量auto-save-default 默认为 t，即默认开启
+auto-save 模式。
 
-Emacs =auto-saves periodically= based on =how many characters you have typed= since
-the last auto-save. The variable auto-save-interval specifies how many
-characters there are between auto-saves. By default, it is =300=.
+Emacs =auto-saves periodically= based on =how many characters you have typed= since the last auto-save. The
+variable auto-save-interval specifies how many characters there are between auto-saves. By default, it is =300=.
 
-Auto-saving also takes place when you stop typing for a while. By default, it
-does this after =30 seconds= of idleness To change this interval, customize the
-variable =auto-save-timeout=.
+Auto-saving also takes place when you stop typing for a while. By default, it does this after =30 seconds= of
+idleness To change this interval, customize the variable =auto-save-timeout=.
 
-You can use the contents of an auto-save file to recover from a loss of data
-with the command =M-x recover-file RET file RET=. This visits file and then (after
-your confirmation) restores the contents from its auto-save file #file#.
+You can use the contents of an auto-save file to recover from a loss of data with the command =M-x recover-file
+RET file RET=. This visits file and then (after your confirmation) restores the contents from its auto-save
+file #file#.
 
-If Emacs or the computer crashes, you can =recover all the files= you were editing
-from their auto save files with the command =M-x recover-session=
+If Emacs or the computer crashes, you can =recover all the files= you were editing from their auto save files
+with the command =M-x recover-session=
 
 总结：
-1. backup 文件是第一次打开文件时创建，在编辑过程中默认不会在创建，除非 kill
-   buffer 重新 open 文件。文件名以 ~ 结尾。可以指定保存多个 backup 文件，文件名
-   以 =~N~= 结尾；
-2. autosave 文件是编辑过程中自动创建的文件，用于预防断电等情况，文件名的开头和结
-   尾均有 # ；
+1. backup 文件是第一次打开文件时创建，在编辑过程中默认不会在创建，除非 kill buffer 重新 open 文件。文件名以 ~
+   结尾。可以指定保存多个 backup 文件，文件名以 =~N~= 结尾；
+2. autosave 文件是编辑过程中自动创建的文件，用于预防断电等情况，文件名的开头和结尾均有 # ；
 
-* Footnotes
 
-[fn:1] 
+** folding
+
+emacs 的 hs-minor-mode 用来 block 的展开和关闭，对应的快捷键前缀是 C-c @ C-x
+
+https://www.gnu.org/software/emacs/manual/html_node/emacs/Hideshow.html
+
+Hideshow mode provides the following commands:
+
+C-c @ C-h
+C-c @ C-d
+Hide the current block (hs-hide-block).
+C-c @ C-s
+Show the current block (hs-show-block).
+C-c @ C-c
+C-c @ C-e
+Either hide or show the current block (hs-toggle-hiding).
+S-mouse-2
+Toggle hiding for the block you click on (hs-mouse-toggle-hiding).
+C-c @ C-M-h
+C-c @ C-t
+Hide all top-level blocks (hs-hide-all).
+C-c @ C-M-s
+C-c @ C-a
+Show all blocks in the buffer (hs-show-all).
+C-u n C-c @ C-l
+Hide all blocks n levels below this block (hs-hide-level).
+These variables can be used to customize Hideshow mode:
+
++ hs-hide-comments-when-hiding-all :: If non-nil, C-c @ C-M-h (hs-hide-all) hides comments too.
++ hs-isearch-open :: This variable specifies the conditions under which incremental search should unhide a
+  hidden block when matching text occurs within the block. Its value should be either code (unhide only code
+  blocks), comment (unhide only comments), t (unhide both code blocks and comments), or nil (unhide neither
+  code blocks nor comments). The default value is code.
+
