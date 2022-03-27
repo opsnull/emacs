@@ -34,6 +34,8 @@
 (use-package exec-path-from-shell
   :demand
   :custom
+  ;; 去掉 -i 参数, 加快启动速度。
+  (exec-path-from-shell-arguments '("-l")) 
   (exec-path-from-shell-check-startup-files nil)
   (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE" "GOFLAGS" "GO111MODULE"))
   :config
@@ -72,11 +74,21 @@
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
-;; 关闭各种图形元素。
-(when (window-system)
+(when (memq window-system '(mac ns x))
+  ;; 关闭各种图形元素。
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
-  (menu-bar-mode -1))
+  (menu-bar-mode -1)
+  ;; 使用更瘦字体。
+  (setq ns-use-thin-smoothing t)
+  ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
+  (setq ns-pop-up-frames nil)
+  ;; 一次滚动一行，避免窗口跳动。
+  (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll)))
+  (setq mouse-wheel-scroll-amount-horizontal 1)
+  (setq mouse-wheel-follow-mouse t)
+  (setq mouse-wheel-progressive-speed nil)
+  (xterm-mouse-mode t))
 
 ;; 关闭启动消息。
 (setq inhibit-startup-screen t)
@@ -89,10 +101,6 @@
 
 ;; 出错提示。
 (setq visible-bell t)
-
-;; 未选中窗口。
-(setq-default cursor-in-non-selected-windows nil)
-(setq highlight-nonselected-windows nil)
 
 ;; 关闭对话框。
 (setq use-file-dialog nil)
@@ -108,22 +116,8 @@
 ;; 复用当前 frame 。
 (setq display-buffer-reuse-frames t)
 
-(when (memq window-system '(mac ns x))
-  ;; 使用更瘦字体。
-  (setq ns-use-thin-smoothing t)
-  ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
-  (setq ns-pop-up-frames nil)
-  ;; 一次滚动一行，避免窗口跳动。
-  (setq mouse-wheel-scroll-amount '(1 ((shift) . hscroll))
-        mouse-wheel-scroll-amount-horizontal 1
-        mouse-wheel-follow-mouse t
-        mouse-wheel-progressive-speed nil)
-  (xterm-mouse-mode t))
-
-(setq auto-window-vscroll nil)
-
-;; 滚动一屏后, 显示 5 行上下文。
-(setq next-screen-context-lines 5)
+;; 滚动一屏后, 显示 3 行上下文。
+(setq next-screen-context-lines 3)
 
 ;; 平滑地进行半屏滚动，避免滚动后 recenter 操作。
 (setq scroll-step 1)
@@ -133,6 +127,7 @@
 ;; 滚动时保持光标位置。
 (setq scroll-preserve-screen-position 1)
 
+;; 像素平滑滚动（Emacs 29 开始支持）。
 (if (boundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode t))
 
@@ -163,14 +158,6 @@
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
-
-;; 高亮粘贴的内容。
-(use-package volatile-highlights
-  :after(undo-tree)
-  :config
-  (volatile-highlights-mode t)
-  (vhl/define-extension 'undo-tree 'undo-tree-yank 'undo-tree-move)
-  (vhl/install-extension 'undo-tree))
 
 ;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
@@ -311,20 +298,24 @@
   (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
+;; 缺省字体。
 (setq +font-family "Fira Code Retina")
 (setq +modeline-font-family "Fira Code Retina")
+;; org-table 使用 fixed-pitch 字体, Sarasa Term SC 可以让对齐效果更好。
 (setq +fixed-pitch-family "Sarasa Term SC")
 (setq +variable-pitch-family "LXGW WenKai Screen")
 (setq +font-unicode-family "LXGW WenKai Screen")
 (setq +font-size-list '(10 11 12 13 14 15 16 17 18))
 (setq +font-size 14)
 
+;; 设置缺省字体。
 (defun +load-base-font ()
+  ;; 为缺省字体设置 size, 其它字体都是通过 :height 进行动态伸缩。
   (let* ((font-spec (format "%s-%d" +font-family +font-size)))
-    ;; 设置缺省字体。
     (set-frame-parameter nil 'font font-spec)
     (add-to-list 'default-frame-alist `(font . ,font-spec))))
 
+;; 设置各特定 face 的字体。
 (defun +load-face-font (&optional frame)
   (let ((font-spec (format "%s" +font-family))
         (line-font-spec (format "%s" +modeline-font-family))
@@ -337,29 +328,37 @@
     (set-face-attribute 'mode-line frame :font line-font-spec :height 1.0)
     (set-face-attribute 'mode-line-inactive frame :font line-font-spec :height 1.0)))
 
+;; 设置中文字体。
 (defun +load-ext-font ()
   (when window-system
     (let ((font (frame-parameter nil 'font))
           (font-spec (font-spec :family +font-unicode-family)))
       (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
-        (set-fontset-font font charset font-spec))
-      ;; 设置 emoji 字体。
+        (set-fontset-font font charset font-spec)))))
+
+;; 设置 emobji 字体。
+(defun +load-emoji-font ()
+  (when window-system
       (setq use-default-font-for-symbols nil)
-      (set-fontset-font font '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-      (set-fontset-font font 'symbol (font-spec :family "Symbola")))))
+      (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+      (set-fontset-font t 'symbol (font-spec :family "Symbola"))))
 
 (defun +load-font ()
   (+load-base-font)
   (+load-face-font)
-  (+load-ext-font))
+  (+load-ext-font)
+  (+load-emoji-font))
 
 (+load-font)
-(add-hook 'org-mode-hook 'variable-pitch-mode)
-(add-hook 'markdown-mode-hook 'variable-pitch-mode)
 (add-hook 'after-make-frame-functions 
           ( lambda (f) 
             (+load-face-font f)
-            (+load-ext-font)))
+            (+load-ext-font)
+            (+load-emoji-font)))
+
+;; 只为 org-mode 和 markdown-mode 开启 variable-pitch-mode 。
+(add-hook 'org-mode-hook 'variable-pitch-mode)
+(add-hook 'markdown-mode-hook 'variable-pitch-mode)
 
 (defun +larger-font ()
   (interactive)
@@ -445,6 +444,7 @@
         '((consult-imenu buffer)
           (consult-line buffer)
           (consult-mark buffer)
+          (consult-global-mark buffer)
           (consult-find buffer)))
 
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
@@ -515,7 +515,7 @@
    ("C-c h" . consult-history)
    ("C-c m" . consult-mode-command)
    ;; C-x 绑定 (ctl-x-map)
-   ("C-x M-:" . consult-complex-command)
+   ("C-M-:" . consult-complex-command)
    ("C-x b" . consult-buffer)
    ("C-x 4 b" . consult-buffer-other-window)
    ("C-x 5 b" . consult-buffer-other-frame)
@@ -567,10 +567,10 @@
   (setq consult-async-input-debounce 0.4)
   (setq consult-async-input-throttle 0.5)
   ;; 预览寄存器。
-  (setq register-preview-delay 0.2)
+  (setq register-preview-delay 0.1)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
-  ;; 支持使用 Enter 来选择、反选候选项（例如 consult-multi-occur 场景）
+  ;; 支持使用 Enter 来选择、反选候选项（例如 consult-multi-occur 场景）。
   (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
@@ -580,21 +580,21 @@
   (setq consult-narrow-key "<")
   (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
 
+  ;; projectile 集成。
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-function 'projectile-project-root)
 
-  ;; 多选时按键绑定。
+  ;; 多选时按键绑定（例如 consult-multi-occur 场景）。
   ;; TAB - Select/deselect, RET - 提交和退出。
-  (define-key consult-crm-map "\r" #'+vertico-crm-exit)
   (define-key consult-crm-map "\t" #'vertico-exit)
+  (define-key consult-crm-map "\r" #'+vertico-crm-exit)
   (defun +vertico-crm-exit ()
     (interactive)
     (run-at-time 0 nil #'vertico-exit)
     (funcall #'vertico-exit))
 
   ;; 不对 consult-line 结果进行排序（按行号排序）。
-  (consult-customize
-   consult-line :prompt "Search: " :sort nil))
+  (consult-customize consult-line :prompt "Search: " :sort nil))
 
 ;; 选择 buffer: b, 选择 project: p, 选择文件：f 。
 (use-package consult-projectile
@@ -640,7 +640,6 @@
 
 (use-package embark-consult
   :after (embark consult)
-  :demand
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
@@ -689,11 +688,11 @@
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   ;; Complete word from current buffers
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;; Complete Elisp symbol
   (add-to-list 'completion-at-point-functions #'cape-symbol)
   ;; Complete abbreviation
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;; Complete word from dictionary file
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
@@ -782,7 +781,8 @@
    ((t (:inherit ace-jump-face-foreground :foreground "red" :height 1.5)))))
 
 (use-package rime
-  :ensure-system-package ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
+  :ensure-system-package
+  ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
@@ -815,11 +815,8 @@
           rime-predicate-hydra-p
           rime-predicate-current-uppercase-letter-p
           rime-predicate-after-alphabet-char-p
-          rime-predicate-space-after-cc-p
-          rime-predicate-space-after-ascii-p
           rime-predicate-prog-in-code-p
           rime-predicate-after-ascii-char-p))
-  ;;(setq rime-posframe-properties (list :font "Sarasa SC Gothic" :internal-border-width 2))
   (setq rime-show-candidate 'posframe)
 
   ;; 切换到 vterm-mode 类型外的 buffer 时激活 RIME 输入法。
@@ -917,21 +914,19 @@
    '(org-block ((t (:inherit 'fixed-pitch :height 0.9))))
    '(org-code ((t (:inherit 'fixed-pitch :height 0.9))))
    ;; 调小高度 , 并设置下划线。
-   '(org-block-begin-line ((t (:inherit 'fixed-pitch :height 0.8 :underline "#A7A6AA"))))
-   '(org-block-end-line ((t (:inherit 'fixed-pitch :height 0.8 :underline "#A7A6AA"))))
+   '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
+   '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-meta-line ((t (:inherit 'fixed-pitch :height 0.7))))
    '(org-document-info-keyword ((t (:inherit 'fixed-pitch :height 0.6))))
    '(org-document-info ((t (:height 0.8))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
    '(org-link ((t (:foreground "royal blue" :underline t))))
    '(org-property-value ((t (:height 0.8))) t)
-   '(org-drawer ((t (:height 0.8))) t)
+   '(org-drawer ((t (:inherit 'fixed-pitch :height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
    '(org-table ((t (:inherit 'fixed-pitch :height 0.9))))
    '(org-verbatim ((t (:inherit 'fixed-pitch :height 0.9))))
-   '(org-tag ((t (:weight bold :height 0.8))))
-   ;;'(org-ellipsis ((t (:foreground nil))))
-   )
+   '(org-tag ((t (:weight bold :height 0.8)))))
   (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»")
                                          ("#+END_SRC" . "«")
                                          ("#+begin_src" . "»")
@@ -946,8 +941,7 @@
   (org-mode . org-superstar-mode)
   :custom
   (org-superstar-remove-leading-stars t)
-  (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-  )
+  (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 (use-package org-fancy-priorities
   :after (org)
@@ -1173,6 +1167,7 @@
           (typescript "\\begin{programlist}[label={%l}]{typescript}{: %c}\n%s\\end{programlist}")
           (scss "\\begin{programlist}[label={%l}]{scss}{: %c}\n%s\\end{programlist}")
           (sh "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
+          (bash "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
           (shell "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
           (shellinput "\\begin{shellinput}[%c]\n%s\\end{shellinput}")
           (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}")))
@@ -1426,7 +1421,6 @@
                       (bury-buffer buf)
                     (kill-buffer buf))))
               buffers))))
-  (setq auto-revert-check-vc-info t)
   (setq magit-bury-buffer-function #'my-magit-kill-buffers))
 
 (use-package git-link
@@ -1641,7 +1635,6 @@
   (if (executable-find "ipython")
       (progn
         (setq python-shell-interpreter "ipython")
-        ;; ipython version >= 5
         (setq python-shell-interpreter-args "--simple-prompt -i"))
     (progn
       (setq python-shell-interpreter "python")
@@ -1655,7 +1648,6 @@
         (flycheck-set-checker-executable "python-pylint" pylint))
       (when flake8
         (flycheck-set-checker-executable "python-flake8" flake8)))))
-
 
 (use-package python
   :ensure-system-package
@@ -1688,9 +1680,7 @@
   (when (executable-find "python3")
     (setq lsp-pyright-python-executable-cmd "python3"))
   :hook
-  (python-mode . (lambda ()
-                   (require 'lsp-pyright)
-                   (yapf-mode))))
+  (python-mode . (lambda () (require 'lsp-pyright) (yapf-mode))))
 
 (use-package go-mode
   :after (lsp-mode)
@@ -1770,7 +1760,8 @@
   :commands (go-playground-mode))
 
 (use-package flycheck-golangci-lint
-  :ensure-system-package (golangci-lint)
+  :ensure-system-package
+  (golangci-lint)
   :after flycheck
   :defines flycheck-disabled-checkers
   :hook (go-mode . (lambda ()
@@ -1990,7 +1981,7 @@ mermaid.initialize({
                           (?t string-to-char-backward "")
                           (?T string-up-to-char-backward "")
 
-                          (?W  WORD " ") ;; a sequence of non-whitespace characters
+                          (?W  WORD " ") ;; 非空白字符序列。
                           (?\' squoted-string "")
                           (?\" dquoted-string "")
                           (?\` bquoted-string "")
@@ -2008,7 +1999,7 @@ mermaid.initialize({
 ;; 加载 extra-things 后, 上面 WORD 开始的 alist 才生效。
 (require 'extra-things))
 
-;; Move to the beginning/end of line or code
+;; 移动到行或代码的开头、结尾。
 (use-package mwim
   :bind (([remap move-beginning-of-line] . mwim-beginning-of-code-or-line)
          ([remap move-end-of-line] . mwim-end-of-code-or-line)))
@@ -2046,7 +2037,7 @@ mermaid.initialize({
   (projectile-global-mode)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   (projectile-mode +1)
-  ;; selectrum/vertico 使用 'default
+  ;; selectrum/vertico 使用 'default 。
   (setq projectile-completion-system 'default)
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
   (dolist (dirs '(".cache"
@@ -2099,8 +2090,8 @@ mermaid.initialize({
   ;; Disable projectile on remote buffers
   ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
   ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
-  ;;(defadvice projectile-project-root (around ignore-remote first activate)
-  ;;  (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+  (defadvice projectile-project-root (around ignore-remote first activate)
+    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
 
   ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
   (setq projectile-enable-caching t)
@@ -2197,20 +2188,28 @@ mermaid.initialize({
 (use-package treemacs-magit
   :after (treemacs magit))
 
-;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects:
+;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
 (use-package lsp-treemacs
   :after (lsp-mode treemacs)
   :config
   (setq lsp-treemacs-error-list-current-project-only t)
   (lsp-treemacs-sync-mode 1))
 
-;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包
+;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包。
 (use-package ripgrep
   :ensure-system-package (rg . ripgrep))
 
 (use-package deadgrep
   :ensure-system-package (rg . ripgrep)
   :bind ("<f5>" . deadgrep))
+
+;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+(add-hook 'buffer-list-update-hook
+          (lambda ()
+            (when (file-remote-p default-directory)
+              (require 'treemacs)
+              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                  (delete-window (treemacs-get-local-window))))))
 
 ;; OSX 词典。
 (use-package osx-dictionary
@@ -2296,7 +2295,7 @@ mermaid.initialize({
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
-  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理
+  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
   (advice-add 'url-http :around 'mb-url-http-around-advice))
 
 (defun proxy-socks-disable ()
@@ -2381,6 +2380,7 @@ mermaid.initialize({
 
 ;; 提示符只读
 (setq comint-prompt-read-only t)
+
 ;; 命令补全
 (setq shell-command-completion-mode t)
 
@@ -2391,36 +2391,31 @@ mermaid.initialize({
 (use-package tramp
   :straight (tramp :files ("lisp/*"))
   :config
-  (setq  tramp-ssh-controlmaster-options
-         (concat "-o ControlMaster=auto "
-                 "-o ControlPath='tramp.%%C' "
-                 "-o ControlPersist=600 "
-                 "-o ServerAliveCountMax=60 "
-                 "-o ServerAliveInterval=10 ")
-         ;; TRAMP buffers 关闭 version control, 防止卡住.
-         vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp)
-         ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能.
-         remote-file-name-inhibit-cache 600
-         ;;tramp-verbose 10
-         ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
-         tramp-inline-compress-start-size (* 1024 8)
-         ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
-         tramp-copy-size-limit (* 1024 1024 2)
-         ;; 在本地保存 TRAMP auto-save 文件.
-         tramp-auto-save-directory (expand-file-name "tramp-auto-save" user-emacs-directory)
-         ;; A more representative name for this file.
-         tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory)
-         ;; 在整个 Emacs session 期间保存 SSH 密码.
-         password-cache-expiry nil
-         tramp-default-method "ssh"
-         tramp-default-remote-shell "/bin/bash"
-         tramp-default-user "root"
-         tramp-terminal-type "tramp")
-
-  ;; 远程机器列表。
-  (require 'epa-file)
-  (epa-file-enable)
-  (load "~/.emacs.d/sshenv.el.gpg")
+  ;; 使用 ~/.ssh/config 中的 ssh 持久化配置。（Emacs 默认复用连接，但不持久化连接）
+  (setq  tramp-ssh-controlmaster-options nil)
+  ;; TRAMP buffers 关闭 version control, 防止卡住.
+  (setq vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp))
+  ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能.
+  (setq remote-file-name-inhibit-cache 600)
+  ;;tramp-verbose 10
+  ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
+  (setq tramp-inline-compress-start-size (* 1024 8))
+  ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
+  (setq tramp-copy-size-limit (* 1024 1024 2))
+  ;; 临时目录中保存 TRAMP auto-save 文件, 重启后清空。
+  (setq tramp-allow-unsafe-temporary-files t)
+  (setq tramp-auto-save-directory temporary-file-directory)
+  ;; 连接历史文件。
+  (setq tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory))
+  ;; 在整个 Emacs session 期间保存 SSH 密码.
+  (setq password-cache-expiry nil)
+  (setq tramp-default-method "ssh")
+  (setq tramp-default-remote-shell "/bin/bash")
+  (setq tramp-default-user "root")
+  (setq tramp-terminal-type "tramp")
+  ;; Backup (file~) disabled and auto-save (#file#) locally to prevent delays in editing remote files
+  ;; https://stackoverflow.com/a/22077775
+  (add-to-list 'backup-directory-alist (cons tramp-file-name-regexp nil))
 
   ;; 自定义远程环境变量。
   (let ((process-environment tramp-remote-process-environment))
@@ -2428,30 +2423,28 @@ mermaid.initialize({
     (setenv "VTERM_TRAMP" "true")
     (setq tramp-remote-process-environment process-environment)))
 
+;; 远程机器列表。
+(require 'epa-file)
+(epa-file-enable)
+(load "~/.emacs.d/sshenv.el.gpg")
+
 ;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程环境中。远程
 ;; 机器的 ~/.emacs_bashrc 根据这个变量设置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的问题。
 (defvar my/remote-host "")
-(add-hook
- 'buffer-list-update-hook
- (lambda ()
-   (if  (file-remote-p default-directory)
-       (progn
-         (setq my/remote-host (file-remote-p default-directory 'host))
-         ;; 动态计算 ENV=VALUE.
-         (require 'vterm)
-         (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host)))
-         ;; 关闭 treemacs, 避免建立新连接耗时。
-         (require 'treemacs)
-         (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-             (delete-window (treemacs-get-local-window)))))
-   (progn)))
+(add-hook 'buffer-list-update-hook
+          (lambda ()
+            (when (file-remote-p default-directory)
+              (setq my/remote-host (file-remote-p default-directory 'host))
+              ;; 动态计算 ENV=VALUE.
+              (require 'vterm)
+              (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
 
 ;; 保存 Buffer 时自动更新 #+LASTMOD: 后面的时间戳。
-(setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*"
-      time-stamp-end "$"
-      time-stamp-format "%Y-%m-%dT%02H:%02m:%02S%5z"
-      ;; #+LASTMOD: 必须位于文件开头的 line-limit 行内, 否则自动更新不生效。
-      time-stamp-line-limit 30)
+(setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*")
+(setq time-stamp-end "$")
+(setq time-stamp-format "%Y-%m-%dT%02H:%02m:%02S%5z")
+;; #+LASTMOD: 必须位于文件开头的 line-limit 行内, 否则自动更新不生效。
+(setq time-stamp-line-limit 30)
 (add-hook 'before-save-hook 'time-stamp t)
 
 (setq initial-major-mode 'fundamental-mode)
@@ -2543,13 +2536,14 @@ mermaid.initialize({
   ;; 不清理 recentf tramp buffers .
   (setq recentf-auto-cleanup 'never)
   (setq recentf-max-menu-items 30)
-  (setq recentf-max-saved-items 5000)
+  (setq recentf-max-saved-items 500)
   (setq recentf-exclude `(,(expand-file-name "straight/" user-emacs-directory)
                           ,(expand-file-name "eln-cache/" user-emacs-directory)
                           ,(expand-file-name "etc/" user-emacs-directory)
                           ,(expand-file-name "var/" user-emacs-directory)
-                          ,(expand-file-name ".cache/" user-emacs-directory)
-                          "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log"
+                          ,(expand-file-name ".cache/" user-emacs-directory)                          
+                          ,tramp-file-name-regexp
+                          "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log" "COMMIT_EDITMSG"
                           ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
   (recentf-mode +1))
 
@@ -2575,14 +2569,14 @@ mermaid.initialize({
                                         extended-command-history)))
 
 ;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
-(setq-default fill-column 100
-              comment-fill-column 0
-              tab-width 4
-              ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
-              indent-tabs-mode nil
-              message-log-max t
-              load-prefer-newer t
-              ad-redefinition-action 'accept)
+(setq-default fill-column 100)
+(setq-default comment-fill-column 0)
+(setq-default tab-width 4)
+;; 不插入 tab (按照 tab-width 转换为空格插入) 。
+(setq-default indent-tabs-mode nil)
+(setq-default message-log-max t)
+(setq-default load-prefer-newer t)
+(setq-default ad-redefinition-action 'accept)
 
 ;; 使用系统剪贴板，实现与其它程序相互粘贴。
 (setq x-select-enable-clipboard t)
@@ -2725,3 +2719,122 @@ mermaid.initialize({
 ;; 在另一个 panel buffer 中展示按键.
 (use-package command-log-mode
   :commands command-log-mode)
+
+;; 以下自定义函数参考自：https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-edit.el
+(defun my/other-window-backward ()
+  "Goto previous window"
+  (interactive)
+  (other-window -1))
+
+(defun my/open-terminal ()
+  "Open system terminal."
+  (interactive)
+  (cond
+   ((eq system-type 'darwin)
+    (shell-command
+     ;; open -a Terminal doesn't allow us to open a particular directory unless
+     ;; We use --args AND -n, but -n opens an entirely new Terminal application
+     ;; instance on every call, not just a new window. Using the
+     ;; bundle here always opens the given directory in a new window.
+     (concat "open -b com.apple.terminal " default-directory) nil nil))
+   ((memq system-type '(cygwin windows-nt ms-dos))
+    ;; https://stackoverflow.com/questions/13505113/how-to-open-the-native-cmd-exe-window-in-emacs
+    (let ((proc (start-process "cmd" nil "cmd.exe" "/C" "start" "cmd.exe")))
+      (set-process-query-on-exit-flag proc nil)))
+   (t
+    (message "Implement `j-open-terminal' for this OS!"))))
+
+(defun my/iso-8601-date-string (&optional datetime)
+  (concat
+   (format-time-string "%Y-%m-%dT%T" datetime)
+   ((lambda (x) (concat (substring x 0 3) "" (substring x 3 5)))
+    (format-time-string "%z" datetime))))
+
+(defun my/insert-current-date-time ()
+  (interactive)
+  (insert (my/iso-8601-date-string)))
+
+(defun my/insert-today ()
+  (interactive)
+  (insert (format-time-string "%Y-%m-%d" (current-time))))
+
+(defun my/timestamp->human-date ()
+  (interactive)
+  (letrec ((date-string (if (region-active-p)
+                            (buffer-substring (mark) (point))
+                          (thing-at-point 'word)))
+           (body (if (iso8601-valid-p date-string)
+                     ;; date -> ts
+                     (format-time-string "%s" (parse-iso8601-time-string date-string))
+                   ;; ts -> date
+                   (let ((timestamp-int (string-to-number date-string)))
+                     (thread-last
+                       (if (> timestamp-int (expt 10 11)) ;; 大于 10^11 为微秒，转为秒
+                           (/ timestamp-int 1000)
+                         timestamp-int)
+                       (seconds-to-time)
+                       (my/iso-8601-date-string))))))
+    (unless (string-empty-p body)
+      (end-of-line)
+      (newline-and-indent)
+      (insert body))
+    (deactivate-mark)))
+
+(defun my/json-format ()
+  (interactive)
+  (save-excursion
+    (if mark-active
+        (json-pretty-print (mark) (point))
+      (json-pretty-print-buffer))))
+
+(defun my/delete-file-and-buffer (buffername)
+  "Delete the file visited by the buffer named BUFFERNAME."
+  (interactive "bDelete file")
+  (let* ((buffer (get-buffer buffername))
+         (filename (buffer-file-name buffer)))
+    (when filename
+      (delete-file filename)
+      (message "Deleted file %s" filename)
+      (kill-buffer))))
+
+(defun my/diff-buffer-with-file ()
+  "Compare the current modified buffer with the saved version."
+  (interactive)
+  (let ((diff-switches "-u")) ;; unified diff
+    (diff-buffer-with-file (current-buffer))
+    (other-window 1)))
+
+(defun my/copy-current-filename-to-clipboard ()
+  "Copy `buffer-file-name' to system clipboard."
+  (interactive)
+  (let ((filename (if-let (f buffer-file-name)
+                      f
+                    default-directory)))
+    (if filename
+        (progn
+          (message (format "Copying %s to clipboard..." filename))
+          (kill-new filename))
+      (message "Not a file..."))))
+
+(defun my/rename-current-buffer-file ()
+  "Renames current buffer and file it is visiting."
+  (interactive)
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not (and filename (file-exists-p filename)))
+        (error "Buffer '%s' is not visiting a file!" name)
+      (let ((new-name (read-file-name "New name: ")))
+        (if (get-buffer new-name)
+            (error "A buffer named '%s' already exists!" new-name)
+          (rename-file filename new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil)
+          (message "File '%s' successfully renamed to '%s'"
+                   name (file-name-nondirectory new-name)))))))
+
+(defun my/mem-report ()
+  (interactive)
+  (let ((max-lisp-eval-depth 10000000)
+        (max-specpdl-size 10000000))
+    (memory-report)))

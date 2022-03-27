@@ -108,6 +108,9 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 + 更新当前使用的文档目录: C-u M-x dovdocs-lookup
 
 #+begin_src emacs-lisp :tangle no
+(setq rime-show-candidate 'posfram)
+(setq rime-posframe-properties (list :font "Sarasa SC Gothic" :internal-border-width 2))
+
 ;; 有了更好的 ctrlf 替换
 ;; 直接在 minibuffer 中编辑 query(RIME 探测到 minibuffer 时自动关闭输入法)
 (use-package isearch-mb
@@ -1784,3 +1787,19 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (setq twittering-use-master-password t))
 #+end_src
 + 默认将 OAuth Token 加密保存到 =~/.twittering-mode.gpg=, 第一次需要输入两次相同的加密密码。
+
+
+#+begin_src emacs-lisp
+;; 未选中窗口。
+(setq-default cursor-in-non-selected-windows nil)
+(setq highlight-nonselected-windows nil)
+
+;; 高亮粘贴的内容。
+(use-package volatile-highlights
+  :after(undo-tree)
+  :config
+  (volatile-highlights-mode t)
+  (vhl/define-extension 'undo-tree 'undo-tree-yank 'undo-tree-move)
+  (vhl/install-extension 'undo-tree))
+
+#+end_src
