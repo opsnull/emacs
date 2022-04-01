@@ -1803,3 +1803,42 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (vhl/install-extension 'undo-tree))
 
 #+end_src
+
+* theme
+#+begin_src emacs-lisp
+  (doom-modeline-def-modeline 'main
+    ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免 modeline 溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  "))
+
+;; 预览主题: https://emacsthemes.com/
+(use-package doom-themes
+  :demand
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  (doom-themes-treemacs-theme "doom-colors")
+  ;; modeline 两边各加 4px 空白。
+  (doom-themes-padded-modeline t)
+  :config
+  (doom-themes-visual-bell-config)
+  ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch nil)
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
+
+;; 跟随 Mac 自动切换深浅主题。
+(defun my/load-light-theme () (interactive) (load-theme 'doom-zenburn t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-zenburn t))
+(add-hook 'ns-system-appearance-change-functions
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
+#+end_src

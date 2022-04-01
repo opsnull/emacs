@@ -159,35 +159,37 @@
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; 预览主题: https://emacsthemes.com/
-(use-package doom-themes
+(use-package modus-themes
   :demand
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  (doom-themes-treemacs-theme "doom-colors")
-  ;; modeline 两边各加 4px 空白。
-  (doom-themes-padded-modeline t)
+  :init
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-region '(bg-only no-extend)
+        modus-themes-hl-line '(underline accented)
+        modus-themes-paren-match '(bold intense)
+        modus-themes-links '(neutral-underline background)
+        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
+        modus-themes-prompts '(intense bold)
+        modus-themes-syntax '(alt-syntax)
+        modus-themes-mixed-fonts t
+        modus-themes-mode-line-padding 2
+        modus-themes-tabs-accented t
+        ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
+        ;;modus-themes-diffs 'deuteranopia
+        modus-themes-org-blocks 'gray-background ;; 'tinted-background
+        modus-themes-variable-pitch-ui t
+        modus-themes-headings
+        '((t . (variable-pitch background overline rainbow semibold)))
+        modus-themes-completions
+        '((matches . (extrabold background))
+          (selection . (semibold intense accented text-also))
+          (popup . (accented intense))))
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
   :config
-  (doom-themes-visual-bell-config)
-  ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
-  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
-  (setq doom-themes-treemacs-enable-variable-pitch nil)
-  (doom-themes-treemacs-config)
-  (doom-themes-org-config))
-
-;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-zenburn t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-zenburn t))
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
+  (modus-themes-load-operandi) ;; 浅色主题
+  ;;(modus-themes-load-vivendi)  ;; 深色主题
+  )
 
 ;; modeline 显示电池和日期时间。
 (display-battery-mode t)
@@ -203,7 +205,6 @@
 
 (use-package doom-modeline
   :demand
-  :after(doom-themes)
   :custom
   ;; 不显示换行和编码（节省空间）。
   (doom-modeline-buffer-encoding nil)
@@ -221,13 +222,7 @@
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1)
-  :config
-  (doom-modeline-def-modeline 'main
-    ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免 modeline 溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
+  (doom-modeline-mode 1))
 
 (use-package dashboard
   :demand
@@ -430,9 +425,6 @@
   ;; 重复上一次 vertico sesson;
   (global-set-key "\M-r" #'vertico-repeat-last)
   (global-set-key "\M-R" #'vertico-repeat-select)
-
-  ;; 开启 vertico-mouse 。
-  (vertico-mouse-mode)
 
   ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格 。
   (vertico-multiform-mode)
@@ -774,7 +766,7 @@
 (setq aw-dispatch-always t)
 (global-set-key (kbd "M-o") 'ace-window)
 ;; 在窗口左上角显示位置字符。
-(setq aw-char-position 'top-left)
+;;(setq aw-char-position 'top-left)
 ;; 调大窗口选择字符。
 (custom-set-faces
  '(aw-leading-char-face
@@ -813,10 +805,11 @@
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
           rime-predicate-hydra-p
-          rime-predicate-current-uppercase-letter-p
-          rime-predicate-after-alphabet-char-p
-          rime-predicate-prog-in-code-p
-          rime-predicate-after-ascii-char-p))
+          ;;rime-predicate-current-uppercase-letter-p
+          ;;rime-predicate-after-alphabet-char-p
+          ;;rime-predicate-prog-in-code-p
+          ;;rime-predicate-after-ascii-char-p
+          ))
   (setq rime-show-candidate 'posframe)
 
   ;; 切换到 vterm-mode 类型外的 buffer 时激活 RIME 输入法。
@@ -941,7 +934,7 @@
   (org-mode . org-superstar-mode)
   :custom
   (org-superstar-remove-leading-stars t)
-  (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●")))
+  (org-superstar-headline-bullets-list '("◉"  "🞛" "✿" "○" "▷")))
 
 (use-package org-fancy-priorities
   :after (org)
@@ -1397,8 +1390,8 @@
       (insert (propertize title 'face title-faces 'kbd-help title)))))
 
 (setq vc-follow-symlinks t)
-
 (use-package magit
+  :straight (magit :repo "magit/magit" :files ("lisp/*.el"))
   :custom
   ;; 在当前 window 中显示 magit buffer.
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
@@ -1557,6 +1550,8 @@
   (lsp-restart 'auto-restart)
   ;; 使用 projectile/project 来自动探测项目根目录。
   (lsp-auto-guess-root t)
+  ;; 不对 imenu 结果进行排序.
+  (lsp-imenu-sort-methods '(position))
   :init
   ;; https://github.com/minad/corfu/wiki
   (defun my/orderless-dispatch-flex-first (_pattern index _total)
@@ -2118,6 +2113,8 @@ mermaid.initialize({
 
 (use-package treemacs
   :demand
+  :straight 
+  (treemacs :files ("src/elisp/*.el" "src/scripts/*.py" "src/extra/*.el" "icons")  :repo "Alexander-Miller/treemacs")
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -2166,9 +2163,21 @@ mermaid.initialize({
     ;;(treemacs-project-follow-mode t)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
-    (treemacs-indent-guide-mode t)
+    ;; 在 modus-theme 下显示不好, 故关闭。
+    ;;(treemacs-indent-guide-mode t)
     (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
+    ;; 使用 treemacs 自带的 all-the-icons 主题。
+    ;; 注: 当使用 doom-themes 主题时, 它会自动设置 treemacs theme, 就不需要再调用这个函数了.
+    (require 'treemacs-all-the-icons)
+    (treemacs-load-theme "all-the-icons")
+    (require 'treemacs-projectile)
+    (require 'treemacs-magit)
+    ;; 在 dired buffer 中使用 treemacs icons。
+    (require 'treemacs-icons-dired)
+    (treemacs-icons-dired-mode t)
+    ;; 单击打开或折叠目录.
+    (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
   :bind
   (:map global-map
         ("M-0"       . treemacs-select-window)
@@ -2178,15 +2187,8 @@ mermaid.initialize({
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
-;; 单击打开或折叠目录.
 (with-eval-after-load 'treemacs
-  (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
-
-(use-package treemacs-projectile
-  :after (treemacs projectile))
-
-(use-package treemacs-magit
-  :after (treemacs magit))
+  )
 
 ;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
 (use-package lsp-treemacs
