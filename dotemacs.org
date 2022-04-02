@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-04-02T01:04:06+0800
+#+LASTMOD: 2022-04-02T11:04:01+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -97,7 +97,7 @@ npm config set registry=http://registry.npm.taobao.org
 
 * init
 
- =early-init.el= 是 Emacs 启动时最开始执行的文件(在加载包和初始化 UI 之前)，执行复杂逻辑可能导致 Emacs 启动时悄
+ =early-init.el= 是 ~Emacs~ 启动时最开始执行的文件(在加载包和初始化 UI 之前)，执行复杂逻辑可能导致 ~Emacs~ 启动时悄
  无声息失败，所以该文件尽量以变量定义为主。
 
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
@@ -336,6 +336,7 @@ npm config set registry=http://registry.npm.taobao.org
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
+;; 高对比度主题。
 (use-package modus-themes
   :demand
   :init
@@ -413,33 +414,6 @@ npm config set registry=http://registry.npm.taobao.org
   (setq dashboard-set-file-icons t)
   (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))
   (dashboard-setup-startup-hook))
-
-(use-package centaur-tabs
-  :hook (emacs-startup . centaur-tabs-mode)
-  :init
-  (setq centaur-tabs-set-icons t)
-  (setq centaur-tabs-height 25)
-  (setq centaur-tabs-gray-out-icons 'buffer)
-  (setq centaur-tabs-set-modified-marker t)
-  (setq centaur-tabs-cycle-scope 'tabs)
-  (setq centaur-tabs-enable-ido-completion nil)
-  (setq centaur-tabs-set-bar 'under)
-  (setq x-underline-at-descent-line t)
-  (setq centaur-tabs-show-navigation-buttons t)
-  (setq centaur-tabs-enable-key-bindings t)
-  :config
-  (centaur-tabs-mode t)
-  (centaur-tabs-headline-match)
-  (centaur-tabs-enable-buffer-reordering)
-  (centaur-tabs-group-by-projectile-project)
-  (defun centaur-tabs-hide-tab (x)
-    (let ((name (format "%s" x)))
-      (or
-       (window-dedicated-p (selected-window))
-       ;; 不显示以 * 开头的 buffer 。
-       (string-prefix-p "*" name)
-       (and (string-prefix-p "magit" name)
-            (not (file-name-extension name)))))))
 
 ;; 显示光标位置。
 (use-package beacon
@@ -880,8 +854,8 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
         ("S-TAB" . corfu-previous)
         ([backtab] . corfu-previous))
   :custom
-  ;; 开启自动补全。
-  (corfu-auto t)
+  ;;关闭自动补全。
+  (corfu-auto nil)
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.25)
   ;; 不自动选择第一个。
@@ -939,7 +913,9 @@ Cape 为 Corfu 提供多种类型的 Completion At Point 扩展。
   ;; Complete entire line from file
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   :config
-  (setq cape-dabbrev-min-length 3))
+  (setq cape-dabbrev-min-length 3)
+  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
+  (cape-wrap-prefix-length #'cape-dabbrev 3))
 #+end_src
 
 ** kind-icon
@@ -2909,38 +2885,27 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   ;; selectrum/vertico 使用 'default 。
   (setq projectile-completion-system 'default)
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
-  (dolist (dirs '(".cache"
-                  ".dropbox"
-                  ".git"
-                  ".hg"
-                  ".svn"
-                  ".nx"
-                  "elpa"
-                  "auto"
-                  "bak"
-                  "__pycache__"
-                  "vendor"
-                  "node_modules"
-                  "logs"
-                  "target"
-                  ".idea"
-                  "build"
-                  ".devcontainer"
-                  ".settings"
-                  ".gradle"
-                  ".vscode"))
-    (add-to-list 'projectile-globally-ignored-directories dirs))
+  (dolist (dir '("^\\.cache$"
+                  "^elpa$"
+                  "^bak$"
+                  "^__pycache__$"
+                  "^vendor$"
+                  "^node_modules$"
+                  "^logs$"
+                  "^target$"
+                  "^build$"
+                  "^\\.devcontainer$"
+                  "^\\.settings$"
+                  "^\\.gradle$"))
+    (add-to-list 'projectile-globally-ignored-directories dir))
   (dolist (item '("GPATH"
                   "GRTAGS"
                   "GTAGS"
-                  "GSYMS"
                   "TAGS"
-                  ".tags"
                   ".classpath"
                   ".project"
-                  ".DS_Store"
-                  "__init__.py"))
-    (add-to-list 'projectile-globally-ignored-files item))
+                  ".DS_Store"))
+     (add-to-list 'projectile-globally-ignored-files item))
   (dolist (list '("\\.elc\\'"
                   "\\.o\\'"
                   "\\.class\\'"
@@ -3108,6 +3073,15 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
 #+end_src
 
 * search
+
+设置 ~grep/ripgrep~ 忽略的目录和文件:
+#+begin_src emacs-lisp
+(require 'grep)
+(dolist (dir '(".cache" "vendor" "node_modules"))
+  (add-to-list 'grep-find-ignored-directories dir))
+(dolist (item '("GPATH" "GRTAGS" "GTAGS" "TAGS" ".classpath" ".project" ".DS_Store" ))
+  (add-to-list 'grep-find-ignored-files item))
+#+end_src
 
 ctrlf 是 isearch 更好的替代品（搜索结果编号，支持： C-v, M-v, M-<, M->, C-l）:
 #+begin_src emacs-lisp

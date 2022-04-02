@@ -159,6 +159,7 @@
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
+;; 高对比度主题。
 (use-package modus-themes
   :demand
   :init
@@ -236,33 +237,6 @@
   (setq dashboard-set-file-icons t)
   (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))
   (dashboard-setup-startup-hook))
-
-(use-package centaur-tabs
-  :hook (emacs-startup . centaur-tabs-mode)
-  :init
-  (setq centaur-tabs-set-icons t)
-  (setq centaur-tabs-height 25)
-  (setq centaur-tabs-gray-out-icons 'buffer)
-  (setq centaur-tabs-set-modified-marker t)
-  (setq centaur-tabs-cycle-scope 'tabs)
-  (setq centaur-tabs-enable-ido-completion nil)
-  (setq centaur-tabs-set-bar 'under)
-  (setq x-underline-at-descent-line t)
-  (setq centaur-tabs-show-navigation-buttons t)
-  (setq centaur-tabs-enable-key-bindings t)
-  :config
-  (centaur-tabs-mode t)
-  (centaur-tabs-headline-match)
-  (centaur-tabs-enable-buffer-reordering)
-  (centaur-tabs-group-by-projectile-project)
-  (defun centaur-tabs-hide-tab (x)
-    (let ((name (format "%s" x)))
-      (or
-       (window-dedicated-p (selected-window))
-       ;; 不显示以 * 开头的 buffer 。
-       (string-prefix-p "*" name)
-       (and (string-prefix-p "magit" name)
-            (not (file-name-extension name)))))))
 
 ;; 显示光标位置。
 (use-package beacon
@@ -638,11 +612,19 @@
 (use-package corfu
   :demand
   :straight '(corfu :host github :repo "minad/corfu")
+  :bind
+  (:map corfu-map
+        ("TAB" . corfu-next)
+        ([tab] . corfu-next)
+        ("S-TAB" . corfu-previous)
+        ([backtab] . corfu-previous))
   :custom
-  ;; 开启自动补全。
-  (corfu-auto t)
+  ;;关闭自动补全。
+  (corfu-auto nil)
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.25)
+  ;; 不自动选择第一个。
+  (corfu-preselect-first nil)
   (corfu-min-width 80)
   (corfu-max-width corfu-min-width)
   (corfu-count 14)
@@ -652,12 +634,11 @@
   :config
   (corfu-global-mode))
 
-;; 总是在弹出菜单中显示候选者。
+;; 总是在弹出菜单中显示候选者 
 (setq completion-cycle-threshold nil)
 
 ;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
 (setq tab-always-indent 'complete)
-(setq c-tab-always-indent 'complete)
 
 ;; 在候选者右方显示文档。
 (use-package corfu-doc
@@ -691,7 +672,9 @@
   ;; Complete entire line from file
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   :config
-  (setq cape-dabbrev-min-length 3))
+  (setq cape-dabbrev-min-length 3)
+  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
+  (cape-wrap-prefix-length #'cape-dabbrev 3))
 
 (use-package kind-icon
   :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
@@ -2035,38 +2018,27 @@ mermaid.initialize({
   ;; selectrum/vertico 使用 'default 。
   (setq projectile-completion-system 'default)
   (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
-  (dolist (dirs '(".cache"
-                  ".dropbox"
-                  ".git"
-                  ".hg"
-                  ".svn"
-                  ".nx"
-                  "elpa"
-                  "auto"
-                  "bak"
-                  "__pycache__"
-                  "vendor"
-                  "node_modules"
-                  "logs"
-                  "target"
-                  ".idea"
-                  "build"
-                  ".devcontainer"
-                  ".settings"
-                  ".gradle"
-                  ".vscode"))
-    (add-to-list 'projectile-globally-ignored-directories dirs))
+  (dolist (dir '("^\\.cache$"
+                  "^elpa$"
+                  "^bak$"
+                  "^__pycache__$"
+                  "^vendor$"
+                  "^node_modules$"
+                  "^logs$"
+                  "^target$"
+                  "^build$"
+                  "^\\.devcontainer$"
+                  "^\\.settings$"
+                  "^\\.gradle$"))
+    (add-to-list 'projectile-globally-ignored-directories dir))
   (dolist (item '("GPATH"
                   "GRTAGS"
                   "GTAGS"
-                  "GSYMS"
                   "TAGS"
-                  ".tags"
                   ".classpath"
                   ".project"
-                  ".DS_Store"
-                  "__init__.py"))
-    (add-to-list 'projectile-globally-ignored-files item))
+                  ".DS_Store"))
+     (add-to-list 'projectile-globally-ignored-files item))
   (dolist (list '("\\.elc\\'"
                   "\\.o\\'"
                   "\\.class\\'"
@@ -2221,6 +2193,12 @@ mermaid.initialize({
   :config
   (use-package chinese-word-at-point :demand t)
   (setq osx-dictionary-use-chinese-text-segmentation t))
+
+(require 'grep)
+(dolist (dir '(".cache" "vendor" "node_modules"))
+  (add-to-list 'grep-find-ignored-directories dir))
+(dolist (item '("GPATH" "GRTAGS" "GTAGS" "TAGS" ".classpath" ".project" ".DS_Store" ))
+  (add-to-list 'grep-find-ignored-files item))
 
 ;; 当前 buffer 文本搜索, 替换 isearch.
 (use-package ctrlf

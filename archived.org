@@ -1805,6 +1805,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+end_src
 
 * theme
+
 #+begin_src emacs-lisp
   (doom-modeline-def-modeline 'main
     ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
@@ -1841,4 +1842,31 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
             (pcase appearance
               ('light (my/load-light-theme))
               ('dark (my/load-dark-theme)))))
+
+(use-package centaur-tabs
+  :hook (emacs-startup . centaur-tabs-mode)
+  :init
+  (setq centaur-tabs-set-icons t)
+  (setq centaur-tabs-height 25)
+  (setq centaur-tabs-gray-out-icons 'buffer)
+  (setq centaur-tabs-set-modified-marker t)
+  (setq centaur-tabs-cycle-scope 'tabs)
+  (setq centaur-tabs-enable-ido-completion nil)
+  (setq centaur-tabs-set-bar 'under)
+  (setq x-underline-at-descent-line t)
+  (setq centaur-tabs-show-navigation-buttons t)
+  (setq centaur-tabs-enable-key-bindings t)
+  :config
+  (centaur-tabs-mode t)
+  (centaur-tabs-headline-match)
+  (centaur-tabs-enable-buffer-reordering)
+  (centaur-tabs-group-by-projectile-project)
+  (defun centaur-tabs-hide-tab (x)
+    (let ((name (format "%s" x)))
+      (or
+       (window-dedicated-p (selected-window))
+       ;; 不显示以 * 开头的 buffer 。
+       (string-prefix-p "*" name)
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name)))))))
 #+end_src
