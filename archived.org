@@ -1870,3 +1870,148 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
        (and (string-prefix-p "magit" name)
             (not (file-name-extension name)))))))
 #+end_src
+
+** vertico
+#+begin_src emacs-lisp
+(use-package vertico
+  :demand
+  :straight (:repo "minad/vertico" :files ("*" "extensions/*.el" (:exclude ".git")))
+  :bind
+  (:map vertico-map
+        ;; 在多个 source 中切换(如 consult-buffer, consult-grep) 。
+        ("C-M-n" . vertico-next-group)
+        ("C-M-p" . vertico-previous-group)
+        ;; 快速插入。
+        ("M-i" . vertico-quick-insert)
+        ("M-e" . vertico-quick-exit)
+        ;; 切换显示风格。
+        ("M-V" . vertico-multiform-vertical)
+        ("M-G" . vertico-multiform-grid)
+        ("M-F" . vertico-multiform-flat)
+        ("M-R" . vertico-multiform-reverse)
+        ("M-U" . vertico-multiform-unobtrusive)
+        ;; 文件路径操作。
+        ("<backspace>" . vertico-directory-delete-char)
+        ("C-w" . vertico-directory-delete-word)
+        ("C-<backspace>" . vertico-directory-delete-word)
+        ("RET" . vertico-directory-enter))
+#+end_src
+
+* font
+#+begin_src emacs-lisp
+;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
+;; 缺省字体。
+(setq +font-family "Fira Code Retina")
+(setq +modeline-font-family "Fira Code Retina")
+;; org-table 使用 fixed-pitch 字体, Sarasa Term SC 可以让对齐效果更好。
+(setq +fixed-pitch-family "Sarasa Term SC")
+(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +font-unicode-family "LXGW WenKai Screen")
+(setq +font-size-list '(10 11 12 13 14 15 16 17 18))
+(setq +font-size 14)
+
+;; 设置缺省字体。
+(defun +load-base-font ()
+  ;; 为缺省字体设置 size, 其它字体都是通过 :height 进行动态伸缩。
+  (let* ((font-spec (format "%s-%d" +font-family +font-size)))
+    (set-frame-parameter nil 'font font-spec)
+    (add-to-list 'default-frame-alist `(font . ,font-spec))))
+
+;; 设置各特定 face 的字体。
+(defun +load-face-font (&optional frame)
+  (let ((font-spec (format "%s" +font-family))
+        (line-font-spec (format "%s" +modeline-font-family))
+        (variable-pitch-font-spec (format "%s" +variable-pitch-family))
+        (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
+    (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.2)
+    (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
+    (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
+    (set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
+    (set-face-attribute 'mode-line frame :font line-font-spec :height 1.0)
+    (set-face-attribute 'mode-line-inactive frame :font line-font-spec :height 1.0)))
+
+;; 设置中文字体。
+(defun +load-ext-font ()
+  (when window-system
+    (let ((font (frame-parameter nil 'font))
+          (font-spec (font-spec :family +font-unicode-family)))
+      (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
+        (set-fontset-font font charset font-spec)))))
+
+;; 设置 emobji 字体。
+(defun +load-emoji-font ()
+  (when window-system
+      (setq use-default-font-for-symbols nil)
+      (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+      (set-fontset-font t 'symbol (font-spec :family "Symbola"))))
+
+(defun +load-font ()
+  (+load-base-font)
+  (+load-face-font)
+  (+load-ext-font)
+  (+load-emoji-font))
+
+(+load-font)
+(add-hook 'after-make-frame-functions 
+          ( lambda (f) 
+            (+load-face-font f)
+            (+load-ext-font)
+            (+load-emoji-font)))
+
+;; 只为 org-mode 和 markdown-mode 开启 variable-pitch-mode 。
+(add-hook 'org-mode-hook 'variable-pitch-mode)
+(add-hook 'markdown-mode-hook 'variable-pitch-mode)
+
+(defun +larger-font ()
+  (interactive)
+  (if-let ((size (--find (> it +font-size) +font-size-list)))
+      (progn (setq +font-size size)
+             (+load-font)
+             (message "Font size: %s" +font-size))
+    (message "Using largest font")))
+
+(defun +smaller-font ()
+  (interactive)
+  (if-let ((size (--find (< it +font-size) (reverse +font-size-list))))
+      (progn (setq +font-size size)
+             (message "Font size: %s" +font-size)
+             (+load-font))
+    (message "Using smallest font")))
+
+(global-set-key (kbd "M-+") #'+larger-font)
+(global-set-key (kbd "M--") #'+smaller-font)
+
+(defun +use-fixed-pitch ()
+  (interactive)
+  (setq buffer-face-mode-face `(:family ,+fixed-pitch-family))
+  (buffer-face-mode +1))
+
+;; fire-code-mode 只能在 GUI 模式下使用。
+(when (display-graphic-p)
+  (use-package fira-code-mode
+    :custom
+    (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+    :hook prog-mode))
+
+;; 使用字体缓存，避免卡顿。
+(setq inhibit-compacting-font-caches t)
+  #+end_src
+
+* go
+#+begin_src emacs-lisp
+(use-package flycheck-golangci-lint
+  :ensure-system-package
+  (golangci-lint)
+  :after flycheck
+  :defines flycheck-disabled-checkers
+  :hook (go-mode . (lambda ()
+                     "Enable golangci-lint."
+                     (setq flycheck-disabled-checkers '(go-gofmt
+                                                        go-golint
+                                                        go-vet
+                                                        go-build
+                                                        go-test
+                                                        go-staticcheck
+                                                        go-errcheck))
+                     (flycheck-golangci-lint-setup))))
+#+end_src
