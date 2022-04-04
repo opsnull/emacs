@@ -99,6 +99,9 @@
 ;; 指针闪动。
 (blink-cursor-mode 1)
 
+;; 调大 fringe, 避免行号列跳动。
+(set-fringe-mode 10)
+
 ;; 出错提示。
 (setq visible-bell t)
 
@@ -165,26 +168,21 @@
   :init
   (setq modus-themes-italic-constructs t
         modus-themes-bold-constructs t
-        modus-themes-region '(bg-only no-extend)
+        modus-themes-region '(accented no-extend)
         modus-themes-hl-line '(underline accented)
-        modus-themes-paren-match '(bold intense)
+        modus-themes-paren-match '(intense)
         modus-themes-links '(neutral-underline background)
         modus-themes-box-buttons '(variable-pitch flat faint 0.9)
         modus-themes-prompts '(intense bold)
         modus-themes-syntax '(alt-syntax)
         modus-themes-mixed-fonts t
-        modus-themes-mode-line-padding 2
-        modus-themes-tabs-accented t
+        modus-themes-mode-line-padding 6
         ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
         ;;modus-themes-diffs 'deuteranopia
         modus-themes-org-blocks 'gray-background ;; 'tinted-background
         modus-themes-variable-pitch-ui t
-        modus-themes-headings
-        '((t . (variable-pitch background overline rainbow semibold)))
-        modus-themes-completions
-        '((matches . (extrabold background))
-          (selection . (semibold intense accented text-also))
-          (popup . (accented intense))))
+        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
+        )
   ;; Load the theme files before enabling a theme
   (modus-themes-load-themes)
   :config
@@ -223,7 +221,13 @@
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1))
+  (doom-modeline-mode 1)
+  :config
+  (doom-modeline-def-modeline 'main
+    ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免 modeline 溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
 
 (use-package dashboard
   :demand
@@ -374,12 +378,6 @@
         ;; 快速插入。
         ("M-i" . vertico-quick-insert)
         ("M-e" . vertico-quick-exit)
-        ;; 切换显示风格。
-        ("M-V" . vertico-multiform-vertical)
-        ("M-G" . vertico-multiform-grid)
-        ("M-F" . vertico-multiform-flat)
-        ("M-R" . vertico-multiform-reverse)
-        ("M-U" . vertico-multiform-unobtrusive)
         ;; 文件路径操作。
         ("<backspace>" . vertico-directory-delete-char)
         ("C-w" . vertico-directory-delete-word)
@@ -612,12 +610,25 @@
 (use-package corfu
   :demand
   :straight '(corfu :host github :repo "minad/corfu")
+  :init
+  (defun corfu-beginning-of-prompt ()
+    "Move to beginning of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (car completion-in-region--data)))
+  (defun corfu-end-of-prompt ()
+    "Move to end of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (cadr completion-in-region--data)))
   :bind
   (:map corfu-map
         ("TAB" . corfu-next)
         ([tab] . corfu-next)
         ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous))
+        ([backtab] . corfu-previous)
+        ([remap move-beginning-of-line] . corfu-beginning-of-prompt)
+        ([remap move-end-of-line] . corfu-end-of-prompt))
   :custom
   ;;关闭自动补全。
   (corfu-auto nil)
@@ -625,6 +636,8 @@
   (corfu-auto-delay 0.25)
   ;; 不自动选择第一个。
   (corfu-preselect-first nil)
+  ;; 不自动插入候选者到光标。
+  (corfu-preview-current nil)
   (corfu-min-width 80)
   (corfu-max-width corfu-min-width)
   (corfu-count 14)
@@ -737,7 +750,9 @@
           (?S aw-swap-window "Swap Windows")
           (?M aw-move-window "Move Window")
           (?C aw-copy-window "Copy Window")
+          ;; 为指定 window 选择新的 Buffer,并 switch 过去。
           (?B aw-switch-buffer-in-window "Select Buffer")
+          ;; 为指定 window 选择新的 Buffer，切换到其它 buffer；
           (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
           (?N aw-flip-window)
           (?T aw-transpose-frame "Transpose Frame")
@@ -790,7 +805,7 @@
           rime-predicate-hydra-p
           ;;rime-predicate-current-uppercase-letter-p
           ;;rime-predicate-after-alphabet-char-p
-          ;;rime-predicate-prog-in-code-p
+          rime-predicate-prog-in-code-p
           ;;rime-predicate-after-ascii-char-p
           ))
   (setq rime-show-candidate 'posframe)
@@ -2159,9 +2174,6 @@ mermaid.initialize({
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
-(with-eval-after-load 'treemacs
-  )
-
 ;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
 (use-package lsp-treemacs
   :after (lsp-mode treemacs)
@@ -2448,7 +2460,6 @@ mermaid.initialize({
                  (string-equal (file-name-extension (buffer-file-name)) "log")))
     (fundamental-mode)
     (setq buffer-read-only t)
-    ;;(buffer-disable-undo)
     (font-lock-mode -1)
     (rainbow-delimiters-mode -1)
     (smartparens-global-mode -1)

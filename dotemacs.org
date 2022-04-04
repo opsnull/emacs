@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-04-02T11:04:56+0800
+#+LASTMOD: 2022-04-04T21:04:02+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -276,6 +276,9 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 指针闪动。
 (blink-cursor-mode 1)
 
+;; 调大 fringe, 避免行号列跳动。
+(set-fringe-mode 10)
+
 ;; 出错提示。
 (setq visible-bell t)
 
@@ -342,26 +345,21 @@ npm config set registry=http://registry.npm.taobao.org
   :init
   (setq modus-themes-italic-constructs t
         modus-themes-bold-constructs t
-        modus-themes-region '(bg-only no-extend)
+        modus-themes-region '(accented no-extend)
         modus-themes-hl-line '(underline accented)
-        modus-themes-paren-match '(bold intense)
+        modus-themes-paren-match '(intense)
         modus-themes-links '(neutral-underline background)
         modus-themes-box-buttons '(variable-pitch flat faint 0.9)
         modus-themes-prompts '(intense bold)
         modus-themes-syntax '(alt-syntax)
         modus-themes-mixed-fonts t
-        modus-themes-mode-line-padding 2
-        modus-themes-tabs-accented t
+        modus-themes-mode-line-padding 6
         ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
         ;;modus-themes-diffs 'deuteranopia
         modus-themes-org-blocks 'gray-background ;; 'tinted-background
         modus-themes-variable-pitch-ui t
-        modus-themes-headings
-        '((t . (variable-pitch background overline rainbow semibold)))
-        modus-themes-completions
-        '((matches . (extrabold background))
-          (selection . (semibold intense accented text-also))
-          (popup . (accented intense))))
+        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
+        )
   ;; Load the theme files before enabling a theme
   (modus-themes-load-themes)
   :config
@@ -400,7 +398,13 @@ npm config set registry=http://registry.npm.taobao.org
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1))
+  (doom-modeline-mode 1)
+  :config
+  (doom-modeline-def-modeline 'main
+    ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免 modeline 溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
 
 (use-package dashboard
   :demand
@@ -453,7 +457,6 @@ npm config set registry=http://registry.npm.taobao.org
 + Symbols 字体:  Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
 + 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 + Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
-
 #+begin_src emacs-lisp
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 ;; 缺省字体。
@@ -573,12 +576,6 @@ npm config set registry=http://registry.npm.taobao.org
         ;; 快速插入。
         ("M-i" . vertico-quick-insert)
         ("M-e" . vertico-quick-exit)
-        ;; 切换显示风格。
-        ("M-V" . vertico-multiform-vertical)
-        ("M-G" . vertico-multiform-grid)
-        ("M-F" . vertico-multiform-flat)
-        ("M-R" . vertico-multiform-reverse)
-        ("M-U" . vertico-multiform-unobtrusive)
         ;; 文件路径操作。
         ("<backspace>" . vertico-directory-delete-char)
         ("C-w" . vertico-directory-delete-word)
@@ -631,13 +628,13 @@ npm config set registry=http://registry.npm.taobao.org
 ** orderless
 
 使用 orderless 过滤候选者, [[https://github.com/minad/consult/wiki][支持多种 dispatch 组合]], 如 =!zhangjun hang$=:
-+ =~flex flex~=
-+ ==literal literal==
-+ %char-fold char-fold%
-+ `initialism initialism`
-+ !without-literal without-literal!
-+ .ext: 文件名扩展；
-+ regexp$: 正则表达式；
++ ~~flex flex~~
++ ~=literal literal=~
++ ~%char-fold char-fold%~
++ ~`initialism initialism`~
++ ~!without-literal~ 
++ ~.ext~
++ ~regexp$~
 
 #+begin_src  emacs-lisp
 (use-package orderless
@@ -847,12 +844,25 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
 (use-package corfu
   :demand
   :straight '(corfu :host github :repo "minad/corfu")
+  :init
+  (defun corfu-beginning-of-prompt ()
+    "Move to beginning of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (car completion-in-region--data)))
+  (defun corfu-end-of-prompt ()
+    "Move to end of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (cadr completion-in-region--data)))
   :bind
   (:map corfu-map
         ("TAB" . corfu-next)
         ([tab] . corfu-next)
         ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous))
+        ([backtab] . corfu-previous)
+        ([remap move-beginning-of-line] . corfu-beginning-of-prompt)
+        ([remap move-end-of-line] . corfu-end-of-prompt))
   :custom
   ;;关闭自动补全。
   (corfu-auto nil)
@@ -860,6 +870,8 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
   (corfu-auto-delay 0.25)
   ;; 不自动选择第一个。
   (corfu-preselect-first nil)
+  ;; 不自动插入候选者到光标。
+  (corfu-preview-current nil)
   (corfu-min-width 80)
   (corfu-max-width corfu-min-width)
   (corfu-count 14)
@@ -998,7 +1010,9 @@ Cape 为 Corfu 提供多种类型的 Completion At Point 扩展。
           (?S aw-swap-window "Swap Windows")
           (?M aw-move-window "Move Window")
           (?C aw-copy-window "Copy Window")
+          ;; 为指定 window 选择新的 Buffer,并 switch 过去。
           (?B aw-switch-buffer-in-window "Select Buffer")
+          ;; 为指定 window 选择新的 Buffer，切换到其它 buffer；
           (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
           (?N aw-flip-window)
           (?T aw-transpose-frame "Transpose Frame")
@@ -1020,7 +1034,7 @@ Cape 为 Corfu 提供多种类型的 Completion At Point 扩展。
 * rime
 
 Mac 系统安装 RIME 输入法：
-1. 下载鼠鬚管Squirrel [[https://rime.im/download/]]，它包含输入法方案。
+1. 下载鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
 2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
 3. 重新登录用户，然后就可以使用 =Control-+= 来触发 RIME 输入法了。
 4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
@@ -1078,7 +1092,7 @@ patch:
     - name: full_shape # 全角/半角符号开关
       states: ["半角", "全角"]
     - name: show_emoji # Emoji 开关
-      reset: 1
+      reset: 0
       states: ["🈚️️\uFE0E", "🈶️️\uFE0F"]
     - name: zh_simp # (※1) 繁简转换
       reset: 1
@@ -1222,7 +1236,7 @@ patch:
           rime-predicate-hydra-p
           ;;rime-predicate-current-uppercase-letter-p
           ;;rime-predicate-after-alphabet-char-p
-          ;;rime-predicate-prog-in-code-p
+          rime-predicate-prog-in-code-p
           ;;rime-predicate-after-ascii-char-p
           ))
   (setq rime-show-candidate 'posframe)
@@ -3073,9 +3087,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
-(with-eval-after-load 'treemacs
-  )
-
 ;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
 (use-package lsp-treemacs
   :after (lsp-mode treemacs)
@@ -3410,7 +3421,6 @@ eshell 配置：
                  (string-equal (file-name-extension (buffer-file-name)) "log")))
     (fundamental-mode)
     (setq buffer-read-only t)
-    ;;(buffer-disable-undo)
     (font-lock-mode -1)
     (rainbow-delimiters-mode -1)
     (smartparens-global-mode -1)
