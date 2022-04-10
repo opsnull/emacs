@@ -62,6 +62,9 @@
 ;; 缩短更新 screen 的时间。
 (setq idle-update-delay 0.1)
 
+;; 使用字体缓存，避免卡顿。
+(setq inhibit-compacting-font-caches t)
+
 ;; Garbage Collector Magic Hack
 (use-package gcmh
   :demand
@@ -177,20 +180,12 @@
   (doom-themes-padded-modeline t)
   :config
   (doom-themes-visual-bell-config)
+  (load-theme 'doom-palenight t)
   ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
   ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
   (setq doom-themes-treemacs-enable-variable-pitch nil)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
-
-;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-palenight t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
 
 ;; modeline 显示电池和日期时间。
 (display-battery-mode t)
@@ -204,6 +199,7 @@
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
+;; 后面将 mode-line face 的字体设置为 Fira Code Retina, 兼容性比 Sarasa Mono SC 好, 不会溢出。
 (use-package doom-modeline
   :demand
   :custom
@@ -223,13 +219,7 @@
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1)
-  :config
-  (doom-modeline-def-modeline 'main
-    ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免 modeline 溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
+  (doom-modeline-mode 1))
 
 (use-package dashboard
   :demand
@@ -292,22 +282,20 @@
          (window-height . 0.43)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
 
-(use-package all-the-icons :demand)
-
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
-;; 缺省字体。
+;; 缺省字体（英文，如显示代码）。
 (setq +font-family "Fira Code Retina")
+;; modeline 设置为 Fira Code Retina, 兼容性比 Sarasa Mono SC 好, 不会溢出。
 (setq +modeline-font-family "Fira Code Retina")
-;; org-table 使用 fixed-pitch 字体, Sarasa Term SC 可以让对齐效果更好。
-(setq +fixed-pitch-family "Sarasa Term SC")
-(setq +variable-pitch-family "LXGW WenKai Screen")
-(setq +font-unicode-family "LXGW WenKai Screen")
-(setq +font-size-list '(10 11 12 13 14 15 16 17 18))
+;; 其它均使用 Sarasa Mono SC 字体。
+(setq +fixed-pitch-family "Sarasa Mono SC")
+(setq +variable-pitch-family "Sarasa Mono SC")
+(setq +font-unicode-family "Sarasa Mono SC")
 (setq +font-size 14)
 
 ;; 设置缺省字体。
 (defun +load-base-font ()
-  ;; 为缺省字体设置 size, 其它字体都是通过 :height 进行动态伸缩。
+  ;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
   (let* ((font-spec (format "%s-%d" +font-family +font-size)))
     (set-frame-parameter nil 'font font-spec)
     (add-to-list 'default-frame-alist `(font . ,font-spec))))
@@ -315,15 +303,15 @@
 ;; 设置各特定 face 的字体。
 (defun +load-face-font (&optional frame)
   (let ((font-spec (format "%s" +font-family))
-        (line-font-spec (format "%s" +modeline-font-family))
+        (modeline-font-spec (format "%s" +modeline-font-family))
         (variable-pitch-font-spec (format "%s" +variable-pitch-family))
         (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
     (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.2)
     (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
     (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
     (set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
-    (set-face-attribute 'mode-line frame :font line-font-spec :height 1.0)
-    (set-face-attribute 'mode-line-inactive frame :font line-font-spec :height 1.0)))
+    (set-face-attribute 'mode-line frame :font modeline-font-spec :height 1.0)
+    (set-face-attribute 'mode-line-inactive frame :font modeline-font-spec :height 1.0)))
 
 ;; 设置中文字体。
 (defun +load-ext-font ()
@@ -333,12 +321,18 @@
       (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
         (set-fontset-font font charset font-spec)))))
 
-;; 设置 emobji 字体。
+;; 设置 Emoji 字体。
 (defun +load-emoji-font ()
   (when window-system
-      (setq use-default-font-for-symbols nil)
-      (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-      (set-fontset-font t 'symbol (font-spec :family "Symbola"))))
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Symbola"))))
+
+(add-hook 'after-make-frame-functions 
+          ( lambda (f) 
+            (+load-face-font f)
+            (+load-ext-font)
+            (+load-emoji-font)))
 
 (defun +load-font ()
   (+load-base-font)
@@ -347,49 +341,16 @@
   (+load-emoji-font))
 
 (+load-font)
-(add-hook 'after-make-frame-functions 
-          ( lambda (f) 
-            (+load-face-font f)
-            (+load-ext-font)
-            (+load-emoji-font)))
 
-;; 只为 org-mode 和 markdown-mode 开启 variable-pitch-mode 。
-(add-hook 'org-mode-hook 'variable-pitch-mode)
-(add-hook 'markdown-mode-hook 'variable-pitch-mode)
-
-(defun +larger-font ()
-  (interactive)
-  (if-let ((size (--find (> it +font-size) +font-size-list)))
-      (progn (setq +font-size size)
-             (+load-font)
-             (message "Font size: %s" +font-size))
-    (message "Using largest font")))
-
-(defun +smaller-font ()
-  (interactive)
-  (if-let ((size (--find (< it +font-size) (reverse +font-size-list))))
-      (progn (setq +font-size size)
-             (message "Font size: %s" +font-size)
-             (+load-font))
-    (message "Using smallest font")))
-
-(global-set-key (kbd "M-+") #'+larger-font)
-(global-set-key (kbd "M--") #'+smaller-font)
-
-(defun +use-fixed-pitch ()
-  (interactive)
-  (setq buffer-face-mode-face `(:family ,+fixed-pitch-family))
-  (buffer-face-mode +1))
-
-;; fire-code-mode 只能在 GUI 模式下使用。
+;; all-the-icons 和 fire-code-mode 只能在 GUI 模式下使用。
 (when (display-graphic-p)
+  (use-package all-the-icons
+    :demand)
+  
   (use-package fira-code-mode
     :custom
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode))
-
-;; 使用字体缓存，避免卡顿。
-(setq inhibit-compacting-font-caches t)
 
 (use-package vertico
   :demand
@@ -785,10 +746,10 @@
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
           rime-predicate-hydra-p
-          ;;rime-predicate-current-uppercase-letter-p
-          ;;rime-predicate-after-alphabet-char-p
+          rime-predicate-current-uppercase-letter-p
+          rime-predicate-after-alphabet-char-p
           rime-predicate-prog-in-code-p
-          ;;rime-predicate-after-ascii-char-p
+          rime-predicate-after-ascii-char-p
           ))
   (setq rime-show-candidate 'posframe)
 
@@ -815,9 +776,9 @@
         ;; 去掉 * 和 /, 使它们不再具有强调含义。
         org-emphasis-alist
         '(("_" underline)
-         ("=" org-verbatim verbatim)
-         ("~" org-code verbatim)
-         ("+" (:strike-through t)))
+          ("=" org-verbatim verbatim)
+          ("~" org-code verbatim)
+          ("+" (:strike-through t)))
         ;; 隐藏 block
         org-hide-block-startup t
         org-hidden-keywords '(title)
@@ -836,7 +797,7 @@
         ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
         org-export-with-sub-superscripts nil
         org-startup-indented t
-        ;; 使用鼠标点击链接。
+        ;; 支持鼠标点击链接。
         org-return-follows-link t
         org-mouse-1-follows-link t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
@@ -846,6 +807,16 @@
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+
+  ;; 支持无空格的中文强调。
+  (setq org-emphasis-regexp-components
+        '("-[:multibyte:][:space:]('\"{"
+          "-[:multibyte:][:space:].,:!?;'\")}\\["
+          "[:space:]"
+          "[^=~*_]"  ;; 不允许强调字符嵌套。
+          1))
+  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
+  (org-element-update-syntax)
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -886,23 +857,25 @@
     (set-face-attribute (car face) nil :height (cdr face)))
   ;; 美化 BEGIN_SRC 整行。
   (setq org-fontify-whole-block-delimiter-line t)
+  ;; 如果配置参数 :inherit 'fixed-pitch, 则需要明确设置 fixed-pitch 字体，
+  ;; 否则选择的缺省字体可能导致显示问题。
   (custom-theme-set-faces
    'user
-   '(org-block ((t (:inherit 'fixed-pitch :height 0.9))))
-   '(org-code ((t (:inherit 'fixed-pitch :height 0.9))))
+   '(org-block ((t (:height 0.9))))
+   '(org-code ((t (:height 0.9))))
    ;; 调小高度 , 并设置下划线。
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
-   '(org-meta-line ((t (:inherit 'fixed-pitch :height 0.7))))
-   '(org-document-info-keyword ((t (:inherit 'fixed-pitch :height 0.6))))
+   '(org-meta-line ((t (:height 0.7))))
+   '(org-document-info-keyword ((t (:height 0.6))))
    '(org-document-info ((t (:height 0.8))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
    '(org-link ((t (:foreground "royal blue" :underline t))))
    '(org-property-value ((t (:height 0.8))) t)
-   '(org-drawer ((t (:inherit 'fixed-pitch :height 0.8))) t)
+   '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
-   '(org-table ((t (:inherit 'fixed-pitch :height 0.9))))
-   '(org-verbatim ((t (:inherit 'fixed-pitch :height 0.9))))
+   '(org-table ((t (:height 0.9))))
+   '(org-verbatim ((t (:height 0.9))))
    '(org-tag ((t (:weight bold :height 0.8)))))
   (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»")
                                          ("#+END_SRC" . "«")
@@ -926,11 +899,6 @@
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A]" "[B]" "[C]")))
-
-;; org-mode table 中英文像素对齐。
-(use-package valign
-  :config
-  (add-hook 'org-mode-hook #'valign-mode))
 
 ;; 编辑时显示隐藏的标记。
 (use-package org-appear
@@ -2461,6 +2429,8 @@ mermaid.initialize({
 (global-unset-key (kbd "s-n"))
 ;; 关闭 suspend-frame 。
 (global-unset-key (kbd "C-z"))
+;; 关闭 mouse-yank-primary 。
+(global-unset-key (kbd "<mouse-2>"))
 
 (use-package recentf
   :straight (:type built-in)
