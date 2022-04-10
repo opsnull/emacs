@@ -162,33 +162,35 @@
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; 高对比度主题。
-(use-package modus-themes
+;; 预览主题: https://emacsthemes.com/
+(use-package doom-themes
   :demand
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-region '(accented no-extend)
-        modus-themes-hl-line '(underline accented)
-        modus-themes-paren-match '(intense)
-        modus-themes-links '(neutral-underline background)
-        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
-        modus-themes-prompts '(intense bold)
-        modus-themes-syntax '(alt-syntax)
-        modus-themes-mixed-fonts t
-        modus-themes-mode-line-padding 6
-        ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
-        ;;modus-themes-diffs 'deuteranopia
-        modus-themes-org-blocks 'gray-background ;; 'tinted-background
-        modus-themes-variable-pitch-ui t
-        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
-        )
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  (doom-themes-treemacs-theme "doom-colors")
+  ;; modeline 两边各加 4px 空白。
+  (doom-themes-padded-modeline t)
   :config
-  (modus-themes-load-operandi) ;; 浅色主题
-  ;;(modus-themes-load-vivendi)  ;; 深色主题
-  )
+  (doom-themes-visual-bell-config)
+  ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch nil)
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
+
+;; 跟随 Mac 自动切换深浅主题。
+(defun my/load-light-theme () (interactive) (load-theme 'doom-palenight t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
+(add-hook 'ns-system-appearance-change-functions
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
 
 ;; modeline 显示电池和日期时间。
 (display-battery-mode t)
@@ -242,6 +244,33 @@
   (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))
   (dashboard-setup-startup-hook))
 
+(use-package centaur-tabs
+  :hook (emacs-startup . centaur-tabs-mode)
+  :init
+  (setq centaur-tabs-set-icons t)
+  (setq centaur-tabs-height 25)
+  (setq centaur-tabs-gray-out-icons 'buffer)
+  (setq centaur-tabs-set-modified-marker t)
+  (setq centaur-tabs-cycle-scope 'tabs)
+  (setq centaur-tabs-enable-ido-completion nil)
+  (setq centaur-tabs-set-bar 'under)
+  (setq x-underline-at-descent-line t)
+  (setq centaur-tabs-show-navigation-buttons t)
+  (setq centaur-tabs-enable-key-bindings t)
+  :config
+  (centaur-tabs-mode t)
+  (centaur-tabs-headline-match)
+  (centaur-tabs-enable-buffer-reordering)
+  (centaur-tabs-group-by-projectile-project)
+  (defun centaur-tabs-hide-tab (x)
+    (let ((name (format "%s" x)))
+      (or
+       (window-dedicated-p (selected-window))
+       ;; 不显示以 * 开头的 buffer 。
+       (string-prefix-p "*" name)
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name)))))))
+
 ;; 显示光标位置。
 (use-package beacon
   :config
@@ -264,11 +293,6 @@
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
 
 (use-package all-the-icons :demand)
-(use-package all-the-icons-ibuffer :init (all-the-icons-ibuffer-mode 1))
-(use-package all-the-icons-completion
-  :config
-  (all-the-icons-completion-mode)
-  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
 
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 ;; 缺省字体。
@@ -390,11 +414,11 @@
    ;; 确保 vertico 状态被保存（用于支持 vertico-repeat)。
    (minibuffer-setup . vertico-repeat-save))
   :config
-  (setq vertico-count 15)
+  (setq vertico-count 20)
   (setq vertico-cycle nil)
   (vertico-mode 1)
 
-  ;; 重复上一次 vertico sesson;
+  ;; 重复上一次 vertico session;
   (global-set-key "\M-r" #'vertico-repeat-last)
   (global-set-key "\M-R" #'vertico-repeat-select)
 
@@ -422,7 +446,7 @@
   ;; 在 minibuffer 中不显示光标。
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-  (setq read-extended-command-predicate   #'command-completion-default-include-p)
+  (setq read-extended-command-predicate #'command-completion-default-include-p)
   ;; 开启 minibuffer 递归编辑。
   (setq enable-recursive-minibuffers t))
 
@@ -543,7 +567,7 @@
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
-
+  (setq completion-in-region-function #'consult-completion-in-region)
   ;; projectile 集成。
   (autoload 'projectile-project-root "projectile")
   (setq consult-project-function 'projectile-project-root)
@@ -573,21 +597,9 @@
    ("C-x C-d" . consult-dir)
    ("C-x C-j" . consult-dir-jump-file)))
 
-(use-package marginalia
-  :init
-  ;; 显示绝对时间。
-  (setq marginalia-max-relative-age 0)
-  (marginalia-mode)
-  ;;:config
-  ;; 不给 file 加注释，防止 TRAMP 变慢。
-  ;; (setq marginalia-annotator-registry
-  ;;       (assq-delete-all 'file marginalia-annotator-registry))
-  ;; (setq marginalia-annotator-registry
-  ;;       (assq-delete-all 'project-file marginalia-annotator-registry))
-  )
-
 (use-package embark
   :init
+  ;; 使用 C-h 来显示 key preifx 绑定。
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
@@ -600,7 +612,7 @@
                  (window-parameters (mode-line-format . none))))
   :bind
   (("C-;" . embark-act)
-   ("C-h B" . embark-bindings)))
+   ([remap describe-bindings] . embark-bindings)))
 
 (use-package embark-consult
   :after (embark consult)
@@ -627,11 +639,12 @@
         ([tab] . corfu-next)
         ("S-TAB" . corfu-previous)
         ([backtab] . corfu-previous)
+        ;; C-a/C-e 分别移动到补全的开始和结束。
         ([remap move-beginning-of-line] . corfu-beginning-of-prompt)
         ([remap move-end-of-line] . corfu-end-of-prompt))
   :custom
-  ;;关闭自动补全。
-  (corfu-auto nil)
+  ;;开启自动补全。
+  (corfu-auto t)
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.25)
   ;; 不自动选择第一个。
@@ -666,37 +679,6 @@
   (corfu-doc-delay 0.3)
   (corfu-doc-max-width 70)
   (corfu-doc-max-height 20))
-
-(use-package cape
-  :demand
-  :straight '(cape :host github :repo "minad/cape")
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;; Complete word from current buffers
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  ;; Complete Elisp symbol
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;; Complete abbreviation
-  (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;; Complete word from dictionary file
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;; Complete entire line from file
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  :config
-  (setq cape-dabbrev-min-length 3)
-  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
-  (cape-wrap-prefix-length #'cape-dabbrev 3))
-
-(use-package kind-icon
-  :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
-  :after corfu
-  :demand
-  :custom
-  (kind-icon-default-face 'corfu-default)
-  :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (use-package yasnippet
   :demand
@@ -761,7 +743,7 @@
 ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择。
 (setq aw-scope 'frame)
 ;; 总是提示窗口选择，进而执行 ace 命令。
-(setq aw-dispatch-always t)
+(setq aw-dispatch-always nil)
 (global-set-key (kbd "M-o") 'ace-window)
 ;; 在窗口左上角显示位置字符。
 ;;(setq aw-char-position 'top-left)
@@ -776,7 +758,7 @@
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/usr/local/Cellar/emacs-plus@28/28.0.50/include")
+  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@28/include")
   :hook
   (emacs-startup . (lambda () (setq default-input-method "rime")))
   :bind
@@ -828,6 +810,7 @@
   :config
   (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
+        ;; 隐藏标记。
         org-hide-emphasis-markers t
         ;; 去掉 * 和 /, 使它们不再具有强调含义。
         org-emphasis-alist
@@ -853,6 +836,9 @@
         ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
         org-export-with-sub-superscripts nil
         org-startup-indented t
+        ;; 使用鼠标点击链接。
+        org-return-follows-link t
+        org-mouse-1-follows-link t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
         org-link-file-path-type 'relative)
   (setq org-catch-invisible-edits 'show)
@@ -945,6 +931,11 @@
 (use-package valign
   :config
   (add-hook 'org-mode-hook #'valign-mode))
+
+;; 编辑时显示隐藏的标记。
+(use-package org-appear
+  :config
+  (add-hook 'org-mode-hook 'org-appear-mode))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -1492,7 +1483,8 @@
   :config
   ;; 高亮出现错误的列位置。
   (setq flycheck-highlighting-mode (quote columns))
-  (setq flycheck-check-syntax-automatically '(save idle-change mode-enabled))
+  ;; save 而非 idle-change 时检查, 避免不必要的错误提示。
+  (setq flycheck-check-syntax-automatically '(save mode-enabled))
   (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
   (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
   :hook
@@ -1510,13 +1502,13 @@
   :bind
   (:map flycheck-command-map ("!" . consult-flycheck)))
 
+(setenv "LSP_USE_PLISTS" "true")
 (use-package lsp-mode
-  :after (cape orderless)
   :custom
   ;; debug 时才开启 log, 否则影响性能。
   (lsp-log-io nil)
   ;; 日志记录行数。
-  (lsp-log-max 10000)
+  (lsp-log-max 1000)
   (lsp-keymap-prefix "C-c l")
   (lsp-diagnostics-provider :flycheck)
   (lsp-diagnostics-flycheck-default-level 'warning)
@@ -1526,7 +1518,7 @@
   (lsp-headerline-breadcrumb-enable nil)
   (lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
   ;; 启用 snippet 后才支持函数或方法的 placeholder 提示。
-  (lsp-enable-snippet t)
+  (lsp-enable-snippet nil)
   ;; 后续使用 lsp-ui-doc 替代 eldoc, 前者还支持 mouse 和 cursor hover.
   (lsp-eldoc-enable-hover nil)
   (lsp-eldoc-render-all t)
@@ -1551,19 +1543,10 @@
   ;; 不对 imenu 结果进行排序.
   (lsp-imenu-sort-methods '(position))
   :init
-  ;; https://github.com/minad/corfu/wiki
-  (defun my/orderless-dispatch-flex-first (_pattern index _total)
-    (and (eq index 0) 'orderless-flex))
-
   ;; 设置 lsp 使用 corfu 来进行补全。
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
           '(orderless)))
-
-  ;; Optionally configure the first word as flex filtered.
-  (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
-  ;; Optionally configure the cape-capf-buster.
-  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
   :hook
   ((java-mode . lsp)
    (python-mode . lsp)
@@ -1683,8 +1666,7 @@
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  :hook
-  (go-mode . lsp-go-install-save-hooks)
+  :hook (go-mode . lsp-go-install-save-hooks)
   :bind
   (:map go-mode-map
         ("C-c R" . go-remove-unused-imports)
@@ -1715,6 +1697,7 @@
                     "github.com/cweill/gotests/..."
                     "github.com/fatih/gomodifytags"
                     "github.com/davidrjenni/reftools/cmd/fillstruct"))
+
 (defun go-update-tools ()
   (interactive)
   (unless (executable-find "go")
@@ -1943,55 +1926,6 @@ mermaid.initialize({
   :config
   (define-key envrc-mode-map (kbd "C-c e") 'envrc-command-map))
 
-(use-package easy-kill-extras
-  :demand
-  :bind
-  (([remap kill-ring-save] . easy-kill) ;; M-w
-   ([remap mark-sexp] . easy-mark-sexp) ;; C-M-SPC
-   ([remap mark-word] . easy-mark-word) ;; M-@
-   ;; 集成 zap-to-char.
-   ([remap zap-to-char] . easy-mark-to-char)
-   ([remap zap-up-to-char] . easy-mark-up-to-char))
-  :init
-  (setq kill-ring-max 200
-        ;; 替换前先保存剪贴板内容。
-        save-interprogram-paste-before-kill t
-        easy-kill-alist '((?w word           " ")
-                          (?s sexp           "\n")
-                          (?l list           "\n")
-                          (?d defun          "\n\n")
-                          (?D defun-name     " ")
-                          (?e line           "\n")
-                          (?b buffer-file-name)
-
-                          (?^ backward-line-edge "")
-                          (?$ forward-line-edge "")
-                          (?h buffer "")
-                          (?< buffer-before-point "")
-                          (?> buffer-after-point "")
-                          (?f string-to-char-forward "")
-                          (?F string-up-to-char-forward "")
-                          (?t string-to-char-backward "")
-                          (?T string-up-to-char-backward "")
-
-                          (?W  WORD " ") ;; 非空白字符序列。
-                          (?\' squoted-string "")
-                          (?\" dquoted-string "")
-                          (?\` bquoted-string "")
-                          (?q  quoted-string "") ;; 任何字符串类型
-                          (?Q  quoted-string-universal "")
-                          (?\) parentheses-pair-content "\n")
-                          (?\( parentheses-pair "\n")
-                          (?\] brackets-pair-content "\n")
-                          (?\[ brackets-pair "\n")
-                          (?}  curlies-pair-content "\n")
-                          (?{  curlies-pair "\n")
-                          (?>  angles-pair-content "\n")
-                          (?<  angles-pair "\n")))
-:config
-;; 加载 extra-things 后, 上面 WORD 开始的 alist 才生效。
-(require 'extra-things))
-
 ;; 移动到行或代码的开头、结尾。
 (use-package mwim
   :bind (([remap move-beginning-of-line] . mwim-beginning-of-code-or-line)
@@ -2023,6 +1957,10 @@ mermaid.initialize({
   :bind
   (("C-c d ." . dash-at-point)
    ("C-c d d" . dash-at-point-with-docset)))
+
+(use-package expand-region
+  :config
+  (global-set-key (kbd "C-=") 'er/expand-region))
 
 (use-package projectile
   :demand
@@ -2154,17 +2092,17 @@ mermaid.initialize({
     ;;(treemacs-indent-guide-mode t)
     (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
-    ;; 使用 treemacs 自带的 all-the-icons 主题。
-    ;; 注: 当使用 doom-themes 主题时, 它会自动设置 treemacs theme, 就不需要再调用这个函数了.
-    (require 'treemacs-all-the-icons)
-    (treemacs-load-theme "all-the-icons")
-    (require 'treemacs-projectile)
-    (require 'treemacs-magit)
-    ;; 在 dired buffer 中使用 treemacs icons。
-    (require 'treemacs-icons-dired)
-    (treemacs-icons-dired-mode t)
-    ;; 单击打开或折叠目录.
-    (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
+  ;; 使用 treemacs 自带的 all-the-icons 主题。
+  ;; 注: 当使用 doom-themes 主题时, 它会自动设置 treemacs theme, 就不需要再调用这个函数了.
+  ;;(require 'treemacs-all-the-icons)
+  ;;(treemacs-load-theme "all-the-icons")
+  (require 'treemacs-projectile)
+  (require 'treemacs-magit)
+  ;; 在 dired buffer 中使用 treemacs icons。
+  (require 'treemacs-icons-dired)
+  (treemacs-icons-dired-mode t)
+  ;; 单击打开或折叠目录.
+  (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
   :bind
   (:map global-map
         ("M-0"       . treemacs-select-window)
@@ -2431,6 +2369,9 @@ mermaid.initialize({
               (require 'vterm)
               (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
 
+(use-package consult-tramp
+  :straight (:repo "Ladicle/consult-tramp" :host github))
+
 ;; 保存 Buffer 时自动更新 #+LASTMOD: 后面的时间戳。
 (setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*")
 (setq time-stamp-end "$")
@@ -2549,10 +2490,9 @@ mermaid.initialize({
   :straight (:type built-in)
   :hook (after-init . savehist-mode)
   :config
-  (setq history-length 10000)
-  (setq history-delete-duplicates t)
+  (setq history-length 200)
   (setq savehist-save-minibuffer-history t)
-  (setq savehist-autosave-interval 60)
+  (setq savehist-autosave-interval 200)
   (setq savehist-additional-variables '(mark-ring
                                         global-mark-ring
                                         search-ring
@@ -2566,7 +2506,6 @@ mermaid.initialize({
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
 (setq-default indent-tabs-mode nil)
 (setq-default message-log-max t)
-(setq-default load-prefer-newer t)
 (setq-default ad-redefinition-action 'accept)
 
 ;; 使用系统剪贴板，实现与其它程序相互粘贴。
@@ -2829,3 +2768,14 @@ mermaid.initialize({
   (let ((max-lisp-eval-depth 10000000)
         (max-specpdl-size 10000000))
     (memory-report)))
+
+(use-package emacs
+ :straight (:type built-in)
+ :ensure-system-package
+ ;; artist-mode 依赖的两个程序。
+ ((figlet . "brew install figlet")
+  ;; 触摸板三指点按模拟鼠标中键。
+  ("/Applications/MiddleClick.app" . "brew install --cask --no-quarantine middleclick"))
+ :config
+ ;; 不显示行号, 否则鼠标会飘。
+ (add-hook 'artist-mode-hook (lambda () (display-line-numbers-mode -1))))

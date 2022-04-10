@@ -9,6 +9,9 @@
   (setq native-comp-deferred-compilation-deny-list '())
   (setq native-comp-async-report-warnings-errors 'silent))
 
+;; 加载较新的 .el 文件。
+(setq-default load-prefer-newer t)
+
 ;; 关闭 cl 告警。
 (setq byte-compile-warnings '(cl-functions))
 
@@ -48,6 +51,6 @@
 ;; 缓存对称加密密码。
 (setq epa-file-cache-passphrase-for-symmetric-encryption t)
 
-;; auth 不过期, 默认 7200(2h) 。
+;; 认证不过期, 默认 7200。
 (setq auth-source-cache-expiry nil)
 ;;(setq auth-source-debug t)

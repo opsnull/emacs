@@ -1807,11 +1807,33 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 * theme
 
 #+begin_src emacs-lisp
-  (doom-modeline-def-modeline 'main
-    ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免 modeline 溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker "  "))
+;; 高对比度主题。
+(use-package modus-themes
+  :demand
+  :init
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-region '(accented no-extend)
+        modus-themes-hl-line '(underline accented)
+        modus-themes-paren-match '(intense)
+        modus-themes-links '(neutral-underline background)
+        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
+        modus-themes-prompts '(intense bold)
+        modus-themes-syntax '(alt-syntax)
+        modus-themes-mixed-fonts t
+        modus-themes-mode-line-padding 6
+        ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
+        ;;modus-themes-diffs 'deuteranopia
+        modus-themes-org-blocks 'gray-background ;; 'tinted-background
+        modus-themes-variable-pitch-ui t
+        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
+        )
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
+  :config
+  (modus-themes-load-operandi) ;; 浅色主题
+  ;;(modus-themes-load-vivendi)  ;; 深色主题
+  )
 
 ;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
@@ -2014,4 +2036,162 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
                                                         go-staticcheck
                                                         go-errcheck))
                      (flycheck-golangci-lint-setup))))
+#+end_src
+
+* face
+#+begin_src emacs-lisp
+(use-package all-the-icons-ibuffer :init (all-the-icons-ibuffer-mode 1))
+(use-package all-the-icons-completion
+  :config
+  (all-the-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup))
+
+;; 选择 buffer: b, 选择 project: p, 选择文件：f 。
+(use-package consult-projectile
+  :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master")
+  :bind
+  ("C-x p p" . consult-projectile))
+
+(use-package consult-dir
+  :bind
+  (("C-x C-d" . consult-dir)
+   :map minibuffer-local-completion-map
+   ("C-x C-d" . consult-dir)
+   ("C-x C-j" . consult-dir-jump-file)))
+
+
+#+end_src
+
+** kind-icon
+
+#+begin_src emacs-lisp
+(use-package kind-icon
+  :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
+  :after corfu
+  :demand
+  :custom
+  (kind-icon-default-face 'corfu-default)
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+#+end_src
+
+
+** marginalia
+
+#+begin_src  emacs-lisp
+(use-package marginalia
+  :init
+  ;; 显示绝对时间。
+  (setq marginalia-max-relative-age 0)
+  (marginalia-mode)
+  ;;:config
+  ;; 不给 file 加注释，防止 TRAMP 变慢。
+  ;; (setq marginalia-annotator-registry
+  ;;       (assq-delete-all 'file marginalia-annotator-registry))
+  ;; (setq marginalia-annotator-registry
+  ;;       (assq-delete-all 'project-file marginalia-annotator-registry))
+  )
+#+end_src
+
+** cape
+
+Cape 为 Corfu 提供多种类型的 Completion At Point 扩展。
+#+begin_src emacs-lisp
+(use-package cape
+  :demand
+  :straight '(cape :host github :repo "minad/cape")
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;; Complete word from current buffers
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;; Complete Elisp symbol
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;; Complete abbreviation
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;; Complete word from dictionary file
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;; Complete entire line from file
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  :config
+  (setq cape-dabbrev-min-length 3)
+  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
+  (cape-wrap-prefix-length #'cape-dabbrev 3))
+#+end_src
+
+** easy-kill
+
+#+begin_src emacs-lisp
+(use-package easy-kill-extras
+  :demand
+  :bind
+  (([remap kill-ring-save] . easy-kill) ;; M-w
+   ([remap mark-sexp] . easy-mark-sexp) ;; C-M-SPC
+   ([remap mark-word] . easy-mark-word) ;; M-@
+   ;; 集成 zap-to-char.
+   ([remap zap-to-char] . easy-mark-to-char)
+   ([remap zap-up-to-char] . easy-mark-up-to-char))
+  :init
+  (setq kill-ring-max 200
+        ;; 替换前先保存剪贴板内容。
+        save-interprogram-paste-before-kill t
+        easy-kill-alist '((?w word           " ")
+                          (?s sexp           "\n")
+                          (?l list           "\n")
+                          (?d defun          "\n\n")
+                          (?D defun-name     " ")
+                          (?e line           "\n")
+                          (?b buffer-file-name)
+
+                          (?^ backward-line-edge "")
+                          (?$ forward-line-edge "")
+                          (?h buffer "")
+                          (?< buffer-before-point "")
+                          (?> buffer-after-point "")
+                          (?f string-to-char-forward "")
+                          (?F string-up-to-char-forward "")
+                          (?t string-to-char-backward "")
+                          (?T string-up-to-char-backward "")
+
+                          (?W  WORD " ") ;; 非空白字符序列。
+                          (?\' squoted-string "")
+                          (?\" dquoted-string "")
+                          (?\` bquoted-string "")
+                          (?q  quoted-string "") ;; 任何字符串类型
+                          (?Q  quoted-string-universal "")
+                          (?\) parentheses-pair-content "\n")
+                          (?\( parentheses-pair "\n")
+                          (?\] brackets-pair-content "\n")
+                          (?\[ brackets-pair "\n")
+                          (?}  curlies-pair-content "\n")
+                          (?{  curlies-pair "\n")
+                          (?>  angles-pair-content "\n")
+                          (?<  angles-pair "\n")))
+:config
+;; 加载 extra-things 后, 上面 WORD 开始的 alist 才生效。
+(require 'extra-things))
+#+end_src
+M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键可以用其它选择方式，然后用下面的键来修改选择的内容：
++ @: 将选择区域添加到前一次的 kill, 如 M-w d @;
++ C-w: 剪切选择；
++ +, - and 1..9: 扩大或缩小选择；
++ 0: 将选择缩小到初始大小；
++ SPC: 根据 easy-kill-alist 中循环操作；
++ C-SPC: 将选择转为 active region;
++ C-g: 终止；
++ ?: 帮助；
+
+
+** lsp
+#+begin_src emacs-lisp
+
+  ;; https://github.com/minad/corfu/wiki
+  (defun my/orderless-dispatch-flex-first (_pattern index _total)
+  (and (eq index 0) 'orderless-flex))
+  ;; Optionally configure the first word as flex filtered.
+  (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+
+  ;; Optionally configure the cape-capf-buster.
+  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
 #+end_src
