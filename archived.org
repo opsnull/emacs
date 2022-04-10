@@ -1104,12 +1104,12 @@ DIR must include a .project file to be considered a project."
   :demand
   :config (solaire-global-mode +1))
 
-;; :config
-;; (doom-modeline-def-modeline 'main
-;;   ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
-;;   '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-;;   ;; right-hand segment list，尾部增加空格，避免溢出。
-;;   '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
+:config
+(doom-modeline-def-modeline 'main
+  ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+  '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+  ;; right-hand segment list，尾部增加空格，避免溢出。
+  '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2051,23 +2051,17 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   (cnfonts-enable))
 #+end_src
 
-* go
+* orderless
 #+begin_src emacs-lisp
-(use-package flycheck-golangci-lint
-  :ensure-system-package
-  (golangci-lint)
-  :after flycheck
-  :defines flycheck-disabled-checkers
-  :hook (go-mode . (lambda ()
-                     "Enable golangci-lint."
-                     (setq flycheck-disabled-checkers '(go-gofmt
-                                                        go-golint
-                                                        go-vet
-                                                        go-build
-                                                        go-test
-                                                        go-staticcheck
-                                                        go-errcheck))
-                     (flycheck-golangci-lint-setup))))
+
+  ;; https://github.com/minad/corfu/wiki
+  (defun my/orderless-dispatch-flex-first (_pattern index _total)
+  (and (eq index 0) 'orderless-flex))
+  ;; Optionally configure the first word as flex filtered.
+  (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+
+  ;; Optionally configure the cape-capf-buster.
+  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
 #+end_src
 
 * face
@@ -2213,24 +2207,168 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
 + C-g: 终止；
 + ?: 帮助；
 
-** lsp
-#+begin_src emacs-lisp
-
-  ;; https://github.com/minad/corfu/wiki
-  (defun my/orderless-dispatch-flex-first (_pattern index _total)
-  (and (eq index 0) 'orderless-flex))
-  ;; Optionally configure the first word as flex filtered.
-  (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
-
-  ;; Optionally configure the cape-capf-buster.
-  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
-#+end_src
-
 ** org
 #+begin_src emacs-lisp
 ;; org-mode table 中英文像素对齐。
 (use-package valign
   :config
   (add-hook 'org-mode-hook #'valign-mode))
+#+end_src
+
+
+* projectile
+
+#+begin_src emacs-lisp
+;; 选择 buffer: b, 选择 project: p, 选择文件：f 。
+(use-package consult-projectile
+  :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master")
+  :after (projectile)
+  :bind
+  ("C-c p p" . consult-projectile))
+
+;; 基于 project 来对 buffer 进行分组。
+(use-package ibuffer-projectile
+  :after (ibuffer projectile)
+  :hook
+  ((ibuffer . (lambda ()
+                (ibuffer-projectile-set-filter-groups)
+                (unless (eq ibuffer-sorting-mode 'alphabetic)
+                  (ibuffer-do-sort-by-alphabetic)))))
+  :config
+  ;; 显示的文件名是相对于 project root 的相对路径。
+  (setq ibuffer-formats
+        '((mark modified read-only " "
+                (name 18 18 :left :elide)
+                " "
+                (size 9 -1 :right)
+                " "
+                (mode 16 16 :left :elide)
+                " "
+                project-relative-file))))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package projectile
+  :demand
+  :config
+  (projectile-global-mode)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+  (projectile-mode +1)
+  ;; selectrum/vertico 使用 'default 。
+  (setq projectile-completion-system 'default)
+  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
+  (dolist (dir '("^\\.cache$"
+                  "^elpa$"
+                  "^bak$"
+                  "^__pycache__$"
+                  "^vendor$"
+                  "^node_modules$"
+                  "^logs$"
+                  "^target$"
+                  "^build$"
+                  "^\\.devcontainer$"
+                  "^\\.settings$"
+                  "^\\.gradle$"))
+    (add-to-list 'projectile-globally-ignored-directories dir))
+  (dolist (item '("GPATH"
+                  "GRTAGS"
+                  "GTAGS"
+                  "TAGS"
+                  ".classpath"
+                  ".project"
+                  ".DS_Store"))
+     (add-to-list 'projectile-globally-ignored-files item))
+  (dolist (list '("\\.elc\\'"
+                  "\\.o\\'"
+                  "\\.class\\'"
+                  "\\.out\\'"
+                  "\\.pdf\\'"
+                  "\\.pyc\\'"
+                  "\\.rel\\'"
+                  "\\.rip\\'"
+                  "\\.swp\\'"
+                  "\\.iml\\'"
+                  "\\.bak\\'"
+                  "\\.log\\'"
+                  "~\\'"))
+    (add-to-list 'projectile-globally-ignored-file-suffixes list))
+
+  ;; Disable projectile on remote buffers
+  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
+  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
+  (defadvice projectile-project-root (around ignore-remote first activate)
+    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+
+  ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
+  (setq projectile-enable-caching t)
+  (setq projectile-file-exists-remote-cache-expire (* 10 60))
+  (setq projectile-mode-line-prefix "")
+  (setq projectile-dynamic-mode-line nil)
+  (setq projectile-sort-order 'recentf)
+  (setq projectile-require-project-root 'prompt)
+  ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)根目录。
+  (projectile-register-project-type 'go projectile-go-project-test-function
+                                    :project-file "go.mod"
+                                    :compile "go build"
+                                    :test "go test ./..."
+                                    :test-suffix "_test"))
+
+(defun my/projectile-discover ()
+  (interactive)
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+    (dolist (file (file-expand-wildcards search-path))
+      (when (file-directory-p (concat file "/.git"))
+        (message "-> %s" file)
+        (projectile-add-known-project file)
+        (message "added project %s" file)))))
+#+end_src
+
+
+
+* eglot
+
+#+begin_src emacs-lisp
+(setq max-specpdl-size 130000)
+
+(use-package eglot
+  :hook ((c-mode go-mode java-mode js-mode python-mode rust-mode web-mode) . eglot-ensure)
+  :config
+  ;; (defun eglot-actions-before-save()
+  ;;   (add-hook 'before-save-hook 
+  ;;             (lambda ()
+  ;;               (call-interactively #'eglot-format-buffer)
+  ;;               (call-interactively #'eglot-code-action-organize-imports))))  
+  ;; (add-hook 'go-mode-hook #'eglot-actions-before-save)
+  ;; documentHighlightProvider 禁用高亮光标下的单词
+  (setq eglot-ignored-server-capabilities '(:documentHighlightProvider))
+  (setq eldoc-echo-area-use-multiline-p 3
+        eldoc-echo-area-display-truncation-message nil)
+  (set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff"))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package go-mode
+  :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
+  :init
+  (setq godoc-at-point-function #'godoc-gogetdoc)
+  :bind
+  (:map go-mode-map
+        ("C-c R" . go-remove-unused-imports)
+        ("<f1>" . godoc-at-point)))
+
+(setq-default eglot-workspace-configuration
+    '((:gopls .
+        ((staticcheck . t)
+         (matcher . "CaseSensitive")
+         (allExperiments . t)
+         (completeUnimported . t)
+         ;; opts a user into the experimental support for multi-module workspaces
+         (experimentalWorkspaceModule . t)
+         ;;disables -mod=readonly, allowing imports from out-of-scope module
+         (allowModfileModifications . t)
+         ;;disables GOPROXY=off, allowing implicit module downloads rather than requiring user action
+         (allowImplicitNetworkAccess . t)
+         ;; enables gopls to fall back on outdated package metadata
+         (experimentalUseInvalidMetadata . t)))))
 #+end_src
 

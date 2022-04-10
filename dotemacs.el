@@ -221,18 +221,19 @@
   :init
   (doom-modeline-mode 1))
 
+;; dashboard 不能 :demand 启动, 否则会导致 mode-line 溢出。
 (use-package dashboard
-  :demand
-  :after (projectile)
+  ;; Emacs 启动完成后再启动 dashboard。
+  :hook (after-init . dashboard-setup-startup-hook)
   :config
   (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
-  (setq dashboard-projects-backend #'projectile)
+  ;;(setq dashboard-projects-backend #'projectile)
+  (setq dashboard-projects-backend #'project-el)
   (setq dashboard-center-content t)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))
-  (dashboard-setup-startup-hook))
+  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
 
 (use-package centaur-tabs
   :hook (emacs-startup . centaur-tabs-mode)
@@ -251,7 +252,8 @@
   (centaur-tabs-mode t)
   (centaur-tabs-headline-match)
   (centaur-tabs-enable-buffer-reordering)
-  (centaur-tabs-group-by-projectile-project)
+  (centaur-tabs-group-buffer-groups)
+  ;;(centaur-tabs-group-by-projectile-project)
   (defun centaur-tabs-hide-tab (x)
     (let ((name (format "%s" x)))
       (or
@@ -529,9 +531,9 @@
   (setq consult-narrow-key "<")
   (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
   (setq completion-in-region-function #'consult-completion-in-region)
-  ;; projectile 集成。
-  (autoload 'projectile-project-root "projectile")
-  (setq consult-project-function 'projectile-project-root)
+  ;; projectile 集成(缺省使用 project.el) 。
+  ;;(autoload 'projectile-project-root "projectile")
+  ;;(setq consult-project-function 'projectile-project-root)
 
   ;; 多选时按键绑定（例如 consult-multi-occur 场景）。
   ;; TAB - Select/deselect, RET - 提交和退出。
@@ -545,11 +547,11 @@
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil))
 
-;; 选择 buffer: b, 选择 project: p, 选择文件：f 。
-(use-package consult-projectile
-  :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master")
+(use-package consult-project-extra
+  :straight (consult-project-extra :type git :host github :repo "Qkessler/consult-project-extra")
   :bind
-  ("C-x p p" . consult-projectile))
+  (("C-c p f" . consult-project-extra-find)
+   ("C-c p o" . consult-project-extra-find-other-window)))
 
 (use-package consult-dir
   :bind
@@ -1471,6 +1473,7 @@
   (:map flycheck-command-map ("!" . consult-flycheck)))
 
 (setenv "LSP_USE_PLISTS" "true")
+
 (use-package lsp-mode
   :custom
   ;; debug 时才开启 log, 否则影响性能。
@@ -1655,6 +1658,22 @@
      ;; enables gopls to fall back on outdated package metadata
      ("gopls.experimentalUseInvalidMetadata" t t))))
 
+(use-package flycheck-golangci-lint
+  :ensure-system-package
+  (golangci-lint)
+  :after flycheck
+  :defines flycheck-disabled-checkers
+  :hook (go-mode . (lambda ()
+                     "Enable golangci-lint."
+                     (setq flycheck-disabled-checkers '(go-gofmt
+                                                        go-golint
+                                                        go-vet
+                                                        go-build
+                                                        go-test
+                                                        go-staticcheck
+                                                        go-errcheck))
+                     (flycheck-golangci-lint-setup))))
+
 ;; 安装或更新工具。
 (defvar go--tools '("golang.org/x/tools/gopls"
                     "golang.org/x/tools/cmd/goimports"
@@ -1702,22 +1721,6 @@
 (use-package go-playground
   :diminish
   :commands (go-playground-mode))
-
-(use-package flycheck-golangci-lint
-  :ensure-system-package
-  (golangci-lint)
-  :after flycheck
-  :defines flycheck-disabled-checkers
-  :hook (go-mode . (lambda ()
-                     "Enable golangci-lint."
-                     (setq flycheck-disabled-checkers '(go-gofmt
-                                                        go-golint
-                                                        go-vet
-                                                        go-build
-                                                        go-test
-                                                        go-staticcheck
-                                                        go-errcheck))
-                     (flycheck-golangci-lint-setup))))
 
 (use-package markdown-mode
   :ensure-system-package multimarkdown
@@ -1928,81 +1931,59 @@ mermaid.initialize({
 
 (use-package expand-region
   :config
-  (global-set-key (kbd "C-=") 'er/expand-region))
+  (global-set-key (kbd "C-0") 'er/expand-region))
 
-(use-package projectile
-  :demand
-  :config
-  (projectile-global-mode)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-  (projectile-mode +1)
-  ;; selectrum/vertico 使用 'default 。
-  (setq projectile-completion-system 'default)
-  (add-to-list 'projectile-ignored-projects (concat (getenv "HOME") "/" "/root" "/tmp" "/etc" "/home"))
-  (dolist (dir '("^\\.cache$"
-                  "^elpa$"
-                  "^bak$"
-                  "^__pycache__$"
-                  "^vendor$"
-                  "^node_modules$"
-                  "^logs$"
-                  "^target$"
-                  "^build$"
-                  "^\\.devcontainer$"
-                  "^\\.settings$"
-                  "^\\.gradle$"))
-    (add-to-list 'projectile-globally-ignored-directories dir))
-  (dolist (item '("GPATH"
-                  "GRTAGS"
-                  "GTAGS"
-                  "TAGS"
-                  ".classpath"
-                  ".project"
-                  ".DS_Store"))
-     (add-to-list 'projectile-globally-ignored-files item))
-  (dolist (list '("\\.elc\\'"
-                  "\\.o\\'"
-                  "\\.class\\'"
-                  "\\.out\\'"
-                  "\\.pdf\\'"
-                  "\\.pyc\\'"
-                  "\\.rel\\'"
-                  "\\.rip\\'"
-                  "\\.swp\\'"
-                  "\\.iml\\'"
-                  "\\.bak\\'"
-                  "\\.log\\'"
-                  "~\\'"))
-    (add-to-list 'projectile-globally-ignored-file-suffixes list))
+(defun my/project-try-local (dir)
+  "Determine if DIR is a non-Git project."
+  (catch 'ret
+    (let ((pr-flags '((".project")
+                      ("go.mod" "pom.xml" "package.json") ;; higher priority
+                      ("Makefile" "README.org" "README.md"))))
+      (dolist (current-level pr-flags)
+        (dolist (f current-level)
+          (when-let ((root (locate-dominating-file dir f)))
+            (throw 'ret (cons 'local root))))))))
 
-  ;; Disable projectile on remote buffers
-  ;; https://www.murilopereira.com/a-rabbit-hole-full-of-lisp/
-  ;; https://github.com/syl20bnr/spacemacs/issues/11381#issuecomment-481239700
-  (defadvice projectile-project-root (around ignore-remote first activate)
-    (unless (file-remote-p default-directory 'no-identification) ad-do-it))
+(setq project-find-functions '(my/project-try-local project-try-vc))
 
-  ;; 开启 cache 解决 TRAMP 慢的问题，https://github.com/bbatsov/projectile/pull/1129
-  (setq projectile-enable-caching t)
-  (setq projectile-file-exists-remote-cache-expire (* 10 60))
-  (setq projectile-mode-line-prefix "")
-  (setq projectile-dynamic-mode-line nil)
-  (setq projectile-sort-order 'recentf)
-  (setq projectile-require-project-root 'prompt)
-  ;; 添加 :project-file "go.mod", 这样能正确探测 go module (非 git 仓库)根目录。
-  (projectile-register-project-type 'go projectile-go-project-test-function
-                                    :project-file "go.mod"
-                                    :compile "go build"
-                                    :test "go test ./..."
-                                    :test-suffix "_test"))
+(cl-defmethod project-root ((project (head local)))
+  (cdr project))
+
+(defun my/project-info ()
+  (interactive)
+  (message "%s" (project-current t)))
+
+(defun my/project-add (dir)
+  (interactive "DDirectory: \n")
+  ;; 使用 project-remember-project 报错。
+  (project-remember-projects-under dir nil))
+
+(defun my/project-new-root ()
+  (interactive)
+  (let* ((root-dir (read-directory-name "Root: "))
+         (f (expand-file-name ".project" root-dir)))
+    (message "Create %s..." f)
+    (make-directory root-dir t)
+    (when (not (file-exists-p f))
+      (make-empty-file f))
+    (my/project-add root-dir)))
+
+(defun my/project-remember-advice (fn pr &optional no-write)
+  (let* ((remote? (file-remote-p (project-root pr)))
+         (no-write (if remote? t no-write)))
+    (funcall fn pr no-write)))
+
+(advice-add 'project-remember-project :around 'my/project-remember-advice)
 
 (defun my/project-discover ()
   (interactive)
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*"))
     (dolist (file (file-expand-wildcards search-path))
-      (when (file-directory-p (concat file "/.git"))
-        (message "-> %s" file)
-        (projectile-add-known-project file)
-        (message "added project %s" file)))))
+      (when (file-directory-p file)
+          (message "dir %s" file)
+          ;; project-remember-projects-under 列出 file 下的目录, 分别加到 project-list-file 中。
+          (project-remember-projects-under file nil)
+          (message "added project %s" file)))))
 
 (use-package treemacs
   :demand
@@ -2064,7 +2045,7 @@ mermaid.initialize({
   ;; 注: 当使用 doom-themes 主题时, 它会自动设置 treemacs theme, 就不需要再调用这个函数了.
   ;;(require 'treemacs-all-the-icons)
   ;;(treemacs-load-theme "all-the-icons")
-  (require 'treemacs-projectile)
+  ;;(require 'treemacs-projectile)
   (require 'treemacs-magit)
   ;; 在 dired buffer 中使用 treemacs icons。
   (require 'treemacs-icons-dired)
@@ -2079,13 +2060,6 @@ mermaid.initialize({
         ("C-x t B"   . treemacs-bookmark)
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
-
-;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
-(use-package lsp-treemacs
-  :after (lsp-mode treemacs)
-  :config
-  (setq lsp-treemacs-error-list-current-project-only t)
-  (lsp-treemacs-sync-mode 1))
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包。
 (use-package ripgrep
@@ -2102,6 +2076,13 @@ mermaid.initialize({
               (require 'treemacs)
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window))))))
+
+;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
+(use-package lsp-treemacs
+  :after (lsp-mode treemacs)
+  :config
+  (setq lsp-treemacs-error-list-current-project-only t)
+  (lsp-treemacs-sync-mode 1))
 
 ;; OSX 词典。
 (use-package osx-dictionary
@@ -2505,14 +2486,12 @@ mermaid.initialize({
   (setq ibuffer-old-time 48)
   (add-hook 'ibuffer-mode-hook #'hl-line-mode))
 
-;; 基于 project 来对 buffer 进行分组。
-(use-package ibuffer-projectile
-  :after (ibuffer projectile)
+(use-package ibuffer-project
   :hook
   ((ibuffer . (lambda ()
-                (ibuffer-projectile-set-filter-groups)
-                (unless (eq ibuffer-sorting-mode 'alphabetic)
-                  (ibuffer-do-sort-by-alphabetic)))))
+                (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+                (unless (eq ibuffer-sorting-mode 'project-file-relative)
+                  (ibuffer-do-sort-by-project-file-relative)))))
   :config
   ;; 显示的文件名是相对于 project root 的相对路径。
   (setq ibuffer-formats
@@ -2523,7 +2502,7 @@ mermaid.initialize({
                 " "
                 (mode 16 16 :left :elide)
                 " "
-                project-relative-file))))
+                project-file-relative))))
 
 (use-package dired
   :straight (:type built-in)
