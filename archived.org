@@ -161,7 +161,11 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 ;; 中文不加空格使用行内格式, 如强调。（export pdf 时还是需要加空格)
 ;; 由于分词不准确，故不再使用
 (setq org-emphasis-regexp-components
-       '("-[:multibyte:][:space:]('\"{" "-[:multibyte:][:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
+       '("-[:multibyte:][:space:]('\"{"
+         "-[:multibyte:][:space:].,:!?;'\")}\\["
+         "[:space:]"
+         "[^=~*_]"
+         1))
 (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
 (org-element-update-syntax)
 
@@ -1807,6 +1811,15 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 * theme
 
 #+begin_src emacs-lisp
+;; 跟随 Mac 自动切换深浅主题。
+(defun my/load-light-theme () (interactive) (load-theme 'doom-palenight t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
+(add-hook 'ns-system-appearance-change-functions
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
+
 ;; 高对比度主题。
 (use-package modus-themes
   :demand
@@ -1920,6 +1933,7 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+end_src
 
 * font
+不开启 variable-pitch-mode,
 #+begin_src emacs-lisp
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 ;; 缺省字体。
@@ -2019,6 +2033,24 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 (setq inhibit-compacting-font-caches t)
   #+end_src
 
+#+begin_src emacs-lisp
+(use-package cnfonts
+  :demand
+  :init
+  ;; 中英文均使用 Sarasa Mono SC 字体。
+  (setq cnfonts-personal-fontnames '(("Sarasa Mono SC") ("Sarasa Mono SC") ("HanaMinB")))
+  ;; 允许字体缩放(部分主题如 lenven 依赖) 。
+  (setq cnfonts-use-face-font-rescale t)
+  :config
+  ;; emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 调用才会生效。
+  (defun my/set-fonts (&optional font)
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
+  (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
+  (cnfonts-enable))
+#+end_src
+
 * go
 #+begin_src emacs-lisp
 (use-package flycheck-golangci-lint
@@ -2074,7 +2106,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 #+end_src
-
 
 ** marginalia
 
@@ -2182,7 +2213,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
 + C-g: 终止；
 + ?: 帮助；
 
-
 ** lsp
 #+begin_src emacs-lisp
 
@@ -2195,3 +2225,12 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   ;; Optionally configure the cape-capf-buster.
   (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
 #+end_src
+
+** org
+#+begin_src emacs-lisp
+;; org-mode table 中英文像素对齐。
+(use-package valign
+  :config
+  (add-hook 'org-mode-hook #'valign-mode))
+#+end_src
+

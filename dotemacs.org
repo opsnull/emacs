@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-04-10T11:04:11+0800
+#+LASTMOD: 2022-04-10T15:04:53+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -197,7 +197,7 @@ npm config set registry=http://registry.npm.taobao.org
 (use-package use-package-ensure-system-package)
 #+end_src
 
-=exec-path-from-shell= 将 ~Shell~ 环境变量拷贝到 ~Emacs~ ：
+=exec-path-from-shell= 将 ~Shell~ 环境变量拷贝到 ~Emacs~：
 #+begin_src emacs-lisp
 (use-package exec-path-from-shell
   :demand
@@ -234,6 +234,9 @@ npm config set registry=http://registry.npm.taobao.org
 
 ;; 缩短更新 screen 的时间。
 (setq idle-update-delay 0.1)
+
+;; 使用字体缓存，避免卡顿。
+(setq inhibit-compacting-font-caches t)
 
 ;; Garbage Collector Magic Hack
 (use-package gcmh
@@ -354,20 +357,12 @@ npm config set registry=http://registry.npm.taobao.org
   (doom-themes-padded-modeline t)
   :config
   (doom-themes-visual-bell-config)
+  (load-theme 'doom-palenight t)
   ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
   ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
   (setq doom-themes-treemacs-enable-variable-pitch nil)
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
-
-;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-palenight t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
 
 ;; modeline 显示电池和日期时间。
 (display-battery-mode t)
@@ -381,6 +376,7 @@ npm config set registry=http://registry.npm.taobao.org
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
+;; 后面将 mode-line face 的字体设置为 Fira Code Retina, 兼容性比 Sarasa Mono SC 好, 不会溢出。
 (use-package doom-modeline
   :demand
   :custom
@@ -400,13 +396,7 @@ npm config set registry=http://registry.npm.taobao.org
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1)
-  :config
-  (doom-modeline-def-modeline 'main
-    ;; left-hand segment list, 去掉 remote-host，避免 TRAMP 卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免 modeline 溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " ")))
+  (doom-modeline-mode 1))
 
 (use-package dashboard
   :demand
@@ -468,34 +458,31 @@ npm config set registry=http://registry.npm.taobao.org
          (display-buffer-reuse-mode-window display-buffer-below-selected)
          (window-height . 0.43)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
-
-(use-package all-the-icons :demand)
 #+end_src
 
 * font
 
-+ 中英文（显示）：更纱黑体 Sarasa Term SC: https://github.com/be5invis/Sarasa-Gothic
-+ 中英文（显示）：霞鹜文楷屏幕阅读版 LXGW WenKai Screen: https://github.com/lxgw/LxgwWenKai-Screen
++ 中文（显示）：更纱黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
++ 英文（显示）：Fira Code : https://github.com/tonsky/FiraCode/wiki/Installing
 + 中英文（PDF) ：Noto CJK SC: https://github.com/googlefonts/noto-cjk.git
-+ 英文字体：Fira Code : https://github.com/tonsky/FiraCode/wiki/Installing
 + Symbols 字体:  Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
 + 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 + Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
 #+begin_src emacs-lisp
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
-;; 缺省字体。
+;; 缺省字体（英文，如显示代码）。
 (setq +font-family "Fira Code Retina")
+;; modeline 设置为 Fira Code Retina, 兼容性比 Sarasa Mono SC 好, 不会溢出。
 (setq +modeline-font-family "Fira Code Retina")
-;; org-table 使用 fixed-pitch 字体, Sarasa Term SC 可以让对齐效果更好。
-(setq +fixed-pitch-family "Sarasa Term SC")
-(setq +variable-pitch-family "LXGW WenKai Screen")
-(setq +font-unicode-family "LXGW WenKai Screen")
-(setq +font-size-list '(10 11 12 13 14 15 16 17 18))
+;; 其它均使用 Sarasa Mono SC 字体。
+(setq +fixed-pitch-family "Sarasa Mono SC")
+(setq +variable-pitch-family "Sarasa Mono SC")
+(setq +font-unicode-family "Sarasa Mono SC")
 (setq +font-size 14)
 
 ;; 设置缺省字体。
 (defun +load-base-font ()
-  ;; 为缺省字体设置 size, 其它字体都是通过 :height 进行动态伸缩。
+  ;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
   (let* ((font-spec (format "%s-%d" +font-family +font-size)))
     (set-frame-parameter nil 'font font-spec)
     (add-to-list 'default-frame-alist `(font . ,font-spec))))
@@ -503,15 +490,15 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 设置各特定 face 的字体。
 (defun +load-face-font (&optional frame)
   (let ((font-spec (format "%s" +font-family))
-        (line-font-spec (format "%s" +modeline-font-family))
+        (modeline-font-spec (format "%s" +modeline-font-family))
         (variable-pitch-font-spec (format "%s" +variable-pitch-family))
         (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
     (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.2)
     (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
     (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
     (set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
-    (set-face-attribute 'mode-line frame :font line-font-spec :height 1.0)
-    (set-face-attribute 'mode-line-inactive frame :font line-font-spec :height 1.0)))
+    (set-face-attribute 'mode-line frame :font modeline-font-spec :height 1.0)
+    (set-face-attribute 'mode-line-inactive frame :font modeline-font-spec :height 1.0)))
 
 ;; 设置中文字体。
 (defun +load-ext-font ()
@@ -521,12 +508,18 @@ npm config set registry=http://registry.npm.taobao.org
       (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
         (set-fontset-font font charset font-spec)))))
 
-;; 设置 emobji 字体。
+;; 设置 Emoji 字体。
 (defun +load-emoji-font ()
   (when window-system
-      (setq use-default-font-for-symbols nil)
-      (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-      (set-fontset-font t 'symbol (font-spec :family "Symbola"))))
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Symbola"))))
+
+(add-hook 'after-make-frame-functions 
+          ( lambda (f) 
+            (+load-face-font f)
+            (+load-ext-font)
+            (+load-emoji-font)))
 
 (defun +load-font ()
   (+load-base-font)
@@ -535,54 +528,21 @@ npm config set registry=http://registry.npm.taobao.org
   (+load-emoji-font))
 
 (+load-font)
-(add-hook 'after-make-frame-functions 
-          ( lambda (f) 
-            (+load-face-font f)
-            (+load-ext-font)
-            (+load-emoji-font)))
 
-;; 只为 org-mode 和 markdown-mode 开启 variable-pitch-mode 。
-(add-hook 'org-mode-hook 'variable-pitch-mode)
-(add-hook 'markdown-mode-hook 'variable-pitch-mode)
-
-(defun +larger-font ()
-  (interactive)
-  (if-let ((size (--find (> it +font-size) +font-size-list)))
-      (progn (setq +font-size size)
-             (+load-font)
-             (message "Font size: %s" +font-size))
-    (message "Using largest font")))
-
-(defun +smaller-font ()
-  (interactive)
-  (if-let ((size (--find (< it +font-size) (reverse +font-size-list))))
-      (progn (setq +font-size size)
-             (message "Font size: %s" +font-size)
-             (+load-font))
-    (message "Using smallest font")))
-
-(global-set-key (kbd "M-+") #'+larger-font)
-(global-set-key (kbd "M--") #'+smaller-font)
-
-(defun +use-fixed-pitch ()
-  (interactive)
-  (setq buffer-face-mode-face `(:family ,+fixed-pitch-family))
-  (buffer-face-mode +1))
-
-;; fire-code-mode 只能在 GUI 模式下使用。
+;; all-the-icons 和 fire-code-mode 只能在 GUI 模式下使用。
 (when (display-graphic-p)
+  (use-package all-the-icons
+    :demand)
+  
   (use-package fira-code-mode
     :custom
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
     :hook prog-mode))
-
-;; 使用字体缓存，避免卡顿。
-(setq inhibit-compacting-font-caches t)
   #+end_src
 
-+ 查看 emacs 支持的字体名称： =(print (font-family-list))=
++ 查看 Emacs 支持的字体名称： =(print (font-family-list))=
 + 安装、更新 FiraCode Symbol 字体： =M-x fira-code-mode-install-fonts=
-+ 安装、更新 icon 字体： =M-x all-the-icons-install-fonts=, 包括
++ 安装、更新 Icon 字体： =M-x all-the-icons-install-fonts=, 包括
   file-icons/fontawesome/octicons/weathericons/material-design 字体。
 
 * completion
@@ -812,7 +772,6 @@ npm config set registry=http://registry.npm.taobao.org
    ("C-x C-d" . consult-dir)
    ("C-x C-j" . consult-dir-jump-file)))
 #+end_src
-#+end_src
 
 ** embark
 
@@ -940,7 +899,7 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
   (:map yas-minor-mode-map
         ("C-c y" . 'consult-yasnippet)))
 #+end_src
-+ 完全输入 snippet 简写后，按 TAB 自动扩展。
++ 完全输入 =snippet= 简写后，按 =TAB= 自动扩展。
 
 * goto
 
@@ -1144,16 +1103,16 @@ patch:
     # 需要哪組就刪去行首的 # 號，單雙向任選
     - derive/^([zcs])h/$1/             # zh, ch, sh => z, c, s
     - derive/^([zcs])([^h])/$1h$2/     # z, c, s => zh, ch, sh
-    - derive/^n/l/                     # n => l
-    - derive/^l/n/                     # l => n
+    #- derive/^n/l/                     # n => l
+    #- derive/^l/n/                     # l => n
     - derive/([ei])n$/$1ng/            # en => eng, in => ing
     - derive/([ei])ng$/$1n/            # eng => en, ing => in
     # 以下是一組容錯拼寫，《漢語拼音》方案以前者爲正
-    - derive/^([nl])ve$/$1ue/          # nve = nue, lve = lue
-    - derive/^([jqxy])u/$1v/           # ju = jv,
-    - derive/un$/uen/                  # gun = guen,
-    - derive/ui$/uei/                  # gui = guei,
-    - derive/iu$/iou/                  # jiu = jiou,
+    #- derive/^([nl])ve$/$1ue/          # nve = nue, lve = lue
+    #- derive/^([jqxy])u/$1v/           # ju = jv,
+    #- derive/un$/uen/                  # gun = guen,
+    #- derive/ui$/uei/                  # gui = guei,
+    #- derive/iu$/iou/                  # jiu = jiou,
     # 自動糾正一些常見的按鍵錯誤
     - derive/([aeiou])ng$/$1gn/        # dagn => dang
     - derive/([dtngkhrzcs])o(u|ng)$/$1o/  # zho => zhong|zhou
@@ -1204,10 +1163,10 @@ patch:
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
           rime-predicate-hydra-p
-          ;;rime-predicate-current-uppercase-letter-p
-          ;;rime-predicate-after-alphabet-char-p
+          rime-predicate-current-uppercase-letter-p
+          rime-predicate-after-alphabet-char-p
           rime-predicate-prog-in-code-p
-          ;;rime-predicate-after-ascii-char-p
+          rime-predicate-after-ascii-char-p
           ))
   (setq rime-show-candidate 'posframe)
 
@@ -1241,9 +1200,9 @@ patch:
         ;; 去掉 * 和 /, 使它们不再具有强调含义。
         org-emphasis-alist
         '(("_" underline)
-         ("=" org-verbatim verbatim)
-         ("~" org-code verbatim)
-         ("+" (:strike-through t)))
+          ("=" org-verbatim verbatim)
+          ("~" org-code verbatim)
+          ("+" (:strike-through t)))
         ;; 隐藏 block
         org-hide-block-startup t
         org-hidden-keywords '(title)
@@ -1262,7 +1221,7 @@ patch:
         ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
         org-export-with-sub-superscripts nil
         org-startup-indented t
-        ;; 使用鼠标点击链接。
+        ;; 支持鼠标点击链接。
         org-return-follows-link t
         org-mouse-1-follows-link t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
@@ -1272,6 +1231,16 @@ patch:
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+
+  ;; 支持无空格的中文强调。
+  (setq org-emphasis-regexp-components
+        '("-[:multibyte:][:space:]('\"{"
+          "-[:multibyte:][:space:].,:!?;'\")}\\["
+          "[:space:]"
+          "[^=~*_]"  ;; 不允许强调字符嵌套。
+          1))
+  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
+  (org-element-update-syntax)
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -1323,23 +1292,25 @@ patch:
     (set-face-attribute (car face) nil :height (cdr face)))
   ;; 美化 BEGIN_SRC 整行。
   (setq org-fontify-whole-block-delimiter-line t)
+  ;; 如果配置参数 :inherit 'fixed-pitch, 则需要明确设置 fixed-pitch 字体，
+  ;; 否则选择的缺省字体可能导致显示问题。
   (custom-theme-set-faces
    'user
-   '(org-block ((t (:inherit 'fixed-pitch :height 0.9))))
-   '(org-code ((t (:inherit 'fixed-pitch :height 0.9))))
+   '(org-block ((t (:height 0.9))))
+   '(org-code ((t (:height 0.9))))
    ;; 调小高度 , 并设置下划线。
    '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
    '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
-   '(org-meta-line ((t (:inherit 'fixed-pitch :height 0.7))))
-   '(org-document-info-keyword ((t (:inherit 'fixed-pitch :height 0.6))))
+   '(org-meta-line ((t (:height 0.7))))
+   '(org-document-info-keyword ((t (:height 0.6))))
    '(org-document-info ((t (:height 0.8))))
    '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
    '(org-link ((t (:foreground "royal blue" :underline t))))
    '(org-property-value ((t (:height 0.8))) t)
-   '(org-drawer ((t (:inherit 'fixed-pitch :height 0.8))) t)
+   '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
-   '(org-table ((t (:inherit 'fixed-pitch :height 0.9))))
-   '(org-verbatim ((t (:inherit 'fixed-pitch :height 0.9))))
+   '(org-table ((t (:height 0.9))))
+   '(org-verbatim ((t (:height 0.9))))
    '(org-tag ((t (:weight bold :height 0.8)))))
   (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»")
                                          ("#+END_SRC" . "«")
@@ -1363,11 +1334,6 @@ patch:
   (org-mode . org-fancy-priorities-mode)
   :config
   (setq org-fancy-priorities-list '("[A]" "[B]" "[C]")))
-
-;; org-mode table 中英文像素对齐。
-(use-package valign
-  :config
-  (add-hook 'org-mode-hook #'valign-mode))
 
 ;; 编辑时显示隐藏的标记。
 (use-package org-appear
@@ -3027,7 +2993,7 @@ eval "$(direnv hook bash)"
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window))))))
 #+end_src
-+ 不启用 (treemacs-project-follow-mode t), 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
++ 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
   project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
 * dict
@@ -3401,6 +3367,8 @@ eshell 配置：
 (global-unset-key (kbd "s-n"))
 ;; 关闭 suspend-frame 。
 (global-unset-key (kbd "C-z"))
+;; 关闭 mouse-yank-primary 。
+(global-unset-key (kbd "<mouse-2>"))
 
 (use-package recentf
   :straight (:type built-in)
