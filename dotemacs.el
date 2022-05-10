@@ -2,14 +2,14 @@
 (setq package-archives '(("elpa" . "https://elpa.gnu.org/packages/")
                          ("melpa" . "https://melpa.org/packages/")))
 
-;; 配置 use-package 默认使用 straight 安装包。
+;; 配置 use-package 集成 straight。
 (setq straight-use-package-by-default t)
 (setq straight-vc-git-default-clone-depth 1)
 (setq straight-recipes-gnu-elpa-use-mirror t)
 (setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
 (setq straight-host-usernames '((github . "opsnull")))
 
-;; 安装 straight.el 。
+;; 安装 straight.el。
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -23,7 +23,7 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-;; 安装 use-package 。
+;; 安装 use-package。
 (straight-use-package 'use-package)
 (setq use-package-verbose t)
 (setq use-package-compute-statistics t)
@@ -45,7 +45,7 @@
 ;; 提升 IO 性能。
 (setq process-adaptive-read-buffering nil)
 ;; 增加单次读取进程输出的数据量（缺省 4KB) 。
-(setq read-process-output-max (* 1024 1024))
+(setq read-process-output-max (* 4 1024 1024))
 
 ;; 提升长行处理性能。
 (setq bidi-inhibit-bpa t)
@@ -119,10 +119,10 @@
 ;; 左右分屏, nil: 上下分屏。
 (setq split-width-threshold 30)
 
-;; 复用当前 frame 。
+;; 复用当前 frame。
 (setq display-buffer-reuse-frames t)
 
-;; 滚动一屏后, 显示 3 行上下文。
+;; 滚动一屏后显示 3 行上下文。
 (setq next-screen-context-lines 3)
 
 ;; 平滑地进行半屏滚动，避免滚动后 recenter 操作。
@@ -148,22 +148,9 @@
 (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 1))))
 
-;; 根据窗口自适应显示图片。
+;; 根据窗口自适应调整图片大小。
 (setq image-transform-resize t)
 (auto-image-file-mode t)
-
-;; 显示缩进。
-(use-package highlight-indent-guides
-  :custom
-  (highlight-indent-guides-method 'character)
-  (highlight-indent-guides-responsive 'top)
-  (highlight-indent-guides-suppress-auto-error t)
-  (highlight-indent-guides-delay 0.1)
-  :config
-  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
 ;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
@@ -199,9 +186,9 @@
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
-;; 后面将 mode-line face 的字体设置为 Fira Code Retina, 兼容性比 Sarasa Mono SC 好, 不会溢出。
 (use-package doom-modeline
   :demand
+  :after (doom-themes)
   :custom
   ;; 不显示换行和编码（节省空间）。
   (doom-modeline-buffer-encoding nil)
@@ -221,20 +208,6 @@
   :init
   (doom-modeline-mode 1))
 
-;; dashboard 不能 :demand 启动, 否则会导致 mode-line 溢出。
-(use-package dashboard
-  ;; Emacs 启动完成后再启动 dashboard。
-  :hook (after-init . dashboard-setup-startup-hook)
-  :config
-  (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
-  ;;(setq dashboard-projects-backend #'projectile)
-  (setq dashboard-projects-backend #'project-el)
-  (setq dashboard-center-content t)
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-navigator t)
-  (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
-
 (use-package centaur-tabs
   :hook (emacs-startup . centaur-tabs-mode)
   :init
@@ -252,8 +225,7 @@
   (centaur-tabs-mode t)
   (centaur-tabs-headline-match)
   (centaur-tabs-enable-buffer-reordering)
-  (centaur-tabs-group-buffer-groups)
-  ;;(centaur-tabs-group-by-projectile-project)
+  (centaur-tabs-group-by-projectile-project)
   (defun centaur-tabs-hide-tab (x)
     (let ((name (format "%s" x)))
       (or
@@ -271,6 +243,19 @@
   (setq beacon-blink-duration 0.3)
   (beacon-mode 1))
 
+;; 显示缩进。
+(use-package highlight-indent-guides
+  :custom
+  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-responsive 'top)
+  (highlight-indent-guides-suppress-auto-error t)
+  (highlight-indent-guides-delay 0.1)
+  :config
+  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
+
 ;; 切换透明背景。
 (defun my/toggle-transparency ()
   (interactive)
@@ -287,7 +272,6 @@
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 ;; 缺省字体（英文，如显示代码）。
 (setq +font-family "Fira Code Retina")
-;; modeline 设置为 Fira Code Retina, 兼容性比 Sarasa Mono SC 好, 不会溢出。
 (setq +modeline-font-family "Fira Code Retina")
 ;; 其它均使用 Sarasa Mono SC 字体。
 (setq +fixed-pitch-family "Sarasa Mono SC")
@@ -346,9 +330,7 @@
 
 ;; all-the-icons 和 fire-code-mode 只能在 GUI 模式下使用。
 (when (display-graphic-p)
-  (use-package all-the-icons
-    :demand)
-  
+  (use-package all-the-icons :demand)
   (use-package fira-code-mode
     :custom
     (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
@@ -377,7 +359,7 @@
    ;; 确保 vertico 状态被保存（用于支持 vertico-repeat)。
    (minibuffer-setup . vertico-repeat-save))
   :config
-  (setq vertico-count 20)
+  (setq vertico-count 15)
   (setq vertico-cycle nil)
   (vertico-mode 1)
 
@@ -385,21 +367,22 @@
   (global-set-key "\M-r" #'vertico-repeat-last)
   (global-set-key "\M-R" #'vertico-repeat-select)
 
-  ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格 。
+  ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
   (vertico-multiform-mode)
 
   ;; 设置命令显示风格。
   (setq vertico-multiform-commands
-        ;; 参数是 vertico-<name>-mode 中的 <name>, 可以多个联合使用 。
+        ;; 参数是 vertico-<name>-mode 中的 <name>, 可以多个联合使用。
         ;; 在单独 buffer 中显示结果 consult-imenu 结果。
         '((consult-imenu buffer)
+          (consult-imenu-multi buffer)
           (consult-line buffer)
           (consult-mark buffer)
           (consult-global-mark buffer)
           (consult-find buffer)))
 
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
-  ;; 为 file 设置 grid 模式, 为 grep 设置 buffer 模式.
+  ;; 为 file 设置 grid 模式, 为 grep 设置 buffer 模式。
   (setq vertico-multiform-categories
         '((file grid)
           (consult-grep buffer))))
@@ -447,9 +430,9 @@
   (orderless-define-completion-style +orderless-with-initialism
     (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
 
-  (setq completion-styles '(orderless)
+  (setq completion-styles '(orderless basic)
         completion-category-defaults nil
-        completion-category-overrides '((buffer (styles basic partial-completion))
+        completion-category-overrides '((buffer (styles +orderless-with-initialism))
                                         (file (styles basic partial-completion))
                                         (command (styles +orderless-with-initialism))
                                         (variable (styles +orderless-with-initialism))
@@ -471,6 +454,7 @@
    ("C-x 4 b" . consult-buffer-other-window)
    ("C-x 5 b" . consult-buffer-other-frame)
    ("C-x r b" . consult-bookmark)
+   ("C-x p b" . consult-project-buffer)
    ;; 寄存器绑定。
    ("M-#" . consult-register-load)
    ("M-'" . consult-register-store)
@@ -487,7 +471,7 @@
    ("M-g m" . consult-mark)
    ("M-g k" . consult-global-mark)
    ("M-g i" . consult-imenu)
-   ("M-g I" . consult-imenu)
+   ("M-g I" . consult-imenu-multi)
    ;; M-s 绑定 (search-map)
    ("M-s d" . consult-find)
    ("M-s D" . consult-locate)
@@ -535,30 +519,13 @@
   ;;(autoload 'projectile-project-root "projectile")
   ;;(setq consult-project-function 'projectile-project-root)
 
-  ;; 多选时按键绑定（例如 consult-multi-occur 场景）。
-  ;; TAB - Select/deselect, RET - 提交和退出。
-  (define-key consult-crm-map "\t" #'vertico-exit)
-  (define-key consult-crm-map "\r" #'+vertico-crm-exit)
-  (defun +vertico-crm-exit ()
-    (interactive)
-    (run-at-time 0 nil #'vertico-exit)
-    (funcall #'vertico-exit))
-
   ;; 不对 consult-line 结果进行排序（按行号排序）。
-  (consult-customize consult-line :prompt "Search: " :sort nil))
-
-(use-package consult-project-extra
-  :straight (consult-project-extra :type git :host github :repo "Qkessler/consult-project-extra")
-  :bind
-  (("C-c p f" . consult-project-extra-find)
-   ("C-c p o" . consult-project-extra-find-other-window)))
-
-(use-package consult-dir
-  :bind
-  (("C-x C-d" . consult-dir)
-   :map minibuffer-local-completion-map
-   ("C-x C-d" . consult-dir)
-   ("C-x C-j" . consult-dir-jump-file)))
+  (consult-customize consult-line :prompt "Search: " :sort nil)
+  
+  ;; Buffer 列表中忽略一些 buffers。
+  (mapcar 
+   (lambda (pattern) (add-to-list 'consult-buffer-filter pattern))
+   '("\\*scratch\\*" "\\*Warnings\\*" "\\*helpful.*" "\\*Help\\*" "\\*Org Src.*")))
 
 (use-package embark
   :init
@@ -623,7 +590,7 @@
   :config
   (corfu-global-mode))
 
-;; 总是在弹出菜单中显示候选者 
+;; 总是在弹出菜单中显示候选者。
 (setq completion-cycle-threshold nil)
 
 ;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
@@ -639,9 +606,9 @@
         ("M-n" . corfu-doc-sroll-up)
         ("M-p" . corfu-doc-scroll-down))
   :custom
-  (corfu-doc-delay 0.3)
-  (corfu-doc-max-width 70)
-  (corfu-doc-max-height 20))
+  (corfu-doc-delay 0.2)
+  (corfu-doc-max-width 80)
+  (corfu-doc-max-height 30))
 
 (use-package yasnippet
   :demand
@@ -654,6 +621,8 @@
   ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
   :config
   (add-to-list 'yas-snippet-dirs snippet-directory)
+  ;; 保留 snippet 的缩进。
+  (setq yas-indent-line 'fixed)
   (yas-global-mode 1))
 
 (use-package yasnippet-snippets :demand)
@@ -755,9 +724,11 @@
           ))
   (setq rime-show-candidate 'posframe)
 
-  ;; 切换到 vterm-mode 类型外的 buffer 时激活 RIME 输入法。
+  ;; 部分 major-mode 关闭 RIME 输入法。
   (defadvice switch-to-buffer (after activate-input-method activate)
     (if (or (string-match "vterm-mode" (symbol-name major-mode))
+            (string-match "dired-mode" (symbol-name major-mode))
+            (string-match "image-mode" (symbol-name major-mode))
             (string-match "minibuffer-mode" (symbol-name major-mode)))
         (activate-input-method nil)
       (activate-input-method "rime"))))
@@ -811,14 +782,14 @@
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
 
   ;; 支持无空格的中文强调。
-  (setq org-emphasis-regexp-components
-        '("-[:multibyte:][:space:]('\"{"
-          "-[:multibyte:][:space:].,:!?;'\")}\\["
-          "[:space:]"
-          "[^=~*_]"  ;; 不允许强调字符嵌套。
-          1))
-  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
-  (org-element-update-syntax)
+  ;; (setq org-emphasis-regexp-components
+  ;;       '("-[:multibyte:][:space:]('\"{"
+  ;;         "-[:multibyte:][:space:].,:!?;'\")}\\["
+  ;;         "[:space:]"
+  ;;         "[^=~*_]"  ;; 不允许强调字符嵌套。
+  ;;         1))
+  ;; (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
+  ;; (org-element-update-syntax)
 
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -876,7 +847,8 @@
    '(org-property-value ((t (:height 0.8))) t)
    '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8))))
-   '(org-table ((t (:height 0.9))))
+   ;; table 使用中英文严格等宽的 Sarasa Mono SC 字体, 避免中英文不对齐。
+   '(org-table ((t (:font "Sarasa Mono SC" :height 0.9))))
    '(org-verbatim ((t (:height 0.9))))
    '(org-tag ((t (:weight bold :height 0.8)))))
   (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»")
@@ -1349,6 +1321,7 @@
       (insert (propertize title 'face title-faces 'kbd-help title)))))
 
 (setq vc-follow-symlinks t)
+
 (use-package magit
   :straight (magit :repo "magit/magit" :files ("lisp/*.el"))
   :custom
@@ -1411,13 +1384,13 @@
   :straight (:type built-in)
   :config
   (setq ediff-keep-variants nil)
-  ;; 忽略空格
+  ;; 忽略空格。
   (setq ediff-diff-options "-w")
   (setq ediff-split-window-function 'split-window-horizontally)
-  ;; 不创建新的 frame 来显示 Control-Panel
+  ;; 不创建新的 frame 来显示 Control-Panel。
   (setq ediff-window-setup-function #'ediff-setup-windows-plain)
   (add-hook 'ediff-mode-hook 'my/diff-spaces)
-  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常
+  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
   (add-hook 'ediff-before-setup-hook
             (lambda ()
               (require 'treemacs)
@@ -1453,7 +1426,7 @@
   :config
   ;; 高亮出现错误的列位置。
   (setq flycheck-highlighting-mode (quote columns))
-  ;; save 而非 idle-change 时检查, 避免不必要的错误提示。
+  ;; 从列表中取掉 idle-change, 避免不必要的错误提示。
   (setq flycheck-check-syntax-automatically '(save mode-enabled))
   (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
   (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
@@ -1498,7 +1471,7 @@
   ;; 退出最后一个 lsp buffer 时自动 kill lsp-server.
   (lsp-keep-workspace-alive nil)
   (lsp-enable-file-watchers nil)
-  ;; 关闭 folding 。
+  ;; 关闭 folding。
   (lsp-enable-folding nil)
   ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
   (lsp-enable-links nil)
@@ -1618,7 +1591,7 @@
 (use-package lsp-pyright
   :after (python)
   :ensure-system-package
-  ((pyright . "sudo npm update -g pyright")
+  ((pyright . "npm update -g pyright")
    (yapf . "pip install yapf"))
   :init
   (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
@@ -1659,20 +1632,21 @@
      ("gopls.experimentalUseInvalidMetadata" t t))))
 
 (use-package flycheck-golangci-lint
-  :ensure-system-package
-  (golangci-lint)
+  :ensure-system-package (golangci-lint)
   :after flycheck
   :defines flycheck-disabled-checkers
-  :hook (go-mode . (lambda ()
-                     "Enable golangci-lint."
-                     (setq flycheck-disabled-checkers '(go-gofmt
-                                                        go-golint
-                                                        go-vet
-                                                        go-build
-                                                        go-test
-                                                        go-staticcheck
-                                                        go-errcheck))
-                     (flycheck-golangci-lint-setup))))
+  :hook
+  (go-mode . (lambda ()
+               "Enable golangci-lint."
+               (setq flycheck-disabled-checkers 
+                     '(go-gofmt
+                       go-golint
+                       go-vet
+                       go-build
+                       go-test
+                       go-staticcheck
+                       go-errcheck))
+               (flycheck-golangci-lint-setup))))
 
 ;; 安装或更新工具。
 (defvar go--tools '("golang.org/x/tools/gopls"
@@ -1985,6 +1959,8 @@ mermaid.initialize({
           (project-remember-projects-under file nil)
           (message "added project %s" file)))))
 
+(setq project-vc-ignores '("vendor/"))
+
 (use-package treemacs
   :demand
   :straight 
@@ -2037,8 +2013,7 @@ mermaid.initialize({
     ;;(treemacs-project-follow-mode t)
     (treemacs-filewatch-mode t)
     (treemacs-fringe-indicator-mode 'always)
-    ;; 在 modus-theme 下显示不好, 故关闭。
-    ;;(treemacs-indent-guide-mode t)
+    (treemacs-indent-guide-mode t)
     (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
   ;; 使用 treemacs 自带的 all-the-icons 主题。
@@ -2048,8 +2023,8 @@ mermaid.initialize({
   ;;(require 'treemacs-projectile)
   (require 'treemacs-magit)
   ;; 在 dired buffer 中使用 treemacs icons。
-  (require 'treemacs-icons-dired)
-  (treemacs-icons-dired-mode t)
+  ;;(require 'treemacs-icons-dired)
+  ;;(treemacs-icons-dired-mode t)
   ;; 单击打开或折叠目录.
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
   :bind
@@ -2087,8 +2062,8 @@ mermaid.initialize({
 ;; OSX 词典。
 (use-package osx-dictionary
   :bind
-  (("C-c t i" . osx-dictionary-search-input)
-   ("C-c t w" . osx-dictionary-search-pointer))
+  (("C-c d i" . osx-dictionary-search-input)
+   ("C-c d w" . osx-dictionary-search-pointer))
   :config
   (use-package chinese-word-at-point :demand t)
   (setq osx-dictionary-use-chinese-text-segmentation t))
@@ -2274,6 +2249,8 @@ mermaid.initialize({
   (setq  tramp-ssh-controlmaster-options nil)
   ;; TRAMP buffers 关闭 version control, 防止卡住.
   (setq vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp))
+  ;; 关闭自动保存 ad-hoc proxy 代理配置, 防止为相同 IP 的 VM 配置了错误的 Proxy.
+  (setq tramp-save-ad-hoc-proxies nil)
   ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能.
   (setq remote-file-name-inhibit-cache 600)
   ;;tramp-verbose 10
