@@ -44,6 +44,7 @@
 *** [[https://lwn.net/headlines/rss][LWN]]
 ** emacs-project                                              :emacs:project:
 *** [[https://github.com/emacs-mirror/emacs/commits/emacs-28.atom][github-emacs-28]]
+*** [[https://github.com/manateelazycat/lsp-bridge][manateelazycat/lsp-bridge]]
 *** [[https://github.com/emacs-mirror/emacs/commits/master.atom][emacs-master]]
 *** [[https://github.com/minad/corfu/commits/main.atom][minad/corfu]]
 *** [[https://github.com/minad/consult/commits/main.atom][minad/consult]]
@@ -83,9 +84,9 @@
 *** [[https://github.com/tumashu/vertico-posframe/commits/main.atom][vertico-posframe:main]]
 *** [[https://github.com/bastibe/org-journal/commits/master.atom][org-journal]]
 ** emacs-conf                                                    :emacs:conf:
+*** [[https://github.com/ksqsf/emacs-config][ksqsf/emacs-config]]
+*** [[https://github.com/SystemCrafters/rational-emacs][SystemCrafters/rational-emacs]]
 *** [[https://github.com/natecox/dotfiles/][natecox/dotfiles]]
-*** [[https://github.com/bbatsov/prelude/commits/master.atom][prelude:master]]
-*** [[https://gitlab.com/protesilaos/dotfiles/-/commits/master?format=atom][protesilaos/dotfiles]]
 *** [[https://github.com/seagle0128/.emacs.d/commits/master.atom][seagle0128/.emacs.d]]
 *** [[https://github.com/jiacai2050/dotfiles/commits/master.atom][jiacai2050/dotfiles]]
 *** [[https://github.com/blahgeek/emacs.d/commits/master.atom][blahgeek/emacs.d]]

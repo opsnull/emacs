@@ -2208,11 +2208,7 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   (centaur-tabs-mode t)
   (centaur-tabs-headline-match)
   (centaur-tabs-enable-buffer-reordering)
-  (centaur-tabs-group-buffer-groups)
-  ;;(centaur-tabs-group-by-projectile-project)
-  (define-key centaur-tabs-mode-map (kbd "C-c C-o") nil)
-  (define-key centaur-tabs-mode-map (kbd "C-c C-d") nil)
-  (define-key centaur-tabs-mode-map (kbd "C-c C-k") nil)
+  (centaur-tabs-group-by-projectile-project)
   (defun centaur-tabs-hide-tab (x)
     (let ((name (format "%s" x)))
       (or
@@ -2222,6 +2218,7 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
        (and (string-prefix-p "magit" name)
             (not (file-name-extension name)))))))
 #+end_src
+
 ** dashboard
 
 #+begin_src emacs-lisp
@@ -2405,4 +2402,278 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
    :map minibuffer-local-completion-map
    ("C-x C-d" . consult-dir)
    ("C-x C-j" . consult-dir-jump-file)))
+#+end_src
+
+
+跳转到上次修改位置：
+#+begin_src emacs-lisp
+(use-package goto-chg
+  :config
+  (global-set-key (kbd "C->") 'goto-last-change)
+  (global-set-key (kbd "C-<") 'goto-last-change-reverse))
+#+end_src
+
+
+
+* rime
+
+Mac 系统安装 RIME 输入法：
+1. 下载鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
+2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
+3. 重新登录用户，然后就可以使用 =Control-+= 来触发 RIME 输入法了。
+4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
+5. 部署生效,:
+   + 如果修改了 =~/Library/Rime= 下的配置，必须点击鼠须管的 “重新部署” 才能生效。
+   + 对于 emacs-rime，如果修改了 =~/Library/Rime= 下的配置，需要执行 =M-x rime-deploy= 生效；
+
+下载 [[https://github.com/rime/librime/releases][librime]] 库, emacs-rime 使用它与系统的 RIME 交互：
+#+Begin_src bash :tangle no
+curl -L -O https://github.com/rime/librime/releases/download/1.7.2/rime-1.7.2-osx.zip
+unzip rime-1.7.2-osx.zip -d ~/.emacs.d/librime
+rm -rf rime-1.7.2-osx.zip
+# 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
+sudo spctl --master-disable
+# 后续再开启：sudo spctl --master-enable
+#+end_src
+
+从 [[https://github.com/ssnhd/rime][ssnhd/rime]] 下载最新的词库方案安装包, 将“配置文件” 目录下的内容复制到到 =~/Library/Rime= 目录。
+
+RIME 输入法自定义缺省配置中文：
+#+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
+patch:
+  schema_list:
+    - schema: luna_pinyin_simp # 朙月拼音
+    - schema: numbers # 大写数字
+  menu/page_size: 9
+  ascii_composer/good_old_caps_lock: true
+  ascii_composer/switch_key:
+    Caps_Lock: commit_code
+    Shift_L: inline_ascii
+    Shift_R: commit
+    Control_L: commit_code
+    Control_R: commit_code
+  switcher/hotkeys:
+  - F4
+  - "Control+plus" # 使用 C-+ 调出输入法菜单
+  key_binder/bindings:
+  - { when: composing, accept: Shift+Tab, send: Page_Up }          # 上一页
+  - { when: paging, accept: minus, send: Page_Up }                 # 上一页
+  - { when: composing, accept: Tab, send: Page_Down }              # 下一页
+  - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
+  - { when: always, accept: "Control+equal", toggle: ascii_mode}   # 中英文切换
+  - { when: always, accept: "Control+period", toggle: ascii_punct} # 中英文标点切换
+  - { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
+# 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
+#+end_src
+
+全拼配置:
+#+begin_src yaml :tangle ~/Library/Rime/luna_pinyin_simp.custom.yaml 
+patch:
+  switches:
+    - name: ascii_mode # 0 中文，1 英文
+      reset: 0
+      states: ["中文", "西文"]
+    - name: full_shape # 全角/半角符号开关
+      reset: 0
+      states: ["半角", "全角"]
+    - name: show_emoji # Emoji 开关
+      reset: 0
+      states: ["🈚️️\uFE0E", "🈶️️\uFE0F"]
+    - name: zh_simp # (※1) 繁简转换
+      reset: 1
+      states: ["漢字", "汉字"]
+    - name: symbol_support
+      reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后 emacs 卡死。
+      states: [ "无符", "符" ]
+  simplifier:
+    option_name: zh_simp
+
+  # 启用罕见字過濾
+  engine/filters:
+    - simplifier
+    - simplifier@emoji_conversion
+    - uniquifier
+    - charset_filter@gbk # (※3) GBK 过滤
+    - single_char_filter
+
+  emoji_conversion:
+    opencc_config: emoji.json
+    option_name: show_emoji
+    tags: abc
+    #tips: all    # Emoji 显示注释
+
+  # 改写拼写运算，含英文的词汇（luna_pinyin.cn_en.dict.yaml）不影响简拼
+  "speller/algebra/@before 0": xform/^([b-df-hj-np-tv-z])$/$1_/
+
+  # 载入朙月拼音扩充词库
+  "translator/dictionary": luna_pinyin.extended
+
+  # 加载easy_en依赖
+  "schema/dependencies/@1": easy_en
+  # 载入翻译英文的码表翻译器，取名为 english
+  "engine/translators/@4": table_translator@english
+  # english翻译器的设定项
+  english:
+    dictionary: easy_en
+    spelling_hints: 9
+    enable_completion: false # 是否启用英文输入联想补全
+    enable_sentence: false # 混输时不出现带有图案的英文
+    initial_quality: -0.5 # 英文候选词的位置, 数值越大越靠前。
+
+  # 快捷表情和符号
+  punctuator:
+    import_preset: symbols
+    symbols:
+      "/fs": [½, ‰, ¼, ⅓, ⅔, ¾, ⅒]
+      "/xh": [＊, ×, ✱, ★, ☆, ✩, ✧, ❋, ❊, ❉, ❈, ❅, ✿, ✲]
+      "/dq": [🌍, 🌎, 🌏, 🌐, 🌑, 🌒, 🌓, 🌔, 🌕, 🌖, 🌗, 🌘]
+      "/sg": [🍇, 🍉, 🍌, 🍍, 🍎, 🍏, 🍑, 🍒, 🍓, 🍗, 🍦, 🎂, 🍺, 🍻]
+      "/dw": [🙈, 🐵, 🐈, 🐷, 🐨, 🐼, 🐾, 🐔, 🐬, 🐠, 🦋]
+      "/bq": [😀, 😁, 😂, 😃, 😄, 😅, 😆, 😉, 😊, 😋, 😎, 😍, 😘, 😗]
+      "/ss": [💪, 👈, 👉, 👆, 👇, ✋, 👌, 👍, 👎, ✊, 👊, 👋, 👏, 👐]
+    half_shape:
+      "#": "#"
+      "*": "*"
+      "`": "`"
+      "~": "~"
+      "@": "@"
+      "=": "="
+      '\': "、"
+      "%": "%"
+      "$": ["¥", "$"]
+      "|": ["|", "｜", "·"]
+      "/": ["/", "÷"]
+      "'": { pair: ["「", "」"] }
+      "[": "【"
+      "]": "】"
+      "<": "《"
+      ">": "》"
+
+  recognizer/patterns/punct: "^/([a-z]+|[0-9]0?)$"
+
+  # 模糊拼音
+  "speller/algebra":
+    - erase/^xx$/ # 第一行保留
+
+    # 模糊音定義
+    # 需要哪組就刪去行首的 # 號，單雙向任選
+    - derive/^([zcs])h/$1/             # zh, ch, sh => z, c, s
+    - derive/^([zcs])([^h])/$1h$2/     # z, c, s => zh, ch, sh
+    #- derive/^n/l/                     # n => l
+    #- derive/^l/n/                     # l => n
+    - derive/([ei])n$/$1ng/            # en => eng, in => ing
+    - derive/([ei])ng$/$1n/            # eng => en, ing => in
+    # 以下是一組容錯拼寫，《漢語拼音》方案以前者爲正
+    #- derive/^([nl])ve$/$1ue/          # nve = nue, lve = lue
+    #- derive/^([jqxy])u/$1v/           # ju = jv,
+    #- derive/un$/uen/                  # gun = guen,
+    #- derive/ui$/uei/                  # gui = guei,
+    #- derive/iu$/iou/                  # jiu = jiou,
+    # 自動糾正一些常見的按鍵錯誤
+    - derive/([aeiou])ng$/$1gn/        # dagn => dang
+    - derive/([dtngkhrzcs])o(u|ng)$/$1o/  # zho => zhong|zhou
+    - derive/ong$/on/                  # zhonguo => zhong guo
+    - derive/ao$/oa/                   # hoa => hao
+    - derive/([iu])a(o|ng?)$/a$1$2/    # tain => tian
+
+  # 分尖團後 v => ü 的改寫條件也要相應地擴充：
+  #'translator/preedit_format':
+  #  - "xform/([nljqxyzcs])v/$1ü/"
+
+  # librime-lua 输入动态时间和日期
+  "engine/translators/@6": lua_translator@date_translator
+#+end_src
+
+配置 Emacs:
+#+begin_src emacs-lisp
+(use-package rime
+  :disabled
+  :ensure-system-package
+  ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
+  :custom
+  (rime-user-data-dir "~/Library/Rime/")
+  (rime-librime-root "~/.emacs.d/librime/dist")
+  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@28/include")
+  :hook
+  (emacs-startup . (lambda () (setq default-input-method "rime")))
+  :bind
+  ( :map rime-active-mode-map
+    ;; 强制切换到英文模式，直到按回车
+    ("M-j" . 'rime-inline-ascii)
+    :map rime-mode-map
+    ;; 中英文切换
+    ("C-=" . 'rime-send-keybinding)
+    ;; 输入法菜单
+    ("C-+" . 'rime-send-keybinding)
+    ;; 中英文标点切换
+    ("C-." . 'rime-send-keybinding)
+    ;; 全半角切换
+    ("C-," . 'rime-send-keybinding)
+    ;; 强制切换到中文模式
+    ("M-j" . 'rime-force-enable))
+  :config
+  ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
+  (setq mode-line-mule-info '((:eval (rime-lighter))))
+  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
+  (setq rime-inline-ascii-trigger 'shift-l)
+  ;; 临时英文模式。
+  (setq rime-disable-predicates
+        '(rime-predicate-ace-window-p
+          rime-predicate-hydra-p
+          rime-predicate-current-uppercase-letter-p
+          rime-predicate-after-alphabet-char-p
+          rime-predicate-prog-in-code-p
+          rime-predicate-after-ascii-char-p
+          ))
+  (setq rime-show-candidate 'posframe)
+
+  ;; 部分 major-mode 关闭 RIME 输入法。
+  (defadvice switch-to-buffer (after activate-input-method activate)
+    (if (or (string-match "vterm-mode" (symbol-name major-mode))
+            (string-match "dired-mode" (symbol-name major-mode))
+            (string-match "image-mode" (symbol-name major-mode))
+            (string-match "minibuffer-mode" (symbol-name major-mode)))
+        (activate-input-method nil)
+      (activate-input-method "rime"))))
+#+end_src
++  使用 [[https://github.com/itsuhane/SwitchKey][SwitchKey]] 将 Emacs 的默认系统输入法设置为英文，防止搜狗输入法干扰 RIME。
+
+然后执行命令 =M-x rime-deploy= 生效。输入 =weiyamu=, 如果内容是 =鳚亚目= 则证明导入成功。
+
+
+
+跳转到特定字符或行：
+#+begin_src emacs-lisp
+(use-package avy
+  :config
+  ;; 值在当前 window 中跳转。
+  (setq avy-all-windows nil)
+  (setq avy-background t)
+  :bind
+  ("M-g c" . avy-goto-char-2)
+  ("M-g l" . avy-goto-line))
+#+end_src
+
+
+* other
+
+#+begin_src emacs-lisp
+;; 在窗口左上角显示位置字符。
+(setq aw-char-position 'top-left)
+;; 调大窗口选择字符。
+(custom-set-faces
+ '(aw-leading-char-face
+   ((t (:inherit ace-jump-face-foreground :foreground "red" :height 1.5)))))
+
+  ;; 设置命令显示风格。
+  (setq vertico-multiform-commands
+        ;; 参数是 vertico-<name>-mode 中的 <name>, 可以多个联合使用。
+        ;; 在单独 buffer 中显示结果 consult-imenu 结果。
+        '((consult-imenu buffer)
+          (consult-imenu-multi buffer)
+          (consult-line buffer)
+          (consult-mark buffer)
+          (consult-global-mark buffer)
+          (consult-find buffer)))
+
 #+end_src
