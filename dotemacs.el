@@ -99,8 +99,8 @@
 (setq inhibit-startup-echo-area-message t)
 (setq initial-scratch-message nil)
 
-;; 指针闪动。
-(blink-cursor-mode 1)
+;; 指针不闪动。
+(blink-cursor-mode -1)
 
 ;; 调大 fringe, 避免行号列跳动。
 (set-fringe-mode 10)
@@ -117,7 +117,7 @@
 (add-hook 'window-setup-hook #'window-divider-mode)
 
 ;; 左右分屏, nil: 上下分屏。
-(setq split-width-threshold 30)
+(setq split-width-threshold nil)
 
 ;; 复用当前 frame。
 (setq display-buffer-reuse-frames t)
@@ -207,33 +207,6 @@
   (doom-modeline-height 2)
   :init
   (doom-modeline-mode 1))
-
-(use-package centaur-tabs
-  :hook (emacs-startup . centaur-tabs-mode)
-  :init
-  (setq centaur-tabs-set-icons t)
-  (setq centaur-tabs-height 25)
-  (setq centaur-tabs-gray-out-icons 'buffer)
-  (setq centaur-tabs-set-modified-marker t)
-  (setq centaur-tabs-cycle-scope 'tabs)
-  (setq centaur-tabs-enable-ido-completion nil)
-  (setq centaur-tabs-set-bar 'under)
-  (setq x-underline-at-descent-line t)
-  (setq centaur-tabs-show-navigation-buttons t)
-  (setq centaur-tabs-enable-key-bindings t)
-  :config
-  (centaur-tabs-mode t)
-  (centaur-tabs-headline-match)
-  (centaur-tabs-enable-buffer-reordering)
-  (centaur-tabs-group-by-projectile-project)
-  (defun centaur-tabs-hide-tab (x)
-    (let ((name (format "%s" x)))
-      (or
-       (window-dedicated-p (selected-window))
-       ;; 不显示以 * 开头的 buffer 。
-       (string-prefix-p "*" name)
-       (and (string-prefix-p "magit" name)
-            (not (file-name-extension name)))))))
 
 ;; 显示光标位置。
 (use-package beacon
@@ -359,6 +332,7 @@
    ;; 确保 vertico 状态被保存（用于支持 vertico-repeat)。
    (minibuffer-setup . vertico-repeat-save))
   :config
+  ;; 显示的侯选者数量。
   (setq vertico-count 15)
   (setq vertico-cycle nil)
   (vertico-mode 1)
@@ -369,17 +343,6 @@
 
   ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
   (vertico-multiform-mode)
-
-  ;; 设置命令显示风格。
-  (setq vertico-multiform-commands
-        ;; 参数是 vertico-<name>-mode 中的 <name>, 可以多个联合使用。
-        ;; 在单独 buffer 中显示结果 consult-imenu 结果。
-        '((consult-imenu buffer)
-          (consult-imenu-multi buffer)
-          (consult-line buffer)
-          (consult-mark buffer)
-          (consult-global-mark buffer)
-          (consult-find buffer)))
 
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
   ;; 为 file 设置 grid 模式, 为 grep 设置 buffer 模式。
@@ -392,6 +355,7 @@
   ;; 在 minibuffer 中不显示光标。
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+  ;; M-x 是不显示当前 mode 不支持的命令以及 vertico 相关命令。
   (setq read-extended-command-predicate #'command-completion-default-include-p)
   ;; 开启 minibuffer 递归编辑。
   (setq enable-recursive-minibuffers t))
@@ -425,21 +389,20 @@
           (cons (cdr x) (substring pattern 1))
         (when-let (x (assq (aref pattern (1- (length pattern))) +orderless-dispatch-alist))
           (cons (cdr x) (substring pattern 0 -1)))))))
+  (setq orderless-style-dispatchers '(+orderless-dispatch))
 
   ;; 自定义 orderless 风格。
   (orderless-define-completion-style +orderless-with-initialism
     (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
-
-  (setq completion-styles '(orderless basic)
-        completion-category-defaults nil
-        completion-category-overrides '((buffer (styles +orderless-with-initialism))
+  (setq completion-styles '(orderless basic))
+  (setq completion-category-defaults nil)
+  (setq completion-category-overrides '((buffer (styles +orderless-with-initialism))
                                         (file (styles basic partial-completion))
                                         (command (styles +orderless-with-initialism))
                                         (variable (styles +orderless-with-initialism))
-                                        (symbol (styles +orderless-with-initialism)))
-        ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
-        orderless-component-separator #'orderless-escapable-split-on-space
-        orderless-style-dispatchers '(+orderless-dispatch)))
+                                        (symbol (styles +orderless-with-initialism))))
+  ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
+  (setq orderless-component-separator #'orderless-escapable-split-on-space))
 
 (use-package consult
   :ensure-system-package (rg . ripgrep)
@@ -468,6 +431,8 @@
    ("M-g g" . consult-goto-line)
    ("M-g M-g" . consult-goto-line)
    ("M-g o" . consult-outline)
+   ;; consult-buffer 默认已包含 recent file.
+   ;;("M-g r" . consult-recent-file)
    ("M-g m" . consult-mark)
    ("M-g k" . consult-global-mark)
    ("M-g i" . consult-imenu)
@@ -505,8 +470,6 @@
   (setq register-preview-delay 0.1)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
-  ;; 支持使用 Enter 来选择、反选候选项（例如 consult-multi-occur 场景）。
-  (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
   :config
@@ -515,17 +478,12 @@
   (setq consult-narrow-key "<")
   (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
   (setq completion-in-region-function #'consult-completion-in-region)
-  ;; projectile 集成(缺省使用 project.el) 。
-  ;;(autoload 'projectile-project-root "projectile")
-  ;;(setq consult-project-function 'projectile-project-root)
-
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil)
-  
   ;; Buffer 列表中忽略一些 buffers。
   (mapcar 
    (lambda (pattern) (add-to-list 'consult-buffer-filter pattern))
-   '("\\*scratch\\*" "\\*Warnings\\*" "\\*helpful.*" "\\*Help\\*" "\\*Org Src.*")))
+   '("\\*scratch\\*" "\\*Warnings\\*" "\\*helpful.*" "\\*Help\\*" "\\*Org Src.*" "Pfuture-Callback.*")))
 
 (use-package embark
   :init
@@ -549,9 +507,20 @@
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
+(use-package marginalia
+  :init
+  ;; 显示绝对时间。
+  (setq marginalia-max-relative-age 0)
+  (marginalia-mode)
+  :config
+  (setq marginalia-annotator-registry
+        (assq-delete-all 'file marginalia-annotator-registry))
+  (setq marginalia-annotator-registry
+        (assq-delete-all 'project-file marginalia-annotator-registry)))
+
 (use-package corfu
   :demand
-  :straight '(corfu :host github :repo "minad/corfu")
+  :straight (corfu :host github :repo "minad/corfu")
   :init
   (defun corfu-beginning-of-prompt ()
     "Move to beginning of completion input."
@@ -577,10 +546,10 @@
   (corfu-auto t)
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.25)
-  ;; 不自动选择第一个。
-  (corfu-preselect-first nil)
-  ;; 不自动插入候选者到光标。
-  (corfu-preview-current nil)
+  ;; 自动选择第一个。
+  (corfu-preselect-first t)
+  ;; 自动插入候选者到光标。
+  (corfu-preview-current t)
   (corfu-min-width 80)
   (corfu-max-width corfu-min-width)
   (corfu-count 14)
@@ -588,7 +557,7 @@
   ;; 后续使用 corfu-doc 来显示文档，故关闭。
   (corfu-echo-documentation nil)
   :config
-  (corfu-global-mode))
+  (global-corfu-mode))
 
 ;; 总是在弹出菜单中显示候选者。
 (setq completion-cycle-threshold nil)
@@ -598,7 +567,7 @@
 
 ;; 在候选者右方显示文档。
 (use-package corfu-doc
-  :straight '(corfu-doc :host github :repo "galeo/corfu-doc")
+  :straight (corfu-doc :host github :repo "galeo/corfu-doc")
   :after (corfu)
   :hook (corfu-mode . corfu-doc-mode)
   :bind
@@ -610,13 +579,29 @@
   (corfu-doc-max-width 80)
   (corfu-doc-max-height 30))
 
+(use-package cape
+  :demand
+  :straight (cape :host github :repo "minad/cape")
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  :config
+  (setq cape-dabbrev-min-length 3)
+  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
+  (cape-wrap-prefix-length #'cape-dabbrev 3))
+
 (use-package yasnippet
   :demand
   :init
   (defvar snippet-directory "~/.emacs.d/snippets")
   (if (not (file-exists-p snippet-directory))
       (make-directory snippet-directory t))
-  :commands yas-minor-mode
   :hook
   ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
   :config
@@ -635,20 +620,6 @@
   :bind
   (:map yas-minor-mode-map
         ("C-c y" . 'consult-yasnippet)))
-
-(use-package goto-chg
-  :config
-  (global-set-key (kbd "C->") 'goto-last-change)
-  (global-set-key (kbd "C-<") 'goto-last-change-reverse))
-
-(use-package avy
-  :config
-  ;; 值在当前 window 中跳转。
-  (setq avy-all-windows nil)
-  (setq avy-background t)
-  :bind
-  ("M-g c" . avy-goto-char-2)
-  ("M-g l" . avy-goto-line))
 
 (use-package ace-window
   :init
@@ -670,68 +641,64 @@
           (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
           (?N aw-flip-window)
           (?T aw-transpose-frame "Transpose Frame")
-          (?? aw-show-dispatch-help))))
-:config
-;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择。
-(setq aw-scope 'frame)
-;; 总是提示窗口选择，进而执行 ace 命令。
-(setq aw-dispatch-always nil)
-(global-set-key (kbd "M-o") 'ace-window)
-;; 在窗口左上角显示位置字符。
-;;(setq aw-char-position 'top-left)
-;; 调大窗口选择字符。
-(custom-set-faces
- '(aw-leading-char-face
-   ((t (:inherit ace-jump-face-foreground :foreground "red" :height 1.5)))))
-
-(use-package rime
-  :ensure-system-package
-  ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
-  :custom
-  (rime-user-data-dir "~/Library/Rime/")
-  (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@28/include")
-  :hook
-  (emacs-startup . (lambda () (setq default-input-method "rime")))
-  :bind
-  ( :map rime-active-mode-map
-    ;; 强制切换到英文模式，直到按回车
-    ("M-j" . 'rime-inline-ascii)
-    :map rime-mode-map
-    ;; 中英文切换
-    ("C-=" . 'rime-send-keybinding)
-    ;; 输入法菜单
-    ("C-+" . 'rime-send-keybinding)
-    ;; 中英文标点切换
-    ("C-." . 'rime-send-keybinding)
-    ;; 全半角切换
-    ("C-," . 'rime-send-keybinding)
-    ;; 强制切换到中文模式
-    ("M-j" . 'rime-force-enable))
+          (?? aw-show-dispatch-help)))
   :config
-  ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
-  (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
-  (setq rime-inline-ascii-trigger 'shift-l)
-  ;; 临时英文模式。
-  (setq rime-disable-predicates
-        '(rime-predicate-ace-window-p
-          rime-predicate-hydra-p
-          rime-predicate-current-uppercase-letter-p
-          rime-predicate-after-alphabet-char-p
-          rime-predicate-prog-in-code-p
-          rime-predicate-after-ascii-char-p
-          ))
-  (setq rime-show-candidate 'posframe)
+  ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择。
+  (setq aw-scope 'frame)
+  ;; 总是提示窗口选择，进而执行 ace 命令。
+  (setq aw-dispatch-always t)
+  (global-set-key (kbd "M-o") 'ace-window))
 
-  ;; 部分 major-mode 关闭 RIME 输入法。
-  (defadvice switch-to-buffer (after activate-input-method activate)
-    (if (or (string-match "vterm-mode" (symbol-name major-mode))
-            (string-match "dired-mode" (symbol-name major-mode))
-            (string-match "image-mode" (symbol-name major-mode))
-            (string-match "minibuffer-mode" (symbol-name major-mode)))
-        (activate-input-method nil)
-      (activate-input-method "rime"))))
+(use-package pyim
+  :straight (pyim :repo "tumashu/pyim")
+  :demand
+  :hook
+  ;; 设置缺省输入法为 pyim.
+  (emacs-startup . (lambda () (setq default-input-method "pyim")))
+  :config
+  (global-set-key (kbd "C-\\") 'toggle-input-method)
+  ;; 全半角切换。
+  (global-set-key (kbd "C-,") 'pyim-punctuation-toggle)
+  ;; 中英文切换。
+  (global-set-key (kbd "C-.") 'pyim-toggle-input-ascii)
+  ;; 金手指设置，可以将光标处的编码，比如：拼音字符串，转换为中文。
+  (global-set-key (kbd "M-j") 'pyim-convert-string-at-point)
+  ;; 按 "C-<return>" 将光标前的 regexp 转换为可以搜索中文的 regexp
+  (define-key minibuffer-local-map (kbd "C-<return>") 'pyim-cregexp-convert-at-point)
+  ;; 使用全拼。
+  (pyim-default-scheme 'quanpin)
+  ;; 使用百度云拼音。
+  (setq pyim-cloudim 'baidu)
+  ;; 开启代码搜索中文功能（比如拼音，五笔码等）。
+  (pyim-isearch-mode 1)
+  ;; 中文使用全角标点，英文使用半角标点。
+  (setq-default pyim-punctuation-translate-p '(auto yes no))   
+  ;; 设置模糊音。
+  (add-to-list 'pyim-pinyin-fuzzy-alist '("z" "zh"))
+  (add-to-list 'pyim-pinyin-fuzzy-alist '("c" "ch"))
+  ;; 设置中英文自动切换。
+  (setq-default pyim-english-input-switch-functions
+              '(pyim-probe-program-mode
+                pyim-probe-auto-english
+                ;;pyim-probe-dynamic-english
+                ;; pyim-probe-org-structure-template
+                ))
+  ;; 显示候选词数量。
+  (setq pyim-page-length 8))
+
+;; 中文拼音词库。
+(use-package pyim-basedict
+  :disabled
+  :after pyim
+  :config
+  (pyim-basedict-enable))
+
+;; 用 THUOCL：清华大学开放中文词库 数据建立的 pyim 输入法的词库。
+(use-package pyim-tsinghua-dict
+  :straight (pyim-tsinghua-dict :repo "redguardtoo/pyim-tsinghua-dict")
+  :after pyim
+  :config
+  (pyim-tsinghua-dict-enable))
 
 (use-package org
   :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
@@ -742,6 +709,8 @@
    (pygmentize . pygments)
    (magick . imagemagick))
   :config
+  ;; 关闭与 pyim 冲突的 C-, 快捷键。
+  (define-key org-mode-map (kbd "C-,") nil)
   (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
         ;; 隐藏标记。
@@ -1115,14 +1084,14 @@
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 1)
-                            (centaur-tabs-mode 0)
+                            ;(centaur-tabs-mode 0) 
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
                             (beacon-mode +1)
-                            (centaur-tabs-mode 1)
+                            ;(centaur-tabs-mode 1)
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header nil)
@@ -1325,14 +1294,14 @@
 (use-package magit
   :straight (magit :repo "magit/magit" :files ("lisp/*.el"))
   :custom
-  ;; 在当前 window 中显示 magit buffer.
+  ;; 在当前 window 中显示 magit buffer。
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
   (magit-commit-ask-to-stage nil)
-  ;; 默认不选中 magit buffer.
+  ;; 默认不选中 magit buffer。
   (magit-display-buffer-noselect t)
   (magit-log-arguments '("--graph" "--decorate" "--color"))
   :config
-  ;; kill 所有 magit buffer.
+  ;; kill 所有 magit buffer。
   (defun my-magit-kill-buffers (&rest _)
     "Restore window configuration and kill all Magit buffers."
     (interactive)
@@ -1535,6 +1504,8 @@
   (lsp-ui-peek-show-directory t)
   ;; 文件列表宽度。
   (lsp-ui-peek-list-width 80)
+  ;; 光标移动到关键字时自动显示文档。
+  (lsp-ui-doc-show-with-cursor t)
   (lsp-ui-doc-delay 0.1)
   ;;(lsp-ui-doc-position 'at-point)
   ;; 启用 flycheck 集成。
@@ -1904,14 +1875,23 @@ mermaid.initialize({
    ("C-c d d" . dash-at-point-with-docset)))
 
 (use-package expand-region
+  :init
+  (define-advice set-mark-command (:before-while (arg))
+    "Repeat C-SPC to expand region."
+    (interactive "P")
+    (if (eq last-command 'set-mark-command)
+        (progn
+          (er/expand-region 1)
+          nil)
+      t))
   :config
-  (global-set-key (kbd "C-0") 'er/expand-region))
+  (global-set-key (kbd "C-=") 'er/expand-region))
 
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
   (catch 'ret
     (let ((pr-flags '((".project")
-                      ("go.mod" "pom.xml" "package.json") ;; higher priority
+                      ("go.mod" "pom.xml" "package.json")
                       ("Makefile" "README.org" "README.md"))))
       (dolist (current-level pr-flags)
         (dolist (f current-level)
@@ -2577,11 +2557,6 @@ mermaid.initialize({
   :commands command-log-mode)
 
 ;; 以下自定义函数参考自：https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-edit.el
-(defun my/other-window-backward ()
-  "Goto previous window"
-  (interactive)
-  (other-window -1))
-
 (defun my/open-terminal ()
   "Open system terminal."
   (interactive)
@@ -2705,3 +2680,9 @@ mermaid.initialize({
  :config
  ;; 不显示行号, 否则鼠标会飘。
  (add-hook 'artist-mode-hook (lambda () (display-line-numbers-mode -1))))
+
+;; 快速打开配置文件
+(defun open-conf-file()
+  (interactive)
+  (find-file "~/.emacs.d/dotemacs.org"))
+(global-set-key (kbd "<f2>") 'open-conf-file)
