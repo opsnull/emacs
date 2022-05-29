@@ -117,7 +117,7 @@
 (add-hook 'window-setup-hook #'window-divider-mode)
 
 ;; 左右分屏, nil: 上下分屏。
-(setq split-width-threshold nil)
+(setq split-width-threshold 30)
 
 ;; 复用当前 frame。
 (setq display-buffer-reuse-frames t)
@@ -196,7 +196,9 @@
   (doom-modeline-env-version t)
   ;; 不显示 Go 版本。
   (doom-modeline-env-enable-go nil)
-  (doom-modeline-unicode-fallback t)
+  ;; 不显示 icon, 防止溢出。
+  (doom-modeline-icon nil)
+  (doom-modeline-unicode-fallback nil)
   ;; 不显示 project 名称。
   ;;(doom-modeline-project-detection nil)
   ;; 不显示文件所属项目，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
@@ -218,6 +220,7 @@
 
 ;; 显示缩进。
 (use-package highlight-indent-guides
+  :demand
   :custom
   (highlight-indent-guides-method 'character)
   (highlight-indent-guides-responsive 'top)
@@ -256,42 +259,42 @@
 (defun +load-base-font ()
   ;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
   (let* ((font-spec (format "%s-%d" +font-family +font-size)))
-    (set-frame-parameter nil 'font font-spec)
-    (add-to-list 'default-frame-alist `(font . ,font-spec))))
+	(set-frame-parameter nil 'font font-spec)
+	(add-to-list 'default-frame-alist `(font . ,font-spec))))
 
 ;; 设置各特定 face 的字体。
 (defun +load-face-font (&optional frame)
   (let ((font-spec (format "%s" +font-family))
-        (modeline-font-spec (format "%s" +modeline-font-family))
-        (variable-pitch-font-spec (format "%s" +variable-pitch-family))
-        (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
-    (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.2)
-    (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
-    (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
-    (set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
-    (set-face-attribute 'mode-line frame :font modeline-font-spec :height 1.0)
-    (set-face-attribute 'mode-line-inactive frame :font modeline-font-spec :height 1.0)))
+	    (modeline-font-spec (format "%s" +modeline-font-family))
+	    (variable-pitch-font-spec (format "%s" +variable-pitch-family))
+	    (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
+	(set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.2)
+	(set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
+	(set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
+	(set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
+	(set-face-attribute 'mode-line frame :font modeline-font-spec :height 1.0)
+	(set-face-attribute 'mode-line-inactive frame :font modeline-font-spec :height 1.0)))
 
 ;; 设置中文字体。
 (defun +load-ext-font ()
   (when window-system
-    (let ((font (frame-parameter nil 'font))
-          (font-spec (font-spec :family +font-unicode-family)))
-      (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
-        (set-fontset-font font charset font-spec)))))
+	(let ((font (frame-parameter nil 'font))
+	      (font-spec (font-spec :family +font-unicode-family)))
+	  (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
+	    (set-fontset-font font charset font-spec)))))
 
 ;; 设置 Emoji 字体。
 (defun +load-emoji-font ()
   (when window-system
-    (setq use-default-font-for-symbols nil)
-    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-    (set-fontset-font t 'symbol (font-spec :family "Symbola"))))
+	(setq use-default-font-for-symbols nil)
+	(set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+	(set-fontset-font t 'symbol (font-spec :family "Symbola"))))
 
 (add-hook 'after-make-frame-functions 
-          ( lambda (f) 
-            (+load-face-font f)
-            (+load-ext-font)
-            (+load-emoji-font)))
+	      ( lambda (f) 
+		    (+load-face-font f)
+		    (+load-ext-font)
+		    (+load-emoji-font)))
 
 (defun +load-font ()
   (+load-base-font)
@@ -305,9 +308,9 @@
 (when (display-graphic-p)
   (use-package all-the-icons :demand)
   (use-package fira-code-mode
-    :custom
-    (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-    :hook prog-mode))
+	:custom
+	(fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+	:hook prog-mode))
 
 (use-package vertico
   :demand
@@ -398,6 +401,7 @@
   (setq completion-category-defaults nil)
   (setq completion-category-overrides '((buffer (styles +orderless-with-initialism))
                                         (file (styles basic partial-completion))
+                                        ;;(file (styles basic))
                                         (command (styles +orderless-with-initialism))
                                         (variable (styles +orderless-with-initialism))
                                         (symbol (styles +orderless-with-initialism))))
@@ -678,11 +682,11 @@
   (add-to-list 'pyim-pinyin-fuzzy-alist '("c" "ch"))
   ;; 设置中英文自动切换。
   (setq-default pyim-english-input-switch-functions
-              '(pyim-probe-program-mode
-                pyim-probe-auto-english
-                ;;pyim-probe-dynamic-english
-                ;; pyim-probe-org-structure-template
-                ))
+		        '(pyim-probe-program-mode
+		          pyim-probe-auto-english
+		          ;;pyim-probe-dynamic-english
+		          ;; pyim-probe-org-structure-template
+		          ))
   ;; 显示候选词数量。
   (setq pyim-page-length 8))
 
@@ -695,7 +699,7 @@
 
 ;; 用 THUOCL：清华大学开放中文词库 数据建立的 pyim 输入法的词库。
 (use-package pyim-tsinghua-dict
-  :straight (pyim-tsinghua-dict :repo "redguardtoo/pyim-tsinghua-dict")
+  :straight (pyim-tsinghua-dict :host github :repo "redguardtoo/pyim-tsinghua-dict")
   :after pyim
   :config
   (pyim-tsinghua-dict-enable))
@@ -1954,7 +1958,7 @@ mermaid.initialize({
      treemacs-deferred-git-apply-delay      0.1
      treemacs-display-in-side-window        t
      treemacs-eldoc-display                 t
-     treemacs-file-event-delay              500
+     treemacs-file-event-delay              300
      treemacs-file-follow-delay             0.01
      treemacs-follow-after-init             t
      treemacs-git-command-pipe              ""
@@ -1962,7 +1966,7 @@ mermaid.initialize({
      treemacs-indentation                   1
      treemacs-indentation-string            " "
      treemacs-is-never-other-window         t
-     treemacs-max-git-entries               100
+     treemacs-max-git-entries               500
      treemacs-missing-project-action        'ask
      treemacs-no-png-images                 nil
      treemacs-no-delete-other-windows       t
@@ -1996,17 +2000,12 @@ mermaid.initialize({
     (treemacs-indent-guide-mode t)
     (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
-  ;; 使用 treemacs 自带的 all-the-icons 主题。
-  ;; 注: 当使用 doom-themes 主题时, 它会自动设置 treemacs theme, 就不需要再调用这个函数了.
-  ;;(require 'treemacs-all-the-icons)
-  ;;(treemacs-load-theme "all-the-icons")
-  ;;(require 'treemacs-projectile)
   (require 'treemacs-magit)
   ;; 在 dired buffer 中使用 treemacs icons。
   ;;(require 'treemacs-icons-dired)
   ;;(treemacs-icons-dired-mode t)
   ;; 单击打开或折叠目录.
-  (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
+  ;;(define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
   :bind
   (:map global-map
         ("M-0"       . treemacs-select-window)
