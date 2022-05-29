@@ -2658,6 +2658,13 @@ patch:
 * other
 
 #+begin_src emacs-lisp
+  ;; 使用 treemacs 自带的 all-the-icons 主题。
+  ;; 注: 当使用 doom-themes 主题时, 它会自动设置 treemacs theme, 就不需要再调用这个函数了.
+  (require 'treemacs-all-the-icons)
+  (treemacs-load-theme "all-the-icons")
+  (require 'treemacs-projectile)
+
+
 ;; 在窗口左上角显示位置字符。
 (setq aw-char-position 'top-left)
 ;; 调大窗口选择字符。
