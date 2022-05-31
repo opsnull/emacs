@@ -1,14 +1,3 @@
-** dap
-
-#+begin_src emacs-lisp
-(use-package dap-mode
-  :disabled
-  :config
-  (dap-auto-configure-mode 1)
-  (require 'dap-chrome))
-#+end_src
-+ 执行 =M-x dap-chrome-setup= 安装 VSCode Chrome Debug Extension.
-
 ** prettier
 
 保存文件时自动格式化, 支持 html/java/js/js2/typescript/json/yaml/python/sh 等语言, 详情参考变量
@@ -2188,55 +2177,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   (add-hook 'org-mode-hook #'valign-mode))
 #+end_src
 
-** centaur-tabs
-
-#+begin_src emacs-lisp
-(use-package centaur-tabs
-  :hook (emacs-startup . centaur-tabs-mode)
-  :init
-  (setq centaur-tabs-set-icons t)
-  (setq centaur-tabs-height 25)
-  (setq centaur-tabs-gray-out-icons 'buffer)
-  (setq centaur-tabs-set-modified-marker t)
-  (setq centaur-tabs-cycle-scope 'tabs)
-  (setq centaur-tabs-enable-ido-completion nil)
-  (setq centaur-tabs-set-bar 'under)
-  (setq x-underline-at-descent-line t)
-  (setq centaur-tabs-show-navigation-buttons t)
-  (setq centaur-tabs-enable-key-bindings t)
-  :config
-  (centaur-tabs-mode t)
-  (centaur-tabs-headline-match)
-  (centaur-tabs-enable-buffer-reordering)
-  (centaur-tabs-group-by-projectile-project)
-  (defun centaur-tabs-hide-tab (x)
-    (let ((name (format "%s" x)))
-      (or
-       (window-dedicated-p (selected-window))
-       ;; 不显示以 * 开头的 buffer 。
-       (string-prefix-p "*" name)
-       (and (string-prefix-p "magit" name)
-            (not (file-name-extension name)))))))
-#+end_src
-
-** dashboard
-
-#+begin_src emacs-lisp
-;; 不能设置 :demand, 在 Emacs 和 doom-modeline 均启动完成后再启动 dashboard, 否则 modeline 可能溢出。
-(use-package dashboard
-  :after (doom-modeline)
-  :hook (after-init . dashboard-setup-startup-hook)
-  :config
-  (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
-  ;;(setq dashboard-projects-backend #'projectile)
-  (setq dashboard-projects-backend #'project-el)
-  (setq dashboard-center-content t)
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-navigator t)
-  (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
-#+end_src
-
 * projectile
 
 #+begin_src emacs-lisp
@@ -2343,7 +2283,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
         (projectile-add-known-project file)
         (message "added project %s" file)))))
 #+end_src
-
 
 
 * eglot
@@ -2658,6 +2597,12 @@ patch:
 * other
 
 #+begin_src emacs-lisp
+;; 在 dired buffer 中使用 treemacs icons。
+(require 'treemacs-icons-dired)
+(treemacs-icons-dired-mode t)
+;; 单击打开或折叠目录.
+(define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
+
   ;; 使用 treemacs 自带的 all-the-icons 主题。
   ;; 注: 当使用 doom-themes 主题时, 它会自动设置 treemacs theme, 就不需要再调用这个函数了.
   (require 'treemacs-all-the-icons)
@@ -2683,4 +2628,104 @@ patch:
           (consult-global-mark buffer)
           (consult-find buffer)))
 
+#+end_src
+
+* corfu
+#+begin_src emacs-lisp
+  :init
+  (defun corfu-beginning-of-prompt ()
+    "Move to beginning of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (car completion-in-region--data)))
+  (defun corfu-end-of-prompt ()
+    "Move to end of completion input."
+    (interactive)
+    (corfu--goto -1)
+    (goto-char (cadr completion-in-region--data)))
+  :bind
+  (:map corfu-map
+        ("TAB" . corfu-next)
+        ([tab] . corfu-next)
+        ("S-TAB" . corfu-previous)
+        ([backtab] . corfu-previous)
+        ;; C-a/C-e 分别移动到补全的开始和结束。
+        ;;([remap move-beginning-of-line] . corfu-beginning-of-prompt)
+        ;; ([remap move-end-of-line] . corfu-end-of-prompt)
+        ) 
+#+end_src
+
+
+* centaur-tabs
+#+begin_src emacs-lisp
+(use-package centaur-tabs
+  :disabled
+  :hook (after-init . centaur-tabs-mode)
+  :init
+  ;; 有时 icon 显示不对而且大小不一致，故关闭。
+  (setq centaur-tabs-set-icons nil)
+  (setq centaur-tabs-height 25)
+  (setq centaur-tabs-gray-out-icons 'buffer)
+  (setq centaur-tabs-set-modified-marker t)
+  (setq centaur-tabs-cycle-scope 'tabs)
+  (setq centaur-tabs-enable-ido-completion nil)
+  (setq centaur-tabs-set-bar 'under)
+  (setq x-underline-at-descent-line t)
+  (setq centaur-tabs-show-navigation-buttons t)
+  (setq centaur-tabs-enable-key-bindings t)
+  :bind
+  ("C-<prior>" . centaur-tabs-backward)
+  ("C-<next>" . centaur-tabs-forward)
+  ("C-c t s" . centaur-tabs-counsel-switch-group)
+  ("C-c t p" . centaur-tabs-group-by-projectile-project)
+  ("C-c t g" . centaur-tabs-group-buffer-groups)
+  :config
+  ;;(centaur-tabs-mode t)
+  (centaur-tabs-headline-match)
+  (centaur-tabs-enable-buffer-reordering)
+  (centaur-tabs-group-by-projectile-project)
+  (defun centaur-tabs-buffer-groups ()
+    "`centaur-tabs-buffer-groups' control buffers' group rules."
+    (list
+	 (cond
+	  ((or (string-equal "*" (substring (buffer-name) 0 1))
+	       (memq major-mode '(magit-process-mode
+				              magit-status-mode
+				              magit-diff-mode
+				              magit-log-mode
+				              magit-file-mode
+				              magit-blob-mode
+				              magit-blame-mode
+				              )))
+	   "Emacs")
+	  ((or (derived-mode-p 'prog-mode)
+           (memq major-mode '(go-mode
+			                  python-mode)))
+	   "Coding")
+	  ((derived-mode-p 'dired-mode)
+	   "Dired")
+	  ((memq major-mode '(helpful-mode
+			              help-mode))
+	   "Help")
+	  ((memq major-mode '(org-mode
+			              org-agenda-clockreport-mode
+			              org-src-mode
+			              org-agenda-mode
+			              org-beamer-mode
+			              org-indent-mode
+			              org-bullets-mode
+			              org-cdlatex-mode
+			              org-agenda-log-mode
+			              diary-mode))
+	   "OrgMode")
+	  (t
+	   (centaur-tabs-get-group-name (current-buffer))))))
+  (defun centaur-tabs-hide-tab (x)
+    (let ((name (format "%s" x)))
+      (or
+       (window-dedicated-p (selected-window))
+       ;; 不显示以 * 开头的 buffer 。
+       (string-prefix-p "*" name)
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name)))))))
 #+end_src
