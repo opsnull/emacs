@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-05-29T11:05:04+0800
+#+LASTMOD: 2022-05-31T10:05:32+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -64,6 +64,7 @@
   - [[#direnv][direnv]]
   - [[#others][others]]
   - [[#expand-region][expand-region]]
+  - [[#dap][dap]]
 - [[#project][project]]
 - [[#treemacs][treemacs]]
 - [[#dict][dict]]
@@ -333,6 +334,7 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
   :demand
+  :after (treemacs)
   ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
   :straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
@@ -386,7 +388,57 @@ npm config set registry=http://registry.npm.taobao.org
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1))
+  (doom-modeline-mode 1)
+  :config
+  (set-face-attribute 'doom-modeline nil :font "Fira Code Retina" :height 1.0)
+  (set-face-attribute 'doom-modeline-inactive nil :font "Fira Code Retina" :height 1.0))
+
+(use-package awesome-tab
+  :config
+  (setq awesome-tab-label-fixed-length 14)
+  (setq awesome-tab-height 150)
+  ;; 不显示 tab 序号。
+  (setq awesome-tab-show-tab-index nil)
+  ;; HideRules, 需要先定义才生效。
+  (defun awesome-tab-hide-tab (x)
+    (let ((name (format "%s" x)))
+      (or
+       (string-prefix-p "*epc" name)
+       (string-prefix-p "*helm" name)
+       (string-prefix-p "*Compile-Log*" name)
+       (string-prefix-p "*lsp" name)
+       (string-prefix-p "*gopls" name)
+       (string-prefix-p "*dashboard" name)
+       (string-prefix-p "*Warnings" name)
+       (string-prefix-p "*Messages" name)
+       (string-prefix-p "*scratch" name)
+       (string-prefix-p "*Help" name)
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name))))))
+  (awesome-tab-mode t)
+  (global-set-key (kbd "s-1") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-0") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "C-c j") 'awesome-tab-ace-jump))
+
+(use-package dashboard
+  :demand
+  :config
+  (dashboard-setup-startup-hook)
+  (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
+  (setq dashboard-projects-backend #'project-el)
+  (setq dashboard-center-content t)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
 
 ;; 显示光标位置。
 (use-package beacon
@@ -467,7 +519,7 @@ npm config set registry=http://registry.npm.taobao.org
 (defun +load-ext-font ()
   (when window-system
 	(let ((font (frame-parameter nil 'font))
-	      (font-spec (font-spec :family +font-unicode-family)))
+		  (font-spec (font-spec :family +font-unicode-family)))
 	  (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
 	    (set-fontset-font font charset font-spec)))))
 
@@ -479,7 +531,7 @@ npm config set registry=http://registry.npm.taobao.org
 	(set-fontset-font t 'symbol (font-spec :family "Symbola"))))
 
 (add-hook 'after-make-frame-functions 
-	      ( lambda (f) 
+		  ( lambda (f) 
 		    (+load-face-font f)
 		    (+load-ext-font)
 		    (+load-emoji-font)))
@@ -518,7 +570,7 @@ npm config set registry=http://registry.npm.taobao.org
         ;; 在多个 source 中切换(如 consult-buffer, consult-grep) 。
         ("C-M-n" . vertico-next-group)
         ("C-M-p" . vertico-previous-group)
-        ;; 快速插入。
+        ;; 快速选择，特别适用于候选者比较多的情况。
         ("M-i" . vertico-quick-insert)
         ("M-e" . vertico-quick-exit)
         ;; 文件路径操作。
@@ -726,11 +778,14 @@ npm config set registry=http://registry.npm.taobao.org
    ([remap describe-bindings] . embark-bindings)))
 
 (use-package embark-consult
+  ;; 加 :demand 才生效。
+  :demand
   :after (embark consult)
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 + 使用 gnu find 命令, 需要加环境变量 ~export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"~
++ embark-consult 支持 embark 和 consult 集成，如使用 wgrep 编辑 consult grep/line 的 export 的结果。
 
 ** marginalia
 
@@ -758,32 +813,20 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
 #+begin_src  emacs-lisp
 (use-package corfu
   :demand
-  :straight (corfu :host github :repo "minad/corfu")
+  :straight (corfu :host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
   :init
-  (defun corfu-beginning-of-prompt ()
-    "Move to beginning of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (car completion-in-region--data)))
-  (defun corfu-end-of-prompt ()
-    "Move to end of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (cadr completion-in-region--data)))
   :bind
   (:map corfu-map
         ("TAB" . corfu-next)
         ([tab] . corfu-next)
         ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous)
-        ;; C-a/C-e 分别移动到补全的开始和结束。
-        ([remap move-beginning-of-line] . corfu-beginning-of-prompt)
-        ([remap move-end-of-line] . corfu-end-of-prompt))
+        ([backtab] . corfu-previous)) 
   :custom
   ;;开启自动补全。
   (corfu-auto t)
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.25)
+  (corfu-cycle nil)
   ;; 自动选择第一个。
   (corfu-preselect-first t)
   ;; 自动插入候选者到光标。
@@ -794,7 +837,11 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
   (corfu-scroll-margin 4)
   ;; 后续使用 corfu-doc 来显示文档，故关闭。
   (corfu-echo-documentation nil)
+  ;; 使用候选者的历史位置来排序。
+  (corfu-history-mode 1)
   :config
+  (savehist-mode 1)
+  (add-to-list 'savehist-additional-variables 'corfu-history)
   (global-corfu-mode))
 
 ;; 总是在弹出菜单中显示候选者。
@@ -828,8 +875,8 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
   :init
   (add-to-list 'completion-at-point-functions #'cape-file)
   ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
@@ -1554,14 +1601,16 @@ pyim-probe-dynamic-english 自动切换中英文输入法的规则：
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 1)
-                            ;(centaur-tabs-mode 0) 
+                            ;;(centaur-tabs-mode 0)
+                            (awesome-tab-mode 0)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
                             (beacon-mode +1)
-                            ;(centaur-tabs-mode 1)
+                            ;;(centaur-tabs-mode 1)
+                            (awesome-tab-mode 1)
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header nil)
@@ -1996,12 +2045,13 @@ flycheck 是现代的在线语法检查工具, 它使用系统工具对 buffer �
    (python-mode . lsp)
    (go-mode . lsp)
    ;;(yaml-mode . lsp)
-   ;;(js-mode . lsp)
+   (js-mode . lsp)
    (web-mode . lsp)
    (tide-mode . lsp)
    (typescript-mode . lsp)
    (dockerfile-mode . lsp)
-   (lsp-completion-mode . my/lsp-mode-setup-completion))
+   (lsp-completion-mode . my/lsp-mode-setup-completion)
+   (lsp-mode . lsp-enable-which-key-integration))
   :config
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
@@ -2022,6 +2072,11 @@ flycheck 是现代的在线语法检查工具, 它使用系统工具对 buffer �
         ("C-c r" . lsp-rename)
         ([remap xref-find-definitions] . lsp-find-definition)
         ([remap xref-find-references] . lsp-find-references)))
+
+(use-package which-key
+    :config
+    (setq which-key-idle-delay 0.5)
+    (which-key-mode))
 #+end_src
 + 参考： [[https://github.com/minad/corfu/wiki][Configuring corfu for lsp-mode with orderless]]
 
@@ -2029,6 +2084,7 @@ consult-lsp 提供两个非常有用的命令：consult-lsp-symbols 和 consult-
 + consult-lsp-symbols: C-M-.
 #+begin_src emacs-lisp
 (use-package consult-lsp
+  :demand
   :after (lsp-mode consult)
   :config
   (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
@@ -2039,6 +2095,7 @@ lsp-ui 显示函数签名和帮助文档：
 #+begin_src emacs-lisp
 (use-package lsp-ui
   :after (lsp-mode flycheck)
+  :demand
   :custom
   ;; 显示目录。
   (lsp-ui-peek-show-directory t)
@@ -2445,12 +2502,13 @@ machine api.github.com login geekard@qq.com password YOUR_TOKEN
   (setq typescript-indent-level 2))
 #+end_src
 + 安装 eslint npm 包后，安装语言服务器 =M-x lsp-install-server RET eslint RET= 。
++ 创建 .eslintrc.js: =M-x lsp-eslint-create-default-configuration= , 回答一些问题后自动创建配置文件并安装 eslint
+plugin。
 
 tide 是 typescript/javascript 交互式开发环境，支持 js-mode（Emacs 27 内置）、js2-mode、web-mode（编辑模板文件，
-如 HTML、Go Template 等）、typescript-mode。另外 jsts-ls([[https://github.com/sourcegraph/javascript-typescript-langserver][javascript-typescript-stdio]]) 不再维护了。
+如 HTML、Go Template 等）、typescript-mode。jsts-ls([[https://github.com/sourcegraph/javascript-typescript-langserver][javascript-typescript-stdio]]) 不再维护了。
 
-通过调用 ts-ls(npm install -g typescript-language-server)语言服务器，结合 company和 lsp 为 js/ts 提供代码补全
-和导航。
+通过调用 ts-ls(npm install -g typescript-language-server)语言服务器，为 js/ts 提供代码补全和导航。
 #+begin_src  emacs-lisp
 (use-package tide
   :hook ((before-save . tide-format-before-save))
@@ -2464,7 +2522,7 @@ tide 是 typescript/javascript 交互式开发环境，支持 js-mode（Emacs 27
 
 *** js2-mode
 
-js-mode (Emacs 27 内置) 和 js2-mode （js-mode 的增强，主要是 jsx 相关）用于编辑.js 和 .jsx 文件。
+js-mode (Emacs 27 内置) 和 js2-mode （js-mode 的增强，主要是 jsx 相关）用于编辑 .js 和 .jsx 文件。
 
 js-mode in Emacs 27 includes full support for syntax highlighting and indenting of JSX syntax. The currently
 recommended solution is to install Emacs 27 and use js-mode as the major mode. To make use of the JS2 AST and
@@ -2616,6 +2674,35 @@ eval "$(direnv hook bash)"
   (global-set-key (kbd "C-=") 'er/expand-region))
 #+end_src
 
+** dap
+
+如果 =M-x dap-chrome-setup= 命令执行失败，则可以手动编译安装 [[https://github.com/microsoft/vscode-chrome-debug][VS Code - Debugger for Chrome]]：
+#+begin_src shell :tangle no
+$ pwd
+/Users/zhangjun/.emacs.d/.extension/vscode/msjsdiag.debugger-for-chrome
+$ git clone git clone git@github.com:microsoft/vscode-chrome-debug.git
+$ mv vscode-chrome-debug extension/
+$ cd extension
+$ npm install -g gulp
+$ gulp build
+
+$ ls -l out/src/
+total 116K
+-rw-r--r-- 1 zhangjun 2.0K  5 30 21:02 chromeDebug.js
+-rw-r--r-- 1 zhangjun  884  5 30 21:02 chromeDebug.js.map
+-rw-r--r-- 1 zhangjun  31K  5 30 21:02 chromeDebugAdapter.js
+-rw-r--r-- 1 zhangjun  19K  5 30 21:02 chromeDebugAdapter.js.map
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package dap-mode
+  :demand
+  :config
+  (dap-auto-configure-mode 1)
+  (require 'dap-chrome))
+#+end_src
++ 执行 =M-x dap-chrome-setup= 安装 VSCode Chrome Debug Extension.
+
 * project
 
 #+begin_src emacs-lisp
@@ -2678,9 +2765,6 @@ eval "$(direnv hook bash)"
 
 #+begin_src emacs-lisp
 (use-package treemacs
-  :demand
-  :straight 
-  (treemacs :files ("src/elisp/*.el" "src/scripts/*.py" "src/extra/*.el" "icons")  :repo "Alexander-Miller/treemacs")
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -2732,12 +2816,6 @@ eval "$(direnv hook bash)"
     (treemacs-indent-guide-mode t)
     (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
-  (require 'treemacs-magit)
-  ;; 在 dired buffer 中使用 treemacs icons。
-  ;;(require 'treemacs-icons-dired)
-  ;;(treemacs-icons-dired-mode t)
-  ;; 单击打开或折叠目录.
-  ;;(define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
   :bind
   (:map global-map
         ("M-0"       . treemacs-select-window)
@@ -2746,6 +2824,10 @@ eval "$(direnv hook bash)"
         ("C-x t B"   . treemacs-bookmark)
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
+
+(use-package treemacs-magit
+  :after (treemacs magit)
+  :ensure t)
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包。
 (use-package ripgrep
@@ -3172,7 +3254,7 @@ eshell 配置：
 
 (global-set-key (kbd "RET") 'newline-and-indent)
 
-;; Minibuffer 历史。
+;; minibuffer 历史。
 (use-package savehist
   :straight (:type built-in)
   :hook (after-init . savehist-mode)

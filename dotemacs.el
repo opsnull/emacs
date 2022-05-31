@@ -155,6 +155,7 @@
 ;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
   :demand
+  :after (treemacs)
   ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
   :straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
@@ -208,7 +209,57 @@
   (doom-modeline-github nil)
   (doom-modeline-height 2)
   :init
-  (doom-modeline-mode 1))
+  (doom-modeline-mode 1)
+  :config
+  (set-face-attribute 'doom-modeline nil :font "Fira Code Retina" :height 1.0)
+  (set-face-attribute 'doom-modeline-inactive nil :font "Fira Code Retina" :height 1.0))
+
+(use-package awesome-tab
+  :config
+  (setq awesome-tab-label-fixed-length 14)
+  (setq awesome-tab-height 150)
+  ;; 不显示 tab 序号。
+  (setq awesome-tab-show-tab-index nil)
+  ;; HideRules, 需要先定义才生效。
+  (defun awesome-tab-hide-tab (x)
+    (let ((name (format "%s" x)))
+      (or
+       (string-prefix-p "*epc" name)
+       (string-prefix-p "*helm" name)
+       (string-prefix-p "*Compile-Log*" name)
+       (string-prefix-p "*lsp" name)
+       (string-prefix-p "*gopls" name)
+       (string-prefix-p "*dashboard" name)
+       (string-prefix-p "*Warnings" name)
+       (string-prefix-p "*Messages" name)
+       (string-prefix-p "*scratch" name)
+       (string-prefix-p "*Help" name)
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name))))))
+  (awesome-tab-mode t)
+  (global-set-key (kbd "s-1") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-0") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "C-c j") 'awesome-tab-ace-jump))
+
+(use-package dashboard
+  :demand
+  :config
+  (dashboard-setup-startup-hook)
+  (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
+  (setq dashboard-projects-backend #'project-el)
+  (setq dashboard-center-content t)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
 
 ;; 显示光标位置。
 (use-package beacon
@@ -279,7 +330,7 @@
 (defun +load-ext-font ()
   (when window-system
 	(let ((font (frame-parameter nil 'font))
-	      (font-spec (font-spec :family +font-unicode-family)))
+		  (font-spec (font-spec :family +font-unicode-family)))
 	  (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
 	    (set-fontset-font font charset font-spec)))))
 
@@ -291,7 +342,7 @@
 	(set-fontset-font t 'symbol (font-spec :family "Symbola"))))
 
 (add-hook 'after-make-frame-functions 
-	      ( lambda (f) 
+		  ( lambda (f) 
 		    (+load-face-font f)
 		    (+load-ext-font)
 		    (+load-emoji-font)))
@@ -320,7 +371,7 @@
         ;; 在多个 source 中切换(如 consult-buffer, consult-grep) 。
         ("C-M-n" . vertico-next-group)
         ("C-M-p" . vertico-previous-group)
-        ;; 快速插入。
+        ;; 快速选择，特别适用于候选者比较多的情况。
         ("M-i" . vertico-quick-insert)
         ("M-e" . vertico-quick-exit)
         ;; 文件路径操作。
@@ -507,6 +558,8 @@
    ([remap describe-bindings] . embark-bindings)))
 
 (use-package embark-consult
+  ;; 加 :demand 才生效。
+  :demand
   :after (embark consult)
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
@@ -524,32 +577,20 @@
 
 (use-package corfu
   :demand
-  :straight (corfu :host github :repo "minad/corfu")
+  :straight (corfu :host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
   :init
-  (defun corfu-beginning-of-prompt ()
-    "Move to beginning of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (car completion-in-region--data)))
-  (defun corfu-end-of-prompt ()
-    "Move to end of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (cadr completion-in-region--data)))
   :bind
   (:map corfu-map
         ("TAB" . corfu-next)
         ([tab] . corfu-next)
         ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous)
-        ;; C-a/C-e 分别移动到补全的开始和结束。
-        ([remap move-beginning-of-line] . corfu-beginning-of-prompt)
-        ([remap move-end-of-line] . corfu-end-of-prompt))
+        ([backtab] . corfu-previous)) 
   :custom
   ;;开启自动补全。
   (corfu-auto t)
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.25)
+  (corfu-cycle nil)
   ;; 自动选择第一个。
   (corfu-preselect-first t)
   ;; 自动插入候选者到光标。
@@ -560,7 +601,11 @@
   (corfu-scroll-margin 4)
   ;; 后续使用 corfu-doc 来显示文档，故关闭。
   (corfu-echo-documentation nil)
+  ;; 使用候选者的历史位置来排序。
+  (corfu-history-mode 1)
   :config
+  (savehist-mode 1)
+  (add-to-list 'savehist-additional-variables 'corfu-history)
   (global-corfu-mode))
 
 ;; 总是在弹出菜单中显示候选者。
@@ -589,8 +634,8 @@
   :init
   (add-to-list 'completion-at-point-functions #'cape-file)
   ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
@@ -1088,14 +1133,16 @@
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 1)
-                            ;(centaur-tabs-mode 0) 
+                            ;;(centaur-tabs-mode 0)
+                            (awesome-tab-mode 0)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
                             (beacon-mode +1)
-                            ;(centaur-tabs-mode 1)
+                            ;;(centaur-tabs-mode 1)
+                            (awesome-tab-mode 1)
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header nil)
@@ -1469,12 +1516,13 @@
    (python-mode . lsp)
    (go-mode . lsp)
    ;;(yaml-mode . lsp)
-   ;;(js-mode . lsp)
+   (js-mode . lsp)
    (web-mode . lsp)
    (tide-mode . lsp)
    (typescript-mode . lsp)
    (dockerfile-mode . lsp)
-   (lsp-completion-mode . my/lsp-mode-setup-completion))
+   (lsp-completion-mode . my/lsp-mode-setup-completion)
+   (lsp-mode . lsp-enable-which-key-integration))
   :config
   (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
                  "[/\\\\]resources/META-INF\\'"
@@ -1496,13 +1544,20 @@
         ([remap xref-find-definitions] . lsp-find-definition)
         ([remap xref-find-references] . lsp-find-references)))
 
+(use-package which-key
+    :config
+    (setq which-key-idle-delay 0.5)
+    (which-key-mode))
+
 (use-package consult-lsp
+  :demand
   :after (lsp-mode consult)
   :config
   (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
 
 (use-package lsp-ui
   :after (lsp-mode flycheck)
+  :demand
   :custom
   ;; 显示目录。
   (lsp-ui-peek-show-directory t)
@@ -1891,6 +1946,12 @@ mermaid.initialize({
   :config
   (global-set-key (kbd "C-=") 'er/expand-region))
 
+(use-package dap-mode
+  :demand
+  :config
+  (dap-auto-configure-mode 1)
+  (require 'dap-chrome))
+
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
   (catch 'ret
@@ -1946,9 +2007,6 @@ mermaid.initialize({
 (setq project-vc-ignores '("vendor/"))
 
 (use-package treemacs
-  :demand
-  :straight 
-  (treemacs :files ("src/elisp/*.el" "src/scripts/*.py" "src/extra/*.el" "icons")  :repo "Alexander-Miller/treemacs")
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
@@ -2000,12 +2058,6 @@ mermaid.initialize({
     (treemacs-indent-guide-mode t)
     (treemacs-git-mode 'deferred)
     (treemacs-hide-gitignored-files-mode nil))
-  (require 'treemacs-magit)
-  ;; 在 dired buffer 中使用 treemacs icons。
-  ;;(require 'treemacs-icons-dired)
-  ;;(treemacs-icons-dired-mode t)
-  ;; 单击打开或折叠目录.
-  ;;(define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)
   :bind
   (:map global-map
         ("M-0"       . treemacs-select-window)
@@ -2014,6 +2066,10 @@ mermaid.initialize({
         ("C-x t B"   . treemacs-bookmark)
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
+
+(use-package treemacs-magit
+  :after (treemacs magit)
+  :ensure t)
 
 ;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包。
 (use-package ripgrep
@@ -2392,7 +2448,7 @@ mermaid.initialize({
 
 (global-set-key (kbd "RET") 'newline-and-indent)
 
-;; Minibuffer 历史。
+;; minibuffer 历史。
 (use-package savehist
   :straight (:type built-in)
   :hook (after-init . savehist-mode)
