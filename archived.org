@@ -133,6 +133,22 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   (define-key global-map (kbd "C-c r") 'vr/replace)
   (define-key global-map (kbd "C-c q") 'vr/query-replace))
 
+;; diff 时显示空白字符。
+(defun my/diff-spaces ()
+  (setq-local whitespace-style
+              '(face
+                tabs
+                tab-mark
+                spaces
+                space-mark
+                trailing
+                indentation::space
+                indentation::tab
+                newline
+                newline-mark))
+  (whitespace-mode 1))
+ (add-hook 'diff-mode-hook 'my/diff-spaces)
+
 ;; diff-hl 会导致 buffer 内容错乱
 (use-package diff-hl
   :disabled
@@ -233,17 +249,6 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 (add-to-list 'org-structure-template-alist '("go" . "src go"))
 (add-to-list 'org-structure-template-alist '("yaml" . "src yaml"))
 (add-to-list 'org-structure-template-alist '("json" . "src json"))
-
-(use-package tree-sitter
-  :demand t
-  :config
-  (global-tree-sitter-mode)
-  ;; 对于支持的语言（查看变量 tree-sitter-major-mode-language-alist）使用
-  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-
-(use-package tree-sitter-langs
-  :demand)
 
 (use-package grammatical-edit
   :demand
@@ -2728,4 +2733,643 @@ patch:
        (string-prefix-p "*" name)
        (and (string-prefix-p "magit" name)
             (not (file-name-extension name)))))))
+#+end_src
+
+
+* org
+** capture
+
+自动 Capture 浏览器发来的网址或选中的内容:
+#+begin_src emacs-lisp
+(require 'org-protocol)
+(require 'org-capture)
+
+(setq org-capture-templates
+      '(("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
+         "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial" :empty-lines 1)
+        ("t" "Todo" entry (file+headline "~/docs/orgs/gtd.org" "Tasks")
+         "* TODO %?\n %U %a\n %i" :empty-lines 1)))
+#+end_src
+
+
+** agenda
+
+#+begin_src emacs-lisp
+(setq org-agenda-time-grid
+      (quote ((daily today require-timed)
+              (300 600 900 1200 1500 1800 2100 2400)
+              "......"
+              "-----------------------------------------------------"
+              )))
+
+;; org-agenda 展示的文件。
+(setq org-agenda-files
+      '("~/docs/orgs/gtd.org"
+        "~/docs/orgs/capture.org"))
+(setq org-agenda-start-day "-7d")
+(setq org-agenda-span 21)
+(setq org-agenda-include-diary t)
+;; use org-journal
+;;(setq diary-file "~/docs/orgs/diary")
+;;(setq diary-mail-addr "geekard@qq.com")
+;; 获取经纬度：https://www.latlong.net/
+(setq calendar-latitude +39.904202)
+(setq calendar-longitude +116.407394)
+(setq calendar-location-name "北京")
+(setq calendar-remove-frame-by-deleting t)
+;; 每周第一天是周一。
+(setq calendar-week-start-day 1)
+;; 标记有记录的日期。
+(setq mark-diary-entries-in-calendar t)
+;; 标记节假日。
+(setq mark-holidays-in-calendar nil)
+;; 不显示节日列表。
+(setq view-calendar-holidays-initially nil)
+(setq org-agenda-include-diary t)
+
+;; 除去基督徒、希伯来和伊斯兰教的节日。
+(setq christian-holidays nil
+      hebrew-holidays nil
+      islamic-holidays nil
+      solar-holidays nil
+      bahai-holidays nil)
+
+(setq mark-diary-entries-in-calendar t
+      appt-issue-message nil
+      mark-holidays-in-calendar t
+      view-calendar-holidays-initially nil)
+
+(setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
+      calendar-date-display-form '(year "/" month "/" day)
+      calendar-time-display-form '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
+
+(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+
+(autoload 'chinese-year "cal-china" "Chinese year data" t)
+
+(setq calendar-load-hook '(lambda ()
+                            (set-face-foreground 'diary-face   "skyblue")
+                            (set-face-background 'holiday-face "slate blue")
+                            (set-face-foreground 'holiday-face "white")))
+
+(use-package org-super-agenda)
+#+end_src
+
+** refile
+
+使用 outline 路径来指定要 refile 的文件和位置, 如 =emacs.org/packages/org-mode=:
++ =packages/org-mode= 是要 refile 的内容的 paret nodes, 如果不存在会提示创建。
+#+begin_src emacs-lisp
+;; refile 的位置是 agenda 文件的前三层 headline 。
+(setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
+;; 使用文件路径的形式显示 filename 和 headline, 方便在文件的 top-head 添加内容。
+(setq org-refile-use-outline-path 'file)
+;; 必须设置为 nil 才能显示 headline, 否则只显示文件名 。
+(setq org-outline-path-complete-in-steps nil)
+;; 支持为 subtree 在 refile target 文件指定一个新的父节点 。
+(setq org-refile-allow-creating-parent-nodes 'confirm)
+#+end_src
++ 参考: [[https://blog.aaronbieber.com/2017/03/19/organizing-notes-with-refile.html][Organizing Notes With Refile]]
+
+** notify
+
+倒计时结束通知:
+#+BEGIN_SRC  emacs-lisp
+(use-package emacs
+  :straight (:type built-in)
+  :ensure-system-package terminal-notifier)
+
+(defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
+(defun terminal-notifier-notify (title message)
+  (start-process "terminal-notifier"
+                 "terminal-notifier"
+                 terminal-notifier-command
+                 "-title" title
+                 "-sound" "default"
+                 "-message" message
+                 "-activate" "org.gnu.Emacs"))
+
+(defun timed-notification (time msg)
+  (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
+  (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
+
+;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
+(setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
+#+end_src
+
+* elfeed
+
+#+begin_src emacs-lisp
+(use-package elfeed
+  :demand
+  :config
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  (setq elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-timeout 30)
+  (setf url-queue-timeout 40)
+  (push "-k" elfeed-curl-extra-arguments)
+  (setq elfeed-search-filter "@1-months-ago +unread")
+  ;; 在同一个 buffer 中显示条目。
+  (setq elfeed-show-unique-buffers nil)
+  (setq elfeed-search-title-max-width 150)
+  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
+  (setq elfeed-log-level 'warn)
+
+  ;; 支持收藏 feed, 参考：http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+  (defalias 'elfeed-toggle-star (elfeed-expose #'elfeed-search-toggle-all 'star))
+  (eval-after-load 'elfeed-search '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
+  (defface elfeed-search-star-title-face '((t :foreground "#f77")) "Marks a starred Elfeed entry.")
+  (push '(star elfeed-search-star-title-face) elfeed-search-face-alist))
+
+(use-package elfeed-org
+  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+  :hook
+  ((elfeed-dashboard-mode . elfeed-org)
+   (elfeed-show-mode . elfeed-org))
+  :config
+  (progn
+    (defun my/reload-org-feeds ()
+      (interactive)
+      (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
+    (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
+
+(use-package elfeed-dashboard
+  :config
+  (global-set-key (kbd "C-c f") 'elfeed-dashboard)
+  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
+
+(use-package elfeed-score
+  :config
+  (progn
+    (elfeed-score-enable)
+    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+
+(use-package elfeed-goodies
+  :config
+  (setq elfeed-goodies/entry-pane-position 'bottom)
+  (setq elfeed-goodies/feed-source-column-width 30)
+  (setq elfeed-goodies/tag-column-width 30)
+  (setq elfeed-goodies/powerline-default-separator 'arrow)
+  (elfeed-goodies/setup))
+
+;; elfeed-goodies 显示日期栏
+;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
+(defun elfeed-goodies/search-header-draw ()
+  "Returns the string to be used as the Elfeed header."
+  (if (zerop (elfeed-db-last-update))
+      (elfeed-search--intro-header)
+    (let* ((separator-left (intern (format "powerline-%s-%s"
+                                           elfeed-goodies/powerline-default-separator
+                                           (car powerline-default-separator-dir))))
+           (separator-right (intern (format "powerline-%s-%s"
+                                            elfeed-goodies/powerline-default-separator
+                                            (cdr powerline-default-separator-dir))))
+           (db-time (seconds-to-time (elfeed-db-last-update)))
+           (stats (-elfeed/feed-stats))
+           (search-filter (cond
+                           (elfeed-search-filter-active
+                            "")
+                           (elfeed-search-filter
+                            elfeed-search-filter)
+                           (""))))
+      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
+        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
+
+(defun elfeed-goodies/entry-line-draw (entry)
+  "Print ENTRY to the buffer."
+  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (date (elfeed-search-format-date (elfeed-entry-date entry)))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+                         elfeed-goodies/tag-column-width 4))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               title-width)
+                        :left))
+         (tag-column (elfeed-format-column
+                      tags-str (elfeed-clamp (length tags-str)
+                                             elfeed-goodies/tag-column-width
+                                             elfeed-goodies/tag-column-width)
+                      :left))
+         (feed-column (elfeed-format-column
+                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width)
+                       :left)))
+
+    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+        (progn
+          (insert (propertize date 'face 'elfeed-search-date-face) " ")
+          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
+          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
+          (insert (propertize title 'face title-faces 'kbd-help title)))
+      (insert (propertize title 'face title-faces 'kbd-help title)))))
+#+end_src
+
+elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][语法参考]]):
+#+begin_src emacs-lisp :tangle ~/.emacs.d/elfeed.score
+;;; Elfeed score file                                     -*- lisp -*-
+(
+;; ("title"
+;;   (:text "opsnull" :value 250 :type S))
+;;  ("content"
+;;   (:text "type erasure" :value 500 :type s))
+ ("title-or-content"
+;;  (:text "emacs" :title-value 150 :content-value 100 :type s)
+  (:text "opsnull" :title-value 150 :content-value 100 :type w))
+ ("feed"
+  (:text "Irreal" :value 250 :type S :attr t)
+  (:text "emacs-news – sacha chua" :value 350 :type S :attr t :comment "Essential!"))
+;; ("authors"
+;;  (:text "opsnull" :value 500 :type s))
+;; ("tag"
+;;  (:tags (t . reddit-question)
+;;         :value 750
+;;         :comment "Add 750 points to any entry with a tag of reddit-question"))
+ (mark -2500))
+#+end_src
+
+* doom-modeline
+#+begin_src emacs-lisp
+;; modeline 显示电池和日期时间。
+(display-battery-mode t)
+(column-number-mode t)
+(size-indication-mode -1)
+(display-time-mode t)
+(setq display-time-24hr-format t)
+(setq display-time-default-load-average nil)
+(setq display-time-load-average-threshold 5)
+(setq display-time-format "%m/%dT%H:%M")
+(setq display-time-day-and-date t)
+(setq indicate-buffer-boundaries (quote left))
+
+(use-package doom-modeline
+  :demand
+  :after (doom-themes)
+  :custom
+  ;; 不显示换行和编码（节省空间）。
+  (doom-modeline-buffer-encoding nil)
+  ;; 显示语言版本。
+  (doom-modeline-env-version t)
+  ;; 不显示 Go 版本。
+  (doom-modeline-env-enable-go nil)
+  ;; 不显示 icon, 防止溢出。
+  (doom-modeline-icon nil)
+  (doom-modeline-unicode-fallback nil)
+  ;; 不显示 project 名称。
+  ;;(doom-modeline-project-detection nil)
+  ;; 不显示文件所属项目，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
+  ;;(doom-modeline-buffer-file-name-style 'file-name)
+  (doom-modeline-buffer-file-name-style 'relative-from-project)
+  (doom-modeline-vcs-max-length 30)
+  (doom-modeline-github nil)
+  (doom-modeline-height 2)
+  :init
+  (doom-modeline-mode 1)
+  :config
+  (set-face-attribute 'doom-modeline nil :font "Fira Code Retina" :height 1.0)
+  (set-face-attribute 'doom-modeline-inactive nil :font "Fira Code Retina" :height 1.0))
+#+end_src
+* beacon
+
+#+begin_src emacs-lisp
+;; 显示光标位置。
+(use-package beacon
+  :config
+  ;; 翻页时不高亮位置。
+  (setq beacon-blink-when-window-scrolls nil)
+  (setq beacon-blink-duration 0.3)
+  (beacon-mode 1))
+#+end_src
+
+* flycheck
+
+flycheck 是现代的在线语法检查工具, 它使用系统工具对 buffer 进行检查，可以取代 emacs 内置的 flymake。
++ C-c ! v (flycheck-verify-setup) :: 查看当前 buffer 使用的 checker。
++ C-c ! l (flycheck-list-errors) :: 列出当前 workspace 所有的 error。
++ M-g f 或 C-c !!: consult-flycheck。
+#+begin_src emacs-lisp
+(use-package flycheck
+  :disabled
+  :demand
+  :config
+  ;; 高亮出现错误的列位置。
+  (setq flycheck-highlighting-mode (quote columns))
+  ;; 从列表中取掉 idle-change, 避免不必要的错误提示。
+  ;;(setq flycheck-check-syntax-automatically '(save mode-enabled))
+  ;; 只在 save buffer 时才检查。
+  (setq flycheck-check-syntax-automatically '(save))
+  (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
+  (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
+  :hook
+  (prog-mode . flycheck-mode))
+
+;; 在线显示 flycheck 错误。
+(use-package flycheck-pos-tip
+  :after (flycheck)
+  :config
+  (flycheck-pos-tip-mode))
+
+;; flycheck 实时预览。
+(use-package consult-flycheck
+  :after (consult flycheck)
+  :bind
+  (:map flycheck-command-map ("!" . consult-flycheck)))
+#+end_src
+
+* lsp
+
+#+begin_src emacs-lisp
+(setenv "LSP_USE_PLISTS" "true")
+
+(use-package lsp-mode
+  :disabled
+  :custom
+  ;; debug 时才开启 log, 否则影响性能。
+  (lsp-log-io nil)
+  ;; 日志记录行数。
+  (lsp-log-max 1000)
+  (lsp-keymap-prefix "C-c l")
+  (lsp-diagnostics-provider :flycheck)
+  (lsp-diagnostics-flycheck-default-level 'warning)
+  (lsp-completion-provider :none) ;; corfu.el: :none, company: :capf
+  (lsp-enable-symbol-highlighting nil)
+  ;; 不显示面包屑。
+  (lsp-headerline-breadcrumb-enable nil)
+  (lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  ;; 启用 snippet 后才支持函数或方法的 placeholder 提示。
+  (lsp-enable-snippet nil)
+  ;; 后续使用 lsp-ui-doc 替代 eldoc, 前者还支持 mouse 和 cursor hover.
+  (lsp-eldoc-enable-hover nil)
+  (lsp-eldoc-render-all t)
+  ;; 刷新高亮、lenses 和 links 的间隔。
+  (lsp-idle-delay 0.2)
+  ;; 退出最后一个 lsp buffer 时自动 kill lsp-server.
+  (lsp-keep-workspace-alive nil)
+  (lsp-file-watch-threshold 2000)
+  (lsp-enable-file-watchers nil)
+  ;; 关闭 folding。
+  (lsp-enable-folding nil)
+  ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
+  (lsp-enable-links nil)
+  (lsp-enable-indentation nil)
+  ;; flycheck 会在 modeline 展示检查结果, 故不需 lsp 再展示。
+  (lsp-modeline-diagnostics-enable nil)
+  ;; 不在 modeline 上显示 code-actions 信息。
+  (lsp-modeline-code-actions-enable nil)
+  (lsp-modeline-workspace-status-enable nil)
+  (lsp-restart 'auto-restart)
+  ;; 使用 projectile/project 来自动探测项目根目录。
+  (lsp-auto-guess-root t)
+  ;; 不对 imenu 结果进行排序.
+  (lsp-imenu-sort-methods '(position))
+  :init
+  ;; 设置 lsp 使用 corfu 来进行补全。
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless)))
+  :hook
+  ((java-mode . lsp)
+   (python-mode . lsp)
+   (go-mode . lsp)
+   ;;(yaml-mode . lsp)
+   (js-mode . lsp)
+   (web-mode . lsp)
+   (tide-mode . lsp)
+   (typescript-mode . lsp)
+   (dockerfile-mode . lsp)
+   (lsp-completion-mode . my/lsp-mode-setup-completion)
+   (lsp-mode . lsp-enable-which-key-integration))
+  :config
+  (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
+                 "[/\\\\]resources/META-INF\\'"
+                 "[/\\\\]vendor\\'"
+                 "[/\\\\]node_modules\\'"
+                 "[/\\\\]\\.settings\\'"
+                 "[/\\\\]\\.project\\'"
+                 "[/\\\\]\\.travis\\'"
+                 "[/\\\\]bazel-*"
+                 "[/\\\\]\\.cache"
+                 "[/\\\\]\\.clwb$"))
+    (push dir lsp-file-watch-ignored-directories))
+  :bind
+  (:map lsp-mode-map
+        ("C-c f" . lsp-format-region)
+        ("C-c e" . lsp-describe-thing-at-point)
+        ("C-c a" . lsp-execute-code-action)
+        ("C-c r" . lsp-rename)
+        ([remap xref-find-definitions] . lsp-find-definition)
+        ([remap xref-find-references] . lsp-find-references)))
+
+(use-package which-key
+    :config
+    (setq which-key-idle-delay 0.5)
+    (which-key-mode))
+#+end_src
++ 参考： [[https://github.com/minad/corfu/wiki][Configuring corfu for lsp-mode with orderless]]
+
+consult-lsp 提供两个非常有用的命令：consult-lsp-symbols 和 consult-lsp-diagnostics：
++ consult-lsp-symbols: C-M-.
+#+begin_src emacs-lisp
+(use-package consult-lsp
+  :demand
+  :after (lsp-mode consult)
+  :config
+  (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
+#+end_src
+
+lsp-ui 显示函数签名和帮助文档：
++ lsp-mode 和 lsp-ui 的特性可以[[https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/][参考这个页面]]来进行选择性的打开和关闭；
+#+begin_src emacs-lisp
+(use-package lsp-ui
+  :after (lsp-mode flycheck)
+  :demand
+  :custom
+  ;; 显示目录。
+  (lsp-ui-peek-show-directory t)
+  ;; 文件列表宽度。
+  (lsp-ui-peek-list-width 80)
+  ;; 光标移动到关键字时自动显示文档。
+  (lsp-ui-doc-show-with-cursor nil)
+  (lsp-ui-doc-show-with-mouse nil)
+  (lsp-ui-doc-delay 0.1)
+  ;;(lsp-ui-doc-position 'at-point)
+  ;; 启用 flycheck 集成。
+  (lsp-ui-flycheck-enable t)
+  (lsp-ui-sideline-enable nil)
+  (lsp-ui-peek-fontify 'never) ;; always, on-demand
+  ;; 不使用 childframe, 否则 frame 带 awesome-tab 的 header.
+  (lsp-ui-doc-use-childframe nil)
+  :config
+  (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
+  (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
+#+end_src
+
+lsp-treemacs:
+#+begin_src emacs-lisp
+;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
+(use-package lsp-treemacs
+  :after (lsp-mode treemacs)
+  :config
+  (setq lsp-treemacs-error-list-current-project-only t)
+  (lsp-treemacs-sync-mode 1))
+#+end_src
+
+* go
+
+#+begin_src emacs-lisp
+(use-package go-mode
+  ;;:after (lsp-mode)
+  :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
+  :init
+  (setq godoc-at-point-function #'godoc-gogetdoc)
+  (defun lsp-go-install-save-hooks ()
+    (add-hook 'before-save-hook #'lsp-format-buffer t t)
+    (add-hook 'before-save-hook #'lsp-organize-imports t t))
+  :hook (go-mode . lsp-go-install-save-hooks)
+  :bind
+  (:map go-mode-map
+        ("C-c R" . go-remove-unused-imports)
+        ("<f1>" . godoc-at-point))
+  :config
+  ;; 配置 -mod=mod, 防止带有 vendor 目录的项目报错: go: inconsistent vendoring
+  (setq lsp-go-env '((GOFLAGS . "-mod=mod")))
+  (lsp-register-custom-settings
+   `(("gopls.allExperiments" t t)
+     ("gopls.staticcheck" t t)
+     ("gopls.completeUnimported" t t)
+     ;; opts a user into the experimental support for multi-module workspaces
+     ("gopls.experimentalWorkspaceModule" t t)
+     ;;disables -mod=readonly, allowing imports from out-of-scope module
+     ("gopls.allowModfileModifications" t t)
+     ;;disables GOPROXY=off, allowing implicit module downloads rather than requiring user action
+     ("gopls.allowImplicitNetworkAccess" t t)
+     ;; enables gopls to fall back on outdated package metadata
+     ("gopls.experimentalUseInvalidMetadata" t t))))
+#+end_src
+
+gopls 自带了诊断功能，所以不再需要：
+#+begin_src emacs-lisp
+;; golangci-lint 性能较 go-xxx 工具高，同时避免调用过多 checker.
+(use-package flycheck-golangci-lint
+  :ensure-system-package (golangci-lint)
+  :after flycheck
+  :config
+  (setq flycheck-disabled-checkers 
+        '(go-gofmt
+          go-golint
+          go-vet
+          go-build
+          go-test
+          go-staticcheck
+          go-errcheck))
+  (flycheck-golangci-lint-setup))
+#+end_src
+
+
+* dockerfile
+
+#+begin_src emacs-lisp
+(use-package dockerfile-mode
+  :ensure-system-package
+  (docker-langserver . "npm install -g dockerfile-language-server-nodejs")
+  :config
+  (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
+#+end_src
+* winner
+#+begin_src emacs-lisp
+
+#+end_src
+
+
+* undo-tree
+#+begin_src emacs-lisp
+(use-package undo-tree
+  :init
+  (global-undo-tree-mode 1))
+#+end_src
+
+* vertico
+与使用 awesome-tray  时，不能使用 buffer 风格，否则显示的效果不对。
+#+begin_src emacs-lisp
+  ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
+  (vertico-multiform-mode)
+
+  ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
+  ;; 为 file 设置 grid 模式, 为 grep 设置 buffer 模式。
+  (setq vertico-multiform-categories
+        '((file grid)
+          (consult-grep buffer)))
+#+end_src
+
+
+* awesome-tab
+#+begin_src emacs-lispe
+(use-package awesome-tab
+  :config
+  (setq awesome-tab-label-fixed-length 18)
+  (setq awesome-tab-height 130)
+  ;; 不显示 tab 序号。
+  (setq awesome-tab-show-tab-index nil)
+  ;; HideRules, 需要先定义才生效。
+  (defun awesome-tab-hide-tab (x)
+    (let ((name (format "%s" x)))
+      (or
+       (string-prefix-p "*epc" name)
+       (string-prefix-p "*helm" name)
+       (string-prefix-p "*Compile-Log*" name)
+       (string-prefix-p "*lsp" name)
+       (string-prefix-p "*gopls" name)
+       (string-prefix-p "*dashboard" name)
+       (string-prefix-p "*Warnings" name)
+       (string-prefix-p "*Messages" name)
+       (string-prefix-p "*scratch" name)
+       (string-prefix-p "*Help" name)
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name))))))
+  (awesome-tab-mode t)
+  (global-set-key (kbd "s-1") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-0") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "C-c j") 'awesome-tab-ace-jump))
+#+end_src
+
+
+* ibuffer-project
+#+begin_src emacs-lisp
+
+#+end_src
+
+* color-rg
+** color-rg
+
+#+begin_src emacs-lisp
+(use-package color-rg
+  :straight (:host github :repo "manateelazycat/color-rg"))
+#+end_src
+
+
+* ripgrep
+
+#+begin_src emacs-lisp
+;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包。
+(use-package ripgrep
+  :ensure-system-package (rg . ripgrep))
 #+end_src

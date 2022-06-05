@@ -81,6 +81,9 @@
 % 添加 email
 \newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
 
+% sidewaytable 依赖 rotfloat
+\usepackage {rotfloat}
+
 % tabularx 的特殊 align 参数 X 用来对指定列内容自动换行，表格前需要加如下属性：
 % #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|X
 \usepackage{tabularx}
