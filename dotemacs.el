@@ -62,6 +62,12 @@
 ;; 缩短更新 screen 的时间。
 (setq idle-update-delay 0.1)
 
+;; 加快快捷键提示的速度。
+(setq echo-keystrokes 0.1)
+
+;; 显示消息超时的时间。
+(setq minibuffer-message-timeout 1)     
+
 ;; 使用字体缓存，避免卡顿。
 (setq inhibit-compacting-font-caches t)
 
@@ -82,6 +88,9 @@
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
   (menu-bar-mode -1)
+  ;; 关闭对话框。
+  (setq use-file-dialog nil)
+  (setq use-dialog-box nil)
   ;; 使用更瘦字体。
   (setq ns-use-thin-smoothing t)
   ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
@@ -108,10 +117,6 @@
 ;; 出错提示。
 (setq visible-bell t)
 
-;; 关闭对话框。
-(setq use-file-dialog nil)
-(setq use-dialog-box nil)
-
 ;; 窗口间显示分割线。
 (setq window-divider-default-places t)
 (add-hook 'window-setup-hook #'window-divider-mode)
@@ -137,10 +142,6 @@
 (if (boundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode t))
 
-;; 关闭 mouse-wheel-text-scale 快捷键 (容易触碰误操作) 。
-(global-unset-key (kbd "C-<wheel-down>"))
-(global-unset-key (kbd "C-<wheel-up>"))
-
 ;; 大文件不显示行号。
 (setq large-file-warning-threshold nil)
 (setq line-number-display-limit large-file-warning-threshold)
@@ -164,8 +165,6 @@
   (doom-themes-enable-bold t)
   (doom-themes-enable-italic t)
   (doom-themes-treemacs-theme "doom-colors")
-  ;; modeline 两边各加 4px 空白。
-  (doom-themes-padded-modeline t)
   :config
   (doom-themes-visual-bell-config)
   (load-theme 'doom-palenight t)
@@ -175,79 +174,38 @@
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
-;; modeline 显示电池和日期时间。
-(display-battery-mode t)
-(column-number-mode t)
-(size-indication-mode -1)
-(display-time-mode t)
-(setq display-time-24hr-format t)
-(setq display-time-default-load-average nil)
-(setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%dT%H:%M")
-(setq display-time-day-and-date t)
-(setq indicate-buffer-boundaries (quote left))
-
-(use-package doom-modeline
+(use-package awesome-tray
   :demand
-  :after (doom-themes)
-  :custom
-  ;; 不显示换行和编码（节省空间）。
-  (doom-modeline-buffer-encoding nil)
-  ;; 显示语言版本。
-  (doom-modeline-env-version t)
-  ;; 不显示 Go 版本。
-  (doom-modeline-env-enable-go nil)
-  ;; 不显示 icon, 防止溢出。
-  (doom-modeline-icon nil)
-  (doom-modeline-unicode-fallback nil)
-  ;; 不显示 project 名称。
-  ;;(doom-modeline-project-detection nil)
-  ;; 不显示文件所属项目，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
-  ;;(doom-modeline-buffer-file-name-style 'file-name)
-  (doom-modeline-buffer-file-name-style 'relative-from-project)
-  (doom-modeline-vcs-max-length 30)
-  (doom-modeline-github nil)
-  (doom-modeline-height 2)
-  :init
-  (doom-modeline-mode 1)
+  :straight (:repo "manateelazycat/awesome-tray" :host github)
+  :hook
+  ;; emacs 启动完毕后再启动，这样可以替换掉 doom-theme 的 modeline, 避免显示两个。
+  (after-init .  (lambda () (awesome-tray-mode)))
   :config
-  (set-face-attribute 'doom-modeline nil :font "Fira Code Retina" :height 1.0)
-  (set-face-attribute 'doom-modeline-inactive nil :font "Fira Code Retina" :height 1.0))
+  ;; modeline 中添加 input-method 显示。
+  (setq awesome-tray-active-modules '("location" "file-path" "mode-name" "battery" "input-method" "date")))
 
-(use-package awesome-tab
+(use-package sort-tab
+  :demand
+  :straight (:repo "manateelazycat/sort-tab" :host github)
   :config
-  (setq awesome-tab-label-fixed-length 14)
-  (setq awesome-tab-height 150)
-  ;; 不显示 tab 序号。
-  (setq awesome-tab-show-tab-index nil)
-  ;; HideRules, 需要先定义才生效。
-  (defun awesome-tab-hide-tab (x)
-    (let ((name (format "%s" x)))
-      (or
-       (string-prefix-p "*epc" name)
-       (string-prefix-p "*helm" name)
-       (string-prefix-p "*Compile-Log*" name)
-       (string-prefix-p "*lsp" name)
-       (string-prefix-p "*gopls" name)
-       (string-prefix-p "*dashboard" name)
-       (string-prefix-p "*Warnings" name)
-       (string-prefix-p "*Messages" name)
-       (string-prefix-p "*scratch" name)
-       (string-prefix-p "*Help" name)
-       (and (string-prefix-p "magit" name)
-            (not (file-name-extension name))))))
-  (awesome-tab-mode t)
-  (global-set-key (kbd "s-1") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-2") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-3") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-4") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-5") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-6") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-7") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-8") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-9") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "s-0") 'awesome-tab-select-visible-tab)
-  (global-set-key (kbd "C-c j") 'awesome-tab-ace-jump))
+  (sort-tab-mode 1)
+  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
+  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
+  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
+  ;; 设置 tab 颜色，M-x list-colors-display.
+  (set-face-foreground 'sort-tab-current-tab-face "bisque4")
+  ;; 不显示背景颜色。
+  (set-face-background 'sort-tab-current-tab-face nil))
 
 (use-package dashboard
   :demand
@@ -259,42 +217,7 @@
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
-
-;; 显示光标位置。
-(use-package beacon
-  :config
-  ;; 翻页时不高亮位置。
-  (setq beacon-blink-when-window-scrolls nil)
-  (setq beacon-blink-duration 0.3)
-  (beacon-mode 1))
-
-;; 显示缩进。
-(use-package highlight-indent-guides
-  :demand
-  :custom
-  (highlight-indent-guides-method 'character)
-  (highlight-indent-guides-responsive 'top)
-  (highlight-indent-guides-suppress-auto-error t)
-  (highlight-indent-guides-delay 0.1)
-  :config
-  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
-
-;; 切换透明背景。
-(defun my/toggle-transparency ()
-  (interactive)
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
-
-;; 在 frame 底部显示窗口。
-(setq display-buffer-alist
-      `((,(rx bos (or "*Apropos*" "*Help*" "*helpful" "*info*" "*Summary*" "*lsp-help*" "*vterm") (0+ not-newline))
-         (display-buffer-reuse-mode-window display-buffer-below-selected)
-         (window-height . 0.43)
-         (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
+  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3))))
 
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 ;; 缺省字体（英文，如显示代码）。
@@ -387,7 +310,7 @@
    (minibuffer-setup . vertico-repeat-save))
   :config
   ;; 显示的侯选者数量。
-  (setq vertico-count 15)
+  (setq vertico-count 20)
   (setq vertico-cycle nil)
   (vertico-mode 1)
 
@@ -399,10 +322,8 @@
   (vertico-multiform-mode)
 
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
-  ;; 为 file 设置 grid 模式, 为 grep 设置 buffer 模式。
-  (setq vertico-multiform-categories
-        '((file grid)
-          (consult-grep buffer))))
+  ;; 为 file 设置 grid 模式, grep buffer 模式与 awesome-tray 不兼容。
+  (setq vertico-multiform-categories '((file grid))))
 
 (use-package emacs
   :init
@@ -448,11 +369,12 @@
   ;; 自定义 orderless 风格。
   (orderless-define-completion-style +orderless-with-initialism
     (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
+  ;; 使用 orderless 过滤候选者。
   (setq completion-styles '(orderless basic))
   (setq completion-category-defaults nil)
+  ;; 各 category 使用的补全风格。
   (setq completion-category-overrides '((buffer (styles +orderless-with-initialism))
                                         (file (styles basic partial-completion))
-                                        ;;(file (styles basic))
                                         (command (styles +orderless-with-initialism))
                                         (variable (styles +orderless-with-initialism))
                                         (symbol (styles +orderless-with-initialism))))
@@ -482,7 +404,7 @@
    ("<help> a" . consult-apropos)
    ;; M-g 绑定 (goto-map)
    ("M-g e" . consult-compile-error)
-   ("M-g f" . consult-flycheck)
+   ;;("M-g f" . consult-flycheck)
    ("M-g g" . consult-goto-line)
    ("M-g M-g" . consult-goto-line)
    ("M-g o" . consult-outline)
@@ -535,10 +457,21 @@
   (setq completion-in-region-function #'consult-completion-in-region)
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil)
-  ;; Buffer 列表中忽略一些 buffers。
+  ;; Buffer 列表中不显示的 buffer 名称。
   (mapcar 
    (lambda (pattern) (add-to-list 'consult-buffer-filter pattern))
-   '("\\*scratch\\*" "\\*Warnings\\*" "\\*helpful.*" "\\*Help\\*" "\\*Org Src.*" "Pfuture-Callback.*")))
+   '("\\*scratch\\*" 
+     "\\*Warnings\\*"
+     "\\*helpful.*"
+     "\\*Help\\*" 
+     "\\*Org Src.*"
+     "Pfuture-Callback.*"
+     "\\*epc con"
+     "\\*dashboard"
+     "\\*lsp-bridge"
+     "\\*Ibuffer"
+     "\\*sort-tab"
+     "[0-9]+.gpg")))
 
 (use-package embark
   :init
@@ -586,15 +519,6 @@
         ("S-TAB" . corfu-previous)
         ([backtab] . corfu-previous)) 
   :custom
-  ;;开启自动补全。
-  (corfu-auto t)
-  (corfu-auto-prefix 2)
-  (corfu-auto-delay 0.25)
-  (corfu-cycle nil)
-  ;; 自动选择第一个。
-  (corfu-preselect-first t)
-  ;; 自动插入候选者到光标。
-  (corfu-preview-current t)
   (corfu-min-width 80)
   (corfu-max-width corfu-min-width)
   (corfu-count 14)
@@ -602,9 +526,9 @@
   ;; 后续使用 corfu-doc 来显示文档，故关闭。
   (corfu-echo-documentation nil)
   ;; 使用候选者的历史位置来排序。
-  (corfu-history-mode 1)
   :config
   (savehist-mode 1)
+  (corfu-history-mode t)
   (add-to-list 'savehist-additional-variables 'corfu-history)
   (global-corfu-mode))
 
@@ -633,9 +557,9 @@
   :straight (cape :host github :repo "minad/cape")
   :init
   (add-to-list 'completion-at-point-functions #'cape-file)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
@@ -684,7 +608,7 @@
           (?S aw-swap-window "Swap Windows")
           (?M aw-move-window "Move Window")
           (?C aw-copy-window "Copy Window")
-          ;; 为指定 window 选择新的 Buffer,并 switch 过去。
+          ;; 为指定 window 选择新的 Buffer 并切换过去。
           (?B aw-switch-buffer-in-window "Select Buffer")
           ;; 为指定 window 选择新的 Buffer，切换到其它 buffer；
           (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
@@ -697,6 +621,276 @@
   ;; 总是提示窗口选择，进而执行 ace 命令。
   (setq aw-dispatch-always t)
   (global-set-key (kbd "M-o") 'ace-window))
+
+(use-package winner
+  :straight (:type built-in)
+  :commands (winner-undo winner-redo)
+  :hook (after-init . winner-mode)
+  :init
+  (setq winner-boring-buffers
+        '("*Completions*"
+          "*Compile-Log*"
+          "*inferior-lisp*"
+          "*helpful"
+          "*lsp-help*"
+          "*Fuzzy Completions*"
+          "*Apropos*"
+          "*Help*"
+          "*cvs*"
+          "*Buffer List*"
+          "*Ibuffer*"
+          "*esh command on file*")))
+
+;; https://github.com/manateelazycat/toggle-one-window/blob/main/toggle-one-window.el
+(defvar toggle-one-window-window-configuration nil
+  "The window configuration use for `toggle-one-window'.")
+
+(defun toggle-one-window ()
+  "Toggle between window layout and one window."
+  (interactive)
+  (if (equal (length (cl-remove-if #'window-dedicated-p (window-list))) 1)
+      (if toggle-one-window-window-configuration
+          (progn
+            (set-window-configuration toggle-one-window-window-configuration)
+            (setq toggle-one-window-window-configuration nil))
+        (message "No other windows exist."))
+    (setq toggle-one-window-window-configuration (current-window-configuration))
+    (delete-other-windows)))
+(global-set-key (kbd "s-<f11>") 'toggle-one-window)
+
+;; 切换透明背景。
+(defun my/toggle-transparency ()
+  (interactive)
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
+
+;; 在 frame 底部显示窗口。
+(setq display-buffer-alist
+      `((,(rx bos (or
+                   "*Apropos*"
+                   "*Help*"
+                   "*helpful"
+                   "*info*"
+                   "*Summary*"
+                   "*lsp-help*"
+                   "*vterm"
+                   "Shell Command Output") (0+ not-newline))
+         (display-buffer-reuse-mode-window display-buffer-below-selected)
+         (window-height . 0.43)
+         (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
+
+  (use-package ibuffer
+    :straight (:type built-in)
+    :bind
+    ("C-x C-b" . ibuffer)
+    :config
+    (setq ibuffer-expert t)
+    (setq ibuffer-display-summary nil)
+    (setq ibuffer-use-other-window t)
+    ;; 隐藏空组。
+    (setq ibuffer-show-empty-filter-groups nil)
+    (setq ibuffer-movement-cycle nil)
+    ;;(setq ibuffer-default-sorting-mode 'filename/process)
+    (setq ibuffer-default-sorting-mode 'recency)
+    (setq ibuffer-use-header-line t)
+    (setq ibuffer-default-shrink-to-minimum-size nil)
+    (setq ibuffer-saved-filter-groups nil)
+    (setq ibuffer-old-time 48)
+    (add-hook 'ibuffer-mode-hook #'hl-line-mode))
+
+  (use-package ibuffer-project
+    :hook
+    ((ibuffer . (lambda ()
+		  (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+		  (unless (eq ibuffer-sorting-mode 'project-file-relative)
+		    (ibuffer-do-sort-by-project-file-relative)))))
+    :config
+    ;; 显示的文件名是相对于 project root 的相对路径。
+    (setq ibuffer-formats
+	  '((mark modified read-only " "
+		  (name 18 18 :left :elide)
+		  " "
+		  (size 9 -1 :right)
+		  " "
+		  (mode 16 16 :left :elide)
+		  " "
+		  project-file-relative))))
+
+  (use-package hydra)
+
+  ;; Ref: https://github.com/abo-abo/hydra/wiki/Ibuffer
+  (defhydra hydra-ibuffer-main (:color pink :hint nil)
+    "
+  ^Mark^         ^Actions^         ^View^          ^Select^              ^Navigation^
+  _m_: mark      _D_: delete       _g_: refresh    _q_: quit             _k_:   ↑    _h_
+  _u_: unmark    _s_: save marked  _S_: sort       _TAB_: toggle         _RET_: visit
+  _*_: specific  _a_: all actions  _/_: filter     _o_: other window     _j_:   ↓    _l_
+  _t_: toggle    _._: toggle hydra _H_: help       C-o other win no-select
+  "
+    ("m" ibuffer-mark-forward)
+    ("u" ibuffer-unmark-forward)
+    ("*" hydra-ibuffer-mark/body :color blue)
+    ("t" ibuffer-toggle-marks)
+
+    ("D" ibuffer-do-delete)
+    ("s" ibuffer-do-save)
+    ("a" hydra-ibuffer-action/body :color blue)
+
+    ("g" ibuffer-update)
+    ("S" hydra-ibuffer-sort/body :color blue)
+    ("/" hydra-ibuffer-filter/body :color blue)
+    ("H" describe-mode :color blue)
+
+    ("h" ibuffer-backward-filter-group)
+    ("k" ibuffer-backward-line)
+    ("l" ibuffer-forward-filter-group)
+    ("j" ibuffer-forward-line)
+    ("RET" ibuffer-visit-buffer :color blue)
+
+    ("TAB" ibuffer-toggle-filter-group)
+
+    ("o" ibuffer-visit-buffer-other-window :color blue)
+    ("q" quit-window :color blue)
+    ("." nil :color blue))
+
+  (defhydra hydra-ibuffer-mark (:color teal :columns 5
+				:after-exit (hydra-ibuffer-main/body))
+    "Mark"
+    ("*" ibuffer-unmark-all "unmark all")
+    ("M" ibuffer-mark-by-mode "mode")
+    ("m" ibuffer-mark-modified-buffers "modified")
+    ("u" ibuffer-mark-unsaved-buffers "unsaved")
+    ("s" ibuffer-mark-special-buffers "special")
+    ("r" ibuffer-mark-read-only-buffers "read-only")
+    ("/" ibuffer-mark-dired-buffers "dired")
+    ("e" ibuffer-mark-dissociated-buffers "dissociated")
+    ("h" ibuffer-mark-help-buffers "help")
+    ("z" ibuffer-mark-compressed-file-buffers "compressed")
+    ("b" hydra-ibuffer-main/body "back" :color blue))
+
+  (defhydra hydra-ibuffer-action (:color teal :columns 4
+				  :after-exit
+				  (if (eq major-mode 'ibuffer-mode)
+				      (hydra-ibuffer-main/body)))
+    "Action"
+    ("A" ibuffer-do-view "view")
+    ("E" ibuffer-do-eval "eval")
+    ("F" ibuffer-do-shell-command-file "shell-command-file")
+    ("I" ibuffer-do-query-replace-regexp "query-replace-regexp")
+    ("H" ibuffer-do-view-other-frame "view-other-frame")
+    ("N" ibuffer-do-shell-command-pipe-replace "shell-cmd-pipe-replace")
+    ("M" ibuffer-do-toggle-modified "toggle-modified")
+    ("O" ibuffer-do-occur "occur")
+    ("P" ibuffer-do-print "print")
+    ("Q" ibuffer-do-query-replace "query-replace")
+    ("R" ibuffer-do-rename-uniquely "rename-uniquely")
+    ("T" ibuffer-do-toggle-read-only "toggle-read-only")
+    ("U" ibuffer-do-replace-regexp "replace-regexp")
+    ("V" ibuffer-do-revert "revert")
+    ("W" ibuffer-do-view-and-eval "view-and-eval")
+    ("X" ibuffer-do-shell-command-pipe "shell-command-pipe")
+    ("b" nil "back"))
+
+  (defhydra hydra-ibuffer-sort (:color amaranth :columns 3)
+    "Sort"
+    ("i" ibuffer-invert-sorting "invert")
+    ("a" ibuffer-do-sort-by-alphabetic "alphabetic")
+    ("v" ibuffer-do-sort-by-recency "recently used")
+    ("s" ibuffer-do-sort-by-size "size")
+    ("f" ibuffer-do-sort-by-filename/process "filename")
+    ("m" ibuffer-do-sort-by-major-mode "mode")
+    ("b" hydra-ibuffer-main/body "back" :color blue))
+
+  (defhydra hydra-ibuffer-filter (:color amaranth :columns 4)
+    "Filter"
+    ("m" ibuffer-filter-by-used-mode "mode")
+    ("M" ibuffer-filter-by-derived-mode "derived mode")
+    ("n" ibuffer-filter-by-name "name")
+    ("c" ibuffer-filter-by-content "content")
+    ("e" ibuffer-filter-by-predicate "predicate")
+    ("f" ibuffer-filter-by-filename "filename")
+    (">" ibuffer-filter-by-size-gt "size")
+    ("<" ibuffer-filter-by-size-lt "size")
+    ("/" ibuffer-filter-disable "disable")
+    ("b" hydra-ibuffer-main/body "back" :color blue))
+
+  (define-key ibuffer-mode-map "." 'hydra-ibuffer-main/body)
+
+(use-package dired
+  :straight (:type built-in)
+  :config
+  ;; re-use dired buffer, available in Emacs 28
+  ;; @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
+  (setq dired-kill-when-opening-new-dired-buffer t)
+  ;; "always" means no asking
+  (setq dired-recursive-copies 'always)
+  ;; "top" means ask once for top level directory
+  (setq dired-recursive-deletes 'top)
+  ;; search file name only when focus is over file
+  (setq dired-isearch-filenames 'dwim)
+  ;; if another Dired buffer is visible in another window, use that directory as target for Rename/Copy
+  (setq dired-dwim-target t)
+  ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
+  (setq dired-listing-switches "-laGh1v --group-directories-first")
+  (put 'dired-find-alternate-file 'disabled nil))
+
+;; dired 显示高亮增强。
+(use-package diredfl
+  :config
+  (diredfl-global-mode))
+
+(defhydra hydra-dired (:hint nil :color pink)
+  "
+_+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
+_C_opy             _O_ view other   _U_nmark all       _)_ omit-mode      _$_ hide-subdir    C-x C-q : edit
+_D_elete           _o_pen other     _u_nmark           _l_ redisplay      _w_ kill-subdir    C-c C-c : commit
+_R_ename           _M_ chmod        _t_oggle           _g_ revert buf     _e_ ediff          C-c ESC : abort
+_Y_ rel symlink    _G_ chgrp        _E_xtension mark   _s_ort             _=_ pdiff
+_S_ymlink          ^ ^              _F_ind marked      _._ toggle hydra   \\ flyspell
+_r_sync            ^ ^              ^ ^                ^ ^                _?_ summary
+_z_ compress-file  _A_ find regexp
+_Z_ compress       _Q_ repl regexp
+
+T - tag prefix
+"
+  ("\\" dired-do-ispell)
+  ("(" dired-hide-details-mode)
+  (")" dired-omit-mode)
+  ("+" dired-create-directory)
+  ("=" diredp-ediff)         ;; smart diff
+  ("?" dired-summary)
+  ("$" diredp-hide-subdir-nomove)
+  ("A" dired-do-find-regexp)
+  ("C" dired-do-copy)        ;; Copy all marked files
+  ("D" dired-do-delete)
+  ("E" dired-mark-extension)
+  ("e" dired-ediff-files)
+  ("F" dired-do-find-marked-files)
+  ("G" dired-do-chgrp)
+  ("g" revert-buffer)        ;; read all directories again (refresh)
+  ("i" dired-maybe-insert-subdir)
+  ("l" dired-do-redisplay)   ;; relist the marked or singel directory
+  ("M" dired-do-chmod)
+  ("m" dired-mark)
+  ("O" dired-display-file)
+  ("o" dired-find-file-other-window)
+  ("Q" dired-do-find-regexp-and-replace)
+  ("R" dired-do-rename)
+  ("r" dired-do-rsynch)
+  ("S" dired-do-symlink)
+  ("s" dired-sort-toggle-or-edit)
+  ("t" dired-toggle-marks)
+  ("U" dired-unmark-all-marks)
+  ("u" dired-unmark)
+  ("v" dired-view-file)      ;; q to exit, s to search, = gets line #
+  ("w" dired-kill-subdir)
+  ("Y" dired-do-relsymlink)
+  ("z" diredp-compress-this-file)
+  ("Z" dired-do-compress)
+  ("q" nil)
+  ("." nil :color blue))
+
+(define-key dired-mode-map "." 'hydra-dired/body)
 
 (use-package pyim
   :straight (pyim :repo "tumashu/pyim")
@@ -735,14 +929,7 @@
   ;; 显示候选词数量。
   (setq pyim-page-length 8))
 
-;; 中文拼音词库。
-(use-package pyim-basedict
-  :disabled
-  :after pyim
-  :config
-  (pyim-basedict-enable))
-
-;; 用 THUOCL：清华大学开放中文词库 数据建立的 pyim 输入法的词库。
+;; 清华大学开放中文词库。
 (use-package pyim-tsinghua-dict
   :straight (pyim-tsinghua-dict :host github :repo "redguardtoo/pyim-tsinghua-dict")
   :after pyim
@@ -835,6 +1022,38 @@
   :custom
   (org-html-themify-themes '((dark . doom-palenight) (light . doom-one-light))))
 
+;; Ref: https://github.com/abo-abo/hydra/wiki/Org-clock-and-timers
+ (bind-key "C-c w" 'hydra-org-clock/body)
+ (defhydra hydra-org-clock (:color blue :hint nil)
+   "
+^Clock:^ ^In/out^     ^Edit^   ^Summary^    | ^Timers:^ ^Run^           ^Insert
+-^-^-----^-^----------^-^------^-^----------|--^-^------^-^-------------^------
+(_?_)    _i_n         _e_dit   _g_oto entry | (_z_)     _r_elative      ti_m_e
+ ^ ^     _c_ontinue   _q_uit   _d_isplay    |  ^ ^      cou_n_tdown     i_t_em
+ ^ ^     _o_ut        ^ ^      _r_eport     |  ^ ^      _p_ause toggle
+ ^ ^     ^ ^          ^ ^      ^ ^          |  ^ ^      _s_top
+"
+   ("i" org-clock-in)
+   ("c" org-clock-in-last)
+   ("o" org-clock-out)
+   
+   ("e" org-clock-modify-effort-estimate)
+   ("q" org-clock-cancel)
+
+   ("g" org-clock-goto)
+   ("d" org-clock-display)
+   ("r" org-clock-report)
+   ("?" (org-info "Clocking commands"))
+
+  ("r" org-timer-start)
+  ("n" org-timer-set-timer)
+  ("p" org-timer-pause-or-continue)
+  ("s" org-timer-stop)
+
+  ("m" org-timer)
+  ("t" org-timer-item)
+  ("z" (org-info "Timers")))
+
 (defun my/org-faces ()
   (setq-default line-spacing 2)
   (dolist (face '((org-level-1 . 1.2)
@@ -917,83 +1136,6 @@
   ;; 文字缩放时自动调整 visual-fill-column-width 。
   (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
 
-(setq org-agenda-time-grid
-      (quote ((daily today require-timed)
-              (300 600 900 1200 1500 1800 2100 2400)
-              "......"
-              "-----------------------------------------------------"
-              )))
-
-;; org-agenda 展示的文件。
-(setq org-agenda-files
-      '("~/docs/orgs/gtd.org"
-        "~/docs/orgs/capture.org"))
-(setq org-agenda-start-day "-7d")
-(setq org-agenda-span 21)
-(setq org-agenda-include-diary t)
-;; use org-journal
-;;(setq diary-file "~/docs/orgs/diary")
-;;(setq diary-mail-addr "geekard@qq.com")
-;; 获取经纬度：https://www.latlong.net/
-(setq calendar-latitude +39.904202)
-(setq calendar-longitude +116.407394)
-(setq calendar-location-name "北京")
-(setq calendar-remove-frame-by-deleting t)
-;; 每周第一天是周一。
-(setq calendar-week-start-day 1)
-;; 标记有记录的日期。
-(setq mark-diary-entries-in-calendar t)
-;; 标记节假日。
-(setq mark-holidays-in-calendar nil)
-;; 不显示节日列表。
-(setq view-calendar-holidays-initially nil)
-(setq org-agenda-include-diary t)
-
-;; 除去基督徒、希伯来和伊斯兰教的节日。
-(setq christian-holidays nil
-      hebrew-holidays nil
-      islamic-holidays nil
-      solar-holidays nil
-      bahai-holidays nil)
-
-(setq mark-diary-entries-in-calendar t
-      appt-issue-message nil
-      mark-holidays-in-calendar t
-      view-calendar-holidays-initially nil)
-
-(setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
-      calendar-date-display-form '(year "/" month "/" day)
-      calendar-time-display-form '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
-
-(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
-
-(autoload 'chinese-year "cal-china" "Chinese year data" t)
-
-(setq calendar-load-hook '(lambda ()
-                            (set-face-foreground 'diary-face   "skyblue")
-                            (set-face-background 'holiday-face "slate blue")
-                            (set-face-foreground 'holiday-face "white")))
-
-(use-package org-super-agenda)
-
-;; refile 的位置是 agenda 文件的前三层 headline 。
-(setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
-;; 使用文件路径的形式显示 filename 和 headline, 方便在文件的 top-head 添加内容。
-(setq org-refile-use-outline-path 'file)
-;; 必须设置为 nil 才能显示 headline, 否则只显示文件名 。
-(setq org-outline-path-complete-in-steps nil)
-;; 支持为 subtree 在 refile target 文件指定一个新的父节点 。
-(setq org-refile-allow-creating-parent-nodes 'confirm)
-
-(require 'org-protocol)
-(require 'org-capture)
-
-(setq org-capture-templates
-      '(("c" "Capture" entry (file+headline "~/docs/orgs/capture.org" "Capture")
-         "* %^{Title}\nDate: %U\nSource: %:annotation\n\n%:initial" :empty-lines 1)
-        ("t" "Todo" entry (file+headline "~/docs/orgs/gtd.org" "Tasks")
-         "* TODO %?\n %U %a\n %i" :empty-lines 1)))
-
 (use-package org-download
   :ensure-system-package pngpaste
   :bind
@@ -1036,27 +1178,6 @@
 (use-package org-contrib
   :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
   :demand)
-
-(use-package emacs
-  :straight (:type built-in)
-  :ensure-system-package terminal-notifier)
-
-(defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
-(defun terminal-notifier-notify (title message)
-  (start-process "terminal-notifier"
-                 "terminal-notifier"
-                 terminal-notifier-command
-                 "-title" title
-                 "-sound" "default"
-                 "-message" message
-                 "-activate" "org.gnu.Emacs"))
-
-(defun timed-notification (time msg)
-  (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
-  (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
-
-;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
-(setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
@@ -1129,20 +1250,20 @@
   ((org-tree-slide-play . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor -1)
-                            (beacon-mode -1)
+                            ;;(beacon-mode -1)
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 1)
                             ;;(centaur-tabs-mode 0)
-                            (awesome-tab-mode 0)
+                            ;;(awesome-tab-mode 0)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
-                            (beacon-mode +1)
+                            ;;(beacon-mode +1)
                             ;;(centaur-tabs-mode 1)
-                            (awesome-tab-mode 1)
+                            ;;(awesome-tab-mode 1)
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header nil)
@@ -1220,125 +1341,12 @@
     (unless (eq org-journal-file-type 'daily)
       (org-narrow-to-subtree))
     (goto-char (point-max)))
-  (setq org-capture-templates
-        (cons '("j" "Journal" plain (function org-journal-find-location)
-                "** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
-                :jump-to-captured t :immediate-finish t) org-capture-templates)))
 
-(use-package elfeed
-  :demand
-  :config
-  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
-  (setq elfeed-show-entry-switch 'display-buffer)
-  (setq elfeed-curl-timeout 30)
-  (setf url-queue-timeout 40)
-  (push "-k" elfeed-curl-extra-arguments)
-  (setq elfeed-search-filter "@1-months-ago +unread")
-  ;; 在同一个 buffer 中显示条目。
-  (setq elfeed-show-unique-buffers nil)
-  (setq elfeed-search-title-max-width 150)
-  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
-  (setq elfeed-log-level 'warn)
-
-  ;; 支持收藏 feed, 参考：http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
-  (defalias 'elfeed-toggle-star (elfeed-expose #'elfeed-search-toggle-all 'star))
-  (eval-after-load 'elfeed-search '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
-  (defface elfeed-search-star-title-face '((t :foreground "#f77")) "Marks a starred Elfeed entry.")
-  (push '(star elfeed-search-star-title-face) elfeed-search-face-alist))
-
-(use-package elfeed-org
-  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
-  :hook
-  ((elfeed-dashboard-mode . elfeed-org)
-   (elfeed-show-mode . elfeed-org))
-  :config
-  (progn
-    (defun my/reload-org-feeds ()
-      (interactive)
-      (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
-    (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
-
-(use-package elfeed-dashboard
-  :config
-  (global-set-key (kbd "C-c f") 'elfeed-dashboard)
-  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
-  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
-
-(use-package elfeed-score
-  :config
-  (progn
-    (elfeed-score-enable)
-    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
-
-(use-package elfeed-goodies
-  :config
-  (setq elfeed-goodies/entry-pane-position 'bottom)
-  (setq elfeed-goodies/feed-source-column-width 30)
-  (setq elfeed-goodies/tag-column-width 30)
-  (setq elfeed-goodies/powerline-default-separator 'arrow)
-  (elfeed-goodies/setup))
-
-;; elfeed-goodies 显示日期栏
-;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
-(defun elfeed-goodies/search-header-draw ()
-  "Returns the string to be used as the Elfeed header."
-  (if (zerop (elfeed-db-last-update))
-      (elfeed-search--intro-header)
-    (let* ((separator-left (intern (format "powerline-%s-%s"
-                                           elfeed-goodies/powerline-default-separator
-                                           (car powerline-default-separator-dir))))
-           (separator-right (intern (format "powerline-%s-%s"
-                                            elfeed-goodies/powerline-default-separator
-                                            (cdr powerline-default-separator-dir))))
-           (db-time (seconds-to-time (elfeed-db-last-update)))
-           (stats (-elfeed/feed-stats))
-           (search-filter (cond
-                           (elfeed-search-filter-active
-                            "")
-                           (elfeed-search-filter
-                            elfeed-search-filter)
-                           (""))))
-      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
-          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
-        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
-
-(defun elfeed-goodies/entry-line-draw (entry)
-  "Print ENTRY to the buffer."
-  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
-         (date (elfeed-search-format-date (elfeed-entry-date entry)))
-         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
-         (feed (elfeed-entry-feed entry))
-         (feed-title
-          (when feed
-            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
-         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
-         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
-         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
-                         elfeed-goodies/tag-column-width 4))
-         (title-column (elfeed-format-column
-                        title (elfeed-clamp
-                               elfeed-search-title-min-width
-                               title-width
-                               title-width)
-                        :left))
-         (tag-column (elfeed-format-column
-                      tags-str (elfeed-clamp (length tags-str)
-                                             elfeed-goodies/tag-column-width
-                                             elfeed-goodies/tag-column-width)
-                      :left))
-         (feed-column (elfeed-format-column
-                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
-                                                elfeed-goodies/feed-source-column-width
-                                                elfeed-goodies/feed-source-column-width)
-                       :left)))
-
-    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
-        (progn
-          (insert (propertize date 'face 'elfeed-search-date-face) " ")
-          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
-          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
-          (insert (propertize title 'face title-faces 'kbd-help title)))
-      (insert (propertize title 'face title-faces 'kbd-help title)))))
+  ;; (setq org-capture-templates
+  ;;       (cons '("j" "Journal" plain (function org-journal-find-location)
+  ;;               "** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
+  ;;               :jump-to-captured t :immediate-finish t) org-capture-templates))
+  )
 
 (setq vc-follow-symlinks t)
 
@@ -1373,21 +1381,6 @@
   (global-set-key (kbd "C-c g l") 'git-link)
   (setq git-link-use-commit t))
 
-;; diff 时显示空白字符。
-(defun my/diff-spaces ()
-  (setq-local whitespace-style
-              '(face
-                tabs
-                tab-mark
-                spaces
-                space-mark
-                trailing
-                indentation::space
-                indentation::tab
-                newline
-                newline-mark))
-  (whitespace-mode 1))
-
 (use-package diff-mode
   :straight (:type built-in)
   :init
@@ -1396,9 +1389,7 @@
   (setq diff-update-on-the-fly t)
   (setq diff-refine nil)
   ;; better for patches
-  (setq diff-font-lock-prettify nil)
-  :config
-  (add-hook 'diff-mode-hook 'my/diff-spaces))
+  (setq diff-font-lock-prettify nil))
 
 (use-package ediff
   :straight (:type built-in)
@@ -1409,7 +1400,6 @@
   (setq ediff-split-window-function 'split-window-horizontally)
   ;; 不创建新的 frame 来显示 Control-Panel。
   (setq ediff-window-setup-function #'ediff-setup-windows-plain)
-  (add-hook 'ediff-mode-hook 'my/diff-spaces)
   ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
   (add-hook 'ediff-before-setup-hook
             (lambda ()
@@ -1441,139 +1431,146 @@
   (add-hook 'ediff-select-hook 'f-ediff-org-unfold-tree-element)
   (add-hook 'ediff-unselect-hook 'f-ediff-org-fold-tree))
 
-(use-package flycheck
-  :demand
-  :config
-  ;; 高亮出现错误的列位置。
-  (setq flycheck-highlighting-mode (quote columns))
-  ;; 从列表中取掉 idle-change, 避免不必要的错误提示。
-  (setq flycheck-check-syntax-automatically '(save mode-enabled))
-  (define-key flycheck-mode-map (kbd "M-g n") #'flycheck-next-error)
-  (define-key flycheck-mode-map (kbd "M-g p") #'flycheck-previous-error)
-  :hook
-  (prog-mode . flycheck-mode))
+(defhydra hydra-ediff (:color blue :hint nil)
+  "
+^Buffers           Files           VC                     Ediff regions
+----------------------------------------------------------------------
+_b_uffers           _f_iles (_=_)       _r_evisions              _l_inewise
+_B_uffers (3-way)   _F_iles (3-way)                          _w_ordwise
+                  _c_urrent file
+"
+  ("b" ediff-buffers)
+  ("B" ediff-buffers3)
+  ("=" ediff-files)
+  ("f" ediff-files)
+  ("F" ediff-files3)
+  ("c" ediff-current-file)
+  ("r" ediff-revision)
+  ("l" ediff-regions-linewise)
+  ("w" ediff-regions-wordwise))
 
-;; 在线显示 flycheck 错误。
-(use-package flycheck-pos-tip
-  :after (flycheck)
-  :config
-  (flycheck-pos-tip-mode))
+(add-hook 'prog-mode-hook (lambda () (hs-minor-mode t)))
+(defhydra hydra-hs (:idle 1.0)
+   "
+Hide^^            ^Show^            ^Toggle^    ^Navigation^
+----------------------------------------------------------------
+_h_ hide all      _s_ show all      _t_oggle    _n_ext line
+_d_ hide block    _a_ show block              _p_revious line
+_l_ hide level
 
-;; flycheck 实时预览。
-(use-package consult-flycheck
-  :after (consult flycheck)
-  :bind
-  (:map flycheck-command-map ("!" . consult-flycheck)))
+_SPC_ cancel
+"
+   ("s" hs-show-all)
+   ("h" hs-hide-all)
+   ("a" hs-show-block)
+   ("d" hs-hide-block)
+   ("t" hs-toggle-hiding)
+   ("l" hs-hide-level)
+   ("n" forward-line)
+   ("p" (forward-line -1))
+   ("SPC" nil)
+)
 
-(setenv "LSP_USE_PLISTS" "true")
+(global-set-key (kbd "s-@") 'hydra-hs/body) ;;Example binding
 
-(use-package lsp-mode
-  :custom
-  ;; debug 时才开启 log, 否则影响性能。
-  (lsp-log-io nil)
-  ;; 日志记录行数。
-  (lsp-log-max 1000)
-  (lsp-keymap-prefix "C-c l")
-  (lsp-diagnostics-provider :flycheck)
-  (lsp-diagnostics-flycheck-default-level 'warning)
-  (lsp-completion-provider :none) ;; corfu.el: :none, company: :capf
-  (lsp-enable-symbol-highlighting nil)
-  ;; 不显示面包屑。
-  (lsp-headerline-breadcrumb-enable nil)
-  (lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
-  ;; 启用 snippet 后才支持函数或方法的 placeholder 提示。
-  (lsp-enable-snippet nil)
-  ;; 后续使用 lsp-ui-doc 替代 eldoc, 前者还支持 mouse 和 cursor hover.
-  (lsp-eldoc-enable-hover nil)
-  (lsp-eldoc-render-all t)
-  ;; 刷新高亮、lenses 和 links 的间隔。
-  (lsp-idle-delay 0.2)
-  ;; 退出最后一个 lsp buffer 时自动 kill lsp-server.
-  (lsp-keep-workspace-alive nil)
-  (lsp-enable-file-watchers nil)
-  ;; 关闭 folding。
-  (lsp-enable-folding nil)
-  ;; lsp 显示的 links 不准确且导致 treemacs 目录显示异常，故关闭。
-  (lsp-enable-links nil)
-  (lsp-enable-indentation nil)
-  ;; flycheck 会在 modeline 展示检查结果, 故不需 lsp 再展示。
-  (lsp-modeline-diagnostics-enable nil)
-  ;; 不在 modeline 上显示 code-actions 信息。
-  (lsp-modeline-code-actions-enable nil)
-  (lsp-modeline-workspace-status-enable nil)
-  (lsp-restart 'auto-restart)
-  ;; 使用 projectile/project 来自动探测项目根目录。
-  (lsp-auto-guess-root t)
-  ;; 不对 imenu 结果进行排序.
-  (lsp-imenu-sort-methods '(position))
-  :init
-  ;; 设置 lsp 使用 corfu 来进行补全。
-  (defun my/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless)))
-  :hook
-  ((java-mode . lsp)
-   (python-mode . lsp)
-   (go-mode . lsp)
-   ;;(yaml-mode . lsp)
-   (js-mode . lsp)
-   (web-mode . lsp)
-   (tide-mode . lsp)
-   (typescript-mode . lsp)
-   (dockerfile-mode . lsp)
-   (lsp-completion-mode . my/lsp-mode-setup-completion)
-   (lsp-mode . lsp-enable-which-key-integration))
-  :config
-  (dolist (dir '("[/\\\\][^/\\\\]*\\.\\(json\\|html\\|pyc\\|class\\|log\\|jade\\|md\\)\\'"
-                 "[/\\\\]resources/META-INF\\'"
-                 "[/\\\\]vendor\\'"
-                 "[/\\\\]node_modules\\'"
-                 "[/\\\\]\\.settings\\'"
-                 "[/\\\\]\\.project\\'"
-                 "[/\\\\]\\.travis\\'"
-                 "[/\\\\]bazel-*"
-                 "[/\\\\]\\.cache"
-                 "[/\\\\]\\.clwb$"))
-    (push dir lsp-file-watch-ignored-directories))
-  :bind
-  (:map lsp-mode-map
-        ("C-c f" . lsp-format-region)
-        ("C-c e" . lsp-describe-thing-at-point)
-        ("C-c a" . lsp-execute-code-action)
-        ("C-c r" . lsp-rename)
-        ([remap xref-find-definitions] . lsp-find-definition)
-        ([remap xref-find-references] . lsp-find-references)))
-
-(use-package which-key
-    :config
-    (setq which-key-idle-delay 0.5)
-    (which-key-mode))
-
-(use-package consult-lsp
-  :demand
-  :after (lsp-mode consult)
-  :config
-  (define-key lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
-
-(use-package lsp-ui
-  :after (lsp-mode flycheck)
+;; 显示缩进。
+(use-package highlight-indent-guides
   :demand
   :custom
-  ;; 显示目录。
-  (lsp-ui-peek-show-directory t)
-  ;; 文件列表宽度。
-  (lsp-ui-peek-list-width 80)
-  ;; 光标移动到关键字时自动显示文档。
-  (lsp-ui-doc-show-with-cursor t)
-  (lsp-ui-doc-delay 0.1)
-  ;;(lsp-ui-doc-position 'at-point)
-  ;; 启用 flycheck 集成。
-  (lsp-ui-flycheck-enable t)
-  (lsp-ui-sideline-enable nil)
-  (lsp-ui-peek-fontify 'always)
+  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-responsive 'top)
+  (highlight-indent-guides-suppress-auto-error t)
+  (highlight-indent-guides-delay 0.1)
   :config
-  (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
-  (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
+  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
+
+(use-package tree-sitter
+  :demand t
+  :config
+  (global-tree-sitter-mode)
+  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+  )
+
+(use-package tree-sitter-langs
+  :demand)
+
+(use-package posframe)
+
+(use-package  dumb-jump
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  )
+
+;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转
+(defun lsp-bridge-jump ()
+  (interactive)
+  (cond
+   ((eq major-mode 'emacs-lisp-mode)
+    (let ((symb (function-called-at-point)))
+      (when symb
+        (find-function symb))))
+   (lsp-bridge-mode
+    (lsp-bridge-find-def))
+   (t
+    (require 'dumb-jump)
+    (dumb-jump-go))))
+
+(defun lsp-bridge-jump-back ()
+  (interactive)
+  (cond
+   (lsp-bridge-mode
+    (lsp-bridge-return-from-def))
+   (t
+    (require 'dumb-jump)
+    (dumb-jump-back))))
+
+(use-package lsp-bridge
+  :demand
+  :after (markdown-mode)
+  :straight (:host github :repo "manateelazycat/lsp-bridge" :files ("*" "acm/*"))
+  :bind
+  (:map lsp-bridge-mode-map
+        ("M-."  . lsp-bridge-jump)
+        ("M-," . lsp-bridge-jump-back)
+        ("M-?" . lsp-bridge-find-references)
+        ("M-i" . lsp-bridge-lookup-documentation)
+        ("M-n" . lsp-bridge-popup-documentation-scroll-up)
+        ("M-p" . lsp-bridge-popup-documentation-scroll-down)
+        ("s-C-n" . lsp-bridge-jump-to-next-diagnostic)
+        ("s-C-p" . lsp-bridge-jump-to-prev-diagnostic))
+  :config
+  (setq lsp-bridge-enable-log t)
+  (setq lsp-bridge-enable-signature-help t)
+  (require 'lsp-bridge-icon)
+  (require 'lsp-bridge-orderless)
+  (global-lsp-bridge-mode)
+  (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
+  (when (> (frame-pixel-width) 3000) (custom-set-faces '(corfu-default ((t (:height 1.3))))))
+  ;; 通过Cape融合不同的补全后端，比如lsp-bridge、 tabnine、 file、 dabbrev.
+  (defun lsp-bridge-mix-multi-backends ()
+    (setq-local completion-category-defaults nil)
+    (setq-local completion-at-point-functions
+                (list
+                 (cape-capf-buster
+                  (cape-super-capf
+                   #'lsp-bridge-capf
+                   #'cape-file
+                   #'cape-dabbrev
+                   )
+                  'equal)
+                 )))
+
+  (dolist (hook lsp-bridge-default-mode-hooks)
+    (add-hook hook (lambda ()
+                     (lsp-bridge-mix-multi-backends) ; 通过 Cape 融合多个补全后端
+                     ))))
 
 (use-package emacs
   :straight (:type built-in)
@@ -1590,14 +1587,14 @@
       (setq python-shell-interpreter "python")
       (setq python-shell-interpreter-args "-i"))))
 
-(defun my/python-setup-checkers (&rest args)
-  (when (fboundp 'flycheck-set-checker-executable)
-    (let ((pylint (executable-find "pylint"))
-          (flake8 (executable-find "flake8")))
-      (when pylint
-        (flycheck-set-checker-executable "python-pylint" pylint))
-      (when flake8
-        (flycheck-set-checker-executable "python-flake8" flake8)))))
+;; (defun my/python-setup-checkers (&rest args)
+;;   (when (fboundp 'flycheck-set-checker-executable)
+;;     (let ((pylint (executable-find "pylint"))
+;;           (flake8 (executable-find "flake8")))
+;;       (when pylint
+;;         (flycheck-set-checker-executable "python-pylint" pylint))
+;;       (when flake8
+;;         (flycheck-set-checker-executable "python-flake8" flake8)))))
 
 (use-package python
   :ensure-system-package
@@ -1612,7 +1609,8 @@
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
-                   (my/python-setup-checkers))))
+                   ;; (my/python-setup-checkers)
+                   )))
 
   ;; 使用 yapf 格式化 python 代码。
 (use-package yapfify
@@ -1633,52 +1631,25 @@
   (python-mode . (lambda () (require 'lsp-pyright) (yapf-mode))))
 
 (use-package go-mode
-  :after (lsp-mode)
   :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
   :init
-  (setq godoc-at-point-function #'godoc-gogetdoc)
-  (defun lsp-go-install-save-hooks ()
-    (add-hook 'before-save-hook #'lsp-format-buffer t t)
+  (setq godoc-reuse-buffer t)
+  ;; goimports 在格式化 buffer 的同时自动 import package。
+  (setq gofmt-command "goimports")
+  ;; 需要安装 gogetdoc 命令。
+  ;;(setq godoc-at-point-function #'godoc-gogetdoc)
+  (defun lsp-go-save-hooks ()
+    (add-hook 'before-save-hook #'gofmt-before-save t t)
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  :hook (go-mode . lsp-go-install-save-hooks)
+  :hook (go-mode . lsp-go-save-hooks)
   :bind
   (:map go-mode-map
-        ("C-c R" . go-remove-unused-imports)
-        ("<f1>" . godoc-at-point))
-  :config
-  ;; 配置 -mod=mod, 防止带有 vendor 目录的项目报错: go: inconsistent vendoring
-  (setq lsp-go-env '((GOFLAGS . "-mod=mod")))
-  (lsp-register-custom-settings
-   `(("gopls.allExperiments" t t)
-     ("gopls.staticcheck" t t)
-     ("gopls.completeUnimported" t t)
-     ;; opts a user into the experimental support for multi-module workspaces
-     ("gopls.experimentalWorkspaceModule" t t)
-     ;;disables -mod=readonly, allowing imports from out-of-scope module
-     ("gopls.allowModfileModifications" t t)
-     ;;disables GOPROXY=off, allowing implicit module downloads rather than requiring user action
-     ("gopls.allowImplicitNetworkAccess" t t)
-     ;; enables gopls to fall back on outdated package metadata
-     ("gopls.experimentalUseInvalidMetadata" t t))))
+        ("C-c C-a" . go-import-add)
+        ("C-c C-c" . go-run-buffer)
+        ("C-c C-r" . go-remove-unused-imports)
+        ("C-c C-f" . gofmt)
+        ("C-c C-d" . godoc-at-point)))
 
-(use-package flycheck-golangci-lint
-  :ensure-system-package (golangci-lint)
-  :after flycheck
-  :defines flycheck-disabled-checkers
-  :hook
-  (go-mode . (lambda ()
-               "Enable golangci-lint."
-               (setq flycheck-disabled-checkers 
-                     '(go-gofmt
-                       go-golint
-                       go-vet
-                       go-build
-                       go-test
-                       go-staticcheck
-                       go-errcheck))
-               (flycheck-golangci-lint-setup))))
-
-;; 安装或更新工具。
 (defvar go--tools '("golang.org/x/tools/gopls"
                     "golang.org/x/tools/cmd/goimports"
                     "honnef.co/go/tools/cmd/staticcheck"
@@ -1699,28 +1670,31 @@
      (start-process "go-tools" "*Go Tools*" "go" "install" "-v" "-x" (concat pkg "@latest"))
      (lambda (proc _)))))
 
-;; 其它。
 (use-package go-fill-struct)
 (use-package go-impl)
 
 (use-package go-tag
-  :bind (:map go-mode-map
-              ("C-c t a" . go-tag-add)
-              ("C-c t r" . go-tag-remove))
-  :init (setq go-tag-args (list "-transform" "camelcase")))
+  :bind
+  (:map go-mode-map
+        ("C-c t a" . go-tag-add)
+        ("C-c t r" . go-tag-remove))
+  :init
+  (setq go-tag-args (list "-transform" "camelcase")))
 
 (use-package go-gen-test
-  :bind (:map go-mode-map
-              ("C-c t g" . go-gen-test-dwim)))
+  :bind
+  (:map go-mode-map
+        ("C-c t g" . go-gen-test-dwim)))
 
 (use-package gotest
-  :bind (:map go-mode-map
-              ("C-c t f" . go-test-current-file)
-              ("C-c t t" . go-test-current-test)
-              ("C-c t j" . go-test-current-project)
-              ("C-c t b" . go-test-current-benchmark)
-              ("C-c t c" . go-test-current-coverage)
-              ("C-c t x" . go-run)))
+  :bind
+  (:map go-mode-map
+        ("C-c t f" . go-test-current-file)
+        ("C-c t t" . go-test-current-test)
+        ("C-c t j" . go-test-current-project)
+        ("C-c t b" . go-test-current-benchmark)
+        ("C-c t c" . go-test-current-coverage)
+        ("C-c t x" . go-run)))
 
 (use-package go-playground
   :diminish
@@ -1800,19 +1774,13 @@ mermaid.initialize({
   :bind (:map markdown-mode-command-map
               ("r" . markdown-toc-generate-or-refresh-toc)))
 
-(use-package dockerfile-mode
-  :ensure-system-package
-  (docker-langserver . "npm install -g dockerfile-language-server-nodejs")
-  :config
-  (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
-
-(defun my/use-eslint-from-node-modules ()
-  ;; use local eslint from node_modules before global
-  ;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
-  (let* ((root (locate-dominating-file (or (buffer-file-name) default-directory) "node_modules"))
-         (eslint (and root (expand-file-name "node_modules/eslint/bin/eslint.js" root))))
-    (when (and eslint (file-executable-p eslint))
-      (setq-local flycheck-javascript-eslint-executable eslint))))
+;; (defun my/use-eslint-from-node-modules ()
+;;   ;; use local eslint from node_modules before global
+;;   ;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
+;;   (let* ((root (locate-dominating-file (or (buffer-file-name) default-directory) "node_modules"))
+;;          (eslint (and root (expand-file-name "node_modules/eslint/bin/eslint.js" root))))
+;;     (when (and eslint (file-executable-p eslint))
+;;       (setq-local flycheck-javascript-eslint-executable eslint))))
 
 ;; (shell-command "which npm &>/dev/null || brew install npm &>/dev/null")
 (defun my/setup-tide-mode ()
@@ -1820,7 +1788,7 @@ mermaid.initialize({
   (when (and (stringp buffer-file-name)
              (string-match "\\.[tj]sx?\\'" buffer-file-name))
     (tide-setup)
-    (add-hook 'flycheck-mode-hook #'my/use-eslint-from-node-modules)
+    ;;(add-hook 'flycheck-mode-hook #'my/use-eslint-from-node-modules)
     (tide-hl-identifier-mode +1)))
 
 ;; for .ts and .tsx file
@@ -1832,7 +1800,7 @@ mermaid.initialize({
   :hook
   ((typescript-mode . my/setup-tide-mode))
   :config
-  (flycheck-add-mode 'typescript-tslint 'typescript-mode)
+  ;;(flycheck-add-mode 'typescript-tslint 'typescript-mode)
   (setq typescript-indent-level 2))
 
 (use-package tide
@@ -1845,7 +1813,8 @@ mermaid.initialize({
   (setq tide-tsserver-process-environment '("TSS_LOG=-level verbose -file /tmp/tss.log")))
 
 (use-package js2-mode
-  :after (tide flycheck)
+  ;;:after (tide flycheck)
+  :after (tide)
   :config
   ;; js-mode-map 将 M-. 绑定到 js-find-symbol, 没有使用 tide 和 lsp, 所以需要解
   ;; 绑。这样 M-. 被 tide 绑定到 tide-jump-to-definition.
@@ -1855,14 +1824,14 @@ mermaid.initialize({
   ;; 为 js/jsx 文件启动 tide.
   (add-hook 'js-mode-hook 'my/setup-tide-mode)
   ;; disable jshint since we prefer eslint checking
-  (setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(javascript-jshint)))
-  (flycheck-add-mode 'javascript-eslint 'js-mode)
-  (flycheck-add-next-checker 'javascript-eslint 'javascript-tide 'append)
-  (flycheck-add-next-checker 'javascript-eslint 'jsx-tide 'append)
+  ;; (setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(javascript-jshint)))
+  ;; (flycheck-add-mode 'javascript-eslint 'js-mode)
+  ;; (flycheck-add-next-checker 'javascript-eslint 'javascript-tide 'append)
+  ;; (flycheck-add-next-checker 'javascript-eslint 'jsx-tide 'append)
   (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 
 (use-package web-mode
-  :after (flycheck)
+  ;;:after (flycheck)
   :init
   (add-to-list 'auto-mode-alist '("\\.jinja2?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
@@ -1878,13 +1847,9 @@ mermaid.initialize({
   (web-mode-enable-auto-quoting nil)
   (web-mode-enable-block-face t)
   (web-mode-enable-current-element-highlight t)
-  :config
-  (flycheck-add-mode 'javascript-eslint 'web-mode))
-
-(defun my/json-format ()
-  (interactive)
-  (save-excursion
-    (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)))
+  ;;:config
+  ;;(flycheck-add-mode 'javascript-eslint 'web-mode)
+)
 
 (use-package yaml-mode
   :ensure-system-package
@@ -1947,6 +1912,7 @@ mermaid.initialize({
   (global-set-key (kbd "C-=") 'er/expand-region))
 
 (use-package dap-mode
+  :disabled
   :demand
   :config
   (dap-auto-configure-mode 1)
@@ -2071,10 +2037,6 @@ mermaid.initialize({
   :after (treemacs magit)
   :ensure t)
 
-;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包。
-(use-package ripgrep
-  :ensure-system-package (rg . ripgrep))
-
 (use-package deadgrep
   :ensure-system-package (rg . ripgrep)
   :bind ("<f5>" . deadgrep))
@@ -2087,29 +2049,16 @@ mermaid.initialize({
               (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
                   (delete-window (treemacs-get-local-window))))))
 
-;; lsp-treemacs 显示 lsp workspace 文件夹和 treemacs projects 。
-(use-package lsp-treemacs
-  :after (lsp-mode treemacs)
-  :config
-  (setq lsp-treemacs-error-list-current-project-only t)
-  (lsp-treemacs-sync-mode 1))
-
-;; OSX 词典。
-(use-package osx-dictionary
-  :bind
-  (("C-c d i" . osx-dictionary-search-input)
-   ("C-c d w" . osx-dictionary-search-pointer))
-  :config
-  (use-package chinese-word-at-point :demand t)
-  (setq osx-dictionary-use-chinese-text-segmentation t))
-
 (require 'grep)
 (dolist (dir '(".cache" "vendor" "node_modules"))
   (add-to-list 'grep-find-ignored-directories dir))
 (dolist (item '("GPATH" "GRTAGS" "GTAGS" "TAGS" ".classpath" ".project" ".DS_Store" ))
   (add-to-list 'grep-find-ignored-files item))
+(setq grep-highlight-matches t)
 
-;; 当前 buffer 文本搜索, 替换 isearch.
+;; 编辑 grep buffers, 可以和 consult-grep 和 embark-export 联合使用。
+(use-package wgrep)
+
 (use-package ctrlf
   :config
   (ctrlf-mode +1)
@@ -2220,7 +2169,8 @@ mermaid.initialize({
               (setf truncate-lines nil)
               (setq-local show-paren-mode nil)
               (yas-minor-mode -1)
-              (flycheck-mode -1)))
+              ;; (flycheck-mode -1)
+              ))
   ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
   (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
   :bind
@@ -2253,9 +2203,9 @@ mermaid.initialize({
 
 (use-package vterm-extra
   :straight (:host github :repo "Sbozzolo/vterm-extra")
-  :bind (("s-t" . vterm-extra-dispatcher)
-         :map vterm-mode-map
-         (("C-c C-e" . vterm-extra-edit-command-in-new-buffer)))
+  :bind
+  (:map vterm-mode-map
+        (("C-c C-e" . vterm-extra-edit-command-in-new-buffer)))
   :config
   (advice-add #'vterm-extra-edit-done :after #'winner-undo))
 
@@ -2341,17 +2291,9 @@ mermaid.initialize({
 (setq time-stamp-line-limit 30)
 (add-hook 'before-save-hook 'time-stamp t)
 
-(setq initial-major-mode 'fundamental-mode)
-
-;; 按中文折行。
-(setq word-wrap-by-category t)
-
-;; 编辑 grep buffers, 可以和 consult-grep 和 embark-export 联合使用。
-(use-package wgrep)
-(setq grep-highlight-matches t)
-
-;; 退出自动杀掉进程。
-(setq confirm-kill-processes nil)
+;; 当打开文件权限不足时，自动使用 sudo 打开该文件。
+(use-package auto-sudoedit)
+(add-hook 'find-file-hook #'(lambda () (require 'auto-sudoedit) (auto-sudoedit)))
 
 ;; 使用 fundamental-mode 打开大文件。
 (defun my/large-file-hook ()
@@ -2372,25 +2314,6 @@ mermaid.initialize({
 (add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
 (add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
 
-(use-package winner
-  :straight (:type built-in)
-  :commands (winner-undo winner-redo)
-  :hook (after-init . winner-mode)
-  :init
-  (setq winner-boring-buffers
-        '("*Completions*"
-          "*Compile-Log*"
-          "*inferior-lisp*"
-          "*helpful"
-          "*lsp-help*"
-          "*Fuzzy Completions*"
-          "*Apropos*"
-          "*Help*"
-          "*cvs*"
-          "*Buffer List*"
-          "*Ibuffer*"
-          "*esh command on file*")))
-
 ;; macOS 按键调整。
 (setq mac-command-modifier 'meta)
 ;; option 作为 Super 键(按键绑定用 s- 表示，S- 表示 Shift)
@@ -2398,22 +2321,9 @@ mermaid.initialize({
 ;; fn 作为 Hyper 键(按键绑定用 H- 表示)
 (setq ns-function-modifier 'hyper)
 
-(use-package emacs
-  :straight (:type built-in)
-  :init
-  (setq use-short-answers t)
-  (setq confirm-kill-emacs #'y-or-n-p)
-  (setq ring-bell-function 'ignore)
-  ;; 不创建 lock 文件。
-  (setq create-lockfiles nil)
-  ;; 启动 Server 。
-  (unless (and (fboundp 'server-running-p)
-               (server-running-p))
-    (server-start)))
-
-;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）。
-(setq bookmark-save-flag 1)
-
+;; 关闭 mouse-wheel-text-scale 快捷键 (容易触碰误操作) 。
+(global-unset-key (kbd "C-<wheel-down>"))
+(global-unset-key (kbd "C-<wheel-up>"))
 ;; 避免执行 ns-print-buffer 命令。
 (global-unset-key (kbd "s-p"))
 ;; 避免执行 ns-open-file-using-panel 命令。
@@ -2424,14 +2334,46 @@ mermaid.initialize({
 (global-unset-key (kbd "C-z"))
 ;; 关闭 mouse-yank-primary 。
 (global-unset-key (kbd "<mouse-2>"))
+(global-set-key (kbd "RET") 'newline-and-indent)
+
+(use-package emacs
+  :straight (:type built-in)
+  :ensure-system-package
+  ;; artist-mode 依赖的两个程序。
+  ((figlet . "brew install figlet")
+   ;; 触摸板三指点按模拟鼠标中键。
+   ("/Applications/MiddleClick.app" . "brew install --cask --no-quarantine middleclick"))
+  :init
+  ;; 粘贴于光标处, 而不是鼠标指针处。
+  (setq mouse-yank-at-point t)
+  (setq initial-major-mode 'fundamental-mode)
+  ;; 按中文折行。
+  (setq word-wrap-by-category t)
+  ;; 退出自动杀掉进程。
+  (setq confirm-kill-processes nil)
+  (setq use-short-answers t)
+  (setq confirm-kill-emacs #'y-or-n-p)
+  (setq ring-bell-function 'ignore)
+  ;; 不显示行号, 否则鼠标会飘。
+  (add-hook 'artist-mode-hook (lambda () (display-line-numbers-mode -1)))
+  ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）。
+  (setq bookmark-save-flag 1)
+  ;; 不创建 lock 文件。
+  (setq create-lockfiles nil)
+  ;; 启动 Server 。
+  (unless (and (fboundp 'server-running-p)
+               (server-running-p))
+    (server-start)))
+
 
 (use-package recentf
   :straight (:type built-in)
   :config
-  ;; 不清理 recentf tramp buffers .
+  ;; 不清理 recentf tramp buffers.
   (setq recentf-auto-cleanup 'never)
-  (setq recentf-max-menu-items 30)
-  (setq recentf-max-saved-items 500)
+  (setq recentf-max-menu-items 100)
+  (setq recentf-max-saved-items 600)
+  (recentf-mode +1)
   (setq recentf-exclude `(,(expand-file-name "straight/" user-emacs-directory)
                           ,(expand-file-name "eln-cache/" user-emacs-directory)
                           ,(expand-file-name "etc/" user-emacs-directory)
@@ -2439,14 +2381,11 @@ mermaid.initialize({
                           ,(expand-file-name ".cache/" user-emacs-directory)                          
                           ,tramp-file-name-regexp
                           "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log" "COMMIT_EDITMSG"
-                          ,(concat package-user-dir "/.*-autoloads\\.el\\'")))
-  (recentf-mode +1))
+                          ,(concat package-user-dir "/.*-autoloads\\.el\\'"))))
 
 (setq global-mark-ring-max 5000)
 (setq mark-ring-max 5000 )
 (setq kill-ring-max 5000)
-
-(global-set-key (kbd "RET") 'newline-and-indent)
 
 ;; minibuffer 历史。
 (use-package savehist
@@ -2456,11 +2395,12 @@ mermaid.initialize({
   (setq history-length 200)
   (setq savehist-save-minibuffer-history t)
   (setq savehist-autosave-interval 200)
-  (setq savehist-additional-variables '(mark-ring
-                                        global-mark-ring
-                                        search-ring
-                                        regexp-search-ring
-                                        extended-command-history)))
+  (setq savehist-additional-variables
+        '(mark-ring
+          global-mark-ring
+          search-ring
+          regexp-search-ring
+          extended-command-history)))
 
 ;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100)
@@ -2476,73 +2416,6 @@ mermaid.initialize({
 (setq select-enable-clipboard t)
 (setq x-select-enable-primary t)
 (setq select-enable-primary t)
-
-;; 粘贴于光标处, 而不是鼠标指针处。
-(setq mouse-yank-at-point t)
-
-(use-package ibuffer
-  :straight (:type built-in)
-  :bind
-  ("C-x C-b" . ibuffer)
-  :config
-  (setq ibuffer-expert t)
-  (setq ibuffer-display-summary nil)
-  (setq ibuffer-use-other-window t)
-  ;; 隐藏空组。
-  (setq ibuffer-show-empty-filter-groups nil)
-  (setq ibuffer-movement-cycle nil)
-  (setq ibuffer-default-sorting-mode 'filename/process)
-  (setq ibuffer-use-header-line t)
-  (setq ibuffer-default-shrink-to-minimum-size nil)
-  (setq ibuffer-saved-filter-groups nil)
-  (setq ibuffer-old-time 48)
-  (add-hook 'ibuffer-mode-hook #'hl-line-mode))
-
-(use-package ibuffer-project
-  :hook
-  ((ibuffer . (lambda ()
-                (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
-                (unless (eq ibuffer-sorting-mode 'project-file-relative)
-                  (ibuffer-do-sort-by-project-file-relative)))))
-  :config
-  ;; 显示的文件名是相对于 project root 的相对路径。
-  (setq ibuffer-formats
-        '((mark modified read-only " "
-                (name 18 18 :left :elide)
-                " "
-                (size 9 -1 :right)
-                " "
-                (mode 16 16 :left :elide)
-                " "
-                project-file-relative))))
-
-(use-package dired
-  :straight (:type built-in)
-  :config
-  ;; re-use dired buffer, available in Emacs 28
-  ;; @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
-  (setq dired-kill-when-opening-new-dired-buffer t)
-  ;; "always" means no asking
-  (setq dired-recursive-copies 'always)
-  ;; "top" means ask once for top level directory
-  (setq dired-recursive-deletes 'top)
-  ;; search file name only when focus is over file
-  (setq dired-isearch-filenames 'dwim)
-  ;; if another Dired buffer is visible in another window, use that directory as target for Rename/Copy
-  (setq dired-dwim-target t)
-  ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
-  (setq dired-listing-switches "-laGh1v --group-directories-first")
-  (dired-async-mode 1)
-  (put 'dired-find-alternate-file 'disabled nil))
-
-;; dired 显示高亮增强。
-(use-package diredfl
-  :config
-  (diredfl-global-mode))
-
-(use-package undo-tree
-  :init
-  (global-undo-tree-mode 1))
 
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (if (not (file-exists-p backup-dir))
@@ -2607,65 +2480,20 @@ mermaid.initialize({
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
 
-;; 在另一个 panel buffer 中展示按键.
+;; 在另一个 panel buffer 中展示按键。
 (use-package command-log-mode
   :commands command-log-mode)
 
+;; OSX 词典。
+(use-package osx-dictionary
+  :bind
+  (("C-c d i" . osx-dictionary-search-input)
+   ("C-c d w" . osx-dictionary-search-pointer))
+  :config
+  (use-package chinese-word-at-point :demand t)
+  (setq osx-dictionary-use-chinese-text-segmentation t))
+
 ;; 以下自定义函数参考自：https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-edit.el
-(defun my/open-terminal ()
-  "Open system terminal."
-  (interactive)
-  (cond
-   ((eq system-type 'darwin)
-    (shell-command
-     ;; open -a Terminal doesn't allow us to open a particular directory unless
-     ;; We use --args AND -n, but -n opens an entirely new Terminal application
-     ;; instance on every call, not just a new window. Using the
-     ;; bundle here always opens the given directory in a new window.
-     (concat "open -b com.apple.terminal " default-directory) nil nil))
-   ((memq system-type '(cygwin windows-nt ms-dos))
-    ;; https://stackoverflow.com/questions/13505113/how-to-open-the-native-cmd-exe-window-in-emacs
-    (let ((proc (start-process "cmd" nil "cmd.exe" "/C" "start" "cmd.exe")))
-      (set-process-query-on-exit-flag proc nil)))
-   (t
-    (message "Implement `j-open-terminal' for this OS!"))))
-
-(defun my/iso-8601-date-string (&optional datetime)
-  (concat
-   (format-time-string "%Y-%m-%dT%T" datetime)
-   ((lambda (x) (concat (substring x 0 3) "" (substring x 3 5)))
-    (format-time-string "%z" datetime))))
-
-(defun my/insert-current-date-time ()
-  (interactive)
-  (insert (my/iso-8601-date-string)))
-
-(defun my/insert-today ()
-  (interactive)
-  (insert (format-time-string "%Y-%m-%d" (current-time))))
-
-(defun my/timestamp->human-date ()
-  (interactive)
-  (letrec ((date-string (if (region-active-p)
-                            (buffer-substring (mark) (point))
-                          (thing-at-point 'word)))
-           (body (if (iso8601-valid-p date-string)
-                     ;; date -> ts
-                     (format-time-string "%s" (parse-iso8601-time-string date-string))
-                   ;; ts -> date
-                   (let ((timestamp-int (string-to-number date-string)))
-                     (thread-last
-                       (if (> timestamp-int (expt 10 11)) ;; 大于 10^11 为微秒，转为秒
-                           (/ timestamp-int 1000)
-                         timestamp-int)
-                       (seconds-to-time)
-                       (my/iso-8601-date-string))))))
-    (unless (string-empty-p body)
-      (end-of-line)
-      (newline-and-indent)
-      (insert body))
-    (deactivate-mark)))
-
 (defun my/json-format ()
   (interactive)
   (save-excursion
@@ -2718,26 +2546,3 @@ mermaid.initialize({
           (set-buffer-modified-p nil)
           (message "File '%s' successfully renamed to '%s'"
                    name (file-name-nondirectory new-name)))))))
-
-(defun my/mem-report ()
-  (interactive)
-  (let ((max-lisp-eval-depth 10000000)
-        (max-specpdl-size 10000000))
-    (memory-report)))
-
-(use-package emacs
- :straight (:type built-in)
- :ensure-system-package
- ;; artist-mode 依赖的两个程序。
- ((figlet . "brew install figlet")
-  ;; 触摸板三指点按模拟鼠标中键。
-  ("/Applications/MiddleClick.app" . "brew install --cask --no-quarantine middleclick"))
- :config
- ;; 不显示行号, 否则鼠标会飘。
- (add-hook 'artist-mode-hook (lambda () (display-line-numbers-mode -1))))
-
-;; 快速打开配置文件
-(defun open-conf-file()
-  (interactive)
-  (find-file "~/.emacs.d/dotemacs.org"))
-(global-set-key (kbd "<f2>") 'open-conf-file)
