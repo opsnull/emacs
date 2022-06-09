@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-06-05T19:06:59+0800
+#+LASTMOD: 2022-06-09T21:06:37+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -24,8 +24,6 @@
   - [[#consult][consult]]
   - [[#embark][embark]]
   - [[#marginalia][marginalia]]
-  - [[#corfu][corfu]]
-  - [[#capf][capf]]
   - [[#yasnippet][yasnippet]]
 - [[#window][window]]
 - [[#ibuffer][ibuffer]]
@@ -217,7 +215,7 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 提升 IO 性能。
 (setq process-adaptive-read-buffering nil)
 ;; 增加单次读取进程输出的数据量（缺省 4KB) 。
-(setq read-process-output-max (* 4 1024 1024))
+(setq read-process-output-max (* 1024 1024))
 
 ;; 提升长行处理性能。
 (setq bidi-inhibit-bpa t)
@@ -332,7 +330,6 @@ npm config set registry=http://registry.npm.taobao.org
 ;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
   :demand
-  :after (treemacs)
   ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
   :straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
@@ -379,7 +376,7 @@ npm config set registry=http://registry.npm.taobao.org
   (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
   (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
   ;; 设置 tab 颜色，M-x list-colors-display.
-  (set-face-foreground 'sort-tab-current-tab-face "bisque4")
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
   ;; 不显示背景颜色。
   (set-face-background 'sort-tab-current-tab-face nil))
 
@@ -732,83 +729,6 @@ npm config set registry=http://registry.npm.taobao.org
         (assq-delete-all 'project-file marginalia-annotator-registry)))
 #+end_src
 
-** corfu
-
-Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包, 相比 company 的主要优势是与 Emacs 集成的
-更好, 更轻量:
-1. Corfu 基于 Emacs 内置的 completion-at-point 实现, 任何使用 completion-at-point, completion-in-region 的地方
-   都可以使用 Corfu 来提供候选列表;
-2. 任何 completion-style 实现 (如 orderless) 都可以用来过滤候选者;
-
-#+begin_src  emacs-lisp
-(use-package corfu
-  :demand
-  :straight (corfu :host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
-  :init
-  :bind
-  (:map corfu-map
-        ("TAB" . corfu-next)
-        ([tab] . corfu-next)
-        ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous)) 
-  :custom
-  (corfu-min-width 80)
-  (corfu-max-width corfu-min-width)
-  (corfu-count 14)
-  (corfu-scroll-margin 4)
-  ;; 后续使用 corfu-doc 来显示文档，故关闭。
-  (corfu-echo-documentation nil)
-  ;; 使用候选者的历史位置来排序。
-  :config
-  (savehist-mode 1)
-  (corfu-history-mode t)
-  (add-to-list 'savehist-additional-variables 'corfu-history)
-  (global-corfu-mode))
-
-;; 总是在弹出菜单中显示候选者。
-(setq completion-cycle-threshold nil)
-
-;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
-(setq tab-always-indent 'complete)
-
-;; 在候选者右方显示文档。
-(use-package corfu-doc
-  :straight (corfu-doc :host github :repo "galeo/corfu-doc")
-  :after (corfu)
-  :hook (corfu-mode . corfu-doc-mode)
-  :bind
-  (:map corfu-map
-        ("M-n" . corfu-doc-sroll-up)
-        ("M-p" . corfu-doc-scroll-down))
-  :custom
-  (corfu-doc-delay 0.2)
-  (corfu-doc-max-width 80)
-  (corfu-doc-max-height 30))
-#+end_src
-+ Corfu: 支持 ~orderless~ 过滤候选列表, 使用 ~M-SPC~ 来插入多个过滤模式;
-
-** capf
-
-capf 给补全系统添加额外的候选者类型：
- #+begin_src emacs-lisp
-(use-package cape
-  :demand
-  :straight (cape :host github :repo "minad/cape")
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  :config
-  (setq cape-dabbrev-min-length 3)
-  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
-  (cape-wrap-prefix-length #'cape-dabbrev 3))
- #+end_src
-
 ** yasnippet
 
 #+begin_src emacs-lisp
@@ -822,13 +742,11 @@ capf 给补全系统添加额外的候选者类型：
   ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
   :config
   (add-to-list 'yas-snippet-dirs snippet-directory)
+  ;; 外界修改 active filed 外的文本时不终止 snippet placehold, 如 lsp-bridge.
+  (setq yas-inhibit-overlay-modification-protection t)
   ;; 保留 snippet 的缩进。
   (setq yas-indent-line 'fixed)
   (yas-global-mode 1))
-
-(use-package yasnippet-snippets :demand)
-
-(use-package yasnippet-classic-snippets :demand)
 
 (use-package consult-yasnippet
   :demand
@@ -838,6 +756,7 @@ capf 给补全系统添加额外的候选者类型：
         ("C-c y" . 'consult-yasnippet)))
 #+end_src
 + 完全输入 =snippet= 简写后，按 =TAB= 自动扩展。
++ 从 [[https://github.com/AndreaCrotti/yasnippet-snippets][yasnippet-snippets]] 获取 snippets, 然后放到 snippet-directory 目录下，这样更容易定制。
 
 * window
 
@@ -2001,8 +1920,7 @@ lsp-bridge 依赖 markdown-mode 和 python-epc(pip install epc).
 
 (use-package  dumb-jump
   :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
-  )
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 ;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转
 (defun lsp-bridge-jump ()
@@ -2042,33 +1960,19 @@ lsp-bridge 依赖 markdown-mode 和 python-epc(pip install epc).
         ("s-C-n" . lsp-bridge-jump-to-next-diagnostic)
         ("s-C-p" . lsp-bridge-jump-to-prev-diagnostic))
   :config
-  (setq lsp-bridge-enable-log t)
+  (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
-  (require 'lsp-bridge-icon)
-  (require 'lsp-bridge-orderless)
   (global-lsp-bridge-mode)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
   (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
-  (when (> (frame-pixel-width) 3000) (custom-set-faces '(corfu-default ((t (:height 1.3))))))
-  ;; 通过Cape融合不同的补全后端，比如lsp-bridge、 tabnine、 file、 dabbrev.
-  (defun lsp-bridge-mix-multi-backends ()
-    (setq-local completion-category-defaults nil)
-    (setq-local completion-at-point-functions
-                (list
-                 (cape-capf-buster
-                  (cape-super-capf
-                   #'lsp-bridge-capf
-                   #'cape-file
-                   #'cape-dabbrev
-                   )
-                  'equal)
-                 )))
+  (when (> (frame-pixel-width) 3000) (custom-set-faces '(corfu-default ((t (:height 1.3)))))))
 
-  (dolist (hook lsp-bridge-default-mode-hooks)
-    (add-hook hook (lambda ()
-                     (lsp-bridge-mix-multi-backends) ; 通过 Cape 融合多个补全后端
-                     ))))
+;; 总是在弹出菜单中显示候选者。
+(setq completion-cycle-threshold nil)
+
+;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
+(setq tab-always-indent 'complete)
 #+end_src
 
 ** python
@@ -2222,14 +2126,10 @@ executionEnvironments：
   :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
   :init
   (setq godoc-reuse-buffer t)
-  ;; goimports 在格式化 buffer 的同时自动 import package。
-  (setq gofmt-command "goimports")
+  ;; 可选值：goimports, 在格式化 buffer 的同时自动 import package。
+  (setq gofmt-command "gofmt") 
   ;; 需要安装 gogetdoc 命令。
   ;;(setq godoc-at-point-function #'godoc-gogetdoc)
-  (defun lsp-go-save-hooks ()
-    (add-hook 'before-save-hook #'gofmt-before-save t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  :hook (go-mode . lsp-go-save-hooks)
   :bind
   (:map go-mode-map
         ("C-c C-a" . go-import-add)
@@ -2239,31 +2139,31 @@ executionEnvironments：
         ("C-c C-d" . godoc-at-point)))
 #+end_src
 + godoc-gogetdoc 调用外部命令 gogetdoc 来获取文档，速度慢，而且不显示类型的方法，不好用！
-+ gopls 支持 origanize-imports codeAction, 但是当前 lsp-bridge 还不支持，故将 gofmt-command 设置为 goimports,
-  使用它来自动 import package。
++ lsp-bridge 根据 gopls 的响应来自动导入 package, 如果在导入时正好触发 save buffer 的 gofmt, 可能造成导入乱序，
+  所以去掉 save 时 format buffer 的 hook, 而是使用 C-c C-f 快捷键来按需格式化 buffer.
 
 修改 gopls 配置：
 + 添加 ~"verboseOutput": true~ 配置参数将打开 gopls 调试模式；
 + 添加环境变量 ~GOFLAGS="-mod=mod"~ , 防止带有 vendor 目录的项目报错: go: inconsistent vendoring;
 #+begin_src javascript :tangle ~/.emacs.d/straight/build/lsp-bridge/langserver/gopls.json
 {
-  "name": "gopls",
-  "languageId": "go",
-  "command": ["gopls", "-remote=auto"],
-  "settings":{
-    "gopls": {
-      "env": {"GOFLAGS": "-mod=mod"},
-      "allExperiments": true,
-      "experimentalUseInvalidMetadata": true,
-      "completeUnimported": true,
-      "staticcheck": true,
-      "usePlaceholders": true,
-      "allowModfileModifications": true,
-      "allowImplicitNetworkAccess": true
+    "name": "gopls",
+    "languageId": "go",
+    "command": ["gopls", "-remote=auto"],
+    "settings":{
+        "gopls": {
+            "env": {"GOFLAGS": "-mod=mod"},
+            "usePlaceholders": true,
+            "experimentalUseInvalidMetadata": true,
+            "completeUnimported": true,
+            "staticcheck": true,
+            "allowModfileModifications": true,
+            "allowImplicitNetworkAccess": true
+        }
     }
-  }
 }
 #+end_src
++ Placeholders 依赖于 yasnippet.
 
 如果一个 git 项目下有多个 go module, 则需要在上层目录创建 workspace, 并将各 module 加入其中，否则可能出现
 package import 失败的情况：

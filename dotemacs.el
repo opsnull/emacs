@@ -45,7 +45,7 @@
 ;; 提升 IO 性能。
 (setq process-adaptive-read-buffering nil)
 ;; 增加单次读取进程输出的数据量（缺省 4KB) 。
-(setq read-process-output-max (* 4 1024 1024))
+(setq read-process-output-max (* 1024 1024))
 
 ;; 提升长行处理性能。
 (setq bidi-inhibit-bpa t)
@@ -156,7 +156,6 @@
 ;; 预览主题: https://emacsthemes.com/
 (use-package doom-themes
   :demand
-  :after (treemacs)
   ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
   :straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
@@ -203,7 +202,7 @@
   (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
   (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
   ;; 设置 tab 颜色，M-x list-colors-display.
-  (set-face-foreground 'sort-tab-current-tab-face "bisque4")
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
   ;; 不显示背景颜色。
   (set-face-background 'sort-tab-current-tab-face nil))
 
@@ -508,67 +507,6 @@
   (setq marginalia-annotator-registry
         (assq-delete-all 'project-file marginalia-annotator-registry)))
 
-(use-package corfu
-  :demand
-  :straight (corfu :host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
-  :init
-  :bind
-  (:map corfu-map
-        ("TAB" . corfu-next)
-        ([tab] . corfu-next)
-        ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous)) 
-  :custom
-  (corfu-min-width 80)
-  (corfu-max-width corfu-min-width)
-  (corfu-count 14)
-  (corfu-scroll-margin 4)
-  ;; 后续使用 corfu-doc 来显示文档，故关闭。
-  (corfu-echo-documentation nil)
-  ;; 使用候选者的历史位置来排序。
-  :config
-  (savehist-mode 1)
-  (corfu-history-mode t)
-  (add-to-list 'savehist-additional-variables 'corfu-history)
-  (global-corfu-mode))
-
-;; 总是在弹出菜单中显示候选者。
-(setq completion-cycle-threshold nil)
-
-;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
-(setq tab-always-indent 'complete)
-
-;; 在候选者右方显示文档。
-(use-package corfu-doc
-  :straight (corfu-doc :host github :repo "galeo/corfu-doc")
-  :after (corfu)
-  :hook (corfu-mode . corfu-doc-mode)
-  :bind
-  (:map corfu-map
-        ("M-n" . corfu-doc-sroll-up)
-        ("M-p" . corfu-doc-scroll-down))
-  :custom
-  (corfu-doc-delay 0.2)
-  (corfu-doc-max-width 80)
-  (corfu-doc-max-height 30))
-
-(use-package cape
-  :demand
-  :straight (cape :host github :repo "minad/cape")
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  :config
-  (setq cape-dabbrev-min-length 3)
-  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
-  (cape-wrap-prefix-length #'cape-dabbrev 3))
-
 (use-package yasnippet
   :demand
   :init
@@ -579,13 +517,11 @@
   ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
   :config
   (add-to-list 'yas-snippet-dirs snippet-directory)
+  ;; 外界修改 active filed 外的文本时不终止 snippet placehold, 如 lsp-bridge.
+  (setq yas-inhibit-overlay-modification-protection t)
   ;; 保留 snippet 的缩进。
   (setq yas-indent-line 'fixed)
   (yas-global-mode 1))
-
-(use-package yasnippet-snippets :demand)
-
-(use-package yasnippet-classic-snippets :demand)
 
 (use-package consult-yasnippet
   :demand
@@ -1503,8 +1439,7 @@ _SPC_ cancel
 
 (use-package  dumb-jump
   :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
-  )
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 ;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转
 (defun lsp-bridge-jump ()
@@ -1544,33 +1479,19 @@ _SPC_ cancel
         ("s-C-n" . lsp-bridge-jump-to-next-diagnostic)
         ("s-C-p" . lsp-bridge-jump-to-prev-diagnostic))
   :config
-  (setq lsp-bridge-enable-log t)
+  (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
-  (require 'lsp-bridge-icon)
-  (require 'lsp-bridge-orderless)
   (global-lsp-bridge-mode)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
   (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
-  (when (> (frame-pixel-width) 3000) (custom-set-faces '(corfu-default ((t (:height 1.3))))))
-  ;; 通过Cape融合不同的补全后端，比如lsp-bridge、 tabnine、 file、 dabbrev.
-  (defun lsp-bridge-mix-multi-backends ()
-    (setq-local completion-category-defaults nil)
-    (setq-local completion-at-point-functions
-                (list
-                 (cape-capf-buster
-                  (cape-super-capf
-                   #'lsp-bridge-capf
-                   #'cape-file
-                   #'cape-dabbrev
-                   )
-                  'equal)
-                 )))
+  (when (> (frame-pixel-width) 3000) (custom-set-faces '(corfu-default ((t (:height 1.3)))))))
 
-  (dolist (hook lsp-bridge-default-mode-hooks)
-    (add-hook hook (lambda ()
-                     (lsp-bridge-mix-multi-backends) ; 通过 Cape 融合多个补全后端
-                     ))))
+;; 总是在弹出菜单中显示候选者。
+(setq completion-cycle-threshold nil)
+
+;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
+(setq tab-always-indent 'complete)
 
 (use-package emacs
   :straight (:type built-in)
@@ -1634,14 +1555,10 @@ _SPC_ cancel
   :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
   :init
   (setq godoc-reuse-buffer t)
-  ;; goimports 在格式化 buffer 的同时自动 import package。
-  (setq gofmt-command "goimports")
+  ;; 可选值：goimports, 在格式化 buffer 的同时自动 import package。
+  (setq gofmt-command "gofmt") 
   ;; 需要安装 gogetdoc 命令。
   ;;(setq godoc-at-point-function #'godoc-gogetdoc)
-  (defun lsp-go-save-hooks ()
-    (add-hook 'before-save-hook #'gofmt-before-save t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  :hook (go-mode . lsp-go-save-hooks)
   :bind
   (:map go-mode-map
         ("C-c C-a" . go-import-add)
