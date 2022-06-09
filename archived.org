@@ -3000,6 +3000,7 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
 #+end_src
 
 * doom-modeline
+
 #+begin_src emacs-lisp
 ;; modeline 显示电池和日期时间。
 (display-battery-mode t)
@@ -3040,6 +3041,7 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
   (set-face-attribute 'doom-modeline nil :font "Fira Code Retina" :height 1.0)
   (set-face-attribute 'doom-modeline-inactive nil :font "Fira Code Retina" :height 1.0))
 #+end_src
+
 * beacon
 
 #+begin_src emacs-lisp
@@ -3276,7 +3278,6 @@ gopls 自带了诊断功能，所以不再需要：
   (flycheck-golangci-lint-setup))
 #+end_src
 
-
 * dockerfile
 
 #+begin_src emacs-lisp
@@ -3286,11 +3287,11 @@ gopls 自带了诊断功能，所以不再需要：
   :config
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 #+end_src
+
 * winner
 #+begin_src emacs-lisp
 
 #+end_src
-
 
 * undo-tree
 #+begin_src emacs-lisp
@@ -3312,8 +3313,8 @@ gopls 自带了诊断功能，所以不再需要：
           (consult-grep buffer)))
 #+end_src
 
-
 * awesome-tab
+
 #+begin_src emacs-lispe
 (use-package awesome-tab
   :config
@@ -3351,20 +3352,17 @@ gopls 自带了诊断功能，所以不再需要：
   (global-set-key (kbd "C-c j") 'awesome-tab-ace-jump))
 #+end_src
 
-
 * ibuffer-project
 #+begin_src emacs-lisp
 
 #+end_src
 
 * color-rg
-** color-rg
 
 #+begin_src emacs-lisp
 (use-package color-rg
   :straight (:host github :repo "manateelazycat/color-rg"))
 #+end_src
-
 
 * ripgrep
 
@@ -3373,3 +3371,84 @@ gopls 自带了诊断功能，所以不再需要：
 (use-package ripgrep
   :ensure-system-package (rg . ripgrep))
 #+end_src
+
+* corfu
+
+Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包, 相比 company 的主要优势是与 Emacs 集成的
+更好, 更轻量:
+1. Corfu 基于 Emacs 内置的 completion-at-point 实现, 任何使用 completion-at-point, completion-in-region 的地方
+   都可以使用 Corfu 来提供候选列表;
+2. 任何 completion-style 实现 (如 orderless) 都可以用来过滤候选者;
+
+#+begin_src  emacs-lisp
+(use-package corfu
+  :disabled
+  :demand
+  :straight (corfu :host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
+  :init
+  :bind
+  (:map corfu-map
+        ("TAB" . corfu-next)
+        ([tab] . corfu-next)
+        ("S-TAB" . corfu-previous)
+        ([backtab] . corfu-previous)) 
+  :custom
+  (corfu-min-width 80)
+  (corfu-max-width corfu-min-width)
+  (corfu-count 14)
+  (corfu-scroll-margin 4)
+  ;; 后续使用 corfu-doc 来显示文档，故关闭。
+  (corfu-echo-documentation nil)
+  ;; 使用候选者的历史位置来排序。
+  :config
+  (savehist-mode 1)
+  (corfu-history-mode t)
+  (add-to-list 'savehist-additional-variables 'corfu-history)
+  (global-corfu-mode))
+
+;; 总是在弹出菜单中显示候选者。
+(setq completion-cycle-threshold nil)
+
+;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
+(setq tab-always-indent 'complete)
+
+;; 在候选者右方显示文档。
+(use-package corfu-doc
+  :disabled
+  :straight (corfu-doc :host github :repo "galeo/corfu-doc")
+  :after (corfu)
+  :hook (corfu-mode . corfu-doc-mode)
+  :bind
+  (:map corfu-map
+        ("M-n" . corfu-doc-sroll-up)
+        ("M-p" . corfu-doc-scroll-down))
+  :custom
+  (corfu-doc-delay 0.2)
+  (corfu-doc-max-width 80)
+  (corfu-doc-max-height 30))
+#+end_src
++ Corfu: 支持 ~orderless~ 过滤候选列表, 使用 ~M-SPC~ 来插入多个过滤模式;
+* capf
+
+capf 给补全系统添加额外的候选者类型：
+ #+begin_src emacs-lisp
+(use-package cape
+  :disabled
+  :demand
+  :straight (cape :host github :repo "minad/cape")
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  :config
+  (setq cape-dabbrev-min-length 3)
+  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
+  (cape-wrap-prefix-length #'cape-dabbrev 3))
+ #+end_src
+
+

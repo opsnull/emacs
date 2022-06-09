@@ -3,8 +3,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(safe-local-variable-values '((buffer-file-coding-system . utf-8-unix)))
- '(warning-suppress-types '((straight) (org-element-cache) (straight))))
+ '(warning-suppress-types '((org-element-cache) (straight))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -25,5 +24,4 @@
  '(org-special-keyword ((t (:height 0.8))))
  '(org-table ((t (:font "Sarasa Mono SC" :height 0.9))))
  '(org-tag ((t (:weight bold :height 0.8))))
- '(org-verbatim ((t (:height 0.9))))
- '(symbol-overlay-default-face ((t (:inherit (region bold))))))
+ '(org-verbatim ((t (:height 0.9)))))
