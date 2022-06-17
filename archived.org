@@ -1,3 +1,4 @@
+* programming
 ** prettier
 
 保存文件时自动格式化, 支持 html/java/js/js2/typescript/json/yaml/python/sh 等语言, 详情参考变量
@@ -1262,6 +1263,36 @@ key chord 连续按键快捷键:
    (setq key-chord-two-keys-delay 0.3))
 #+end_src
 
+** dap
+
+如果 =M-x dap-chrome-setup= 命令执行失败，则可以手动编译安装 [[https://github.com/microsoft/vscode-chrome-debug][VS Code - Debugger for Chrome]]：
+#+begin_src shell :tangle no
+$ pwd
+/Users/zhangjun/.emacs.d/.extension/vscode/msjsdiag.debugger-for-chrome
+$ git clone git clone git@github.com:microsoft/vscode-chrome-debug.git
+$ mv vscode-chrome-debug extension/
+$ cd extension
+$ npm install -g gulp
+$ gulp build
+
+$ ls -l out/src/
+total 116K
+-rw-r--r-- 1 zhangjun 2.0K  5 30 21:02 chromeDebug.js
+-rw-r--r-- 1 zhangjun  884  5 30 21:02 chromeDebug.js.map
+-rw-r--r-- 1 zhangjun  31K  5 30 21:02 chromeDebugAdapter.js
+-rw-r--r-- 1 zhangjun  19K  5 30 21:02 chromeDebugAdapter.js.map
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package dap-mode
+  :disabled
+  :demand
+  :config
+  (dap-auto-configure-mode 1)
+  (require 'dap-chrome))
+#+end_src
++ 执行 =M-x dap-chrome-setup= 安装 =VSCode Chrome Debug Extension= .
+
 * email
 
 #+begin_src emacs-lisp
@@ -2289,7 +2320,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
         (message "added project %s" file)))))
 #+end_src
 
-
 * eglot
 
 #+begin_src emacs-lisp
@@ -2337,7 +2367,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
          (experimentalUseInvalidMetadata . t)))))
 #+end_src
 
-
 * consult
 #+begin_src emacs-lisp
 (use-package consult-dir
@@ -2356,7 +2385,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   (global-set-key (kbd "C->") 'goto-last-change)
   (global-set-key (kbd "C-<") 'goto-last-change-reverse))
 #+end_src
-
 
 
 * rime
@@ -2598,7 +2626,6 @@ patch:
   ("M-g l" . avy-goto-line))
 #+end_src
 
-
 * other
 
 #+begin_src emacs-lisp
@@ -2659,7 +2686,6 @@ patch:
         ;; ([remap move-end-of-line] . corfu-end-of-prompt)
         ) 
 #+end_src
-
 
 * centaur-tabs
 #+begin_src emacs-lisp
@@ -2735,7 +2761,6 @@ patch:
             (not (file-name-extension name)))))))
 #+end_src
 
-
 * org
 ** capture
 
@@ -2750,7 +2775,6 @@ patch:
         ("t" "Todo" entry (file+headline "~/docs/orgs/gtd.org" "Tasks")
          "* TODO %?\n %U %a\n %i" :empty-lines 1)))
 #+end_src
-
 
 ** agenda
 
@@ -3451,4 +3475,136 @@ capf 给补全系统添加额外的候选者类型：
   (cape-wrap-prefix-length #'cape-dabbrev 3))
  #+end_src
 
+
+* lsp-pyright
+#+begin_src emacs-lisp
+(use-package lsp-pyright
+  :after (python lsp-mode)
+  :ensure-system-package
+  (pyright . "npm update -g pyright")
+  :init
+  (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
+  (if (not (file-exists-p pyright-directory))
+      (make-directory pyright-directory t))
+  (when (executable-find "python3")
+    (setq lsp-pyright-python-executable-cmd "python3"))
+  :hook
+  (python-mode . (lambda () (require 'lsp-pyright) )))
+#+end_src
+
+* treemacs
+
+doom-themes:
+#+begin_src emacs-lisp
+;;:config
+;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
+;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+(setq doom-themes-treemacs-enable-variable-pitch nil)
+(doom-themes-treemacs-config)
+(doom-themes-treemacs-theme "doom-colors")
+#+end_src
+
+
+#+begin_src emacs-lisp
+(use-package treemacs
+  :disabled
+  :init
+  (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+  :config
+  (progn
+    (setq
+     treemacs-collapse-dirs                 3
+     treemacs-deferred-git-apply-delay      0.1
+     treemacs-display-in-side-window        t
+     treemacs-eldoc-display                 t
+     treemacs-file-event-delay              300
+     treemacs-file-follow-delay             0.01
+     treemacs-follow-after-init             t
+     treemacs-git-command-pipe              ""
+     treemacs-goto-tag-strategy             'refetch-index
+     treemacs-indentation                   1
+     treemacs-indentation-string            " "
+     treemacs-is-never-other-window         t
+     treemacs-max-git-entries               500
+     treemacs-missing-project-action        'ask
+     treemacs-no-png-images                 nil
+     treemacs-no-delete-other-windows       t
+     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+     treemacs-position                      'left
+     treemacs-recenter-distance             0.01
+     treemacs-recenter-after-file-follow    t
+     treemacs-recenter-after-tag-follow     t
+     treemacs-recenter-after-project-jump   'always
+     treemacs-recenter-after-project-expand 'on-distance
+     treemacs-shownn-cursor                 t
+     treemacs-show-hidden-files             t
+     treemacs-silent-filewatch              nil
+     treemacs-silent-refresh                nil
+     treemacs-sorting                       'alphabetic-asc
+     treemacs-select-when-already-in-treemacs 'stay
+     treemacs-space-between-root-nodes      nil
+     treemacs-tag-follow-cleanup            t
+     treemacs-tag-follow-delay              1
+     treemacs-width                         35
+     treemacs-width-increment               5
+     treemacs-width-is-initially-locked     nil
+     treemacs-project-follow-cleanup        t
+     imenu-auto-rescan                      t)
+    (treemacs-resize-icons 11)
+    (treemacs-follow-mode t)
+    ;;(treemacs-tag-follow-mode t)
+    ;;(treemacs-project-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-indent-guide-mode t)
+    (treemacs-git-mode 'deferred)
+    (treemacs-hide-gitignored-files-mode nil))
+  ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+  (add-hook 'buffer-list-update-hook
+            (lambda ()
+              (when (file-remote-p default-directory)
+                (require 'treemacs)
+                (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                    (delete-window (treemacs-get-local-window))))))
+  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+  (add-hook 'ediff-before-setup-hook
+            (lambda ()
+              (require 'treemacs)
+              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                  (delete-window (treemacs-get-local-window)) ) ))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
+
+(use-package treemacs-magit  
+  :after (treemacs magit)
+  :ensure t)
+
+(use-package deadgrep
+  :ensure-system-package (rg . ripgrep)
+  :bind ("<f5>" . deadgrep))
+#+end_src
++ 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
+  project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
+
+* tree-sitter
+
+#+begin_src emacs-lisp
+(use-package tree-sitter
+  :demand t
+  :config
+  (global-tree-sitter-mode)
+  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+  )
+
+(use-package tree-sitter-langs
+  :demand)
+#+end_src
 
