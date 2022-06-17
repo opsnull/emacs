@@ -1,6 +1,6 @@
 #+AUTHOR: 张俊(geekard@qq.com)
 #+DATE: 2020-05-25T11:13:16+0800
-#+LASTMOD: 2022-06-09T21:06:37+0800
+#+LASTMOD: 2022-06-17T14:06:38+0800
 #+Options: toc:nil
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code
@@ -45,12 +45,11 @@
 - [[#programming][programming]]
   - [[#hideshow][hideshow]]
   - [[#indent][indent]]
-  - [[#tree-sitter][tree-sitter]]
   - [[#lsp-bridge][lsp-bridge]]
   - [[#python][python]]
     - [[#pyenv][pyenv]]
     - [[#python-mode][python-mode]]
-    - [[#lsp-pyright][lsp-pyright]]
+    - [[#pyright][pyright]]
   - [[#go][go]]
   - [[#markdown][markdown]]
   - [[#web][web]]
@@ -60,9 +59,9 @@
   - [[#yaml][yaml]]
   - [[#direnv][direnv]]
   - [[#others][others]]
-  - [[#dap][dap]]
+  - [[#dict][dict]]
+  - [[#indent][indent]]
 - [[#project][project]]
-- [[#treemacs][treemacs]]
 - [[#search][search]]
 - [[#proxy][proxy]]
 - [[#terminal][terminal]]
@@ -337,14 +336,9 @@ npm config set registry=http://registry.npm.taobao.org
   :custom
   (doom-themes-enable-bold t)
   (doom-themes-enable-italic t)
-  (doom-themes-treemacs-theme "doom-colors")
   :config
   (doom-themes-visual-bell-config)
   (load-theme 'doom-palenight t)
-  ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
-  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
-  (setq doom-themes-treemacs-enable-variable-pitch nil)
-  (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
 (use-package awesome-tray
@@ -733,7 +727,6 @@ npm config set registry=http://registry.npm.taobao.org
 
 #+begin_src emacs-lisp
 (use-package yasnippet
-  :demand
   :init
   (defvar snippet-directory "~/.emacs.d/snippets")
   (if (not (file-exists-p snippet-directory))
@@ -749,7 +742,7 @@ npm config set registry=http://registry.npm.taobao.org
   (yas-global-mode 1))
 
 (use-package consult-yasnippet
-  :demand
+  :defer
   :after(consult yasnippet)
   :bind
   (:map yas-minor-mode-map
@@ -761,6 +754,11 @@ npm config set registry=http://registry.npm.taobao.org
 * window
 
 #+begin_src emacs-lisp
+(use-package transpose-frame
+  :demand
+  :straight (:host github :repo "emacsorphanage/transpose-frame")
+  )
+
 (use-package ace-window
   :init
   ;; 使用字母而非数字标记窗口，便于跳转。
@@ -780,11 +778,12 @@ npm config set registry=http://registry.npm.taobao.org
           ;; 为指定 window 选择新的 Buffer，切换到其它 buffer；
           (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
           (?N aw-flip-window)
+          ;; 依赖 transpose-frame package
           (?T aw-transpose-frame "Transpose Frame")
           (?? aw-show-dispatch-help)))
   :config
   ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择。
-  (setq aw-scope 'frame)
+  ;;(setq aw-scope 'frame)
   ;; 总是提示窗口选择，进而执行 ace 命令。
   (setq aw-dispatch-always t)
   (global-set-key (kbd "M-o") 'ace-window))
@@ -852,6 +851,7 @@ npm config set registry=http://registry.npm.taobao.org
 #+begin_src emacs-lisp
   (use-package ibuffer
     :straight (:type built-in)
+    :defer
     :bind
     ("C-x C-b" . ibuffer)
     :config
@@ -1098,19 +1098,24 @@ T - tag prefix
   ;; 设置模糊音。
   (add-to-list 'pyim-pinyin-fuzzy-alist '("z" "zh"))
   (add-to-list 'pyim-pinyin-fuzzy-alist '("c" "ch"))
+  ;; 确保使用 tsinghua dict.
+  (setq pyim-dicts '((:name "tsinghua" :file "~/.emacs.d/straight/repos/pyim-tsinghua-dict/pyim-tsinghua-dict.pyim")))
+  ;; 使用性能更好的 pyim-dregcache dcache 后端。
+  (setq pyim-dcache-backend 'pyim-dregcache)
   ;; 设置中英文自动切换。
   (setq-default pyim-english-input-switch-functions
-		        '(pyim-probe-program-mode
-		          pyim-probe-auto-english
-		          ;;pyim-probe-dynamic-english
-		          ;; pyim-probe-org-structure-template
-		          ))
+    	        '(pyim-probe-program-mode
+    	          pyim-probe-auto-english
+    	          ;;pyim-probe-dynamic-english
+    	          ;; pyim-probe-org-structure-template
+    	          ))
   ;; 显示候选词数量。
   (setq pyim-page-length 8))
 
 ;; 清华大学开放中文词库。
 (use-package pyim-tsinghua-dict
   :straight (pyim-tsinghua-dict :host github :repo "redguardtoo/pyim-tsinghua-dict")
+  :demand
   :after pyim
   :config
   (pyim-tsinghua-dict-enable))
@@ -1800,12 +1805,6 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
   (setq ediff-split-window-function 'split-window-horizontally)
   ;; 不创建新的 frame 来显示 Control-Panel。
   (setq ediff-window-setup-function #'ediff-setup-windows-plain)
-  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
-  (add-hook 'ediff-before-setup-hook
-            (lambda ()
-              (require 'treemacs)
-              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-                  (delete-window (treemacs-get-local-window)) ) ))
 
   ;; ediff 时自动展开 org-mode, https://dotemacs.readthedocs.io/en/latest/#ediff
   (defun f-ediff-org-showhide (buf command &rest cmdargs)
@@ -1897,21 +1896,6 @@ _SPC_ cancel
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 #+end_src
 
-** tree-sitter
-#+begin_src emacs-lisp
-(use-package tree-sitter
-  :demand t
-  :config
-  (global-tree-sitter-mode)
-  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
-  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-  )
-
-(use-package tree-sitter-langs
-  :demand)
-#+end_src
-
 ** lsp-bridge
 
 lsp-bridge 依赖 markdown-mode 和 python-epc(pip install epc).
@@ -1962,6 +1946,9 @@ lsp-bridge 依赖 markdown-mode 和 python-epc(pip install epc).
   :config
   (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
+  ;; 关闭 lsp additionalTextEdits 的 auto import 机制。
+  (setq acm-backend-lsp-enable-auto-import t)
+  (setq lsp-bridge-diagnostics-fetch-idle 1)
   (global-lsp-bridge-mode)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
@@ -2026,12 +2013,21 @@ pyenv 工作流：
 ;;       (when flake8
 ;;         (flycheck-set-checker-executable "python-flake8" flake8)))))
 
+;; 使用 yapf 格式化 python 代码。
+(use-package yapfify
+  :straight (:host github :repo "JorisE/yapfify"))
+
 (use-package python
   :ensure-system-package
   ((pylint . pylint)
    (flake8 . flake8)
+   (pyright . "npm update -g pyright")
+   (yapf . "pip install yapf")
    (ipython . "pip install ipython"))
   :init
+  (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
+  (if (not (file-exists-p pyright-directory))
+      (make-directory pyright-directory t))
   (setq python-indent-guess-indent-offset t)  
   (setq python-indent-guess-indent-offset-verbose nil)
   (setq python-indent-offset 4)
@@ -2039,36 +2035,19 @@ pyenv 工作流：
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
+                   (yapf-mode)
                    ;; (my/python-setup-checkers)
                    )))
 #+end_src
 + 需要在对应的 python env 中安装 pylint/flake8/yapf 程序。
 
-*** lsp-pyright
+*** pyright
 
 微软不再维护 python-language-server，主力发展 pyright 和 pyglance，所以不再使用 lsp-python-ms 和 pyls，而使用
 lsp-pyright。
 + python-lanuage-server 的活跃 fork 版本: https://github.com/python-lsp/python-lsp-server
-
-#+begin_src emacs-lisp
-  ;; 使用 yapf 格式化 python 代码。
-(use-package yapfify
-  :straight (:host github :repo "JorisE/yapfify"))
-
-(use-package lsp-pyright
-  :after (python)
-  :ensure-system-package
-  ((pyright . "npm update -g pyright")
-   (yapf . "pip install yapf"))
-  :init
-  (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
-  (if (not (file-exists-p pyright-directory))
-      (make-directory pyright-directory t))
-  (when (executable-find "python3")
-    (setq lsp-pyright-python-executable-cmd "python3"))
-  :hook
-  (python-mode . (lambda () (require 'lsp-pyright) (yapf-mode))))
-#+end_src
++ lsp-pyright 是 lsp-mode 的 pyright emacs client, 在使用 lsp-bridge 后，只需要安装 pyright npm 包即可，不需要
+  再安装 lsp-pyright.
 
 pyright _不使用_ pyenv ~.python-version~ 指定的 python 版本或 venv 来搜索依赖的 module，而是使用
 =pyrightconfig.json= 文件中配置的 venv 和 venvPath:
@@ -2231,6 +2210,7 @@ go work use ./path/to/module1 ./path/to/module2
 multimarkdown 将 markdown 转换为 html 进行 preview，可以结合 xwidget webkit 或 grip 进行实时预览：
 #+begin_src emacs-lisp
 (use-package markdown-mode
+  :demand
   :ensure-system-package multimarkdown
   :commands (markdown-mode gfm-mode)
   :mode
@@ -2522,35 +2502,133 @@ eval "$(direnv hook bash)"
   (global-set-key (kbd "C-=") 'er/expand-region))
 #+end_src
 
-** dap
+** dict
 
-如果 =M-x dap-chrome-setup= 命令执行失败，则可以手动编译安装 [[https://github.com/microsoft/vscode-chrome-debug][VS Code - Debugger for Chrome]]：
+macos 安装 stardict:
 #+begin_src shell :tangle no
-$ pwd
-/Users/zhangjun/.emacs.d/.extension/vscode/msjsdiag.debugger-for-chrome
-$ git clone git clone git@github.com:microsoft/vscode-chrome-debug.git
-$ mv vscode-chrome-debug extension/
-$ cd extension
-$ npm install -g gulp
-$ gulp build
+# 安装 sdcv 命令行版本
+brew install sdcv
 
-$ ls -l out/src/
-total 116K
--rw-r--r-- 1 zhangjun 2.0K  5 30 21:02 chromeDebug.js
--rw-r--r-- 1 zhangjun  884  5 30 21:02 chromeDebug.js.map
--rw-r--r-- 1 zhangjun  31K  5 30 21:02 chromeDebugAdapter.js
--rw-r--r-- 1 zhangjun  19K  5 30 21:02 chromeDebugAdapter.js.map
+# 下载词典文件
+#牛津高阶英汉双解: 
+wget http://download.huzheng.org/zh_CN/stardict-oald-cn-2.4.2.tar.bz2
+#朗道英汉字典: 
+wget http://download.huzheng.org/zh_CN/stardict-langdao-ec-gb-2.4.2.tar.bz2
+#朗道汉英字典: 
+wget http://download.huzheng.org/zh_CN/stardict-langdao-ce-gb-2.4.2.tar.bz2
+#KDic11万英汉词典 - 计算机
+wget http://download.huzheng.org/zh_CN/stardict-kdic-ec-11w-2.4.2.tar.bz2
+
+
+# 解压词典
+mkdir ~/.emacs.d/stardict/dic
+tar -xzvf stardict-oald-cn-2.4.2.tar.bz2 -C  ~/.emacs.d/stardict/dic
+tar -xzvf stardict-langdao-ec-gb-2.4.2.tar.bz2 -C ~/.emacs.d/stardict/dic
+tar -xzvf stardict-langdao-ce-gb-2.4.2.tar.bz2 -C ~/.emacs.d/stardict/dict
+tar -xzvf ~/Downloads/stardict-kdic-ec-11w-2.4.2.tar.bz2 -C ~/.emacs.d/stardict/dic/
+
+# 测试
+$ sdcv -2 ~/.emacs.d/stardict/dic/ -l
+Dictionary's name   Word count
+牛津高阶英汉双解    39433
+朗道汉英字典5.0    405719
+朗道英汉字典5.0    435468
 #+end_src
+
+配置 sdcv:
+#+begin_src emacs-lisp
+;; stardict
+(use-package sdcv  
+ :straight (:host github :repo "manateelazycat/sdcv")
+ :bind
+ (("s-t p" . sdcv-search-pointer)  ;; 光标处的单词, buffer显示
+  ("s-t t" . sdcv-search-pointer+) ;; 光标处的单词, tooltip 显示
+  ("s-t i" . sdcv-search-input)    ;; 输入的单词, buffer 显示
+  ("s-t ;" . sdcv-search-input+))  ;; 输入的单持, tooltip 显示
+  :init
+  ;; fix non-prefix "s-t" key error.
+  (define-key global-map (kbd "s-t") (make-sparse-keymap))
+  :config
+  (setq sdcv-tooltip-timeout 0)
+  ;;say word after translation
+  (setq sdcv-say-word-p nil)               
+  (setq sdcv-dictionary-data-dir "/Users/zhangjun/.emacs.d/stardict/dic") 
+  ;;setup dictionary list for simple search  
+  (setq sdcv-dictionary-simple-list    
+        '("朗道英汉字典5.0"
+          "朗道汉英字典5.0"
+          "KDic11万英汉词典"))
+
+  ;;setup dictionary list for complete search
+  (setq sdcv-dictionary-complete-list     
+        '("朗道汉英字典5.0"
+          "朗道英汉字典5.0"
+          "KDic11万英汉词典"
+          "牛津高阶英汉双解")))
+
+;; OSX 词典。
+(use-package osx-dictionary
+  :bind
+  (("C-c d i" . osx-dictionary-search-input)
+   ("C-c d w" . osx-dictionary-search-pointer))
+  :config
+  (use-package chinese-word-at-point :demand t)
+  (setq osx-dictionary-use-chinese-text-segmentation t))
+#+end_src
+
+** indent
 
 #+begin_src emacs-lisp
-(use-package dap-mode
-  :disabled
-  :demand
-  :config
-  (dap-auto-configure-mode 1)
-  (require 'dap-chrome))
+(setq-default tab-width 4)
+;; 不插入 tab (按照 tab-width 转换为空格插入) 。
+(setq-default indent-tabs-mode nil)
+
+(defun adjust-languages-indent (n)
+  (setq-local c-basic-offset n)
+
+  (setq-local javascript-indent-level n)
+  (setq-local js-indent-level n)
+  (setq-local js2-basic-offset n)
+
+  (setq-local web-mode-attr-indent-offset n)
+  (setq-local web-mode-attr-value-indent-offset n)
+  (setq-local web-mode-code-indent-offset n)
+  (setq-local web-mode-css-indent-offset n)
+  (setq-local web-mode-markup-indent-offset n)
+  (setq-local web-mode-sql-indent-offset n)
+
+  (setq-local css-indent-offset n))
+
+(dolist (hook (list
+               'c-mode-hook
+               'c++-mode-hook
+               'java-mode-hook
+               'sh-mode-hook
+               'scss-mode-hook
+               ))
+  (add-hook hook #'(lambda ()
+                     (setq indent-tabs-mode nil)
+                     (adjust-languages-indent 4)
+                     )))
+
+(dolist (hook (list
+               'go-mode-hook
+               ))
+  (add-hook hook #'(lambda ()
+                     ;; go-mode 默认启用 tabs, 否则 gofmt 和 lsp-bridge 的 auto import 会异常。
+                     (setq indent-tabs-mode t)
+                     (setq-local indent-tabs-mode t)
+                     )))
+
+(dolist (hook (list
+               'web-mode-hook
+               'js-mode-hook
+               ))
+  (add-hook hook #'(lambda ()
+                     (setq indent-tabs-mode nil)
+                     (adjust-languages-indent 2)
+                     )))
 #+end_src
-+ 执行 =M-x dap-chrome-setup= 安装 =VSCode Chrome Debug Extension= .
 
 * project
 
@@ -2609,89 +2687,6 @@ total 116K
 
 (setq project-vc-ignores '("vendor/"))
 #+end_src
-
-* treemacs
-
-#+begin_src emacs-lisp
-(use-package treemacs
-  :init
-  (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-  :config
-  (progn
-    (setq
-     treemacs-collapse-dirs                 3
-     treemacs-deferred-git-apply-delay      0.1
-     treemacs-display-in-side-window        t
-     treemacs-eldoc-display                 t
-     treemacs-file-event-delay              300
-     treemacs-file-follow-delay             0.01
-     treemacs-follow-after-init             t
-     treemacs-git-command-pipe              ""
-     treemacs-goto-tag-strategy             'refetch-index
-     treemacs-indentation                   1
-     treemacs-indentation-string            " "
-     treemacs-is-never-other-window         t
-     treemacs-max-git-entries               500
-     treemacs-missing-project-action        'ask
-     treemacs-no-png-images                 nil
-     treemacs-no-delete-other-windows       t
-     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-     treemacs-position                      'left
-     treemacs-recenter-distance             0.01
-     treemacs-recenter-after-file-follow    t
-     treemacs-recenter-after-tag-follow     t
-     treemacs-recenter-after-project-jump   'always
-     treemacs-recenter-after-project-expand 'on-distance
-     treemacs-shownn-cursor                 t
-     treemacs-show-hidden-files             t
-     treemacs-silent-filewatch              nil
-     treemacs-silent-refresh                nil
-     treemacs-sorting                       'alphabetic-asc
-     treemacs-select-when-already-in-treemacs 'stay
-     treemacs-space-between-root-nodes      nil
-     treemacs-tag-follow-cleanup            t
-     treemacs-tag-follow-delay              1
-     treemacs-width                         35
-     treemacs-width-increment               5
-     treemacs-width-is-initially-locked     nil
-     treemacs-project-follow-cleanup        t
-     imenu-auto-rescan                      t)
-    (treemacs-resize-icons 11)
-    (treemacs-follow-mode t)
-    ;;(treemacs-tag-follow-mode t)
-    ;;(treemacs-project-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode 'always)
-    (treemacs-indent-guide-mode t)
-    (treemacs-git-mode 'deferred)
-    (treemacs-hide-gitignored-files-mode nil))
-  :bind
-  (:map global-map
-        ("M-0"       . treemacs-select-window)
-        ("C-x t 1"   . treemacs-delete-other-windows)
-        ("C-x t t"   . treemacs)
-        ("C-x t B"   . treemacs-bookmark)
-        ("C-x t C-t" . treemacs-find-file)
-        ("C-x t M-t" . treemacs-find-tag)))
-
-(use-package treemacs-magit
-  :after (treemacs magit)
-  :ensure t)
-
-(use-package deadgrep
-  :ensure-system-package (rg . ripgrep)
-  :bind ("<f5>" . deadgrep))
-
-;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
-(add-hook 'buffer-list-update-hook
-          (lambda ()
-            (when (file-remote-p default-directory)
-              (require 'treemacs)
-              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-                  (delete-window (treemacs-get-local-window))))))
-#+end_src
-+ 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
-  project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
 * search
 
@@ -3050,7 +3045,6 @@ eshell：
                (server-running-p))
     (server-start)))
 
-
 (use-package recentf
   :straight (:type built-in)
   :config
@@ -3090,9 +3084,6 @@ eshell：
 ;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
 (setq-default fill-column 100)
 (setq-default comment-fill-column 0)
-(setq-default tab-width 4)
-;; 不插入 tab (按照 tab-width 转换为空格插入) 。
-(setq-default indent-tabs-mode nil)
 (setq-default message-log-max t)
 (setq-default ad-redefinition-action 'accept)
 
@@ -3168,15 +3159,6 @@ eshell：
 ;; 在另一个 panel buffer 中展示按键。
 (use-package command-log-mode
   :commands command-log-mode)
-
-;; OSX 词典。
-(use-package osx-dictionary
-  :bind
-  (("C-c d i" . osx-dictionary-search-input)
-   ("C-c d w" . osx-dictionary-search-pointer))
-  :config
-  (use-package chinese-word-at-point :demand t)
-  (setq osx-dictionary-use-chinese-text-segmentation t))
 
 ;; 以下自定义函数参考自：https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-edit.el
 (defun my/json-format ()
