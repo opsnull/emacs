@@ -3025,6 +3025,7 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
 
 * doom-modeline
 
+doom-modeline 总存在 modeline 右侧溢出的情况。
 #+begin_src emacs-lisp
 ;; modeline 显示电池和日期时间。
 (display-battery-mode t)
@@ -3034,36 +3035,31 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
 (setq display-time-24hr-format t)
 (setq display-time-default-load-average nil)
 (setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%dT%H:%M")
+(setq display-time-format "%m/%d[%w]%H:%M")
 (setq display-time-day-and-date t)
 (setq indicate-buffer-boundaries (quote left))
 
 (use-package doom-modeline
-  :demand
-  :after (doom-themes)
+  :hook (after-init . doom-modeline-mode)
   :custom
-  ;; 不显示换行和编码（节省空间）。
+  ;; 不显示换行和编码。
   (doom-modeline-buffer-encoding nil)
   ;; 显示语言版本。
   (doom-modeline-env-version t)
-  ;; 不显示 Go 版本。
+  ;; 但不显示 Go 版本。
   (doom-modeline-env-enable-go nil)
-  ;; 不显示 icon, 防止溢出。
-  (doom-modeline-icon nil)
-  (doom-modeline-unicode-fallback nil)
-  ;; 不显示 project 名称。
-  ;;(doom-modeline-project-detection nil)
-  ;; 不显示文件所属项目，否则 TRAMP 变慢：https://github.com/seagle0128/doom-modeline/issues/32
-  ;;(doom-modeline-buffer-file-name-style 'file-name)
   (doom-modeline-buffer-file-name-style 'relative-from-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
-  (doom-modeline-height 2)
-  :init
-  (doom-modeline-mode 1)
+  (doom-modeline-height 20)
+  ;; 不显示 icon, 防止溢出。
+  (doom-modeline-icon nil)
+  (doom-modeline-unicode-fallback nil)
+  ;;:init
+  ;;(doom-modeline-mode 1)
   :config
-  (set-face-attribute 'doom-modeline nil :font "Fira Code Retina" :height 1.0)
-  (set-face-attribute 'doom-modeline-inactive nil :font "Fira Code Retina" :height 1.0))
+  (set-face-attribute 'mode-line nil :font "Fira Code Retina" :height 0.9)
+  (set-face-attribute 'mode-line-inactive nil :font "Fira Code Retina" :height 0.9))
 #+end_src
 
 * beacon
@@ -3592,8 +3588,34 @@ doom-themes:
 + 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
   project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
+
+* open large file
+
+#+begin_src emacs-lisp
+;; 使用 fundamental-mode 打开大文件。
+(defun my/large-file-hook ()
+  (when (and (> (buffer-size) (* 1024 2))
+             (or (string-equal (file-name-extension (buffer-file-name)) "json")
+                 (string-equal (file-name-extension (buffer-file-name)) "yaml")
+                 (string-equal (file-name-extension (buffer-file-name)) "yml")
+                 (string-equal (file-name-extension (buffer-file-name)) "log")))
+    (fundamental-mode)
+    (setq buffer-read-only t)
+    (font-lock-mode -1)
+    (rainbow-delimiters-mode -1)
+    (smartparens-global-mode -1)
+    (show-smartparens-mode -1)
+    (smartparens-mode -1)
+    ))
+(add-hook 'find-file-hook 'my/large-file-hook)
+;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
+(add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
+(add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
+#+end_src
+
 * tree-sitter
 
+tree-sitter 与中文输入法连用时，会导致输入过程变慢，同时输入过程中 buffer 的高亮显式异常。
 #+begin_src emacs-lisp
 (use-package tree-sitter
   :demand t
@@ -3608,3 +3630,126 @@ doom-themes:
   :demand)
 #+end_src
 
+* grammatical-edit
+
+#+begin_src emacs-lisp
+(use-package grammatical-edit
+  :straight (:host github :repo "manateelazycat/grammatical-edit")
+  :after (tree-sitter)
+  :demand
+  :config
+  (dolist (hook (list
+                 'c-mode-common-hook
+                 'c-mode-hook
+                 'c++-mode-hook
+                 'java-mode-hook
+                 'emacs-lisp-mode-hook
+                 'lisp-interaction-mode-hook
+                 'lisp-mode-hook
+                 'sh-mode-hook
+                 'makefile-gmake-mode-hook
+                 'python-mode-hook
+                 'js-mode-hook
+                 'go-mode-hook
+                 'css-mode-hook
+                 'rust-mode-hook
+                 'minibuffer-inactive-mode-hook
+                 'typescript-mode-hook
+                 ))
+    (add-hook hook '(lambda () (grammatical-edit-mode 1))))
+  (define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)
+  (define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket)
+  (define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly)
+  (define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)
+  (define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket)
+  (define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly)
+  (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal)
+
+  (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren)
+  (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote)
+  (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote)
+
+  (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space)
+  (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline)
+
+  (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete)
+  (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete)
+  (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill)
+
+  (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote)
+  (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote)
+  (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket)
+  (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly)
+  (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round)
+  (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap)
+
+  (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right)
+  (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left)
+  (define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
+
+  (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
+  )
+#+end_src
++ 不能与 smartparens 连用。
+
+
+
+* sis
+#+begin_src emacs-lisp
+(use-package sis
+  :demand
+  :disabled
+  :ensure-system-package (macism . "brew tap laishulu/macism; brew install macism")
+  :bind ("<f9>" . sis-switch)
+  :config
+  (add-to-list 'sis-prefix-override-keys "M-s")
+  (add-to-list 'sis-prefix-override-keys "M-g")
+  (add-to-list 'sis-prefix-override-keys "M-o")
+  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+  (setq sis-other-cursor-color "orange")
+  (sis-global-cursor-color-mode t)
+  ;; 开启  respect mode  模式。
+  ;;(add-to-list 'sis-prefix-override-recap-triggers 'lsp-bridge-ref-mode)
+  ;; (setq sis-prefix-override-buffer-disable-predicates
+  ;;       (list 'minibufferp
+  ;;             (;; lsp-bridge
+  ;;              lambda (buffer)
+  ;;              (sis--string-match-p "^\*lsp-bridge.*" (buffer-name buffer)))
+  ;;             (;; magit
+  ;;              lambda (buffer)
+  ;;              (sis--string-match-p "^magit.*:" (buffer-name buffer)))
+  ;;             (;; special buffer
+  ;;              lambda (buffer)
+  ;;              (and (sis--string-match-p "^\*" (buffer-name buffer))
+  ;;                   (not (sis--string-match-p "^\*new\*"
+  ;;                                             (downcase (buffer-name buffer))))
+  ;;                   (not (sis--string-match-p "^\*scratch\*"
+  ;;                                             (downcase (buffer-name buffer))))))))
+  (sis-global-respect-mode t)
+  ;; 开启  inline english  模式。
+  (setq sis-inline-tighten-head-rule 0)
+  (setq sis-inline-tighten-tail-rule 0)
+  (sis-global-inline-mode t)
+  ;; 开启  follow-context  模式。
+  (sis-global-context-mode t)
+  ;; 上下文探测。
+  ;; (add-to-list 'sis-context-detectors (lambda (&rest _)
+  ;;                                       (when (eq major-mode 'lsp-bridge-ref-mode)
+  ;;                                         'english)))
+  )
+#+end_src
++ macism 为 mac 输入法切换工具。
+
+* osx-dictionary
+使用 sdcv 替代了 osx-dictionary.
+  #+begin_src emacs-lisp
+
+;; OSX 词典。
+(use-package osx-dictionary
+  :bind
+  (("C-c d i" . osx-dictionary-search-input)
+   ("C-c d w" . osx-dictionary-search-pointer))
+  :config
+  (use-package chinese-word-at-point :demand t)
+  (setq osx-dictionary-use-chinese-text-segmentation t))
+  #+end_src

@@ -175,28 +175,23 @@
   ;; emacs 启动完毕后再启动，这样可以替换掉 doom-theme 的 modeline, 避免显示两个。
   (after-init .  (lambda () (awesome-tray-mode)))
   :config
+  ;; 显示更多的目录结构（默认为 2)。
+  (setq awesome-tray-file-path-full-dirname-levels 4)
   ;; modeline 中添加 input-method 显示。
-  (setq awesome-tray-active-modules '("location" "file-path" "mode-name" "battery" "input-method" "date")))
+  (setq awesome-tray-active-modules '("location" "buffer-read-only" "file-path" "mode-name" "input-method" "date")))
 
 (use-package sort-tab
   :demand
   :straight (:repo "manateelazycat/sort-tab" :host github)
   :config
   (sort-tab-mode 1)
-  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
   (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
   (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
   (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
   (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
-  ;; 设置 tab 颜色，M-x list-colors-display.
+  ;; 设置 tab 颜色，M-x list-colors-display。
   (set-face-foreground 'sort-tab-current-tab-face "peru")
   ;; 不显示背景颜色。
   (set-face-background 'sort-tab-current-tab-face nil))
@@ -264,6 +259,7 @@
 		    (+load-ext-font)
 		    (+load-emoji-font)))
 
+;; 加载字体。
 (defun +load-font ()
   (+load-base-font)
   (+load-face-font)
@@ -313,11 +309,11 @@
   (global-set-key "\M-R" #'vertico-repeat-select)
 
   ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
-  (vertico-multiform-mode)
-
+  ;;(vertico-multiform-mode)
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
   ;; 为 file 设置 grid 模式, grep buffer 模式与 awesome-tray 不兼容。
-  (setq vertico-multiform-categories '((file grid))))
+  ;; (setq vertico-multiform-categories '((file grid)))
+  )
 
 (use-package emacs
   :init
@@ -829,35 +825,52 @@ T - tag prefix
 
 (define-key dired-mode-map "." 'hydra-dired/body)
 
+(setq default-input-method "pyim")
+
 (use-package pyim
   :straight (pyim :repo "tumashu/pyim")
   :demand
   :hook
-  ;; 设置缺省输入法为 pyim.
+  ;; 设置缺省输入法为 pyim。
   (emacs-startup . (lambda () (setq default-input-method "pyim")))
   :config
+  ;; 输入法切换。
   (global-set-key (kbd "C-\\") 'toggle-input-method)
-  ;; 全半角切换。
-  (global-set-key (kbd "C-,") 'pyim-punctuation-toggle)
+  ;; 切换光标处标点符号的类型。
+  (global-set-key (kbd "C-,") 'pyim-punctuation-translate-at-point)
   ;; 中英文切换。
   (global-set-key (kbd "C-.") 'pyim-toggle-input-ascii)
-  ;; 金手指设置，可以将光标处的编码，比如：拼音字符串，转换为中文。
+  ;; 金手指设置，将光标处的拼音字符串转换为中文。
   (global-set-key (kbd "M-j") 'pyim-convert-string-at-point)
-  ;; 按 "C-<return>" 将光标前的 regexp 转换为可以搜索中文的 regexp
+  ;; 按 "C-<return>" 将光标前的 regexp 转换为可以搜索中文的 regexp 。
   (define-key minibuffer-local-map (kbd "C-<return>") 'pyim-cregexp-convert-at-point)
+  (setq pyim-dcache-directory "~/.emacs.d/sync/pyim/dcache/")
   ;; 使用全拼。
   (pyim-default-scheme 'quanpin)
   ;; 使用百度云拼音。
-  (setq pyim-cloudim 'baidu)
+  ;;(setq pyim-cloudim 'baidu)
+  ;; 不使用 shortcode2word。
+  (setq-default pyim-enable-shortcode nil)
   ;; 开启代码搜索中文功能（比如拼音，五笔码等）。
   (pyim-isearch-mode 1)
   ;; 中文使用全角标点，英文使用半角标点。
-  (setq-default pyim-punctuation-translate-p '(auto yes no))   
+  (setq-default pyim-punctuation-translate-p '(auto yes no))
+  ;; posframe 性能更好且显式的较为干净, popup 较慢且容易干扰当前 buffer。
+  (setq-default pyim-page-tooltip 'posframe)
   ;; 设置模糊音。
   (add-to-list 'pyim-pinyin-fuzzy-alist '("z" "zh"))
   (add-to-list 'pyim-pinyin-fuzzy-alist '("c" "ch"))
-  ;; 确保使用 tsinghua dict.
-  (setq pyim-dicts '((:name "tsinghua" :file "~/.emacs.d/straight/repos/pyim-tsinghua-dict/pyim-tsinghua-dict.pyim")))
+  ;; Dictionaries:
+  ;;   pyim-greatdict is not recommended. It has too many useless words and slows down pyim.
+  ;;
+  ;;   Download pyim-bigdict,
+  ;;   curl -L http://tumashu.github.io/pyim-bigdict/pyim-bigdict.pyim.gz | zcat > ~/.eim/pyim-bigdict.pyim
+  ;;
+  ;;   Download pyim-tsinghua (recommended),
+  ;;   curl -L https://raw.githubusercontent.com/redguardtoo/pyim-tsinghua-dict/master/pyim-tsinghua-dict.pyim > ~/.eim/pyim-tsinghua-dict.pyim
+  (setq pyim-dicts '(
+                     (:name "tsinghua" :file "~/.emacs.d/straight/repos/pyim-tsinghua-dict/pyim-tsinghua-dict.pyim")
+                     (:name "pyim-bigdict" :file "~/.emacs.d/sync/pyim/pyim-bigdict.pyim")))
   ;; 使用性能更好的 pyim-dregcache dcache 后端。
   (setq pyim-dcache-backend 'pyim-dregcache)
   ;; 设置中英文自动切换。
@@ -1429,7 +1442,7 @@ _SPC_ cancel
   :config
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
-;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转
+;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转。
 (defun lsp-bridge-jump ()
   (interactive)
   (cond
@@ -1464,25 +1477,24 @@ _SPC_ cancel
         ("M-i" . lsp-bridge-lookup-documentation)
         ("M-n" . lsp-bridge-popup-documentation-scroll-up)
         ("M-p" . lsp-bridge-popup-documentation-scroll-down)
+        ("M-g d" . lsp-bridge-list-diagnostics)
         ("s-C-n" . lsp-bridge-jump-to-next-diagnostic)
         ("s-C-p" . lsp-bridge-jump-to-prev-diagnostic))
   :config
   (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
+  (setq acm-enable-search-words nil)
   ;; 关闭 lsp additionalTextEdits 的 auto import 机制。
-  (setq acm-backend-lsp-enable-auto-import t)
-  (setq lsp-bridge-diagnostics-fetch-idle 1)
+  ;; (setq acm-backend-lsp-enable-auto-import nil)
+  (setq lsp-bridge-diagnostics-fetch-idle 0.8)
+  ;; 关闭 yas.
+  (setq acm-enable-yas nil)
   (global-lsp-bridge-mode)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
   (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
-  (when (> (frame-pixel-width) 3000) (custom-set-faces '(corfu-default ((t (:height 1.3)))))))
-
-;; 总是在弹出菜单中显示候选者。
-(setq completion-cycle-threshold nil)
-
-;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
-(setq tab-always-indent 'complete)
+  ;; go 注释字符后不提示补全。
+  (add-to-list 'lsp-bridge-completion-hide-characters "/"))
 
 (use-package emacs
   :straight (:type built-in)
@@ -1772,27 +1784,6 @@ mermaid.initialize({
   :bind (([remap move-beginning-of-line] . mwim-beginning-of-code-or-line)
          ([remap move-end-of-line] . mwim-end-of-code-or-line)))
 
-;; 智能括号。
-(use-package smartparens
-  :demand
-  :config
-  (smartparens-global-mode t)
-  (show-smartparens-global-mode t))
-
-;; 彩色括号。
-(use-package rainbow-delimiters
-  :hook
-  (prog-mode . rainbow-delimiters-mode))
-
-;; 高亮匹配的括号。
-(use-package paren
-  :straight (:type built-in)
-  :hook
-  (after-init . show-paren-mode)
-  :init
-  (setq show-paren-when-point-inside-paren t
-        show-paren-when-point-in-periphery t))
-
 ;; 开发文档。
 (use-package dash-at-point
   :bind
@@ -1812,22 +1803,20 @@ mermaid.initialize({
   :config
   (global-set-key (kbd "C-=") 'er/expand-region))
 
-;; stardict
-(use-package sdcv  
- :straight (:host github :repo "manateelazycat/sdcv")
- :bind
- (("s-t p" . sdcv-search-pointer)  ;; 光标处的单词, buffer显示
-  ("s-t t" . sdcv-search-pointer+) ;; 光标处的单词, tooltip 显示
-  ("s-t i" . sdcv-search-input)    ;; 输入的单词, buffer 显示
-  ("s-t ;" . sdcv-search-input+))  ;; 输入的单持, tooltip 显示
-  :init
-  ;; fix non-prefix "s-t" key error.
-  (define-key global-map (kbd "s-t") (make-sparse-keymap))
+(use-package sdcv
+  :demand
+  :straight (:host github :repo "manateelazycat/sdcv")
+  :ensure-system-package (sdcv . "brew install sdcv")
+  :bind
+  (("C-c d P" . sdcv-search-pointer)  ;; 光标处的单词, buffer 显示。
+   ("C-c d p" . sdcv-search-pointer+) ;; 光标处的单词, tooltip 显示。
+   ("C-c d I" . sdcv-search-input)    ;; 输入的单词, buffer 显示。
+   ("C-c d i" . sdcv-search-input+))  ;; 输入的单持, tooltip 显示。
   :config
   (setq sdcv-tooltip-timeout 0)
   ;;say word after translation
   (setq sdcv-say-word-p nil)               
-  (setq sdcv-dictionary-data-dir "/Users/zhangjun/.emacs.d/stardict/dic") 
+  (setq sdcv-dictionary-data-dir "/Users/zhangjun/.emacs.d/sync/stardict/dic") 
   ;;setup dictionary list for simple search  
   (setq sdcv-dictionary-simple-list    
         '("朗道英汉字典5.0"
@@ -1841,18 +1830,10 @@ mermaid.initialize({
           "KDic11万英汉词典"
           "牛津高阶英汉双解")))
 
-;; OSX 词典。
-(use-package osx-dictionary
-  :bind
-  (("C-c d i" . osx-dictionary-search-input)
-   ("C-c d w" . osx-dictionary-search-pointer))
-  :config
-  (use-package chinese-word-at-point :demand t)
-  (setq osx-dictionary-use-chinese-text-segmentation t))
-
 (setq-default tab-width 4)
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
 (setq-default indent-tabs-mode nil)
+(global-set-key (kbd "RET") 'newline-and-indent)
 
 (defun adjust-languages-indent (n)
   (setq-local c-basic-offset n)
@@ -1888,6 +1869,7 @@ mermaid.initialize({
   (add-hook hook #'(lambda ()
                      ;; go-mode 默认启用 tabs, 否则 gofmt 和 lsp-bridge 的 auto import 会异常。
                      (setq indent-tabs-mode t)
+                     (setq-default c-basic-offset 4)
                      (setq-local indent-tabs-mode t)
                      )))
 
@@ -1899,6 +1881,28 @@ mermaid.initialize({
                      (setq indent-tabs-mode nil)
                      (adjust-languages-indent 2)
                      )))
+
+;; 智能括号。
+(use-package smartparens
+  :demand
+  :disabled
+  :config
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode t))
+
+;; 彩色括号。
+(use-package rainbow-delimiters
+  :hook
+  (prog-mode . rainbow-delimiters-mode))
+
+;; 高亮匹配的括号。
+(use-package paren
+  :straight (:type built-in)
+  :hook
+  (after-init . show-paren-mode)
+  :init
+  (setq show-paren-when-point-inside-paren t
+        show-paren-when-point-in-periphery t))
 
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
@@ -2172,7 +2176,7 @@ mermaid.initialize({
 ;; 远程机器列表。
 (require 'epa-file)
 (epa-file-enable)
-(load "~/.emacs.d/sshenv.el.gpg")
+(load "~/.emacs.d/sync/sshenv.el.gpg")
 
 ;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程环境中。远程
 ;; 机器的 ~/.emacs_bashrc 根据这个变量设置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的问题。
@@ -2210,10 +2214,7 @@ mermaid.initialize({
     (fundamental-mode)
     (setq buffer-read-only t)
     (font-lock-mode -1)
-    (rainbow-delimiters-mode -1)
-    (smartparens-global-mode -1)
-    (show-smartparens-mode -1)
-    (smartparens-mode -1)))
+    (rainbow-delimiters-mode -1)))
 (add-hook 'find-file-hook 'my/large-file-hook)
 ;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
 (add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
@@ -2229,17 +2230,20 @@ mermaid.initialize({
 ;; 关闭 mouse-wheel-text-scale 快捷键 (容易触碰误操作) 。
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
+
 ;; 避免执行 ns-print-buffer 命令。
-(global-unset-key (kbd "s-p"))
+;;(global-unset-key (kbd "s-p"))
+;;(global-unset-key (kbd "s-n"))
+
 ;; 避免执行 ns-open-file-using-panel 命令。
 (global-unset-key (kbd "s-o"))
 (global-unset-key (kbd "s-t"))
-(global-unset-key (kbd "s-n"))
+
 ;; 关闭 suspend-frame 。
 (global-unset-key (kbd "C-z"))
+
 ;; 关闭 mouse-yank-primary 。
 (global-unset-key (kbd "<mouse-2>"))
-(global-set-key (kbd "RET") 'newline-and-indent)
 
 (use-package emacs
   :straight (:type built-in)
