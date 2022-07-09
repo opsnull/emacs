@@ -455,6 +455,8 @@
   (setq consult-async-min-input 3)
   (setq consult-async-input-debounce 0.4)
   (setq consult-async-input-throttle 0.5)
+  ;; 从头开始搜索（而非当前位置）。
+  (setq consult-line-start-from-top t)
   ;; 预览寄存器。
   (setq register-preview-delay 0.1)
   (setq register-preview-function #'consult-register-format)
@@ -1579,7 +1581,12 @@ _SPC_ cancel
 (use-package go-mode
   :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
   :init
-  (setq godoc-reuse-buffer t))
+  (setq godoc-reuse-buffer t)
+  :hook
+  ((go-mode . (lambda()
+                ;; go-mode 默认启用 tabs.
+                (setq indent-tabs-mode t)
+                (setq c-basic-offset 4)))))
 
 (defvar go--tools '("golang.org/x/tools/gopls"
                     "golang.org/x/tools/cmd/goimports"
@@ -1722,30 +1729,46 @@ mermaid.initialize({
   (setq typescript-indent-level 2))
 
 (use-package js2-mode
+  :init
+  (add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js-mode))
   :config
   ;; 仍然使用 js-mode 作为 .js/.jsx 的 marjor-mode, 但使用 js2-minor-mode 提供 AST 解析。
   (add-hook 'js-mode-hook 'js2-minor-mode)
   ;; 由于 lsp 已经提供了 diagnose 功能，故关闭 js2 自带的错误检查，防止干扰。
   (setq js2-mode-show-strict-warnings nil)
   (setq js2-mode-show-parse-errors nil)
+  ;; 缩进配置。
+  (setq javascript-indent-level 2)
+  (setq js-indent-level 2)
+  (setq js2-basic-offset 2)
   (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 
 (use-package web-mode
   :init
-  (add-to-list 'auto-mode-alist '("\\.jinja2?\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.jinja2\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.j2\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.css\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.tmpl\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode))
   :custom
+  (css-indent-offset 2)
+  (web-mode-attr-indent-offset 2)
+  (web-mode-attr-value-indent-offset 2)
+  (web-mode-code-indent-offset 2)
+  (web-mode-css-indent-offset 2)
+  (web-mode-markup-indent-offset 2)
+  (web-mode-sql-indent-offset 2)
   (web-mode-enable-auto-pairing t)
   (web-mode-enable-css-colorization t)
-  (web-mode-markup-indent-offset 4)
-  (web-mode-css-indent-offset 4)
-  (web-mode-code-indent-offset 4)
   (web-mode-enable-auto-quoting nil)
   (web-mode-enable-block-face t)
-  (web-mode-enable-current-element-highlight t))
+  (web-mode-enable-current-element-highlight t)
+  :config
+  ;; Emmit.
+  (setq web-mode-tag-auto-close-style 2) ;; 2 mean auto-close with > and </.
+  (setq web-mode-markup-indent-offset 2))
 
 (use-package yaml-mode
   :ensure-system-package
@@ -1830,61 +1853,10 @@ mermaid.initialize({
 ;; pip install jieba
 (use-package chinese-word-at-point)
 
-(setq-default tab-width 4)
-;; 不插入 tab (按照 tab-width 转换为空格插入) 。
-(setq-default indent-tabs-mode nil)
-(global-set-key (kbd "RET") 'newline-and-indent)
-
-(defun adjust-languages-indent (n)
-  (setq-local c-basic-offset n)
-
-  (setq-local javascript-indent-level n)
-  (setq-local js-indent-level n)
-  (setq-local js2-basic-offset n)
-
-  (setq-local web-mode-attr-indent-offset n)
-  (setq-local web-mode-attr-value-indent-offset n)
-  (setq-local web-mode-code-indent-offset n)
-  (setq-local web-mode-css-indent-offset n)
-  (setq-local web-mode-markup-indent-offset n)
-  (setq-local web-mode-sql-indent-offset n)
-
-  (setq-local css-indent-offset n))
-
-(dolist (hook (list
-               'c-mode-hook
-               'c++-mode-hook
-               'java-mode-hook
-               'sh-mode-hook
-               'scss-mode-hook
-               ))
-  (add-hook hook #'(lambda ()
-                     (setq indent-tabs-mode nil)
-                     (adjust-languages-indent 4)
-                     )))
-
-(dolist (hook (list
-               'go-mode-hook
-               ))
-  (add-hook hook #'(lambda ()
-                     ;; go-mode 默认启用 tabs, 否则 gofmt 和 lsp-bridge 的 auto import 会异常。
-                     (setq indent-tabs-mode t)
-                     (setq-default c-basic-offset 4)
-                     (setq-local indent-tabs-mode t)
-                     )))
-
-(dolist (hook (list
-               'web-mode-hook
-               'js-mode-hook
-               ))
-  (add-hook hook #'(lambda ()
-                     (setq indent-tabs-mode nil)
-                     (adjust-languages-indent 2)
-                     )))
-
 ;; 智能括号。
 (use-package smartparens
   :demand
+  :disabled
   :config
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
@@ -1902,6 +1874,74 @@ mermaid.initialize({
   :init
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t))
+
+(use-package tree-sitter
+  :demand t
+  :config
+  (global-tree-sitter-mode)
+  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package tree-sitter-langs
+  :demand)
+
+(use-package grammatical-edit
+  :straight (:host github :repo "manateelazycat/grammatical-edit")
+  :after (tree-sitter)
+  :demand
+  :config
+  (dolist (hook (list
+                 'c-mode-common-hook
+                 'c-mode-hook
+                 'c++-mode-hook
+                 'java-mode-hook
+                 'emacs-lisp-mode-hook
+                 'lisp-interaction-mode-hook
+                 'lisp-mode-hook
+                 'sh-mode-hook
+                 'makefile-gmake-mode-hook
+                 'python-mode-hook
+                 'js-mode-hook
+                 'go-mode-hook
+                 'css-mode-hook
+                 'rust-mode-hook
+                 'minibuffer-inactive-mode-hook
+                 'typescript-mode-hook
+                 ))
+    (add-hook hook '(lambda () (grammatical-edit-mode 1))))
+  (define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)
+  (define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket)
+  (define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly)
+  (define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)
+  (define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket)
+  (define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly)
+  (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal)
+
+  (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren)
+  (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote)
+  (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote)
+
+  (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space)
+  (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline)
+
+  (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete)
+  (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete)
+  (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill)
+
+  (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote)
+  (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote)
+  (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket)
+  (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly)
+  (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round)
+  (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap)
+
+  (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right)
+  (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left)
+  (define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
+
+  (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
+  )
 
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
@@ -2190,6 +2230,11 @@ mermaid.initialize({
 
 (use-package consult-tramp
   :straight (:repo "Ladicle/consult-tramp" :host github))
+
+(setq-default tab-width 4)
+;; 不插入 tab (按照 tab-width 转换为空格插入) 。
+(setq-default indent-tabs-mode nil)
+(global-set-key (kbd "RET") 'newline-and-indent)
 
 ;; 保存 Buffer 时自动更新 #+LASTMOD: 后面的时间戳。
 (setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*")
