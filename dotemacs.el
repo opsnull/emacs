@@ -153,20 +153,42 @@
 (setq image-transform-resize t)
 (auto-image-file-mode t)
 
-;; 预览主题: https://emacsthemes.com/
-(use-package doom-themes
-  :demand
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
+(use-package modus-themes
+  :ensure
+  :init
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-region '(accented no-extend)
+        modus-themes-hl-line '(underline accented)
+        modus-themes-paren-match '(intense)
+        modus-themes-links '(neutral-underline background)
+        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
+        modus-themes-prompts '(intense bold)
+        modus-themes-syntax '(alt-syntax)
+        modus-themes-mixed-fonts t
+        modus-themes-mode-line-padding 1
+        ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
+        ;;modus-themes-diffs 'deuteranopia
+        modus-themes-org-blocks 'gray-background ;; 'tinted-background
+        modus-themes-variable-pitch-ui t
+        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
+        )
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
   :config
-  (doom-themes-visual-bell-config)
-  (load-theme 'doom-palenight t)
-  (doom-themes-org-config))
+  ;; Load the theme of your choice:
+  ;;(modus-themes-load-vivendi)
+  ;;(modus-themes-load-operandi)
+  :bind ("<f5>" . modus-themes-toggle))
+
+;; 跟随 Mac 自动切换深浅主题。
+(defun my/load-light-theme () (interactive) (load-theme 'modus-operandi t))
+(defun my/load-dark-theme () (interactive) (load-theme 'modus-vivendi t))
+(add-hook 'ns-system-appearance-change-functions
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
 
 (use-package awesome-tray
   :demand
@@ -231,7 +253,7 @@
 	    (modeline-font-spec (format "%s" +modeline-font-family))
 	    (variable-pitch-font-spec (format "%s" +variable-pitch-family))
 	    (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
-	(set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.2)
+	(set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.0)
 	(set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
 	(set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
 	(set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
@@ -825,7 +847,7 @@ T - tag prefix
 
 (define-key dired-mode-map "." 'hydra-dired/body)
 
-(setq default-input-method "pyim")
+(setq-default default-input-method "pyim")
 
 (use-package pyim
   :straight (pyim :repo "tumashu/pyim")
@@ -836,10 +858,10 @@ T - tag prefix
   :config
   ;; 输入法切换。
   (global-set-key (kbd "C-\\") 'toggle-input-method)
-  ;; 切换光标处标点符号的类型。
-  (global-set-key (kbd "C-,") 'pyim-punctuation-translate-at-point)
   ;; 中英文切换。
   (global-set-key (kbd "C-.") 'pyim-toggle-input-ascii)
+  ;; 单字符快捷键，可以实现快速切换标点符号和添加个人生词。
+  (setq pyim-outcome-trigger "^")
   ;; 金手指设置，将光标处的拼音字符串转换为中文。
   (global-set-key (kbd "M-j") 'pyim-convert-string-at-point)
   ;; 按 "C-<return>" 将光标前的 regexp 转换为可以搜索中文的 regexp 。
@@ -1473,28 +1495,36 @@ _SPC_ cancel
   (:map lsp-bridge-mode-map
         ("M-."  . lsp-bridge-jump)
         ("M-," . lsp-bridge-jump-back)
+        ("M-r" . lsp-bridge-rename)
         ("M-?" . lsp-bridge-find-references)
         ("M-i" . lsp-bridge-lookup-documentation)
         ("M-n" . lsp-bridge-popup-documentation-scroll-up)
         ("M-p" . lsp-bridge-popup-documentation-scroll-down)
-        ("M-g d" . lsp-bridge-list-diagnostics)
+        ("C-c C-a" . lsp-bridge-code-action)
+        ("C-c C-f" . lsp-bridge-code-format)
+        ("C-c C-l" . lsp-bridge-list-diagnostics)
         ("s-C-n" . lsp-bridge-jump-to-next-diagnostic)
         ("s-C-p" . lsp-bridge-jump-to-prev-diagnostic))
   :config
   (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
+  ;; 关闭 word 补全。
   (setq acm-enable-search-words nil)
-  ;; 关闭 lsp additionalTextEdits 的 auto import 机制。
-  ;; (setq acm-backend-lsp-enable-auto-import nil)
-  (setq lsp-bridge-diagnostics-fetch-idle 0.8)
-  ;; 关闭 yas.
+  (setq acm-candidate-match-function 'orderless-flex)
+  (setq lsp-bridge-diagnostic-tooltip-border-width 0)
+  (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
+  ;; 关闭 yas 补全。
   (setq acm-enable-yas nil)
-  (global-lsp-bridge-mode)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
   (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
+  ;; go 缩进。
+  (add-to-list 'lsp-bridge-formatting-indent-alist '(go-mode . c-basic-offset))
   ;; go 注释字符后不提示补全。
-  (add-to-list 'lsp-bridge-completion-hide-characters "/"))
+  (add-to-list 'lsp-bridge-completion-hide-characters "/")
+  (add-to-list 'lsp-bridge-completion-hide-characters "，")
+  (add-to-list 'lsp-bridge-completion-hide-characters "。")
+  (global-lsp-bridge-mode))
 
 (use-package emacs
   :straight (:type built-in)
@@ -1549,18 +1579,7 @@ _SPC_ cancel
 (use-package go-mode
   :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
   :init
-  (setq godoc-reuse-buffer t)
-  ;; 可选值：goimports, 在格式化 buffer 的同时自动 import package。
-  (setq gofmt-command "gofmt") 
-  ;; 需要安装 gogetdoc 命令。
-  ;;(setq godoc-at-point-function #'godoc-gogetdoc)
-  :bind
-  (:map go-mode-map
-        ("C-c C-a" . go-import-add)
-        ("C-c C-c" . go-run-buffer)
-        ("C-c C-r" . go-remove-unused-imports)
-        ("C-c C-f" . gofmt)
-        ("C-c C-d" . godoc-at-point)))
+  (setq godoc-reuse-buffer t))
 
 (defvar go--tools '("golang.org/x/tools/gopls"
                     "golang.org/x/tools/cmd/goimports"
@@ -1687,64 +1706,31 @@ mermaid.initialize({
   :bind (:map markdown-mode-command-map
               ("r" . markdown-toc-generate-or-refresh-toc)))
 
-;; (defun my/use-eslint-from-node-modules ()
-;;   ;; use local eslint from node_modules before global
-;;   ;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
-;;   (let* ((root (locate-dominating-file (or (buffer-file-name) default-directory) "node_modules"))
-;;          (eslint (and root (expand-file-name "node_modules/eslint/bin/eslint.js" root))))
-;;     (when (and eslint (file-executable-p eslint))
-;;       (setq-local flycheck-javascript-eslint-executable eslint))))
-
-;; (shell-command "which npm &>/dev/null || brew install npm &>/dev/null")
-(defun my/setup-tide-mode ()
-  "Use hl-identifier-mode only on js or ts buffers."
-  (when (and (stringp buffer-file-name)
-             (string-match "\\.[tj]sx?\\'" buffer-file-name))
-    (tide-setup)
-    ;;(add-hook 'flycheck-mode-hook #'my/use-eslint-from-node-modules)
-    (tide-hl-identifier-mode +1)))
-
-;; for .ts and .tsx file
+;; for .ts/.tsx file
 (use-package typescript-mode
   :ensure-system-package
-  (eslint . "npm install -g eslint babel-eslint eslint-plugin-react")
+  (
+   (tsc . "npm install -g typescript")
+   (typescript-language-server . "npm install -g typescript-language-server")
+   (eslint . "npm install -g eslint babel-eslint eslint-plugin-react")
+   (prettier . "npm install -g prettier")
+   (importjs . "npm install -g import-js")
+  )
   :init
   (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescript-mode))
-  :hook
-  ((typescript-mode . my/setup-tide-mode))
   :config
-  ;;(flycheck-add-mode 'typescript-tslint 'typescript-mode)
   (setq typescript-indent-level 2))
 
-(use-package tide
-  :hook ((before-save . tide-format-before-save))
-  :ensure-system-package
-  ((typescript-language-server . "npm install -g typescript-language-server")
-  (tsc . "npm install -g typescript"))
-  :config
-  ;; 开启 tsserver 的 debug 日志模式。
-  (setq tide-tsserver-process-environment '("TSS_LOG=-level verbose -file /tmp/tss.log")))
-
 (use-package js2-mode
-  ;;:after (tide flycheck)
-  :after (tide)
   :config
-  ;; js-mode-map 将 M-. 绑定到 js-find-symbol, 没有使用 tide 和 lsp, 所以需要解
-  ;; 绑。这样 M-. 被 tide 绑定到 tide-jump-to-definition.
-  (define-key js-mode-map (kbd "M-.") nil)
-  ;;(add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+  ;; 仍然使用 js-mode 作为 .js/.jsx 的 marjor-mode, 但使用 js2-minor-mode 提供 AST 解析。
   (add-hook 'js-mode-hook 'js2-minor-mode)
-  ;; 为 js/jsx 文件启动 tide.
-  (add-hook 'js-mode-hook 'my/setup-tide-mode)
-  ;; disable jshint since we prefer eslint checking
-  ;; (setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(javascript-jshint)))
-  ;; (flycheck-add-mode 'javascript-eslint 'js-mode)
-  ;; (flycheck-add-next-checker 'javascript-eslint 'javascript-tide 'append)
-  ;; (flycheck-add-next-checker 'javascript-eslint 'jsx-tide 'append)
+  ;; 由于 lsp 已经提供了 diagnose 功能，故关闭 js2 自带的错误检查，防止干扰。
+  (setq js2-mode-show-strict-warnings nil)
+  (setq js2-mode-show-parse-errors nil)
   (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 
 (use-package web-mode
-  ;;:after (flycheck)
   :init
   (add-to-list 'auto-mode-alist '("\\.jinja2?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
@@ -1759,10 +1745,7 @@ mermaid.initialize({
   (web-mode-code-indent-offset 4)
   (web-mode-enable-auto-quoting nil)
   (web-mode-enable-block-face t)
-  (web-mode-enable-current-element-highlight t)
-  ;;:config
-  ;;(flycheck-add-mode 'javascript-eslint 'web-mode)
-)
+  (web-mode-enable-current-element-highlight t))
 
 (use-package yaml-mode
   :ensure-system-package
@@ -1830,6 +1813,23 @@ mermaid.initialize({
           "KDic11万英汉词典"
           "牛津高阶英汉双解")))
 
+(use-package go-translate
+  :straight (:host github :repo "lorniu/go-translate")
+  :bind
+  (("C-c d t" . gts-do-translate))
+  :config
+  (setq gts-translate-list '(("en" "zh")))
+  (setq gts-default-translator
+        (gts-translator
+         :picker (gts-prompt-picker)
+         :engines (list
+                   (gts-bing-engine)
+                   (gts-google-engine :parser (gts-google-summary-parser)))
+         :render (gts-buffer-render))))
+
+;; pip install jieba
+(use-package chinese-word-at-point)
+
 (setq-default tab-width 4)
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
 (setq-default indent-tabs-mode nil)
@@ -1885,7 +1885,6 @@ mermaid.initialize({
 ;; 智能括号。
 (use-package smartparens
   :demand
-  :disabled
   :config
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
