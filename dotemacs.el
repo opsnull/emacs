@@ -124,9 +124,6 @@
 ;; 左右分屏, nil: 上下分屏。
 (setq split-width-threshold 30)
 
-;; 复用当前 frame。
-(setq display-buffer-reuse-frames t)
-
 ;; 滚动一屏后显示 3 行上下文。
 (setq next-screen-context-lines 3)
 
@@ -153,70 +150,69 @@
 (setq image-transform-resize t)
 (auto-image-file-mode t)
 
-(use-package modus-themes
-  :ensure
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-region '(accented no-extend)
-        modus-themes-hl-line '(underline accented)
-        modus-themes-paren-match '(intense)
-        modus-themes-links '(neutral-underline background)
-        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
-        modus-themes-prompts '(intense bold)
-        modus-themes-syntax '(alt-syntax)
-        modus-themes-mixed-fonts t
-        modus-themes-mode-line-padding 1
-        ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
-        ;;modus-themes-diffs 'deuteranopia
-        modus-themes-org-blocks 'gray-background ;; 'tinted-background
-        modus-themes-variable-pitch-ui t
-        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
-        )
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
+(use-package doom-themes
+  :demand
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
   :config
-  ;; Load the theme of your choice:
-  ;;(modus-themes-load-vivendi)
-  ;;(modus-themes-load-operandi)
-  :bind ("<f5>" . modus-themes-toggle))
+  (doom-themes-visual-bell-config)
+  (load-theme 'doom-palenight t)
+  (doom-themes-org-config))
 
 ;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'modus-operandi t))
-(defun my/load-dark-theme () (interactive) (load-theme 'modus-vivendi t))
+(defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
               ('light (my/load-light-theme))
               ('dark (my/load-dark-theme)))))
 
-(use-package awesome-tray
-  :demand
-  :straight (:repo "manateelazycat/awesome-tray" :host github)
-  :hook
-  ;; emacs 启动完毕后再启动，这样可以替换掉 doom-theme 的 modeline, 避免显示两个。
-  (after-init .  (lambda () (awesome-tray-mode)))
-  :config
-  ;; 显示更多的目录结构（默认为 2)。
-  (setq awesome-tray-file-path-full-dirname-levels 4)
-  ;; modeline 中添加 input-method 显示。
-  (setq awesome-tray-active-modules '("location" "buffer-read-only" "file-path" "mode-name" "input-method" "date")))
+;; modeline 显示电池和日期时间。
+(display-battery-mode t)
+(column-number-mode t)
+(size-indication-mode -1)
+(display-time-mode t)
+(setq display-time-24hr-format t)
+(setq display-time-default-load-average nil)
+(setq display-time-load-average-threshold 5)
+(setq display-time-format "%m/%d[%w]%H:%M")
+(setq display-time-day-and-date t)
+(setq indicate-buffer-boundaries (quote left))
 
-(use-package sort-tab
-  :demand
-  :straight (:repo "manateelazycat/sort-tab" :host github)
+(use-package doom-modeline
+  :hook (after-init . doom-modeline-mode)
+  :custom
+  ;; 不显示换行和编码。
+  (doom-modeline-buffer-encoding nil)
+  ;; 显示语言版本。
+  (doom-modeline-env-version t)
+  ;; 但不显示 Go 版本。
+  (doom-modeline-env-enable-go nil)
+  (doom-modeline-buffer-file-name-style 'relative-from-project)
+  (doom-modeline-vcs-max-length 30)
+  (doom-modeline-github nil)
   :config
-  (sort-tab-mode 1)
-  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
-  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
-  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
-  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
-  ;; 设置 tab 颜色，M-x list-colors-display。
-  (set-face-foreground 'sort-tab-current-tab-face "peru")
-  ;; 不显示背景颜色。
-  (set-face-background 'sort-tab-current-tab-face nil))
+  (setq doom-modeline-height 1)
+  (custom-set-faces
+   '(mode-line ((t (:height 0.9)))) ;; 也可以使用字体 :family "Noto Sans"
+   '(mode-line-active ((t (:height 0.9)))) ;; For 29+
+   '(mode-line-inactive ((t (:height 0.9)))))
+  (doom-modeline-def-modeline 'my-simple-line
+    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
+    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+    ;; right-hand segment list，尾部增加空格，避免溢出。
+    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
+  (defun setup-custom-doom-modeline ()
+    (setq all-the-icons-scale-factor 1.1)
+    ;; 设置为缺省的 modeline 格式。 
+    (doom-modeline-set-modeline 'my-simple-line 'default))
+  (add-hook 'doom-modeline-mode-hook 'setup-custom-doom-modeline))
 
 (use-package dashboard
   :demand
@@ -228,7 +224,13 @@
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3))))
+  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
+
+;; 切换透明背景。
+(defun my/toggle-transparency ()
+  (interactive)
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 ;; 缺省字体（英文，如显示代码）。
@@ -331,11 +333,10 @@
   (global-set-key "\M-R" #'vertico-repeat-select)
 
   ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
-  ;;(vertico-multiform-mode)
+  (vertico-multiform-mode)
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
   ;; 为 file 设置 grid 模式, grep buffer 模式与 awesome-tray 不兼容。
-  ;; (setq vertico-multiform-categories '((file grid)))
-  )
+  (setq vertico-multiform-categories '((file grid))))
 
 (use-package emacs
   :init
@@ -516,11 +517,12 @@
   ;; 显示绝对时间。
   (setq marginalia-max-relative-age 0)
   (marginalia-mode)
-  :config
-  (setq marginalia-annotator-registry
-        (assq-delete-all 'file marginalia-annotator-registry))
-  (setq marginalia-annotator-registry
-        (assq-delete-all 'project-file marginalia-annotator-registry)))
+  ;; :config
+  ;; (setq marginalia-annotator-registry
+  ;;       (assq-delete-all 'file marginalia-annotator-registry))
+  ;; (setq marginalia-annotator-registry
+  ;;       (assq-delete-all 'project-file marginalia-annotator-registry))
+  )
 
 (use-package yasnippet
   :init
@@ -544,12 +546,11 @@
   (:map yas-minor-mode-map
         ("C-c y" . 'consult-yasnippet)))
 
-(use-package transpose-frame
-  :demand
-  :straight (:host github :repo "emacsorphanage/transpose-frame")
-  )
+;; 避免报错：Symbol’s function definition is void: yasnippet-snippets--fixed-indent
+(use-package yasnippet-snippets)
 
 (use-package ace-window
+  :bind  (("M-o" . ace-window))
   :init
   ;; 使用字母而非数字标记窗口，便于跳转。
   (setq aw-keys '(?a ?w ?e ?g ?i ?j ?k ?l ?p))
@@ -565,18 +566,14 @@
           (?C aw-copy-window "Copy Window")
           ;; 为指定 window 选择新的 Buffer 并切换过去。
           (?B aw-switch-buffer-in-window "Select Buffer")
-          ;; 为指定 window 选择新的 Buffer，切换到其它 buffer；
+          ;; 为指定 window 选择新的 Buffer，切换到其它 buffer。
           (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
           (?N aw-flip-window)
-          ;; 依赖 transpose-frame package
-          (?T aw-transpose-frame "Transpose Frame")
           (?? aw-show-dispatch-help)))
   :config
-  ;; 设置为 frame 后会忽略 treemacs frame，否则即使两个窗口时也会提示选择。
-  ;;(setq aw-scope 'frame)
+  (setq aw-scope 'frame)
   ;; 总是提示窗口选择，进而执行 ace 命令。
-  (setq aw-dispatch-always t)
-  (global-set-key (kbd "M-o") 'ace-window))
+  (setq aw-dispatch-always t))
 
 (use-package winner
   :straight (:type built-in)
@@ -614,11 +611,14 @@
     (delete-other-windows)))
 (global-set-key (kbd "s-<f11>") 'toggle-one-window)
 
-;; 切换透明背景。
-(defun my/toggle-transparency ()
-  (interactive)
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
+;; 复用当前 frame。
+(setq display-buffer-reuse-frames t)
+(setq display-buffer-base-action
+      '(display-buffer-reuse-mode-window
+        display-buffer-reuse-window
+        display-buffer-same-window))
+;; If a popup does happen, don't resize windows to be equal-sized
+(setq even-window-sizes nil)
 
 ;; 在 frame 底部显示窗口。
 (setq display-buffer-alist
@@ -1504,7 +1504,7 @@ _SPC_ cancel
         ("M-p" . lsp-bridge-popup-documentation-scroll-down)
         ("C-c C-a" . lsp-bridge-code-action)
         ("C-c C-f" . lsp-bridge-code-format)
-        ("C-c C-l" . lsp-bridge-list-diagnostics)
+        ("s-C-l" . lsp-bridge-list-diagnostics)
         ("s-C-n" . lsp-bridge-jump-to-next-diagnostic)
         ("s-C-p" . lsp-bridge-jump-to-prev-diagnostic))
   :config
@@ -1543,15 +1543,6 @@ _SPC_ cancel
       (setq python-shell-interpreter "python")
       (setq python-shell-interpreter-args "-i"))))
 
-;; (defun my/python-setup-checkers (&rest args)
-;;   (when (fboundp 'flycheck-set-checker-executable)
-;;     (let ((pylint (executable-find "pylint"))
-;;           (flake8 (executable-find "flake8")))
-;;       (when pylint
-;;         (flycheck-set-checker-executable "python-pylint" pylint))
-;;       (when flake8
-;;         (flycheck-set-checker-executable "python-flake8" flake8)))))
-
 ;; 使用 yapf 格式化 python 代码。
 (use-package yapfify
   :straight (:host github :repo "JorisE/yapfify"))
@@ -1574,9 +1565,7 @@ _SPC_ cancel
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
-                   (yapf-mode)
-                   ;; (my/python-setup-checkers)
-                   )))
+                   (yapf-mode))))
 
 (use-package go-mode
   :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
@@ -1715,6 +1704,7 @@ mermaid.initialize({
 
 ;; for .ts/.tsx file
 (use-package typescript-mode
+  :mode "\\.tsx?\\'"
   :ensure-system-package
   (
    (tsc . "npm install -g typescript")
@@ -1723,8 +1713,6 @@ mermaid.initialize({
    (prettier . "npm install -g prettier")
    (importjs . "npm install -g import-js")
   )
-  :init
-  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescript-mode))
   :config
   (setq typescript-indent-level 2))
 
@@ -1744,14 +1732,7 @@ mermaid.initialize({
   (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 
 (use-package web-mode
-  :init
-  (add-to-list 'auto-mode-alist '("\\.jinja2\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.j2\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.css\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.tmpl\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.gotmpl\\'" . web-mode))
+  :mode "(\\.\\(jinja2\\|j2\\|css\\|vue\\|tmpl\\|gotmpl\\|html?\\|ejs\\)\\'"
   :custom
   (css-indent-offset 2)
   (web-mode-attr-indent-offset 2)
@@ -1771,13 +1752,11 @@ mermaid.initialize({
   (setq web-mode-markup-indent-offset 2))
 
 (use-package yaml-mode
+  :mode "\\.ya?ml\\'"
   :ensure-system-package
   (yaml-language-server . "npm install -g yaml-language-server")
   :hook
-  (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent)))
-  :config
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
-  (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode)))
+  (yaml-mode . (lambda () (define-key yaml-mode-map "\C-m" 'newline-and-indent))))
 
 (use-package envrc
   :ensure-system-package direnv
@@ -1875,6 +1854,20 @@ mermaid.initialize({
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t))
 
+;; 显示缩进。
+(use-package highlight-indent-guides
+  :demand
+  :custom
+  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-responsive 'top)
+  (highlight-indent-guides-suppress-auto-error t)
+  (highlight-indent-guides-delay 0.1)
+  :config
+  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
+
 (use-package tree-sitter
   :demand t
   :config
@@ -1942,6 +1935,22 @@ mermaid.initialize({
 
   (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
   )
+
+(use-package which-key
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config
+  (setq which-key-idle-delay 2))
+
+(use-package general
+  :config
+  (general-create-definer my/ctrl-c-keys
+    :prefix "C-c"))
+
+ (my/ctrl-c-keys
+  "t"  '(:ignore t :which-key "toggles")
+  "tw" 'whitespace-mode
+  "tt" '(consult-theme :which-key "choose theme"))
 
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."

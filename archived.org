@@ -646,28 +646,6 @@ DIR must include a .project file to be considered a project."
                (reusable-frames . visible)
                (window-height   . 0.33)))
 
-(use-package modus-themes
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs nil
-        modus-themes-region '(bg-only no-extend)
-        modus-themes-variable-pitch-ui t
-        modus-themes-variable-pitch-headings t
-        modus-themes-scale-headings t
-        modus-themes-scale-1 1.1
-        modus-themes-scale-2 1.15
-        modus-themes-scale-3 1.21
-        modus-themes-scale-4 1.27
-        modus-themes-scale-title 1.33)
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
-  :config
-  ;; modus 要求切换主题时设置字体，否则 org code 字体不对。
-  ;;(add-hook 'modus-themes-after-load-theme-hook #'my/faces)
-  (modus-themes-load-operandi) ;; 浅色主题
-  ;;(modus-themes-load-vivendi)  ;; 深色主题
-  )
-
 (defun my/faces  (&optional theme &rest _)
   (interactive)
   ;; Main typeface （英文字体）
@@ -817,27 +795,6 @@ DIR must include a .project file to be considered a project."
   :after (company prescient)
   :init (company-prescient-mode +1))
 
-(use-package modus-themes
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs nil
-        modus-themes-region '(bg-only no-extend)
-        modus-themes-variable-pitch-ui t
-        modus-themes-variable-pitch-headings t
-        modus-themes-scale-headings t
-        modus-themes-scale-1 1.1
-        modus-themes-scale-2 1.15
-        modus-themes-scale-3 1.21
-        modus-themes-scale-4 1.27
-        modus-themes-scale-title 1.33)
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
-  :config
-  ;; modus 要求切换主题时设置字体，否则 org code 字体不对。
-  (add-hook 'modus-themes-after-load-theme-hook #'my/faces)
-  ;;(modus-themes-load-operandi) ;; 浅色主题
-  ;;(modus-themes-load-vivendi)  ;; 深色主题
-  )
 
 (defun my/faces  (&optional theme &rest _)
   (interactive)
@@ -1833,103 +1790,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 
 #+end_src
 
-* theme
-
-#+begin_src emacs-lisp
-;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-palenight t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
-
-;; 高对比度主题。
-(use-package modus-themes
-  :demand
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-region '(accented no-extend)
-        modus-themes-hl-line '(underline accented)
-        modus-themes-paren-match '(intense)
-        modus-themes-links '(neutral-underline background)
-        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
-        modus-themes-prompts '(intense bold)
-        modus-themes-syntax '(alt-syntax)
-        modus-themes-mixed-fonts t
-        modus-themes-mode-line-padding 6
-        ;; 不能设置为 'deuteranopia，否则 orgmode heading 显示的字体不对。
-        ;;modus-themes-diffs 'deuteranopia
-        modus-themes-org-blocks 'gray-background ;; 'tinted-background
-        modus-themes-variable-pitch-ui t
-        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
-        )
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
-  :config
-  (modus-themes-load-operandi) ;; 浅色主题
-  ;;(modus-themes-load-vivendi)  ;; 深色主题
-  )
-
-;; 预览主题: https://emacsthemes.com/
-(use-package doom-themes
-  :demand
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  (doom-themes-treemacs-theme "doom-colors")
-  ;; modeline 两边各加 4px 空白。
-  (doom-themes-padded-modeline t)
-  :config
-  (doom-themes-visual-bell-config)
-  ;; 为 treemacs 关闭 variable-pitch 模式，否则显示的较丑！
-  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
-  (setq doom-themes-treemacs-enable-variable-pitch nil)
-  (doom-themes-treemacs-config)
-  (doom-themes-org-config))
-
-;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-zenburn t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-zenburn t))
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
-#+end_src
-
-** vertico
-#+begin_src emacs-lisp
-(use-package vertico
-  :demand
-  :straight (:repo "minad/vertico" :files ("*" "extensions/*.el" (:exclude ".git")))
-  :bind
-  (:map vertico-map
-        ;; 在多个 source 中切换(如 consult-buffer, consult-grep) 。
-        ("C-M-n" . vertico-next-group)
-        ("C-M-p" . vertico-previous-group)
-        ;; 快速插入。
-        ("M-i" . vertico-quick-insert)
-        ("M-e" . vertico-quick-exit)
-        ;; 切换显示风格。
-        ("M-V" . vertico-multiform-vertical)
-        ("M-G" . vertico-multiform-grid)
-        ("M-F" . vertico-multiform-flat)
-        ("M-R" . vertico-multiform-reverse)
-        ("M-U" . vertico-multiform-unobtrusive)
-        ;; 文件路径操作。
-        ("<backspace>" . vertico-directory-delete-char)
-        ("C-w" . vertico-directory-delete-word)
-        ("C-<backspace>" . vertico-directory-delete-word)
-        ("RET" . vertico-directory-enter))
-#+end_src
-
 * font
 不开启 variable-pitch-mode,
 #+begin_src emacs-lisp
@@ -2030,6 +1890,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 ;; 使用字体缓存，避免卡顿。
 (setq inhibit-compacting-font-caches t)
   #+end_src
+
+* cnfonts
 
 #+begin_src emacs-lisp
 (use-package cnfonts
@@ -2320,54 +2182,7 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
         (message "added project %s" file)))))
 #+end_src
 
-* eglot
-
-#+begin_src emacs-lisp
-(setq max-specpdl-size 130000)
-
-(use-package eglot
-  :hook ((c-mode go-mode java-mode js-mode python-mode rust-mode web-mode) . eglot-ensure)
-  :config
-  ;; (defun eglot-actions-before-save()
-  ;;   (add-hook 'before-save-hook 
-  ;;             (lambda ()
-  ;;               (call-interactively #'eglot-format-buffer)
-  ;;               (call-interactively #'eglot-code-action-organize-imports))))  
-  ;; (add-hook 'go-mode-hook #'eglot-actions-before-save)
-  ;; documentHighlightProvider 禁用高亮光标下的单词
-  (setq eglot-ignored-server-capabilities '(:documentHighlightProvider))
-  (setq eldoc-echo-area-use-multiline-p 3
-        eldoc-echo-area-display-truncation-message nil)
-  (set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff"))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package go-mode
-  :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
-  :init
-  (setq godoc-at-point-function #'godoc-gogetdoc)
-  :bind
-  (:map go-mode-map
-        ("C-c R" . go-remove-unused-imports)
-        ("<f1>" . godoc-at-point)))
-
-(setq-default eglot-workspace-configuration
-    '((:gopls .
-        ((staticcheck . t)
-         (matcher . "CaseSensitive")
-         (allExperiments . t)
-         (completeUnimported . t)
-         ;; opts a user into the experimental support for multi-module workspaces
-         (experimentalWorkspaceModule . t)
-         ;;disables -mod=readonly, allowing imports from out-of-scope module
-         (allowModfileModifications . t)
-         ;;disables GOPROXY=off, allowing implicit module downloads rather than requiring user action
-         (allowImplicitNetworkAccess . t)
-         ;; enables gopls to fall back on outdated package metadata
-         (experimentalUseInvalidMetadata . t)))))
-#+end_src
-
-* consult
+* consult-dir
 #+begin_src emacs-lisp
 (use-package consult-dir
   :bind
@@ -2377,6 +2192,7 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
    ("C-x C-j" . consult-dir-jump-file)))
 #+end_src
 
+* got-chg
 
 跳转到上次修改位置：
 #+begin_src emacs-lisp
@@ -2385,7 +2201,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   (global-set-key (kbd "C->") 'goto-last-change)
   (global-set-key (kbd "C-<") 'goto-last-change-reverse))
 #+end_src
-
 
 * rime
 
@@ -3471,8 +3286,8 @@ capf 给补全系统添加额外的候选者类型：
   (cape-wrap-prefix-length #'cape-dabbrev 3))
  #+end_src
 
-
 * lsp-pyright
+
 #+begin_src emacs-lisp
 (use-package lsp-pyright
   :after (python lsp-mode)
@@ -3588,7 +3403,6 @@ doom-themes:
 + 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
   project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
-
 * open large file
 
 #+begin_src emacs-lisp
@@ -3672,3 +3486,70 @@ doom-themes:
   (use-package chinese-word-at-point :demand t)
   (setq osx-dictionary-use-chinese-text-segmentation t))
   #+end_src
+
+* awesome-tray
+#+begin_src emacs-lisp
+;; 隐藏 Emacs 自带的 modeline, 使用 awesome-tray。
+(use-package hide-mode-line
+  :disabled
+  :config
+  (global-hide-mode-line-mode))
+
+(use-package awesome-tray
+  :demand
+  :disabled
+  :straight (:repo "manateelazycat/awesome-tray" :host github)
+  :hook
+  ;; emacs 启动完毕后再启动，这样可以替换掉 doom-theme 的 modeline, 避免显示两个。
+  (after-init .  (lambda () (awesome-tray-mode)))
+  :config
+  ;; 显示更多的目录结构（默认为 2)。
+  (setq awesome-tray-file-path-full-dirname-levels 4)
+  ;; modeline 中添加 input-method 显示。
+  (setq awesome-tray-active-modules '("location" "buffer-read-only" "file-path" "mode-name" "input-method" "date")))
+#+end_src
+
+* sort-tab
+#+begin_src emacs-lisp
+(use-package sort-tab
+  :demand
+  :straight (:repo "manateelazycat/sort-tab" :host github)
+  :config
+  (sort-tab-mode 1)
+  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
+  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
+  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
+  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
+  ;; 设置 tab 颜色，M-x list-colors-display。
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
+  ;; 不显示背景颜色。
+  (set-face-background 'sort-tab-current-tab-face nil))
+#+end_src
+
+
+* modus-theme
+#+begin_src emacs-lisp
+(use-package modus-themes
+  :init
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs nil
+        modus-themes-region '(bg-only no-extend)
+        modus-themes-variable-pitch-ui t
+        modus-themes-variable-pitch-headings t
+        modus-themes-scale-headings t
+        modus-themes-scale-1 1.1
+        modus-themes-scale-2 1.15
+        modus-themes-scale-3 1.21
+        modus-themes-scale-4 1.27
+        modus-themes-scale-title 1.33)
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
+  :config
+  ;; modus 要求切换主题时设置字体，否则 org code 字体不对。
+  (add-hook 'modus-themes-after-load-theme-hook #'my/faces)
+  ;;(modus-themes-load-operandi) ;; 浅色主题
+  ;;(modus-themes-load-vivendi)  ;; 深色主题
+  )
+#+end_src
