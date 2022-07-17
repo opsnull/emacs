@@ -1791,7 +1791,8 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+end_src
 
 * font
-不开启 variable-pitch-mode,
+
+不开启 variable-pitch-mode, 否则 doom-modeline 右侧容易溢出。
 #+begin_src emacs-lisp
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
 ;; 缺省字体。
@@ -1909,19 +1910,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
     (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
   (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
   (cnfonts-enable))
-#+end_src
-
-* orderless
-#+begin_src emacs-lisp
-
-  ;; https://github.com/minad/corfu/wiki
-  (defun my/orderless-dispatch-flex-first (_pattern index _total)
-  (and (eq index 0) 'orderless-flex))
-  ;; Optionally configure the first word as flex filtered.
-  (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
-
-  ;; Optionally configure the cape-capf-buster.
-  (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
 #+end_src
 
 * face
@@ -2180,16 +2168,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
         (message "-> %s" file)
         (projectile-add-known-project file)
         (message "added project %s" file)))))
-#+end_src
-
-* consult-dir
-#+begin_src emacs-lisp
-(use-package consult-dir
-  :bind
-  (("C-x C-d" . consult-dir)
-   :map minibuffer-local-completion-map
-   ("C-x C-d" . consult-dir)
-   ("C-x C-j" . consult-dir-jump-file)))
 #+end_src
 
 * got-chg
@@ -2475,31 +2453,6 @@ patch:
           (consult-global-mark buffer)
           (consult-find buffer)))
 
-#+end_src
-
-* corfu
-#+begin_src emacs-lisp
-  :init
-  (defun corfu-beginning-of-prompt ()
-    "Move to beginning of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (car completion-in-region--data)))
-  (defun corfu-end-of-prompt ()
-    "Move to end of completion input."
-    (interactive)
-    (corfu--goto -1)
-    (goto-char (cadr completion-in-region--data)))
-  :bind
-  (:map corfu-map
-        ("TAB" . corfu-next)
-        ([tab] . corfu-next)
-        ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous)
-        ;; C-a/C-e 分别移动到补全的开始和结束。
-        ;;([remap move-beginning-of-line] . corfu-beginning-of-prompt)
-        ;; ([remap move-end-of-line] . corfu-end-of-prompt)
-        ) 
 #+end_src
 
 * centaur-tabs
@@ -2838,45 +2791,6 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
  (mark -2500))
 #+end_src
 
-* doom-modeline
-
-doom-modeline 总存在 modeline 右侧溢出的情况。
-#+begin_src emacs-lisp
-;; modeline 显示电池和日期时间。
-(display-battery-mode t)
-(column-number-mode t)
-(size-indication-mode -1)
-(display-time-mode t)
-(setq display-time-24hr-format t)
-(setq display-time-default-load-average nil)
-(setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%d[%w]%H:%M")
-(setq display-time-day-and-date t)
-(setq indicate-buffer-boundaries (quote left))
-
-(use-package doom-modeline
-  :hook (after-init . doom-modeline-mode)
-  :custom
-  ;; 不显示换行和编码。
-  (doom-modeline-buffer-encoding nil)
-  ;; 显示语言版本。
-  (doom-modeline-env-version t)
-  ;; 但不显示 Go 版本。
-  (doom-modeline-env-enable-go nil)
-  (doom-modeline-buffer-file-name-style 'relative-from-project)
-  (doom-modeline-vcs-max-length 30)
-  (doom-modeline-github nil)
-  (doom-modeline-height 20)
-  ;; 不显示 icon, 防止溢出。
-  (doom-modeline-icon nil)
-  (doom-modeline-unicode-fallback nil)
-  ;;:init
-  ;;(doom-modeline-mode 1)
-  :config
-  (set-face-attribute 'mode-line nil :font "Fira Code Retina" :height 0.9)
-  (set-face-attribute 'mode-line-inactive nil :font "Fira Code Retina" :height 0.9))
-#+end_src
-
 * beacon
 
 #+begin_src emacs-lisp
@@ -3062,55 +2976,20 @@ lsp-treemacs:
   (lsp-treemacs-sync-mode 1))
 #+end_src
 
-* go
-
+lsp-pyright:
 #+begin_src emacs-lisp
-(use-package go-mode
-  ;;:after (lsp-mode)
-  :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
+(use-package lsp-pyright
+  :after (python lsp-mode)
+  :ensure-system-package
+  (pyright . "npm update -g pyright")
   :init
-  (setq godoc-at-point-function #'godoc-gogetdoc)
-  (defun lsp-go-install-save-hooks ()
-    (add-hook 'before-save-hook #'lsp-format-buffer t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  :hook (go-mode . lsp-go-install-save-hooks)
-  :bind
-  (:map go-mode-map
-        ("C-c R" . go-remove-unused-imports)
-        ("<f1>" . godoc-at-point))
-  :config
-  ;; 配置 -mod=mod, 防止带有 vendor 目录的项目报错: go: inconsistent vendoring
-  (setq lsp-go-env '((GOFLAGS . "-mod=mod")))
-  (lsp-register-custom-settings
-   `(("gopls.allExperiments" t t)
-     ("gopls.staticcheck" t t)
-     ("gopls.completeUnimported" t t)
-     ;; opts a user into the experimental support for multi-module workspaces
-     ("gopls.experimentalWorkspaceModule" t t)
-     ;;disables -mod=readonly, allowing imports from out-of-scope module
-     ("gopls.allowModfileModifications" t t)
-     ;;disables GOPROXY=off, allowing implicit module downloads rather than requiring user action
-     ("gopls.allowImplicitNetworkAccess" t t)
-     ;; enables gopls to fall back on outdated package metadata
-     ("gopls.experimentalUseInvalidMetadata" t t))))
-#+end_src
-
-gopls 自带了诊断功能，所以不再需要：
-#+begin_src emacs-lisp
-;; golangci-lint 性能较 go-xxx 工具高，同时避免调用过多 checker.
-(use-package flycheck-golangci-lint
-  :ensure-system-package (golangci-lint)
-  :after flycheck
-  :config
-  (setq flycheck-disabled-checkers 
-        '(go-gofmt
-          go-golint
-          go-vet
-          go-build
-          go-test
-          go-staticcheck
-          go-errcheck))
-  (flycheck-golangci-lint-setup))
+  (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
+  (if (not (file-exists-p pyright-directory))
+      (make-directory pyright-directory t))
+  (when (executable-find "python3")
+    (setq lsp-pyright-python-executable-cmd "python3"))
+  :hook
+  (python-mode . (lambda () (require 'lsp-pyright) )))
 #+end_src
 
 * dockerfile
@@ -3123,19 +3002,8 @@ gopls 自带了诊断功能，所以不再需要：
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 #+end_src
 
-* winner
-#+begin_src emacs-lisp
-
-#+end_src
-
-* undo-tree
-#+begin_src emacs-lisp
-(use-package undo-tree
-  :init
-  (global-undo-tree-mode 1))
-#+end_src
-
 * vertico
+
 与使用 awesome-tray  时，不能使用 buffer 风格，否则显示的效果不对。
 #+begin_src emacs-lisp
   ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
@@ -3187,24 +3055,11 @@ gopls 自带了诊断功能，所以不再需要：
   (global-set-key (kbd "C-c j") 'awesome-tab-ace-jump))
 #+end_src
 
-* ibuffer-project
-#+begin_src emacs-lisp
-
-#+end_src
-
 * color-rg
 
 #+begin_src emacs-lisp
 (use-package color-rg
   :straight (:host github :repo "manateelazycat/color-rg"))
-#+end_src
-
-* ripgrep
-
-#+begin_src emacs-lisp
-;; C-c p s r(projectile-ripgrep) 依赖 ripgrep 包。
-(use-package ripgrep
-  :ensure-system-package (rg . ripgrep))
 #+end_src
 
 * corfu
@@ -3285,23 +3140,6 @@ capf 给补全系统添加额外的候选者类型：
   ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
   (cape-wrap-prefix-length #'cape-dabbrev 3))
  #+end_src
-
-* lsp-pyright
-
-#+begin_src emacs-lisp
-(use-package lsp-pyright
-  :after (python lsp-mode)
-  :ensure-system-package
-  (pyright . "npm update -g pyright")
-  :init
-  (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
-  (if (not (file-exists-p pyright-directory))
-      (make-directory pyright-directory t))
-  (when (executable-find "python3")
-    (setq lsp-pyright-python-executable-cmd "python3"))
-  :hook
-  (python-mode . (lambda () (require 'lsp-pyright) )))
-#+end_src
 
 * treemacs
 
@@ -3403,30 +3241,6 @@ doom-themes:
 + 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
   project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
-* open large file
-
-#+begin_src emacs-lisp
-;; 使用 fundamental-mode 打开大文件。
-(defun my/large-file-hook ()
-  (when (and (> (buffer-size) (* 1024 2))
-             (or (string-equal (file-name-extension (buffer-file-name)) "json")
-                 (string-equal (file-name-extension (buffer-file-name)) "yaml")
-                 (string-equal (file-name-extension (buffer-file-name)) "yml")
-                 (string-equal (file-name-extension (buffer-file-name)) "log")))
-    (fundamental-mode)
-    (setq buffer-read-only t)
-    (font-lock-mode -1)
-    (rainbow-delimiters-mode -1)
-    (smartparens-global-mode -1)
-    (show-smartparens-mode -1)
-    (smartparens-mode -1)
-    ))
-(add-hook 'find-file-hook 'my/large-file-hook)
-;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
-(add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
-(add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
-#+end_src
-
 * sis
 #+begin_src emacs-lisp
 (use-package sis
@@ -3526,30 +3340,4 @@ doom-themes:
   (set-face-foreground 'sort-tab-current-tab-face "peru")
   ;; 不显示背景颜色。
   (set-face-background 'sort-tab-current-tab-face nil))
-#+end_src
-
-
-* modus-theme
-#+begin_src emacs-lisp
-(use-package modus-themes
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs nil
-        modus-themes-region '(bg-only no-extend)
-        modus-themes-variable-pitch-ui t
-        modus-themes-variable-pitch-headings t
-        modus-themes-scale-headings t
-        modus-themes-scale-1 1.1
-        modus-themes-scale-2 1.15
-        modus-themes-scale-3 1.21
-        modus-themes-scale-4 1.27
-        modus-themes-scale-title 1.33)
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
-  :config
-  ;; modus 要求切换主题时设置字体，否则 org code 字体不对。
-  (add-hook 'modus-themes-after-load-theme-hook #'my/faces)
-  ;;(modus-themes-load-operandi) ;; 浅色主题
-  ;;(modus-themes-load-vivendi)  ;; 深色主题
-  )
 #+end_src

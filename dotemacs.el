@@ -150,40 +150,59 @@
 (setq image-transform-resize t)
 (auto-image-file-mode t)
 
-(use-package doom-themes
-  :demand
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  :config
-  (doom-themes-visual-bell-config)
-  (load-theme 'doom-palenight t)
-  (doom-themes-org-config))
+;; (use-package doom-themes
+;;   :demand
+;;   ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+;;   :straight (:files ("*.el" "themes/*" "extensions/*"))
+;;   :custom-face
+;;   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+;;   :custom
+;;   (doom-themes-enable-bold t)
+;;   (doom-themes-enable-italic t)
+;;   :config
+;;   (doom-themes-visual-bell-config)
+;;   ;;(load-theme 'doom-palenight t)
+;;   (doom-themes-org-config))
 
-;; 跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t))
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t))
+(use-package modus-themes
+  :ensure
+  :init
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-region '(accented no-extend)
+        modus-themes-hl-line '(underline accented)
+        modus-themes-paren-match '(intense)
+        modus-themes-links '(neutral-underline background)
+        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
+        modus-themes-prompts '(intense bold)
+        modus-themes-syntax '(alt-syntax)
+        modus-themes-mixed-fonts t
+        modus-themes-org-blocks 'gray-background ;; 'tinted-background
+        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
+        modus-themes-scale-1 1.1
+        modus-themes-scale-2 1.15
+        modus-themes-scale-3 1.21
+        modus-themes-scale-4 1.27
+        modus-themes-scale-title 1.33
+        )
+  ;; 关闭 variable-pitch-ui 和添加 padding, 否则 mode-line 右侧可能溢出。
+  (setq modus-themes-variable-pitch-ui nil)
+  (setq modus-themes-mode-line (quote (borderless (padding 4) (height 0.9))))
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
+  ;;:config
+  ;;(modus-themes-load-vivendi) ;; 深色主题
+  ;;(modus-themes-load-operandi) ;; 浅色主题
+  :bind ("<f5>" . modus-themes-toggle))
+
+;;跟随 Mac 自动切换深浅主题。
+(defun my/load-light-theme () (interactive) (load-theme 'modus-operandi t)) ;; modus-operandi doom-one-light
+(defun my/load-dark-theme () (interactive) (load-theme 'modus-vivendi t)) ;; modus-vivendi doom-palenight
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
               ('light (my/load-light-theme))
               ('dark (my/load-dark-theme)))))
-
-;; modeline 显示电池和日期时间。
-(display-battery-mode t)
-(column-number-mode t)
-(size-indication-mode -1)
-(display-time-mode t)
-(setq display-time-24hr-format t)
-(setq display-time-default-load-average nil)
-(setq display-time-load-average-threshold 5)
-(setq display-time-format "%m/%d[%w]%H:%M")
-(setq display-time-day-and-date t)
-(setq indicate-buffer-boundaries (quote left))
 
 (use-package doom-modeline
   :hook (after-init . doom-modeline-mode)
@@ -198,6 +217,18 @@
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
   :config
+  ;; modeline 显示电池和日期时间。
+  (display-battery-mode t)
+  (column-number-mode t)
+  (size-indication-mode -1)
+  (display-time-mode t)
+  (setq display-time-24hr-format t)
+  (setq display-time-default-load-average nil)
+  (setq display-time-load-average-threshold 5)
+  (setq display-time-format "%m/%d[%w]%H:%M")
+  (setq display-time-day-and-date t)
+  (setq indicate-buffer-boundaries (quote left))
+  ;; doom-modeline
   (setq doom-modeline-height 1)
   (custom-set-faces
    '(mode-line ((t (:height 0.9)))) ;; 也可以使用字体 :family "Noto Sans"
@@ -256,7 +287,7 @@
 	    (variable-pitch-font-spec (format "%s" +variable-pitch-family))
 	    (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
 	(set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.0)
-	(set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.0)
+	(set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.1)
 	(set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
 	(set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
 	(set-face-attribute 'mode-line frame :font modeline-font-spec :height 1.0)
@@ -364,10 +395,10 @@
       `(orderless-regexp . ,(concat (substring pattern 0 -1) "[\x100000-\x10FFFD]*$")))
      ;; 文件扩展。
      ((and
-       ;; 补全文件名或 eshell.
+       ;; 补全文件名或 eshell。
        (or minibuffer-completing-file-name
            (derived-mode-p 'eshell-mode))
-       ;; 文件名扩展
+       ;; 文件名扩展。
        (string-match-p "\\`\\.." pattern))
       `(orderless-regexp . ,(concat "\\." (substring pattern 1) "[\x100000-\x10FFFD]*$")))
      ;; 忽略单个 !
@@ -379,18 +410,18 @@
           (cons (cdr x) (substring pattern 0 -1)))))))
   (setq orderless-style-dispatchers '(+orderless-dispatch))
 
-  ;; 自定义 orderless 风格。
+  ;; 自定义名为 +orderless-with-initialism 的 orderless 风格。
   (orderless-define-completion-style +orderless-with-initialism
     (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
-  ;; 使用 orderless 过滤候选者。
+  ;; 使用 orderless 和 emacs 原生的 basic 补全风格， 且 orderless 的优先级更高。
   (setq completion-styles '(orderless basic))
   (setq completion-category-defaults nil)
-  ;; 各 category 使用的补全风格。
-  (setq completion-category-overrides '((buffer (styles +orderless-with-initialism))
-                                        (file (styles basic partial-completion))
-                                        (command (styles +orderless-with-initialism))
-                                        (variable (styles +orderless-with-initialism))
-                                        (symbol (styles +orderless-with-initialism))))
+  ;; 进一步设置各 category 使用的补全风格。
+  (setq completion-category-overrides '((buffer (styles +orderless-with-initialism)) ;; buffer name 补全
+                                        (file (styles partial-completion basic)) ;; file path&name 补全, partial-completion 提供了 wildcard 支持。
+                                        (command (styles +orderless-with-initialism)) ;; M-x Command 补全
+                                        (variable (styles +orderless-with-initialism)) ;; variable 补全
+                                        (symbol (styles +orderless-with-initialism)))) ;; symbol 补全
   ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
 
@@ -409,11 +440,13 @@
    ("C-x r b" . consult-bookmark)
    ("C-x p b" . consult-project-buffer)
    ;; 寄存器绑定。
-   ("M-#" . consult-register-load)
    ("M-'" . consult-register-store)
-   ("C-M-#" . consult-register)
+   ("C-'" . consult-register-store)
+   ("C-M-'" . consult-register)
+   ("M-\"" . consult-register)
    ;; 其它自定义绑定。
-   ("M-y" . consult-yank-pop)
+   ("M-y" . consult-yank-from-kill-ring)
+   ("M-Y" . consult-yank-pop)
    ("<help> a" . consult-apropos)
    ;; M-g 绑定 (goto-map)
    ("M-g e" . consult-compile-error)
@@ -435,9 +468,9 @@
    ("M-s r" . consult-ripgrep)
    ("M-s l" . consult-line)
    ("M-s L" . consult-line-multi)
-   ("M-s m" . consult-multi-occur)
+   ("M-s o" . consult-multi-occur)
    ("M-s k" . consult-keep-lines)
-   ("M-s u" . consult-focus-lines)
+   ("M-s f" . consult-focus-lines)
    ;; Isearch 集成。
    ("M-s e" . consult-isearch-history)
    :map isearch-mode-map
@@ -462,17 +495,18 @@
   (setq register-preview-delay 0.1)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
+  ;; 引用定义和跳转。
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
   :config
-  ;; 按 C-l 激活预览，否则 buffer 列表中有大文件或远程文件时会卡住。
+  ;; 按 C-l 激活预览，否则 Buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key (kbd "C-l"))
   (setq consult-narrow-key "<")
   (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
   (setq completion-in-region-function #'consult-completion-in-region)
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil)
-  ;; Buffer 列表中不显示的 buffer 名称。
+  ;; Buffer 列表中不显示的 Buffer 名称。
   (mapcar 
    (lambda (pattern) (add-to-list 'consult-buffer-filter pattern))
    '("\\*scratch\\*" 
@@ -573,7 +607,8 @@
   :config
   (setq aw-scope 'frame)
   ;; 总是提示窗口选择，进而执行 ace 命令。
-  (setq aw-dispatch-always t))
+  ;;(setq aw-dispatch-always t)
+  )
 
 (use-package winner
   :straight (:type built-in)
@@ -926,6 +961,7 @@ T - tag prefix
   :config
   ;; 关闭与 pyim 冲突的 C-, 快捷键。
   (define-key org-mode-map (kbd "C-,") nil)
+  (define-key org-mode-map (kbd "C-'") nil)
   (setq org-ellipsis ".."
         org-highlight-latex-and-related '(latex)
         ;; 隐藏标记。
@@ -1497,7 +1533,7 @@ _SPC_ cancel
   (:map lsp-bridge-mode-map
         ("M-."  . lsp-bridge-jump)
         ("M-," . lsp-bridge-jump-back)
-        ("M-r" . lsp-bridge-rename)
+        ;;("M-r" . lsp-bridge-rename)
         ("M-?" . lsp-bridge-find-references)
         ("M-i" . lsp-bridge-lookup-documentation)
         ("M-n" . lsp-bridge-popup-documentation-scroll-up)
@@ -1818,14 +1854,14 @@ mermaid.initialize({
 (use-package go-translate
   :straight (:host github :repo "lorniu/go-translate")
   :bind
-  (("C-c d t" . gts-do-translate))
+  (("C-c d g" . gts-do-translate))
   :config
   (setq gts-translate-list '(("en" "zh")))
   (setq gts-default-translator
         (gts-translator
          :picker (gts-prompt-picker)
          :engines (list
-                   (gts-bing-engine)
+                   ;;(gts-bing-engine)
                    (gts-google-engine :parser (gts-google-summary-parser)))
          :render (gts-buffer-render))))
 
@@ -1903,36 +1939,37 @@ mermaid.initialize({
                  'typescript-mode-hook
                  ))
     (add-hook hook '(lambda () (grammatical-edit-mode 1))))
-  (define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)
-  (define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket)
-  (define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly)
-  (define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)
-  (define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket)
-  (define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly)
-  (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal)
-
-  (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren)
-  (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote)
-  (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote)
-
-  (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space)
-  (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline)
-
-  (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete)
-  (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete)
-  (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill)
-
-  (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote)
-  (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote)
-  (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket)
-  (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly)
-  (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round)
-  (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap)
-
-  (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right)
-  (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left)
-  (define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
-
+  ;; 符号插入
+  (define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
+  (define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
+  (define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
+  (define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
+  (define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
+  (define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
+  (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
+  (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
+  (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
+  (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
+  (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
+  (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
+  (define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
+  ;; 删除
+  (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
+  (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
+  (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
+  ;; 包围
+  (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
+  (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
+  (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
+  (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
+  (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
+  (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
+  ;; 移动
+  (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
+  (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
+  ;; 跳出括号并换行
+  ;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
+  ;; 向父节点跳动
   (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
   )
 
@@ -2115,6 +2152,11 @@ mermaid.initialize({
   ((cmake . cmake)
    (glibtool . libtool)
    (exiftran . exiftran))
+  :hook
+  ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
+  (vterm-mode . (lambda ()
+                  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
+                  (buffer-face-mode t)))
   :config
   (setq vterm-set-bold-hightbright t)
   (setq vterm-always-compile-module t)
