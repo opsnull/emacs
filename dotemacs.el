@@ -216,9 +216,15 @@
   (doom-modeline-buffer-file-name-style 'relative-from-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
+  (doom-modeline-height 1)
+  (doom-modeline-window-width-limit 110)
+  :init
+  ;; Prevent flash of unstyled modeline at startup
+  (unless after-init-time
+    (setq-default mode-line-format nil))
   :config
   ;; modeline 显示电池和日期时间。
-  (display-battery-mode t)
+  ;;(display-battery-mode t)
   (column-number-mode t)
   (size-indication-mode -1)
   (display-time-mode t)
@@ -229,9 +235,8 @@
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left))
   ;; doom-modeline
-  (setq doom-modeline-height 1)
   (custom-set-faces
-   '(mode-line ((t (:height 0.9)))) ;; 也可以使用字体 :family "Noto Sans"
+   '(mode-line ((t (:height 0.9)))) ;; 指定字体 :family "Noto Sans"
    '(mode-line-active ((t (:height 0.9)))) ;; For 29+
    '(mode-line-inactive ((t (:height 0.9)))))
   (doom-modeline-def-modeline 'my-simple-line
@@ -1952,7 +1957,7 @@ mermaid.initialize({
   (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
   (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
   (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
-  (define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
+  ;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
   ;; 删除
   (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
   (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
