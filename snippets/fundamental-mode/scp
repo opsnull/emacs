@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: scp
-# key: scp
-# --
-scp -oProxyJump=$1 ~/.emacs.d/bin/emacs_bashrc $0:/usr/local/bin
