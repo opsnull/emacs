@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: scp
+# key: scp
+# --
+scp -i ~/.ssh/u20_id_rsa -oProxyJump=root@nu20b  ~/.emacs.d/bin/emacs_bashrc root@10.27.254.1:/usr/local/bin/
