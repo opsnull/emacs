@@ -25,7 +25,7 @@
 
 ;; 安装 use-package。
 (setq use-package-verbose t)
-;; 缺省 :demand t (除非明确指定了 :defer)。
+;; 缺省 :demand t (除非明确配置 :defer)。
 (setq use-package-always-demand t)
 (setq use-package-compute-statistics t)
 (straight-use-package 'use-package)
@@ -340,7 +340,6 @@
   (setq vertico-count 20)
   (setq vertico-cycle nil)
   (vertico-mode 1)
-
   ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
   (vertico-multiform-mode)
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
@@ -1422,6 +1421,60 @@ mermaid.initialize({
           nil)
       t)))
 
+;; 智能括号。
+(use-package smartparens
+  :disabled
+  :config
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode t))
+
+;; 彩色括号。
+(use-package rainbow-delimiters
+  :hook
+  (prog-mode . rainbow-delimiters-mode))
+
+;; 高亮匹配的括号。
+(use-package paren
+  :straight (:type built-in)
+  :hook
+  (after-init . show-paren-mode)
+  :init
+  (setq show-paren-when-point-inside-paren t
+        show-paren-when-point-in-periphery t))
+
+(use-package tree-sitter
+  :config
+  (global-tree-sitter-mode)
+  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package tree-sitter-langs)
+
+(use-package grammatical-edit
+  :straight (:host github :repo "manateelazycat/grammatical-edit")
+  :after (tree-sitter)
+  :config
+  (dolist (hook (list
+                 'c-mode-common-hook
+                 'c-mode-hook
+                 'c++-mode-hook
+                 'java-mode-hook
+                 'emacs-lisp-mode-hook
+                 'lisp-interaction-mode-hook
+                 'lisp-mode-hook
+                 'sh-mode-hook
+                 'makefile-gmake-mode-hook
+                 'python-mode-hook
+                 'js-mode-hook
+                 'go-mode-hook
+                 'css-mode-hook
+                 'rust-mode-hook
+                 'minibuffer-inactive-mode-hook
+                 'typescript-mode-hook
+                 ))
+    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
+
 (use-package sdcv
   :straight (:host github :repo "manateelazycat/sdcv")
   :ensure-system-package (sdcv . "brew install sdcv")
@@ -1458,79 +1511,6 @@ mermaid.initialize({
 ;; pip install jieba
 (use-package chinese-word-at-point)
 
-;; 智能括号。
-(use-package smartparens
-  :disabled
-  :config
-  (smartparens-global-mode t)
-  (show-smartparens-global-mode t))
-
-;; 彩色括号。
-(use-package rainbow-delimiters
-  :hook
-  (prog-mode . rainbow-delimiters-mode))
-
-;; 高亮匹配的括号。
-(use-package paren
-  :straight (:type built-in)
-  :hook
-  (after-init . show-paren-mode)
-  :init
-  (setq show-paren-when-point-inside-paren t
-        show-paren-when-point-in-periphery t))
-
-;; 显示缩进。
-(use-package highlight-indent-guides
-  :custom
-  (highlight-indent-guides-method 'character)
-  (highlight-indent-guides-responsive 'top)
-  (highlight-indent-guides-suppress-auto-error t)
-  (highlight-indent-guides-delay 0.1)
-  :config
-  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
-  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
-
-(use-package tree-sitter
-  :config
-  (global-tree-sitter-mode)
-  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
-  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-
-(use-package tree-sitter-langs)
-
-(use-package grammatical-edit
-  :straight (:host github :repo "manateelazycat/grammatical-edit")
-  :after (tree-sitter)
-  :config
-  (dolist (hook (list
-                 'c-mode-common-hook
-                 'c-mode-hook
-                 'c++-mode-hook
-                 'java-mode-hook
-                 'emacs-lisp-mode-hook
-                 'lisp-interaction-mode-hook
-                 'lisp-mode-hook
-                 'sh-mode-hook
-                 'makefile-gmake-mode-hook
-                 'python-mode-hook
-                 'js-mode-hook
-                 'go-mode-hook
-                 'css-mode-hook
-                 'rust-mode-hook
-                 'minibuffer-inactive-mode-hook
-                 'typescript-mode-hook
-                 ))
-    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
-
-(use-package which-key
-  :init (which-key-mode)
-  :diminish which-key-mode
-  :config
-  (setq which-key-idle-delay 2))
-
 (use-package project
   :custom
   (project-switch-commands
@@ -1547,7 +1527,9 @@ mermaid.initialize({
   (catch 'ret
     (let ((pr-flags '((".project")
                       ("go.mod" "pom.xml" "package.json")
-                      ("Makefile" "README.org" "README.md"))))
+                      ;; 以下文件容易导致 project root 判断失败, 故关闭。
+                      ;; ("Makefile" "README.org" "README.md")
+                      )))
       (dolist (current-level pr-flags)
         (dolist (f current-level)
           (when-let ((root (locate-dominating-file dir f)))
@@ -1581,8 +1563,8 @@ mermaid.initialize({
   (let* ((remote? (file-remote-p (project-root pr)))
          (no-write (if remote? t no-write)))
     (funcall fn pr no-write)))
-
-(advice-add 'project-remember-project :around 'my/project-remember-advice)
+;; 当 tramp 编辑远程文件后，后续打开 vterm 默认会一直打开远程 terminal, 故关闭。
+;;(advice-add 'project-remember-project :around 'my/project-remember-advice)
 
 (defun my/project-discover ()
   (interactive)
@@ -1664,7 +1646,7 @@ mermaid.initialize({
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
-        socks-noproxy '("localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
+        socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (proxy-socks-show)
@@ -1799,7 +1781,10 @@ mermaid.initialize({
               (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
 
 (use-package consult-tramp
-  :straight (:repo "Ladicle/consult-tramp" :host github))
+  :straight (:repo "Ladicle/consult-tramp" :host github)
+  :custom
+  ;; 默认为 scpx 模式，不支持 SSH 多跳 Jump。
+  (consult-tramp-method "ssh"))
 
 (setq-default tab-width 4)
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
@@ -1819,7 +1804,7 @@ mermaid.initialize({
 
 ;; 使用 fundamental-mode 打开大文件。
 (defun my/large-file-hook ()
-  (when (and (> (buffer-size) (* 1024 2))
+  (when (and (> (buffer-size) (* 1024 1024))
              (or (string-equal (file-name-extension (buffer-file-name)) "json")
                  (string-equal (file-name-extension (buffer-file-name)) "yaml")
                  (string-equal (file-name-extension (buffer-file-name)) "yml")
@@ -2031,6 +2016,8 @@ mermaid.initialize({
           (message "File '%s' successfully renamed to '%s'"
                    name (file-name-nondirectory new-name)))))))
 
+(use-package hydra)
+
 (global-set-key (kbd "RET") 'newline-and-indent)
 
 ;; macOS 按键调整。
@@ -2069,13 +2056,13 @@ mermaid.initialize({
 (define-key vertico-map (kbd "M-i") #'vertico-quick-insert)
 (define-key vertico-map (kbd "M-e") #'vertico-quick-exit)
 ;; 文件路径操作。
-(define-key vertico-map (kbd "<backspace>") #''vertico-directory-delete-char)
+(define-key vertico-map (kbd "<backspace>") #'vertico-directory-delete-char)
 (define-key vertico-map (kbd "C-w") #'vertico-directory-delete-word)
 (define-key vertico-map (kbd "C-<backspace>") #'vertico-directory-delete-word)
 (define-key vertico-map (kbd "RET") #'vertico-directory-enter)
 ;; 重复上一次 vertico session;
-(global-set-key "\M-r" #'vertico-repeat-last)
-(global-set-key "\M-R" #'vertico-repeat-select)
+;;(global-set-key "\M-r" #'vertico-repeat-last)
+;;(global-set-key "\M-R" #'vertico-repeat-select)
 
 ;;; consult
 ;; C-c 绑定 (mode-specific-map)
@@ -2116,6 +2103,7 @@ mermaid.initialize({
 (global-set-key (kbd "M-s G") #'consult-git-grep)
 (global-set-key (kbd "M-s r") #'consult-ripgrep)
 (global-set-key (kbd "M-s l") #'consult-line)
+(global-set-key (kbd "M-s M-l") #'consult-line)
 (global-set-key (kbd "M-s L") #'consult-line-multi)
 (global-set-key (kbd "M-s o") #'consult-multi-occur)
 (global-set-key (kbd "M-s k") #'consult-keep-lines)
@@ -2166,8 +2154,6 @@ mermaid.initialize({
 (global-set-key (kbd "C-c c") #'org-capture)
 (global-set-key (kbd "C-c b") #'org-switchb)
 
-(bind-key "C-c w" #'hydra-org-clock/body)
-
 ;;; org-download
 (global-set-key (kbd "<f6>") #'org-download-screenshot)
 
@@ -2185,34 +2171,6 @@ mermaid.initialize({
 (global-set-key (kbd "C-c g l") #'git-link)
 
 (global-set-key (kbd "s-@") 'hydra-hs/body)
-
-;;; lsp-bridge
-(define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-jump)
-(define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-jump-back)
-(define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
-(define-key lsp-bridge-mode-map (kbd "M-i") #'lsp-bridge-lookup-documentation)
-(define-key lsp-bridge-mode-map (kbd "M-n") #'lsp-bridge-popup-documentation-scroll-up)
-(define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
-(define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
-(define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
-(define-key lsp-bridge-mode-map (kbd "s-C-l") #'lsp-bridge-list-diagnostics)
-(define-key lsp-bridge-mode-map (kbd "s-C-n") #'lsp-bridge-jump-to-next-diagnostic)
-(define-key lsp-bridge-mode-map (kbd "s-C-p") #'lsp-bridge-jump-to-prev-diagnostic)
-
-;;; go
-(define-key go-mode-map (kbd "C-c t a") #'go-tag-add)
-(define-key go-mode-map (kbd "C-c t r") #'go-tag-remove)
-
-;; go-gen-test
-(define-key go-mode-map (kbd "C-c t g") #'go-gen-test-dwim)
-
-;;; gotest
-(define-key go-mode-map (kbd "C-c t f") #'go-test-current-file)
-(define-key go-mode-map (kbd "C-c t t") #'go-test-current-test)
-(define-key go-mode-map (kbd "C-c t j") #'go-test-current-project)
-(define-key go-mode-map (kbd "C-c t b") #'go-test-current-benchmark)
-(define-key go-mode-map (kbd "C-c t c") #'go-test-current-coverage)
-(define-key go-mode-map (kbd "C-c t x") #'go-run)
 
 ;;; markdown grip-mode
 (define-key markdown-mode-command-map (kbd "g") #'grip-mode)
@@ -2244,8 +2202,35 @@ mermaid.initialize({
 (global-set-key (kbd "C-c d i") #'sdcv-search-input+)
 
 ;;; go-translate
-;;(require 'go-translate)
 (global-set-key (kbd "C-c d t") #'gts-do-translate)
+
+;;; go
+(define-key go-mode-map (kbd "C-c t a") #'go-tag-add)
+(define-key go-mode-map (kbd "C-c t r") #'go-tag-remove)
+
+;; go-gen-test
+(define-key go-mode-map (kbd "C-c t g") #'go-gen-test-dwim)
+
+;;; gotest
+(define-key go-mode-map (kbd "C-c t f") #'go-test-current-file)
+(define-key go-mode-map (kbd "C-c t t") #'go-test-current-test)
+(define-key go-mode-map (kbd "C-c t j") #'go-test-current-project)
+(define-key go-mode-map (kbd "C-c t b") #'go-test-current-benchmark)
+(define-key go-mode-map (kbd "C-c t c") #'go-test-current-coverage)
+(define-key go-mode-map (kbd "C-c t x") #'go-run)
+
+;;; lsp-bridge
+(define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-jump)
+(define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-jump-back)
+(define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
+(define-key lsp-bridge-mode-map (kbd "M-i") #'lsp-bridge-lookup-documentation)
+(define-key lsp-bridge-mode-map (kbd "M-n") #'lsp-bridge-popup-documentation-scroll-up)
+(define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
+(define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
+(define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
+(define-key lsp-bridge-mode-map (kbd "s-C-l") #'lsp-bridge-list-diagnostics)
+(define-key lsp-bridge-mode-map (kbd "s-C-n") #'lsp-bridge-jump-to-next-diagnostic)
+(define-key lsp-bridge-mode-map (kbd "s-C-p") #'lsp-bridge-jump-to-prev-diagnostic)
 
 ;;; grammatical-edit
 ;; 符号插入
@@ -2281,28 +2266,20 @@ mermaid.initialize({
 ;; 向父节点跳动
 (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
 
-(use-package general
-  :config
-  (general-create-definer my/ctrl-c-keys  :prefix "C-c")
-  (my/ctrl-c-keys
-    "t"  '(:ignore t :which-key "toggles")
-    "tw" 'whitespace-model
-    "tt" '(consult-theme :which-key "choose theme")))
-
 ;;; vterm
-;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
-(define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
+;; 使用 M-y(consult-yank-from-kill-ring) 粘贴剪贴板历史中的内容。
+(define-key vterm-mode-map [remap consult-yank-from-kill-ring] #'vterm-yank-pop)
 (define-key vterm-mode-map (kbd "C-l") nil)
 ;; 防止输入法切换冲突。
 (define-key vterm-mode-map (kbd "C-\\") nil)
 
 ;;; multi-vterm
-(define-key vterm-mode-map (kbd "M-RET") #'multi-vterm)
+(define-key vterm-mode-map  [(control return)] #'multi-vterm)
 
 ;;; vterm-toggle
 (global-set-key (kbd "C-`") 'vterm-toggle)
-(global-set-key (kbd "C-~") 'vterm-toggle-cd)
-(define-key vterm-mode-map (kbd "C-RET") #'vterm-toggle-insert-cd)
+(global-set-key (kbd "C-M-`") 'vterm-toggle-cd)
+(define-key vterm-mode-map (kbd "M-RET") #'vterm-toggle-insert-cd)
 ;; 切换到一个空闲的 vterm buffer 并插入一个 cd 命令， 或者创建一个新的 vterm buffer 。
 (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
 (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
@@ -2313,227 +2290,3 @@ mermaid.initialize({
 
 ;;; vterm-extra
 (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer)
-
-(use-package hydra)
-
-(defhydra hydra-dired (:hint nil :color pink)
-  "
-_+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
-_C_opy             _O_ view other   _U_nmark all       _)_ omit-mode      _$_ hide-subdir    C-x C-q : edit
-_D_elete           _o_pen other     _u_nmark           _l_ redisplay      _w_ kill-subdir    C-c C-c : commit
-_R_ename           _M_ chmod        _t_oggle           _g_ revert buf     _e_ ediff          C-c ESC : abort
-_Y_ rel symlink    _G_ chgrp        _E_xtension mark   _s_ort             _=_ pdiff
-_S_ymlink          ^ ^              _F_ind marked      _._ toggle hydra   \\ flyspell
-_r_sync            ^ ^              ^ ^                ^ ^                _?_ summary
-_z_ compress-file  _A_ find regexp
-_Z_ compress       _Q_ repl regexp
-
-T - tag prefix
-"
-  ("\\" dired-do-ispell)
-  ("(" dired-hide-details-mode)
-  (")" dired-omit-mode)
-  ("+" dired-create-directory)
-  ("=" diredp-ediff)         ;; smart diff
-  ("?" dired-summary)
-  ("$" diredp-hide-subdir-nomove)
-  ("A" dired-do-find-regexp)
-  ("C" dired-do-copy)        ;; Copy all marked files
-  ("D" dired-do-delete)
-  ("E" dired-mark-extension)
-  ("e" dired-ediff-files)
-  ("F" dired-do-find-marked-files)
-  ("G" dired-do-chgrp)
-  ("g" revert-buffer)        ;; read all directories again (refresh)
-  ("i" dired-maybe-insert-subdir)
-  ("l" dired-do-redisplay)   ;; relist the marked or singel directory
-  ("M" dired-do-chmod)
-  ("m" dired-mark)
-  ("O" dired-display-file)
-  ("o" dired-find-file-other-window)
-  ("Q" dired-do-find-regexp-and-replace)
-  ("R" dired-do-rename)
-  ("r" dired-do-rsynch)
-  ("S" dired-do-symlink)
-  ("s" dired-sort-toggle-or-edit)
-  ("t" dired-toggle-marks)
-  ("U" dired-unmark-all-marks)
-  ("u" dired-unmark)
-  ("v" dired-view-file)      ;; q to exit, s to search, = gets line #
-  ("w" dired-kill-subdir)
-  ("Y" dired-do-relsymlink)
-  ("z" diredp-compress-this-file)
-  ("Z" dired-do-compress)
-  ("q" nil)
-  ("." nil :color blue))
-
-(define-key dired-mode-map "." 'hydra-dired/body)
-
-  ;; Ref: https://github.com/abo-abo/hydra/wiki/Ibuffer
-  (defhydra hydra-ibuffer-main (:color pink :hint nil)
-    "
-  ^Mark^         ^Actions^         ^View^          ^Select^              ^Navigation^
-  _m_: mark      _D_: delete       _g_: refresh    _q_: quit             _k_:   ↑    _h_
-  _u_: unmark    _s_: save marked  _S_: sort       _TAB_: toggle         _RET_: visit
-  _*_: specific  _a_: all actions  _/_: filter     _o_: other window     _j_:   ↓    _l_
-  _t_: toggle    _._: toggle hydra _H_: help       C-o other win no-select
-  "
-    ("m" ibuffer-mark-forward)
-    ("u" ibuffer-unmark-forward)
-    ("*" hydra-ibuffer-mark/body :color blue)
-    ("t" ibuffer-toggle-marks)
-
-    ("D" ibuffer-do-delete)
-    ("s" ibuffer-do-save)
-    ("a" hydra-ibuffer-action/body :color blue)
-
-    ("g" ibuffer-update)
-    ("S" hydra-ibuffer-sort/body :color blue)
-    ("/" hydra-ibuffer-filter/body :color blue)
-    ("H" describe-mode :color blue)
-
-    ("h" ibuffer-backward-filter-group)
-    ("k" ibuffer-backward-line)
-    ("l" ibuffer-forward-filter-group)
-    ("j" ibuffer-forward-line)
-    ("RET" ibuffer-visit-buffer :color blue)
-
-    ("TAB" ibuffer-toggle-filter-group)
-
-    ("o" ibuffer-visit-buffer-other-window :color blue)
-    ("q" quit-window :color blue)
-    ("." nil :color blue))
-
-  (defhydra hydra-ibuffer-mark (:color teal :columns 5
-				:after-exit (hydra-ibuffer-main/body))
-    "Mark"
-    ("*" ibuffer-unmark-all "unmark all")
-    ("M" ibuffer-mark-by-mode "mode")
-    ("m" ibuffer-mark-modified-buffers "modified")
-    ("u" ibuffer-mark-unsaved-buffers "unsaved")
-    ("s" ibuffer-mark-special-buffers "special")
-    ("r" ibuffer-mark-read-only-buffers "read-only")
-    ("/" ibuffer-mark-dired-buffers "dired")
-    ("e" ibuffer-mark-dissociated-buffers "dissociated")
-    ("h" ibuffer-mark-help-buffers "help")
-    ("z" ibuffer-mark-compressed-file-buffers "compressed")
-    ("b" hydra-ibuffer-main/body "back" :color blue))
-
-  (defhydra hydra-ibuffer-action (:color teal :columns 4
-				  :after-exit
-				  (if (eq major-mode 'ibuffer-mode)
-				      (hydra-ibuffer-main/body)))
-    "Action"
-    ("A" ibuffer-do-view "view")
-    ("E" ibuffer-do-eval "eval")
-    ("F" ibuffer-do-shell-command-file "shell-command-file")
-    ("I" ibuffer-do-query-replace-regexp "query-replace-regexp")
-    ("H" ibuffer-do-view-other-frame "view-other-frame")
-    ("N" ibuffer-do-shell-command-pipe-replace "shell-cmd-pipe-replace")
-    ("M" ibuffer-do-toggle-modified "toggle-modified")
-    ("O" ibuffer-do-occur "occur")
-    ("P" ibuffer-do-print "print")
-    ("Q" ibuffer-do-query-replace "query-replace")
-    ("R" ibuffer-do-rename-uniquely "rename-uniquely")
-    ("T" ibuffer-do-toggle-read-only "toggle-read-only")
-    ("U" ibuffer-do-replace-regexp "replace-regexp")
-    ("V" ibuffer-do-revert "revert")
-    ("W" ibuffer-do-view-and-eval "view-and-eval")
-    ("X" ibuffer-do-shell-command-pipe "shell-command-pipe")
-    ("b" nil "back"))
-
-  (defhydra hydra-ibuffer-sort (:color amaranth :columns 3)
-    "Sort"
-    ("i" ibuffer-invert-sorting "invert")
-    ("a" ibuffer-do-sort-by-alphabetic "alphabetic")
-    ("v" ibuffer-do-sort-by-recency "recently used")
-    ("s" ibuffer-do-sort-by-size "size")
-    ("f" ibuffer-do-sort-by-filename/process "filename")
-    ("m" ibuffer-do-sort-by-major-mode "mode")
-    ("b" hydra-ibuffer-main/body "back" :color blue))
-
-  (defhydra hydra-ibuffer-filter (:color amaranth :columns 4)
-    "Filter"
-    ("m" ibuffer-filter-by-used-mode "mode")
-    ("M" ibuffer-filter-by-derived-mode "derived mode")
-    ("n" ibuffer-filter-by-name "name")
-    ("c" ibuffer-filter-by-content "content")
-    ("e" ibuffer-filter-by-predicate "predicate")
-    ("f" ibuffer-filter-by-filename "filename")
-    (">" ibuffer-filter-by-size-gt "size")
-    ("<" ibuffer-filter-by-size-lt "size")
-    ("/" ibuffer-filter-disable "disable")
-    ("b" hydra-ibuffer-main/body "back" :color blue))
-
-  (define-key ibuffer-mode-map "." 'hydra-ibuffer-main/body)
-
-;; Ref: https://github.com/abo-abo/hydra/wiki/Org-clock-and-timers
-(defhydra hydra-org-clock (:color blue :hint nil)
-   "
-^Clock:^ ^In/out^     ^Edit^   ^Summary^    | ^Timers:^ ^Run^           ^Insert
--^-^-----^-^----------^-^------^-^----------|--^-^------^-^-------------^------
-(_?_)    _i_n         _e_dit   _g_oto entry | (_z_)     _r_elative      ti_m_e
- ^ ^     _c_ontinue   _q_uit   _d_isplay    |  ^ ^      cou_n_tdown     i_t_em
- ^ ^     _o_ut        ^ ^      _r_eport     |  ^ ^      _p_ause toggle
- ^ ^     ^ ^          ^ ^      ^ ^          |  ^ ^      _s_top
-"
-   ("i" org-clock-in)
-   ("c" org-clock-in-last)
-   ("o" org-clock-out)
-   
-   ("e" org-clock-modify-effort-estimate)
-   ("q" org-clock-cancel)
-
-   ("g" org-clock-goto)
-   ("d" org-clock-display)
-   ("r" org-clock-report)
-   ("?" (org-info "Clocking commands"))
-
-  ("r" org-timer-start)
-  ("n" org-timer-set-timer)
-  ("p" org-timer-pause-or-continue)
-  ("s" org-timer-stop)
-
-  ("m" org-timer)
-  ("t" org-timer-item)
-  ("z" (org-info "Timers")))
-
-(defhydra hydra-ediff (:color blue :hint nil)
-  "
-^Buffers           Files           VC                     Ediff regions
-----------------------------------------------------------------------
-_b_uffers           _f_iles (_=_)       _r_evisions              _l_inewise
-_B_uffers (3-way)   _F_iles (3-way)                          _w_ordwise
-                  _c_urrent file
-"
-  ("b" ediff-buffers)
-  ("B" ediff-buffers3)
-  ("=" ediff-files)
-  ("f" ediff-files)
-  ("F" ediff-files3)
-  ("c" ediff-current-file)
-  ("r" ediff-revision)
-  ("l" ediff-regions-linewise)
-  ("w" ediff-regions-wordwise))
-
-(add-hook 'prog-mode-hook (lambda () (hs-minor-mode t)))
-(defhydra hydra-hs (:idle 1.0)
-   "
-Hide^^            ^Show^            ^Toggle^    ^Navigation^
-----------------------------------------------------------------
-_h_ hide all      _s_ show all      _t_oggle    _n_ext line
-_d_ hide block    _a_ show block              _p_revious line
-_l_ hide level
-
-_SPC_ cancel
-"
-   ("s" hs-show-all)
-   ("h" hs-hide-all)
-   ("a" hs-show-block)
-   ("d" hs-hide-block)
-   ("t" hs-toggle-hiding)
-   ("l" hs-hide-level)
-   ("n" forward-line)
-   ("p" (forward-line -1))
-   ("SPC" nil)
-)
