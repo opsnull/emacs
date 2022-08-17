@@ -83,6 +83,10 @@
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
+;; gpg 文件。
+(require 'epa-file)
+(epa-file-enable)
+
 (when (memq window-system '(mac ns x))
   ;; 关闭各种图形元素。
   (tool-bar-mode -1)
@@ -241,7 +245,8 @@
     (setq all-the-icons-scale-factor 1.1)
     ;; 设置为缺省的 modeline 格式。 
     (doom-modeline-set-modeline 'my-simple-line 'default))
-  (add-hook 'doom-modeline-mode-hook 'setup-custom-doom-modeline))
+  ;;(add-hook 'doom-modeline-mode-hook 'setup-custom-doom-modeline))
+)
 
 (use-package dashboard
   :config
@@ -252,7 +257,7 @@
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
-  (setq dashboard-items '((recents . 10) (projects . 8) (agenda . 3)))) 
+  (setq dashboard-items '((recents . 15) (projects . 8) (agenda . 3)))) 
 
 ;; 切换透明背景。
 (defun my/toggle-transparency ()
@@ -590,7 +595,7 @@
     ;; 隐藏空组。
     (setq ibuffer-show-empty-filter-groups nil)
     (setq ibuffer-movement-cycle nil)
-    ;;(setq ibuffer-default-sorting-mode 'filename/process)
+    (setq ibuffer-default-sorting-mode 'filename/process)
     (setq ibuffer-default-sorting-mode 'recency)
     (setq ibuffer-use-header-line t)
     (setq ibuffer-default-shrink-to-minimum-size nil)
@@ -703,7 +708,10 @@
    (pygmentize . pygments)
    (magick . imagemagick))
   :config
+  (setq-local line-spacing 2)
   (setq org-ellipsis ".."
+        org-ellipsis " ⭍"
+        org-pretty-entities t
         org-highlight-latex-and-related '(latex)
         ;; 隐藏标记。
         org-hide-emphasis-markers t
@@ -802,11 +810,15 @@
    '(org-link ((t (:foreground "royal blue" :underline t))))
    '(org-property-value ((t (:height 0.8))) t)
    '(org-drawer ((t (:height 0.8))) t)
-   '(org-special-keyword ((t (:height 0.8))))
+   '(org-special-keyword ((t (:height 0.8 :inherit 'fixed-pitch))))
    ;; table 使用中英文严格等宽的 Sarasa Mono SC 字体, 避免中英文不对齐。
    '(org-table ((t (:font "Sarasa Mono SC" :height 0.9))))
    '(org-verbatim ((t (:height 0.9))))
-   '(org-tag ((t (:weight bold :height 0.8)))))
+   '(org-tag ((t (:weight bold :height 0.8))))
+   '(org-todo ((t (:inherit 'fixed-pitch))))
+   '(org-done ((t (:inherit 'fixed-pitch))))
+   '(org-ellipsis ((t (:inherit 'fixed-pitch))))
+   '(org-property-value ((t (:inherit 'fixed-pitch)))))
   (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»")
                                          ("#+END_SRC" . "«")
                                          ("#+begin_src" . "»")
@@ -821,7 +833,12 @@
   (org-mode . org-superstar-mode)
   :custom
   (org-superstar-remove-leading-stars t)
-  (org-superstar-headline-bullets-list '("◉"  "🞛" "✿" "○" "▷")))
+  ;;(org-superstar-headline-bullets-list '("◉"  "🞛" "✿" "○" "▷"))
+  (org-superstar-headline-bullets-list '("☰" "☱" "☲" "☳" "☴" "☵" "☶" "☷"))
+  (org-superstar-item-bullet-alist '((43 . "⬧") (45 . "⬨")))
+  :custom-face
+  (org-superstar-item ((t (:inherit 'fixed-pitch))))
+  (org-superstar-header-bullet ((t (:height 200 :inherit 'fixed-pitch)))))
 
 (use-package org-fancy-priorities
   :after (org)
@@ -1449,7 +1466,7 @@ mermaid.initialize({
   ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
   (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
 
-(use-package tree-sitter-langs)
+(use-package tree-sitter-langs :after (tree-sitter))
 
 (use-package grammatical-edit
   :straight (:host github :repo "manateelazycat/grammatical-edit")
@@ -1559,13 +1576,6 @@ mermaid.initialize({
       (make-empty-file f))
     (my/project-add root-dir)))
 
-(defun my/project-remember-advice (fn pr &optional no-write)
-  (let* ((remote? (file-remote-p (project-root pr)))
-         (no-write (if remote? t no-write)))
-    (funcall fn pr no-write)))
-;; 当 tramp 编辑远程文件后，后续打开 vterm 默认会一直打开远程 terminal, 故关闭。
-;;(advice-add 'project-remember-project :around 'my/project-remember-advice)
-
 (defun my/project-discover ()
   (interactive)
   (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*"))
@@ -1577,6 +1587,13 @@ mermaid.initialize({
           (message "added project %s" file)))))
 
 (setq project-vc-ignores '("vendor/"))
+
+;; 不将 tramp 项目记录到 projects 文件中，防止 emacs-dashboard 启动时检查 project 卡住。
+(defun my/project-remember-advice (fn pr &optional no-write)
+  (let* ((remote? (file-remote-p (project-root pr)))
+         (no-write (if remote? t no-write)))
+    (funcall fn pr no-write)))
+(advice-add 'project-remember-project :around 'my/project-remember-advice)
 
 (require 'grep)
 (dolist (dir '(".cache" "vendor" "node_modules"))
@@ -1684,15 +1701,14 @@ mermaid.initialize({
   (setq vterm-set-bold-hightbright t)
   (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 100000)
+  (setq vterm-tramp-shells '("/bin/bash"))
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND）。
   (setq vterm-buffer-name-string "*vterm: %s")
   (add-hook 'vterm-mode-hook
             (lambda ()
               (setf truncate-lines nil)
               (setq-local show-paren-mode nil)
-              (yas-minor-mode -1)
-              ;; (flycheck-mode -1)
-              )))
+              (yas-minor-mode -1))))
 
 (use-package multi-vterm
   :after (vterm))
@@ -1712,7 +1728,7 @@ mermaid.initialize({
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "/bin/bash")
 (setq shell-command-prompt-show-cwd t)
-(setq explicit-bash.exe-args '("--noediting" "--login" "-i"))
+(setq explicit-bash-args '("--noediting" "--login" "-i"))
 (setenv "SHELL" shell-file-name)
 (setenv "ESHELL" "bash")
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
@@ -1730,24 +1746,30 @@ mermaid.initialize({
 (use-package tramp
   :straight (tramp :files ("lisp/*"))
   :config
+  ;; 使用远程主机自己的 PATH(默认是本地的 PATH)
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   ;; 使用 ~/.ssh/config 中的 ssh 持久化配置。（Emacs 默认复用连接，但不持久化连接）
   (setq  tramp-ssh-controlmaster-options nil)
-  ;; TRAMP buffers 关闭 version control, 防止卡住.
+  ;; TRAMP buffers 关闭 version control, 防止卡住。
   (setq vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp))
   ;; 关闭自动保存 ad-hoc proxy 代理配置, 防止为相同 IP 的 VM 配置了错误的 Proxy.
   (setq tramp-save-ad-hoc-proxies nil)
   ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能.
-  (setq remote-file-name-inhibit-cache 600)
+  (setq remote-file-name-inhibit-cache 1800)
   ;;tramp-verbose 10
   ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
   (setq tramp-inline-compress-start-size (* 1024 8))
   ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
   (setq tramp-copy-size-limit (* 1024 1024 2))
-  ;; 临时目录中保存 TRAMP auto-save 文件, 重启后清空。
   (setq tramp-allow-unsafe-temporary-files t)
+  ;; 本地不保存 tramp 备份文件。
+  (setq tramp-backup-directory-alist `((".*" .  nil)))
+  ;; 临时目录中保存 TRAMP auto-save 文件, 重启后清空，防止启动时 tramp 扫描文件卡住。
   (setq tramp-auto-save-directory temporary-file-directory)
   ;; 连接历史文件。
   (setq tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory))
+  ;; 避免在 shell history 中添加过多 vterm 自动执行的命令。
+  (setq tramp-histfile-override nil)
   ;; 在整个 Emacs session 期间保存 SSH 密码.
   (setq password-cache-expiry nil)
   (setq tramp-default-method "ssh")
@@ -1760,17 +1782,14 @@ mermaid.initialize({
 
   ;; 自定义远程环境变量。
   (let ((process-environment tramp-remote-process-environment))
-    ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 ~/.emacs_bashrc 根据这个变量设置 VTERM 参数。
+    ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 emacs_bashrc 根据这个变量设置 VTERM 参数。
     (setenv "VTERM_TRAMP" "true")
     (setq tramp-remote-process-environment process-environment)))
 
-;; 远程机器列表。
-(require 'epa-file)
-(epa-file-enable)
-(load "~/.emacs.d/sync/sshenv.el.gpg")
-
-;; 切换 buffer 时自动设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程环境中。远程
-;; 机器的 ~/.emacs_bashrc 根据这个变量设置 Buffer 名称和机器访问地址为主机名，正确设置目录跟踪。解决多跳时 IP 重复的问题。
+;; 切换 Buffer 时设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程 vterm shell 环境变量中，
+;; 这样远程机器 ~/.bashrc 读取并执行的 emacs_bashrc 脚本正确设置 Buffer 名称和 vtem_prompt_end 函数, 从而确保目录跟踪功能正常,
+;; 以及通过主机名而非 IP 来打开远程 vterm shell, 确保 SSH ProxyJump 功能正常（只能通过主机名而非 IP 访问），以及避免目标 IP 重复时
+;; 连接复用错误的问题。
 (defvar my/remote-host "")
 (add-hook 'buffer-list-update-hook
           (lambda ()
@@ -1784,7 +1803,12 @@ mermaid.initialize({
   :straight (:repo "Ladicle/consult-tramp" :host github)
   :custom
   ;; 默认为 scpx 模式，不支持 SSH 多跳 Jump。
-  (consult-tramp-method "ssh"))
+  (consult-tramp-method "ssh")
+  ;; 打开远程的 /root 目录，而非 ~, 避免 tramp hang。
+  ;; https://lists.gnu.org/archive/html/bug-gnu-emacs/2007-07/msg00006.html
+  (consult-tramp-path "/root")
+  ;; 即使 ~/.ssh/config 正确 Include 了 hosts 文件，这里还是需要配置，因为 consult-tramp 不会解析 Include 配置。
+  (consult-tramp-ssh-config "~/work/proxylist/hosts_config"))
 
 (setq-default tab-width 4)
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
@@ -1850,50 +1874,21 @@ mermaid.initialize({
 (use-package recentf
   :straight (:type built-in)
   :config
-  ;; 不清理 recentf tramp buffers.
+  ;; 不自动清理 recentf 记录。
   (setq recentf-auto-cleanup 'never)
+  ;; emacs 退出时清理 recentf 记录。
+  (add-hook 'kill-emacs-hook #'recentf-cleanup)
   (setq recentf-max-menu-items 100)
-  (setq recentf-max-saved-items 600)
-  (recentf-mode +1)
-  (setq recentf-exclude `(,(expand-file-name "straight/" user-emacs-directory)
-                          ,(expand-file-name "eln-cache/" user-emacs-directory)
-                          ,(expand-file-name "etc/" user-emacs-directory)
-                          ,(expand-file-name "var/" user-emacs-directory)
-                          ,(expand-file-name ".cache/" user-emacs-directory)                          
-                          ,tramp-file-name-regexp
-                          "/tmp" ".gz" ".tgz" ".xz" ".zip" "/ssh:" ".png" ".jpg" "/\\.git/" ".gitignore" "\\.log" "COMMIT_EDITMSG"
-                          ,(concat package-user-dir "/.*-autoloads\\.el\\'"))))
-
-(setq global-mark-ring-max 5000)
-(setq mark-ring-max 5000 )
-(setq kill-ring-max 5000)
-
-;; minibuffer 历史。
-(use-package savehist
-  :straight (:type built-in)
-  :hook (after-init . savehist-mode)
-  :config
-  (setq history-length 200)
-  (setq savehist-save-minibuffer-history t)
-  (setq savehist-autosave-interval 200)
-  (setq savehist-additional-variables
-        '(mark-ring
-          global-mark-ring
-          search-ring
-          regexp-search-ring
-          extended-command-history)))
-
-;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
-(setq-default fill-column 100)
-(setq-default comment-fill-column 0)
-(setq-default message-log-max t)
-(setq-default ad-redefinition-action 'accept)
-
-;; 使用系统剪贴板，实现与其它程序相互粘贴。
-(setq x-select-enable-clipboard t)
-(setq select-enable-clipboard t)
-(setq x-select-enable-primary t)
-(setq select-enable-primary t)
+  (setq recentf-max-saved-items 200) ;; default 20
+  ;; recentf-exclude 的参数是正则表达式列表，不支持 ~ 引用家目录。
+  (setq recentf-exclude `(,(expand-file-name "\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\)/.*" user-emacs-directory)
+                          ,(expand-file-name "\\(recentf\\|bookmarks\\)" user-emacs-directory)
+                          ,tramp-file-name-regexp ;; 不在 recentf 中记录 tramp 文件，防止 tramp 扫描时卡住。
+                          "^/tmp" "\\.bak\\'" "\\.gpg\\'" "\\.gz\\'" "\\.pyc\\'" "\\.tgz\\'" "\\.xz\\'" "\\.zip\\'" "^/ssh:" "\\.png\\'" "\\.jpg\\'" "/\\.git/"
+                          "\\.gitignore\\'" "\\.log\\'" "COMMIT_EDITMSG"
+                          "^/usr/local/Cellar/.*" ".*/vendor/.*"
+                          ,(concat package-user-dir "/.*-autoloads\\.egl\\'")))
+  (recentf-mode +1))
 
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (if (not (file-exists-p backup-dir))
@@ -1901,7 +1896,8 @@ mermaid.initialize({
 ;; 文件第一次保存时备份。
 (setq make-backup-files t)
 (setq backup-by-copying t)
-(setq backup-directory-alist (list (cons ".*" backup-dir)))
+;; 不备份 tramp 文件，其它文件都保存到 backup-dir。
+(setq backup-directory-alist `((,tramp-file-name-regexp . nil) (".*" . ,backup-dir)))
 ;; 备份文件时使用版本号。
 (setq version-control t)
 ;; 删除过多的版本。
@@ -1917,6 +1913,35 @@ mermaid.initialize({
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
 ;;(global-auto-revert-mode)
+
+(setq global-mark-ring-max 100)
+(setq mark-ring-max 100 )
+(setq kill-ring-max 100)
+
+;; minibuffer 历史记录。
+(use-package savehist
+  :straight (:type built-in)
+  :hook (after-init . savehist-mode)
+  :config
+  (setq history-length 600)
+  (setq savehist-save-minibuffer-history t)
+  (setq savehist-autosave-interval 200)
+  (setq savehist-additional-variables
+        '(mark-ring
+          global-mark-ring
+          extended-command-history)))
+
+;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
+(setq-default fill-column 100)
+(setq-default comment-fill-column 0)
+(setq-default message-log-max t)
+(setq-default ad-redefinition-action 'accept)
+
+;; 使用系统剪贴板，实现与其它程序相互粘贴。
+(setq x-select-enable-clipboard t)
+(setq select-enable-clipboard t)
+(setq x-select-enable-primary t)
+(setq select-enable-primary t)
 
 ;; UTF8 中文字符。
 (setq locale-coding-system 'utf-8)
@@ -2069,7 +2094,7 @@ mermaid.initialize({
 (global-set-key (kbd "C-c h") #'consult-history)
 (global-set-key (kbd "C-c m") #'consult-mode-command)
 ;; C-x 绑定 (ctl-x-map)
-(global-set-key (kbd "C-M-:") #'consult-complex-command)
+(global-set-key (kbd "C-M-;") #'consult-complex-command) ;; 使用 savehist 持久化保存的 minibuffer 历史。
 (global-set-key (kbd "C-x b") #'consult-buffer)
 (global-set-key (kbd "C-x 4 b") #'consult-buffer-other-window)
 (global-set-key (kbd "C-x 5 b") #'consult-buffer-other-frame)
@@ -2081,8 +2106,8 @@ mermaid.initialize({
 (global-set-key (kbd "C-M-'") #'consult-register)
 (global-set-key (kbd "M-\"") #'consult-register)
 ;; 其它自定义绑定。
-(global-set-key (kbd "M-y") #'consult-yank-from-kill-ring)
-(global-set-key (kbd "M-Y") #'consult-yank-pop)
+(global-set-key (kbd "M-y") #'consult-yank-pop)
+(global-set-key (kbd "M-Y") #'consult-yank-from-kill-ring)
 (global-set-key (kbd "<help> a") #'consult-apropos)
 ;; M-g 绑定 (goto-map)
 (global-set-key (kbd "M-g e") #'consult-compile-error)
@@ -2149,6 +2174,11 @@ mermaid.initialize({
 ;; 关闭与 pyim 冲突的 C-, 快捷键。
 (define-key org-mode-map (kbd "C-,") nil)
 (define-key org-mode-map (kbd "C-'") nil)
+;; 关闭容易误碰的按键。
+(define-key org-mode-map (kbd "C-c C-x a") nil)
+(define-key org-mode-map (kbd "C-c C-x A") nil)
+(define-key org-mode-map (kbd "C-c C-x C-a") nil)
+(define-key org-mode-map (kbd "C-c C-x C-s") nil)
 (global-set-key (kbd "C-c l") #'org-store-link)
 (global-set-key (kbd "C-c a") #'org-agenda)
 (global-set-key (kbd "C-c c") #'org-capture)
@@ -2267,8 +2297,9 @@ mermaid.initialize({
 (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
 
 ;;; vterm
-;; 使用 M-y(consult-yank-from-kill-ring) 粘贴剪贴板历史中的内容。
-(define-key vterm-mode-map [remap consult-yank-from-kill-ring] #'vterm-yank-pop)
+(global-set-key (kbd "s-t") 'vterm-copy-mode)
+;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
+(define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
 (define-key vterm-mode-map (kbd "C-l") nil)
 ;; 防止输入法切换冲突。
 (define-key vterm-mode-map (kbd "C-\\") nil)

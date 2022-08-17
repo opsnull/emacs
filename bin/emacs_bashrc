@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# VTERM_TRAMP 和 VTERM_HOSTNAME 是 TRAMP 设置的环境变量，VTERM 的 buffer 名称和远程目录追踪依赖它们。
 
+# VTERM_TRAMP 和 VTERM_HOSTNAME 是 TRAMP 设置的环境变量，VTERM 的 buffer 名称和远程目录追踪依赖它们。
 if [ -z "$VTERM_HOSTNAME" ]; then
    VTERM_HOSTNAME=$(hostname -i | awk '{print $1}')
 fi
@@ -9,7 +9,7 @@ if ! grep emacs_bashrc ~/.bashrc &>/dev/null; then
     echo '. /usr/local/bin/emacs_bashrc' >> ~/.bashrc
     for d in / /data /etc /home /root /tmp /usr /apsara /apsarapangu /cloud /paas; do
         if [ -d "$d" ]; then
-            touch /$d/{.project,.projectile}
+            touch $d/{.project,.projectile}
         fi
     done
 fi
@@ -48,14 +48,8 @@ fi
 if [[ "$TERM" == "tramp" || "$VTERM_TRAMP" == "true" ]]; then
     if [[ ! -e "$HOME/.ssh/config" ]]; then
         touch ~/.ssh/config
-    fi
-    if ! grep -E 'ControlMaster|ControlPath' ~/.ssh/config &>/dev/null; then
-       if [ ! -s ~/ssh/config ]; then
-         # 空文件， sed 命令不起作用，故使用 echo 来添加内容
-         echo $'Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n' >> ~/.ssh/config
-       else
-         # 非空文件，在第一行前插入内容
-         sed -i '1i Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n\n' ~/.ssh/config
-       fi
+        echo $'Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n' >> ~/.ssh/config
+    elif ! grep -E 'ControlMaster|ControlPath' ~/.ssh/config &>/dev/null; then
+        sed -i '1i Host *\n    ControlMaster	auto\n    ControlPath	/tmp/ssh_controlpath_%C\n    ControlPersist	no\n' ~/.ssh/config
     fi
 fi

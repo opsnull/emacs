@@ -45,8 +45,8 @@
 ;; 使用 minibuffer 输入 GPG 密码。
 (setq-default epa-pinentry-mode 'loopback)
 
-;; 加密认证信息文件。
-(setq auth-sources '("~/.authinfo.gpg"))
+;; 认证信息文件。
+(setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
 
 ;; 缓存对称加密密码。
 (setq epa-file-cache-passphrase-for-symmetric-encryption t)
