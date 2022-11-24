@@ -83,9 +83,26 @@
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
+;; 缺省使用 email 地址加密。
+(setq-default epa-file-select-keys nil)
+(setq-default epa-file-encrypt-to user-mail-address)
+
+;; 使用 minibuffer 输入 GPG 密码。
+(setq-default epa-pinentry-mode 'loopback)
+
+;; 认证信息文件。
+(setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
+
+;; 缓存对称加密密码。
+(setq epa-file-cache-passphrase-for-symmetric-encryption t)
+
 ;; gpg 文件。
 (require 'epa-file)
 (epa-file-enable)
+
+;; 认证不过期, 默认 7200。
+(setq auth-source-cache-expiry nil)
+;;(setq auth-source-debug t)
 
 (when (memq window-system '(mac ns x))
   ;; 关闭各种图形元素。
@@ -125,8 +142,8 @@
 (setq window-divider-default-places t)
 (add-hook 'window-setup-hook #'window-divider-mode)
 
-;; 左右分屏, nil: 上下分屏。
-(setq split-width-threshold 30)
+;; 30: 左右分屏, nil: 上下分屏。
+(setq split-width-threshold nil)
 
 ;; 滚动一屏后显示 3 行上下文。
 (setq next-screen-context-lines 3)
@@ -154,52 +171,22 @@
 (setq image-transform-resize t)
 (auto-image-file-mode t)
 
-;; (use-package doom-themes
-;;   ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-;;   :straight (:files ("*.el" "themes/*" "extensions/*"))
-;;   :custom-face
-;;   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-;;   :custom
-;;   (doom-themes-enable-bold t)
-;;   (doom-themes-enable-italic t)
-;;   :config
-;;   (doom-themes-visual-bell-config)
-;;   ;;(load-theme 'doom-palenight t)
-;;   (doom-themes-org-config))
-
-(use-package modus-themes
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-region '(accented no-extend)
-        modus-themes-hl-line '(underline accented)
-        modus-themes-paren-match '(intense)
-        modus-themes-links '(neutral-underline background)
-        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
-        modus-themes-prompts '(intense bold)
-        modus-themes-syntax '(alt-syntax)
-        modus-themes-mixed-fonts t
-        modus-themes-org-blocks 'gray-background ;; 'tinted-background
-        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
-        modus-themes-scale-1 1.1
-        modus-themes-scale-2 1.15
-        modus-themes-scale-3 1.21
-        modus-themes-scale-4 1.27
-        modus-themes-scale-title 1.33
-        )
-  ;; 关闭 variable-pitch-ui 和添加 padding, 否则 mode-line 右侧可能溢出。
-  (setq modus-themes-variable-pitch-ui nil)
-  (setq modus-themes-mode-line (quote (borderless (padding 4) (height 0.9))))
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
-  ;;:config
-  ;;(modus-themes-load-vivendi) ;; 深色主题
-  ;;(modus-themes-load-operandi) ;; 浅色主题
-  )
+(use-package doom-themes
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  :config
+  (doom-themes-visual-bell-config)
+  ;;(load-theme 'doom-palenight t)
+  (doom-themes-org-config))
 
 ;;跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'modus-operandi t)) ;; modus-operandi doom-one-light
-(defun my/load-dark-theme () (interactive) (load-theme 'modus-vivendi t)) ;; modus-vivendi doom-palenight
+(defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t)) ;; ef-day doom-one-light
+(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t)) ;; ef-night doom-palenight
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
             (pcase appearance
@@ -213,14 +200,16 @@
   (doom-modeline-buffer-encoding nil)
   ;; 显示语言版本。
   (doom-modeline-env-version t)
-  ;; 但不显示 Go 版本。
+  ;; 不显示 Go 版本。
   (doom-modeline-env-enable-go nil)
   (doom-modeline-buffer-file-name-style 'relative-from-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
+  (doom-modeline-height 1)
+  (doom-modeline-time-icon nil)
   :config
-  ;; modeline 显示电池和日期时间。
-  (display-battery-mode t)
+  ;; 电池和日期。
+  (display-battery-mode -1)
   (column-number-mode t)
   (size-indication-mode -1)
   (display-time-mode t)
@@ -229,24 +218,7 @@
   (setq display-time-load-average-threshold 5)
   (setq display-time-format "%m/%d[%w]%H:%M")
   (setq display-time-day-and-date t)
-  (setq indicate-buffer-boundaries (quote left))
-  ;; doom-modeline
-  (setq doom-modeline-height 1)
-  (custom-set-faces
-   '(mode-line ((t (:height 0.9)))) ;; 也可以使用字体 :family "Noto Sans"
-   '(mode-line-active ((t (:height 0.9)))) ;; For 29+
-   '(mode-line-inactive ((t (:height 0.9)))))
-  (doom-modeline-def-modeline 'my-simple-line
-    ;; left-hand segment list, 去掉 remote-host，避免编辑远程文件时卡住。
-    '(bar workspace-name window-number modals matches buffer-info buffer-position word-count parrot selection-info)
-    ;; right-hand segment list，尾部增加空格，避免溢出。
-    '(objed-state misc-info battery grip debug repl lsp minor-modes input-method major-mode process vcs checker " "))
-  (defun setup-custom-doom-modeline ()
-    (setq all-the-icons-scale-factor 1.1)
-    ;; 设置为缺省的 modeline 格式。 
-    (doom-modeline-set-modeline 'my-simple-line 'default))
-  ;;(add-hook 'doom-modeline-mode-hook 'setup-custom-doom-modeline))
-)
+  (setq indicate-buffer-boundaries (quote left)))
 
 (use-package dashboard
   :config
@@ -476,7 +448,8 @@
   (setq marginalia-annotator-registry
         (assq-delete-all 'file marginalia-annotator-registry))
   (setq marginalia-annotator-registry
-        (assq-delete-all 'project-file marginalia-annotator-registry)))
+        (assq-delete-all 'project-file marginalia-annotator-registry))
+  )
 
 (use-package yasnippet
   :init
@@ -603,24 +576,6 @@
     (setq ibuffer-old-time 48)
     (add-hook 'ibuffer-mode-hook #'hl-line-mode))
 
-  (use-package ibuffer-project
-    :hook
-    ((ibuffer . (lambda ()
-		  (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
-		  (unless (eq ibuffer-sorting-mode 'project-file-relative)
-		    (ibuffer-do-sort-by-project-file-relative)))))
-    :config
-    ;; 显示的文件名是相对于 project root 的相对路径。
-    (setq ibuffer-formats
-	  '((mark modified read-only " "
-		  (name 18 18 :left :elide)
-		  " "
-		  (size 9 -1 :right)
-		  " "
-		  (mode 16 16 :left :elide)
-		  " "
-		  project-file-relative))))
-
 (use-package dired
   :straight (:type built-in)
   :config
@@ -634,7 +589,7 @@
   ;; search file name only when focus is over file
   (setq dired-isearch-filenames 'dwim)
   ;; if another Dired buffer is visible in another window, use that directory as target for Rename/Copy
-  (setq dired-dwim-target t)
+  ;;(setq dired-dwim-target t)
   ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
   (setq dired-listing-switches "-laGh1v --group-directories-first")
   (put 'dired-find-alternate-file 'disabled nil))
@@ -652,15 +607,15 @@
   ;; 设置缺省输入法为 pyim。
   (emacs-startup . (lambda () (setq default-input-method "pyim")))
   :config
+  (setq pyim-title "IM")
+  (setq pyim-indicator-modeline-string '("CN" "EN"))
   ;; 单字符快捷键，可以实现快速切换标点符号和添加个人生词。
   (setq pyim-outcome-trigger "^")
   (setq pyim-dcache-directory "~/.emacs.d/sync/pyim/dcache/")
   ;; 使用全拼。
   (pyim-default-scheme 'quanpin)
   ;; 使用百度云拼音。
-  ;;(setq pyim-cloudim 'baidu)
-  ;; 不使用 shortcode2word。
-  (setq-default pyim-enable-shortcode nil)
+  (setq pyim-cloudim 'baidu)
   ;; 开启代码搜索中文功能（比如拼音，五笔码等）。
   (pyim-isearch-mode 1)
   ;; 中文使用全角标点，英文使用半角标点。
@@ -668,8 +623,13 @@
   ;; posframe 性能更好且显式的较为干净, popup 较慢且容易干扰当前 buffer。
   (setq-default pyim-page-tooltip 'posframe)
   ;; 设置模糊音。
-  (add-to-list 'pyim-pinyin-fuzzy-alist '("z" "zh"))
-  (add-to-list 'pyim-pinyin-fuzzy-alist '("c" "ch"))
+ (setq pyim-pinyin-fuzzy-alist
+        '(
+          ("z" "zh")
+          ("c" "ch")
+          ("s" "sh")
+          ("en" "eng")
+          ("in" "ing")))
   ;; Dictionaries:
   ;;   pyim-greatdict is not recommended. It has too many useless words and slows down pyim.
   ;;
@@ -680,14 +640,15 @@
   ;;   curl -L https://raw.githubusercontent.com/redguardtoo/pyim-tsinghua-dict/master/pyim-tsinghua-dict.pyim > ~/.eim/pyim-tsinghua-dict.pyim
   (setq pyim-dicts '(
                      (:name "tsinghua" :file "~/.emacs.d/straight/repos/pyim-tsinghua-dict/pyim-tsinghua-dict.pyim")
-                     (:name "pyim-bigdict" :file "~/.emacs.d/sync/pyim/pyim-bigdict.pyim")))
+                     ;; (:name "pyim-bigdict" :file "~/.emacs.d/sync/pyim/pyim-bigdict.pyim")
+                     ))
   ;; 使用性能更好的 pyim-dregcache dcache 后端。
-  (setq pyim-dcache-backend 'pyim-dregcache)
+  ;;(setq pyim-dcache-backend 'pyim-dregcache)
   ;; 设置中英文自动切换。
   (setq-default pyim-english-input-switch-functions
     	        '(pyim-probe-program-mode
     	          pyim-probe-auto-english
-    	          ;;pyim-probe-dynamic-english
+    	          pyim-probe-dynamic-english
     	          ;; pyim-probe-org-structure-template
     	          ))
   ;; 显示候选词数量。
@@ -708,7 +669,6 @@
    (pygmentize . pygments)
    (magick . imagemagick))
   :config
-  (setq-local line-spacing 2)
   (setq org-ellipsis ".."
         org-ellipsis " ⭍"
         org-pretty-entities t
@@ -749,23 +709,23 @@
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
                     "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
-
-  ;; 支持无空格的中文强调。
-  ;; (setq org-emphasis-regexp-components
-  ;;       '("-[:multibyte:][:space:]('\"{"
-  ;;         "-[:multibyte:][:space:].,:!?;'\")}\\["
-  ;;         "[:space:]"
-  ;;         "[^=~*_]"  ;; 不允许强调字符嵌套。
-  ;;         1))
-  ;; (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
-  ;; (org-element-update-syntax)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
+
+;; C-u C-c l 获得文件链接时包含行号。
+(defun my-link-to-line-number ()
+  (number-to-string (org-current-line)))
+
+(add-hook 'org-create-file-search-functions
+          'my-link-to-line-number)
 
 ;; 自动创建和更新目录。
 (use-package org-make-toc
   :config
   (add-hook 'org-mode-hook #'org-make-toc-mode))
+
+;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
+(setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
 
 (use-package htmlize)
 
@@ -775,7 +735,7 @@
 (setq org-html-preamble "<a name=\"top\" id=\"top\"></a>")
 
 (use-package org-html-themify
-  :straight (org-html-themify :repo "DogLooksGood/org-html-themify" :files ("*.el" "*.js" "*.css"))
+  :straight (org-html-themify :host github :repo "DogLooksGood/org-html-themify" :files ("*.el" "*.js" "*.css"))
   :hook
   (org-mode . org-html-themify-mode)
   :custom
@@ -882,7 +842,8 @@
   (add-hook 'dired-mode-hook 'org-download-enable)
   (org-download-enable))
 
-(setq org-confirm-babel-evaluate nil)
+;; eval 前需要确认。
+(setq org-confirm-babel-evaluate t)
 (setq org-src-fontify-natively t)
 (setq org-src-tab-acts-natively t)
 ;; 为 #+begin_quote 和  #+begin_verse 添加特殊 face 。
@@ -1147,7 +1108,7 @@
 ;; 显示缩进。
 (use-package highlight-indent-guides
   :custom
-  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-method 'column)
   (highlight-indent-guides-responsive 'top)
   (highlight-indent-guides-suppress-auto-error t)
   (highlight-indent-guides-delay 0.1)
@@ -1192,11 +1153,13 @@
   :config
   (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
-  ;; 关闭 word 补全。
-  (setq acm-enable-search-words nil)
+  ;; word 补全。
+  (setq acm-enable-search-file-words t)
+  (setq lsp-bridge-enable-search-words t)
   (setq acm-candidate-match-function 'orderless-flex)
   (setq lsp-bridge-diagnostic-tooltip-border-width 0)
   (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
+  (setq lsp-bridge-search-words-rebuild-cache-idle 5)
   ;; 关闭 yas 补全。
   (setq acm-enable-yas nil)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
@@ -1242,12 +1205,13 @@
       (make-directory pyright-directory t))
   (setq python-indent-guess-indent-offset t)  
   (setq python-indent-guess-indent-offset-verbose nil)
-  (setq python-indent-offset 4)
+  (setq python-indent-offset 2)
   (with-eval-after-load 'exec-path-from-shell (exec-path-from-shell-copy-env "PYTHONPATH"))
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
-                   (yapf-mode))))
+                   (yapf-mode)
+                   )))
 
 (use-package go-mode
   :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
@@ -1257,7 +1221,7 @@
   ((go-mode . (lambda()
                 ;; go-mode 默认启用 tabs.
                 (setq indent-tabs-mode t)
-                (setq c-basic-offset 4)))))
+                (setq c-basic-offset 2)))))
 
 (defvar go--tools '("golang.org/x/tools/gopls"
                     "golang.org/x/tools/cmd/goimports"
@@ -1280,6 +1244,7 @@
      (lambda (proc _)))))
 
 (use-package go-fill-struct)
+
 (use-package go-impl)
 
 (use-package go-tag
@@ -1417,6 +1382,9 @@ mermaid.initialize({
   :ensure-system-package
   (yaml-language-server . "npm install -g yaml-language-server"))
 
+(setq sh-basic-offset 2)
+(setq sh-indentation 2)
+
 (use-package envrc
   :ensure-system-package direnv
   :hook (after-init . envrc-global-mode))
@@ -1440,7 +1408,6 @@ mermaid.initialize({
 
 ;; 智能括号。
 (use-package smartparens
-  :disabled
   :config
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
@@ -1459,38 +1426,35 @@ mermaid.initialize({
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t))
 
-(use-package tree-sitter
-  :config
-  (global-tree-sitter-mode)
-  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
-  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+(use-package symbol-overlay
+  :diminish
+  :demand
+  :functions
+  (turn-off-symbol-overlay turn-on-symbol-overlay)
+  :custom-face
+  (symbol-overlay-default-face ((t (:inherit (region bold)))))
+  :hook
+  (((prog-mode yaml-mode) . symbol-overlay-mode)
+   ;; (iedit-mode . turn-off-symbol-overlay)
+   ;; (iedit-mode-end . turn-on-symbol-overlay)
+   )
+  :init
+  (setq symbol-overlay-idle-time 0.1)
+  ;;:config
+  ;; ;; Disable symbol highlighting while selecting
+  ;; (defun turn-off-symbol-overlay (&rest _)
+  ;;   "Turn off symbol highlighting."
+  ;;   (interactive)
+  ;;   (symbol-overlay-mode -1))
+  ;; (advice-add #'set-mark :after #'turn-off-symbol-overlay)
 
-(use-package tree-sitter-langs :after (tree-sitter))
-
-(use-package grammatical-edit
-  :straight (:host github :repo "manateelazycat/grammatical-edit")
-  :after (tree-sitter)
-  :config
-  (dolist (hook (list
-                 'c-mode-common-hook
-                 'c-mode-hook
-                 'c++-mode-hook
-                 'java-mode-hook
-                 'emacs-lisp-mode-hook
-                 'lisp-interaction-mode-hook
-                 'lisp-mode-hook
-                 'sh-mode-hook
-                 'makefile-gmake-mode-hook
-                 'python-mode-hook
-                 'js-mode-hook
-                 'go-mode-hook
-                 'css-mode-hook
-                 'rust-mode-hook
-                 'minibuffer-inactive-mode-hook
-                 'typescript-mode-hook
-                 ))
-    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
+  ;; (defun turn-on-symbol-overlay (&rest _)
+  ;;   "Turn on symbol highlighting."
+  ;;   (interactive)
+  ;;   (when (derived-mode-p 'prog-mode 'yaml-mode)
+  ;;     (symbol-overlay-mode 1)))
+  ;; (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay)
+  )
 
 (use-package sdcv
   :straight (:host github :repo "manateelazycat/sdcv")
@@ -1521,8 +1485,10 @@ mermaid.initialize({
         (gts-translator
          :picker (gts-prompt-picker)
          :engines (list
-                   ;;(gts-bing-engine)
-                   (gts-google-engine :parser (gts-google-summary-parser)))
+                   (gts-bing-engine)
+                   (gts-google-engine :parser (gts-google-summary-parser))
+                   (gts-google-rpc-engine)
+                   (gts-youdao-dict-engine))
          :render (gts-buffer-render))))
 
 ;; pip install jieba
@@ -1578,7 +1544,7 @@ mermaid.initialize({
 
 (defun my/project-discover ()
   (interactive)
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*"))
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*"))
     (dolist (file (file-expand-wildcards search-path))
       (when (file-directory-p file)
           (message "dir %s" file)
@@ -1606,6 +1572,7 @@ mermaid.initialize({
 (use-package wgrep)
 
 (use-package ctrlf
+  :disabled
   :config
   (ctrlf-mode +1)
   (add-hook 'pdf-isearch-minor-mode-hook (lambda () (ctrlf-local-mode -1))))
@@ -1764,6 +1731,9 @@ mermaid.initialize({
   (setq tramp-allow-unsafe-temporary-files t)
   ;; 本地不保存 tramp 备份文件。
   (setq tramp-backup-directory-alist `((".*" .  nil)))
+  ;; Backup (file~) disabled and auto-save (#file#) locally to prevent delays in editing remote files
+  ;; https://stackoverflow.com/a/22077775
+  (add-to-list 'backup-directory-alist (cons tramp-file-name-regexp nil))
   ;; 临时目录中保存 TRAMP auto-save 文件, 重启后清空，防止启动时 tramp 扫描文件卡住。
   (setq tramp-auto-save-directory temporary-file-directory)
   ;; 连接历史文件。
@@ -1776,10 +1746,7 @@ mermaid.initialize({
   (setq tramp-default-remote-shell "/bin/bash")
   (setq tramp-default-user "root")
   (setq tramp-terminal-type "tramp")
-  ;; Backup (file~) disabled and auto-save (#file#) locally to prevent delays in editing remote files
-  ;; https://stackoverflow.com/a/22077775
-  (add-to-list 'backup-directory-alist (cons tramp-file-name-regexp nil))
-
+  
   ;; 自定义远程环境变量。
   (let ((process-environment tramp-remote-process-environment))
     ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 emacs_bashrc 根据这个变量设置 VTERM 参数。
@@ -1806,9 +1773,30 @@ mermaid.initialize({
   (consult-tramp-method "ssh")
   ;; 打开远程的 /root 目录，而非 ~, 避免 tramp hang。
   ;; https://lists.gnu.org/archive/html/bug-gnu-emacs/2007-07/msg00006.html
-  (consult-tramp-path "/root")
+  (consult-tramp-path "/root/")
   ;; 即使 ~/.ssh/config 正确 Include 了 hosts 文件，这里还是需要配置，因为 consult-tramp 不会解析 Include 配置。
   (consult-tramp-ssh-config "~/work/proxylist/hosts_config"))
+
+;; (add-to-list 'tramp-methods
+;;              '("myssh"
+;;                (tramp-login-program "ssh")
+;;                (tramp-login-args
+;;                 (("-l" "%u")
+;;                  ("-p" "%p")
+;;                  ("%c")
+;;                  ("-e" "none")
+;;                  ("%h")))
+;;                (tramp-async-args
+;;                 (("-q")))
+;;                (tramp-direct-async t)
+;;                (tramp-remote-shell "/bin/bash")
+;;                (tramp-remote-shell-login
+;;                 ("-l"))
+;;                (tramp-remote-shell-args
+;;                 ("-c"))))
+
+;; 增加 imenu 行内容长度。
+(setq imenu-max-item-length 100)
 
 (setq-default tab-width 4)
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
@@ -1821,10 +1809,6 @@ mermaid.initialize({
 ;; #+LASTMOD: 必须位于文件开头的 line-limit 行内, 否则自动更新不生效。
 (setq time-stamp-line-limit 30)
 (add-hook 'before-save-hook 'time-stamp t)
-
-;; 当打开文件权限不足时，自动使用 sudo 打开该文件。
-(use-package auto-sudoedit)
-(add-hook 'find-file-hook #'(lambda () (require 'auto-sudoedit) (auto-sudoedit)))
 
 ;; 使用 fundamental-mode 打开大文件。
 (defun my/large-file-hook ()
@@ -1874,19 +1858,23 @@ mermaid.initialize({
 (use-package recentf
   :straight (:type built-in)
   :config
+  (setq recentf-save-file "~/.emacs.d/recentf")
   ;; 不自动清理 recentf 记录。
   (setq recentf-auto-cleanup 'never)
   ;; emacs 退出时清理 recentf 记录。
   (add-hook 'kill-emacs-hook #'recentf-cleanup)
+  ;; 每 5min 以及 emacs 退出时保存 recentf-list。
+  ;;(run-at-time nil (* 5 60) 'recentf-save-list)
+  ;;(add-hook 'kill-emacs-hook #'recentf-save-list)
   (setq recentf-max-menu-items 100)
   (setq recentf-max-saved-items 200) ;; default 20
   ;; recentf-exclude 的参数是正则表达式列表，不支持 ~ 引用家目录。
   (setq recentf-exclude `(,(expand-file-name "\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\)/.*" user-emacs-directory)
                           ,(expand-file-name "\\(recentf\\|bookmarks\\)" user-emacs-directory)
                           ,tramp-file-name-regexp ;; 不在 recentf 中记录 tramp 文件，防止 tramp 扫描时卡住。
-                          "^/tmp" "\\.bak\\'" "\\.gpg\\'" "\\.gz\\'" "\\.pyc\\'" "\\.tgz\\'" "\\.xz\\'" "\\.zip\\'" "^/ssh:" "\\.png\\'" "\\.jpg\\'" "/\\.git/"
-                          "\\.gitignore\\'" "\\.log\\'" "COMMIT_EDITMSG"
-                          "^/usr/local/Cellar/.*" ".*/vendor/.*"
+                          "^/tmp" "\\.bak\\'" "\\.gpg\\'" "\\.gz\\'" "\\.tgz\\'" "\\.xz\\'" "\\.zip\\'" "^/ssh:" "\\.png\\'" "\\.jpg\\'" "/\\.git/"
+                          "\\.gitignore\\'" "\\.log\\'" "COMMIT_EDITMSG" "\\.pyi\\'" "\\.pyc\\'"
+                          "/private/var/.*" "^/usr/local/Cellar/.*" ".*/vendor/.*"
                           ,(concat package-user-dir "/.*-autoloads\\.egl\\'")))
   (recentf-mode +1))
 
@@ -1896,7 +1884,7 @@ mermaid.initialize({
 ;; 文件第一次保存时备份。
 (setq make-backup-files t)
 (setq backup-by-copying t)
-;; 不备份 tramp 文件，其它文件都保存到 backup-dir。
+;; 不备份 tramp 文件，其它文件都保存到 backup-dir, https://stackoverflow.com/a/22077775
 (setq backup-directory-alist `((,tramp-file-name-regexp . nil) (".*" . ,backup-dir)))
 ;; 备份文件时使用版本号。
 (setq version-control t)
@@ -1946,7 +1934,8 @@ mermaid.initialize({
 ;; UTF8 中文字符。
 (setq locale-coding-system 'utf-8)
 (setq default-buffer-file-coding-system 'utf-8)
-(set-default buffer-file-coding-system 'utf8)
+;; Emacs 29 不支持 buffer-file-coding-system 配置参数。
+;;(set-default buffer-file-coding-system 'utf8)
 (prefer-coding-system 'utf-8)
 (set-buffer-file-coding-system 'utf-8)
 (set-language-environment "UTF-8")
@@ -2249,55 +2238,27 @@ mermaid.initialize({
 (define-key go-mode-map (kbd "C-c t c") #'go-test-current-coverage)
 (define-key go-mode-map (kbd "C-c t x") #'go-run)
 
+
 ;;; lsp-bridge
-(define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-jump)
-(define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-jump-back)
+;; M-j 被预留给 pyim 使用。
+(define-key acm-mode-map (kbd "M-j") nil)
+;; 使用 TAB 而非回车键来选定。
+(define-key acm-mode-map (kbd "RET") nil)
+(define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-find-def-other-window)
+(define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-find-def-return)
 (define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
-(define-key lsp-bridge-mode-map (kbd "M-i") #'lsp-bridge-lookup-documentation)
-(define-key lsp-bridge-mode-map (kbd "M-n") #'lsp-bridge-popup-documentation-scroll-up)
-(define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
+(define-key lsp-bridge-mode-map (kbd "M-d") #'lsp-bridge-popup-documentation)
+;; 这两个快捷键让位于 symobl-overlay
+;; (define-key lsp-bridge-mode-map (kbd "M-n") #'lsp-bridge-popup-documentation-scroll-up)
+;; (define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
 (define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
 (define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
-(define-key lsp-bridge-mode-map (kbd "s-C-l") #'lsp-bridge-list-diagnostics)
-(define-key lsp-bridge-mode-map (kbd "s-C-n") #'lsp-bridge-jump-to-next-diagnostic)
-(define-key lsp-bridge-mode-map (kbd "s-C-p") #'lsp-bridge-jump-to-prev-diagnostic)
-
-;;; grammatical-edit
-;; 符号插入
-(define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
-(define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
-(define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
-(define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
-(define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
-(define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
-(define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
-(define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
-(define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
-(define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
-(define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
-(define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
-;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
-;; 删除
-(define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
-(define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
-(define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
-;; 包围
-(define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
-(define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
-(define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
-(define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
-(define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
-(define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
-;; 移动
-(define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
-(define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
-;; 跳出括号并换行
-;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
-;; 向父节点跳动
-(define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
+(define-key lsp-bridge-mode-map (kbd "s-C-l") #'lsp-bridge-diagnostics-list)
+(define-key lsp-bridge-mode-map (kbd "s-C-n") #'lsp-bridge-diagnostic-jump-next)
+(define-key lsp-bridge-mode-map (kbd "s-C-p") #'lsp-bridge-diagnostic-jump-prev)
 
 ;;; vterm
-(global-set-key (kbd "s-t") 'vterm-copy-mode)
+(global-set-key (kbd "s-c") 'vterm-copy-mode)
 ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
 (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
 (define-key vterm-mode-map (kbd "C-l") nil)
@@ -2321,3 +2282,50 @@ mermaid.initialize({
 
 ;;; vterm-extra
 (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer)
+
+;; ;;; grammatical-edit
+;; ;; 符号插入
+;; (define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
+;; (define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
+;; (define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
+;; (define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
+;; (define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
+;; (define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
+;; (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
+;; (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
+;; (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
+;; (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
+;; (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
+;; (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
+;; ;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
+;; ;; 删除
+;; (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
+;; (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
+;; (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
+;; ;; 包围
+;; (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
+;; (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
+;; (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
+;; ;; 移动
+;; (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
+;; (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
+;; ;; 跳出括号并换行
+;; ;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
+;; ;; 向父节点跳动
+;; (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
+
+;; Symbol Overlay
+(global-set-key (kbd "M-i") 'symbol-overlay-put)
+(global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
+(global-set-key (kbd "M-p") 'symbol-overlay-jump-prev)
+(global-set-key (kbd "M-N") 'symbol-overlay-switch-forward)
+(global-set-key (kbd "M-P") 'symbol-overlay-switch-backward)
+(global-set-key (kbd "M-c") 'symbol-overlay-remove-all)
+;; (define-key symbol-overlay-map  (kbd "M-n") 'symbol-overlay-jump-next)
+;; (define-key symbol-overlay-map  (kbd "M-p") 'symbol-overlay-jump-prev)
+;; (define-key symbol-overlay-map  (kbd "M-N") 'symbol-overlay-switch-forward)
+;; (define-key symbol-overlay-map  (kbd "M-P") 'symbol-overlay-switch-backward)
+;; (define-key symbol-overlay-map  (kbd "M-c") 'symbol-overlay-remove-all)

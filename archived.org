@@ -2073,6 +2073,26 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   :bind
   ("C-c p p" . consult-projectile))
 
+  ;; 如果当前打开的有 tramp buffer, 则 list buffer 时 ibuffer-project 会重新打开该 buffer 导致卡顿，故关闭。
+  (use-package ibuffer-project
+    :disabled
+    :hook
+    ((ibuffer . (lambda ()
+		  (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+		  (unless (eq ibuffer-sorting-mode 'project-file-relative)
+		    (ibuffer-do-sort-by-project-file-relative)))))
+    :config
+    ;; 显示的文件名是相对于 project root 的相对路径。
+    (setq ibuffer-formats
+	  '((mark modified read-only " "
+		  (name 18 18 :left :elide)
+		  " "
+		  (size 9 -1 :right)
+		  " "
+		  (mode 16 16 :left :elide)
+		  " "
+		  project-file-relative))))
+
 ;; 基于 project 来对 buffer 进行分组。
 (use-package ibuffer-projectile
   :after (ibuffer projectile)
@@ -3340,4 +3360,145 @@ doom-themes:
   (set-face-foreground 'sort-tab-current-tab-face "peru")
   ;; 不显示背景颜色。
   (set-face-background 'sort-tab-current-tab-face nil))
+#+end_src
+
+* theme
+#+begin_src emacs-lisp
+(use-package ef-themes
+  :disabled
+  :straight (ef-themes :host github :repo "protesilaos/ef-themes")
+  :config
+  ;; Disable all other themes to avoid awkward blending:
+  (mapc #'disable-theme custom-enabled-themes))
+
+;; 高亮光标移动到的行。
+(use-package pulsar
+  :disabled
+  :straight (pulsar :host github :repo "protesilaos/pulsar")
+  :config
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 2)
+  (setq pulsar-iterations 10)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+  (pulsar-global-mode 1))
+
+(use-package modus-themes
+  :disabled
+  :init
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-region '(accented no-extend)
+        modus-themes-hl-line '(underline accented)
+        modus-themes-paren-match '(intense)
+        modus-themes-links '(neutral-underline background)
+        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
+        modus-themes-prompts '(intense bold)
+        modus-themes-syntax '(alt-syntax)
+        modus-themes-mixed-fonts t
+        modus-themes-org-blocks 'gray-background ;; 'tinted-background
+        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
+        modus-themes-scale-1 1.1
+        modus-themes-scale-2 1.15
+        modus-themes-scale-3 1.21
+        modus-themes-scale-4 1.27
+        modus-themes-scale-title 1.33)
+  ;; 关闭 variable-pitch-ui 和添加 padding, 否则 mode-line 右侧可能溢出。
+  (setq modus-themes-variable-pitch-ui nil)
+  (setq modus-themes-mode-line (quote (borderless (padding 4) (height 0.9))))
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
+  ;;:config
+  ;;(modus-themes-load-vivendi) ;; 深色主题
+  ;;(modus-themes-load-operandi) ;; 浅色主题
+  )
+#+end_src
+
+* tree-sitter
+
+
+#+begin_src emacs-lisp
+(use-package tree-sitter
+  :disabled
+  :config
+  (global-tree-sitter-mode)
+  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package tree-sitter-langs :after (tree-sitter))
+#+end_src
++ 下载和安装各语言的语法 bundle 文件： =M-x tree-sitter-langs-install-grammars=
+* grammatical-edit
+
+grammatical-edit 基于 tree-sitter 提供结构化编程能力。
+
+#+begin_src emacs-lisp
+(use-package grammatical-edit
+  :straight (:host github :repo "manateelazycat/grammatical-edit")
+  :after (tree-sitter)
+  :disabled
+  :config
+  (dolist (hook (list
+                 'c-mode-common-hook
+                 'c-mode-hook
+                 'c++-mode-hook
+                 'java-mode-hook
+                 'emacs-lisp-mode-hook
+                 'lisp-interaction-mode-hook
+                 'lisp-mode-hook
+                 'sh-mode-hook
+                 'makefile-gmake-mode-hook
+                 'python-mode-hook
+                 'js-mode-hook
+                 'go-mode-hook
+                 'css-mode-hook
+                 'rust-mode-hook
+                 'minibuffer-inactive-mode-hook
+                 'typescript-mode-hook
+                 ))
+    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
+
+;;; grammatical-edit
+;; 符号插入
+(define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
+(define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
+(define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
+(define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
+(define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
+(define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
+(define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
+(define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
+(define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
+(define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
+(define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
+(define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
+;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
+;; 删除
+(define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
+(define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
+(define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
+;; 包围
+(define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
+(define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
+(define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
+(define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
+(define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
+(define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
+;; 移动
+(define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
+(define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
+;; 跳出括号并换行
+;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
+;; 向父节点跳动
+(define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
+#+end_src
++ 不能与 smartparens 连用。
+
+* sudo-edit
+#+begin_src emacs-lisp
+;; 当打开文件权限不足时，自动使用 sudo 打开该文件。
+;; 关闭：会造成 tramp 远程编辑文件错误。
+(use-package auto-sudoedit)
+(add-hook 'find-file-hook #'(lambda () (require 'auto-sudoedit) (auto-sudoedit)))
 #+end_src
