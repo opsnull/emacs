@@ -46,7 +46,7 @@
 ;; 提升 IO 性能。
 (setq process-adaptive-read-buffering nil)
 ;; 增加单次读取进程输出的数据量（缺省 4KB) 。
-(setq read-process-output-max (* 1024 1024))
+(setq read-process-output-max (* 1024 1024 10))
 
 ;; 提升长行处理性能。
 (setq bidi-inhibit-bpa t)
@@ -79,7 +79,7 @@
   ;;(setq garbage-collection-messages t)
   ;;(setq gcmh-verbose t)
   (setq gcmh-idle-delay 5)
-  (setq gcmh-high-cons-threshold (* 64 1024 1024))
+  (setq gcmh-high-cons-threshold (* 100 1024 1024))
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
@@ -223,6 +223,7 @@
 (use-package dashboard
   :config
   (dashboard-setup-startup-hook)
+  (setq-local global-hl-line-mode nil)
   (setq dashboard-banner-logo-title "Happy Hacking & Writing 🎯")
   (setq dashboard-projects-backend #'project-el)
   (setq dashboard-center-content t)
@@ -317,11 +318,13 @@
   (setq vertico-count 20)
   (setq vertico-cycle nil)
   (vertico-mode 1)
+  ;; emacs profile 显示比较消耗 cpu/mem, 故关闭。
   ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
-  (vertico-multiform-mode)
+  ;;(vertico-multiform-mode)
   ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
   ;; 为 file 设置 grid 模式, grep buffer 模式与 awesome-tray 不兼容。
-  (setq vertico-multiform-categories '((file grid))))
+  ;; (setq vertico-multiform-categories '((file grid)))
+  )
 
 (use-package emacs
   :init
@@ -335,6 +338,7 @@
 
 (use-package orderless
   :config
+  ;; @minad’s orderless configuration: https://github.com/minad/consult/wiki#minads-orderless-configuration
   (defvar +orderless-dispatch-alist
     '((?% . char-fold-to-regexp)
       (?! . orderless-without-literal)
@@ -342,25 +346,40 @@
       (?= . orderless-literal)
       (?~ . orderless-flex)))
 
-  (defun +orderless-dispatch (pattern index _total)
+  (defun +orderless--suffix-regexp ()
+    (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
+        (format "[%c-%c]*$"
+                consult--tofu-char
+                (+ consult--tofu-char consult--tofu-range -1))
+      "$"))
+
+  ;; Recognizes the following patterns:
+  ;; * ~flex flex~
+  ;; * =literal literal=
+  ;; * %char-fold char-fold%
+  ;; * `initialism initialism`
+  ;; * !without-literal without-literal!
+  ;; * .ext (file extension)
+  ;; * regexp$ (regexp matching at end)
+  (defun +orderless-dispatch (word _index _total)
     (cond
-     ((string-suffix-p "$" pattern)
-      `(orderless-regexp . ,(concat (substring pattern 0 -1) "[\x100000-\x10FFFD]*$")))
-     ;; 文件扩展。
-     ((and
-       ;; 补全文件名或 eshell。
-       (or minibuffer-completing-file-name
-           (derived-mode-p 'eshell-mode))
-       ;; 文件名扩展。
-       (string-match-p "\\`\\.." pattern))
-      `(orderless-regexp . ,(concat "\\." (substring pattern 1) "[\x100000-\x10FFFD]*$")))
-     ;; 忽略单个 !
-     ((string= "!" pattern) `(orderless-literal . ""))
-     ;; 前缀和后缀。
-     ((if-let (x (assq (aref pattern 0) +orderless-dispatch-alist))
-          (cons (cdr x) (substring pattern 1))
-        (when-let (x (assq (aref pattern (1- (length pattern))) +orderless-dispatch-alist))
-          (cons (cdr x) (substring pattern 0 -1)))))))
+     ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
+     ((string-suffix-p "$" word)
+      `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--suffix-regexp))))
+     ;; File extensions
+     ((and (or minibuffer-completing-file-name
+               (derived-mode-p 'eshell-mode))
+           (string-match-p "\\`\\.." word))
+      `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--suffix-regexp))))
+     ;; Ignore single !
+     ((equal "!" word) `(orderless-literal . ""))
+     ;; Prefix and suffix
+     ((if-let (x (assq (aref word 0) +orderless-dispatch-alist))
+          (cons (cdr x) (substring word 1))
+        (when-let (x (assq (aref word (1- (length word))) +orderless-dispatch-alist))
+          (cons (cdr x) (substring word 0 -1)))))))
+
+  ;; 使用上面自定义的 dispatch。
   (setq orderless-style-dispatchers '(+orderless-dispatch))
 
   ;; 自定义名为 +orderless-with-initialism 的 orderless 风格。
@@ -418,7 +437,42 @@
      "\\*lsp-bridge"
      "\\*Ibuffer"
      "\\*sort-tab"
-     "[0-9]+.gpg")))
+     "[0-9]+.gpg"))
+
+  ;; 使用 consult 预览显示 vterm buffer 候选列表;
+  (setq my/consult--source-vterm-buffer
+        `(
+          :name "VTerm"
+          :narrow ?t
+          :category buffer
+          :face consult-buffer
+          :state ,#'consult--buffer-state
+          :annotate ,(lambda (cand)
+                       (let ((buf (get-buffer cand)))
+                         (buffer-local-value 'default-directory buf)))
+          :items ,(lambda () (consult--buffer-query :sort 'visibility
+                                               :as #'buffer-name
+                                               :include (list (rx bos "*vterm"))))))
+  (defun my/consult-buffer-vterm-only ()
+    (interactive)
+    (let ((consult-buffer-sources '(my/consult--source-vterm-buffer)))
+      (consult-buffer)))
+  )
+
+;; consult line/grep/rigpgrep 时自动展开 org 内容。
+;; https://github.com/minad/consult/issues/563#issuecomment-1186612641
+(defun my/org-show-entry (fn &rest args)
+  (interactive)
+  (when-let ((pos (apply fn args)))
+    (when (derived-mode-p 'org-mode)
+      (org-fold-show-entry)
+    )))
+(advice-add 'consult-line :around #'my/org-show-entry)
+(advice-add 'consult-line-multi :around #'my/org-show-entry)
+(advice-add 'consult-org-heading :around #'my/org-show-entry)
+(advice-add 'consult-org-heading :around #'consult--grep)
+(advice-add 'consult-grep :around #'my/org-show-entry)
+(advice-add 'consult-ripgrep :around #'my/org-show-entry)
 
 (use-package embark
   :init
@@ -555,7 +609,7 @@
                    "*vterm"
                    "Shell Command Output") (0+ not-newline))
          (display-buffer-reuse-mode-window display-buffer-below-selected)
-         (window-height . 0.43)
+         (window-height . 0.33)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
 
   (use-package ibuffer
@@ -1055,7 +1109,9 @@
                       (bury-buffer buf)
                     (kill-buffer buf))))
               buffers))))
-  (setq magit-bury-buffer-function #'my-magit-kill-buffers))
+  (setq magit-bury-buffer-function #'my-magit-kill-buffers)
+  ;; diff org-mode 时展开内容。
+  (add-hook 'magit-diff-visit-file-hook (lambda() (when (derived-mode-p 'org-mode)(org-fold-show-entry)))))
 
 (use-package git-link
   :config
@@ -1150,13 +1206,21 @@
 (use-package lsp-bridge
   :after (markdown-mode)
   :straight (:host github :repo "manateelazycat/lsp-bridge" :files ("*" "acm/*"))
+  :custom
+  ;; 不在 modeline 显示 lsp-bridge 信息。
+  (lsp-bridge-enable-mode-line nil)
   :config
   (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
   ;; word 补全。
-  (setq acm-enable-search-file-words t)
-  (setq lsp-bridge-enable-search-words t)
+  (setq acm-enable-search-file-words nil)
+  (setq lsp-bridge-enable-search-words nil)
+  (setq lsp-bridge-search-words-rebuild-cache-idle 15)
   (setq acm-candidate-match-function 'orderless-flex)
+  ;; The minimum characters to trigger completion, default is 0
+  (setq acm-backend-lsp-candidate-min-length 2)
+  (setq acm-backend-lsp-enable-auto-import nil)
+  (setq acm-backend-lsp-candidate-max-length 100)
   (setq lsp-bridge-diagnostic-tooltip-border-width 0)
   (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
   (setq lsp-bridge-search-words-rebuild-cache-idle 5)
@@ -1357,6 +1421,8 @@ mermaid.initialize({
   (setq js2-basic-offset 2)
   (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 
+(use-package json-mode :straight t :defer t)
+
 (use-package web-mode
   :mode "(\\.\\(jinja2\\|j2\\|css\\|vue\\|tmpl\\|gotmpl\\|html?\\|ejs\\)\\'"
   :custom
@@ -1454,6 +1520,23 @@ mermaid.initialize({
   ;;   (when (derived-mode-p 'prog-mode 'yaml-mode)
   ;;     (symbol-overlay-mode 1)))
   ;; (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay)
+  )
+
+(use-package tree-sitter
+  :config
+  (global-tree-sitter-mode)
+  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package tree-sitter-langs :after (tree-sitter))
+
+(use-package ts-fold
+  :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")
+  :config
+  (global-ts-fold-mode)
+  ;; indicators 影响性能；
+  ;; (add-hook 'tree-sitter-after-on-hook #'ts-fold-indicators-mode)
   )
 
 (use-package sdcv
@@ -1668,7 +1751,7 @@ mermaid.initialize({
   (setq vterm-set-bold-hightbright t)
   (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 100000)
-  (setq vterm-tramp-shells '("/bin/bash"))
+  (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash"))
   ;; vterm buffer 名称，需要配置 shell 来支持（如 bash 的 PROMPT_COMMAND）。
   (setq vterm-buffer-name-string "*vterm: %s")
   (add-hook 'vterm-mode-hook
@@ -1724,6 +1807,7 @@ mermaid.initialize({
   ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能.
   (setq remote-file-name-inhibit-cache 1800)
   ;;tramp-verbose 10
+  (setq tramp-verbose 0)
   ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
   (setq tramp-inline-compress-start-size (* 1024 8))
   ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
@@ -1744,8 +1828,14 @@ mermaid.initialize({
   (setq password-cache-expiry nil)
   (setq tramp-default-method "ssh")
   (setq tramp-default-remote-shell "/bin/bash")
+  (setq tramp-encoding-shell "/bin/bash")
   (setq tramp-default-user "root")
   (setq tramp-terminal-type "tramp")
+  (customize-set-variable 'tramp-encoding-shell "/bin/bash")
+  (add-to-list 'tramp-connection-properties '("/ssh:" "remote-shell" "/bin/bash"))
+  (setq tramp-connection-local-default-shell-variables
+        '((shell-file-name . "/bin/bash")
+          (shell-command-switch . "-c")))
   
   ;; 自定义远程环境变量。
   (let ((process-environment tramp-remote-process-environment))
@@ -1777,26 +1867,8 @@ mermaid.initialize({
   ;; 即使 ~/.ssh/config 正确 Include 了 hosts 文件，这里还是需要配置，因为 consult-tramp 不会解析 Include 配置。
   (consult-tramp-ssh-config "~/work/proxylist/hosts_config"))
 
-;; (add-to-list 'tramp-methods
-;;              '("myssh"
-;;                (tramp-login-program "ssh")
-;;                (tramp-login-args
-;;                 (("-l" "%u")
-;;                  ("-p" "%p")
-;;                  ("%c")
-;;                  ("-e" "none")
-;;                  ("%h")))
-;;                (tramp-async-args
-;;                 (("-q")))
-;;                (tramp-direct-async t)
-;;                (tramp-remote-shell "/bin/bash")
-;;                (tramp-remote-shell-login
-;;                 ("-l"))
-;;                (tramp-remote-shell-args
-;;                 ("-c"))))
-
 ;; 增加 imenu 行内容长度。
-(setq imenu-max-item-length 100)
+(setq imenu-max-item-length 160)
 
 (setq-default tab-width 4)
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
@@ -1812,19 +1884,29 @@ mermaid.initialize({
 
 ;; 使用 fundamental-mode 打开大文件。
 (defun my/large-file-hook ()
-  (when (and (> (buffer-size) (* 1024 1024))
-             (or (string-equal (file-name-extension (buffer-file-name)) "json")
-                 (string-equal (file-name-extension (buffer-file-name)) "yaml")
-                 (string-equal (file-name-extension (buffer-file-name)) "yml")
-                 (string-equal (file-name-extension (buffer-file-name)) "log")))
-    (fundamental-mode)
+  (when (or (string-equal (file-name-extension (buffer-file-name)) "json")
+            (string-equal (file-name-extension (buffer-file-name)) "yaml")
+            (string-equal (file-name-extension (buffer-file-name)) "yml")
+            (string-equal (file-name-extension (buffer-file-name)) "log"))
     (setq buffer-read-only t)
     (font-lock-mode -1)
+    (yas-minor-mode -1)
+    (smartparens-mode -1)
+    (show-paren-mode -1)
+    (js2-minor-mode -1)
+    (tree-sitter-hl-mode -1)
+    (fira-code-mode -1)
+    (prettify-symbols-mode -1)
+    (symbol-overlay-mode -1)
+    (show-smartparens-mode -1)
+    (lsp-bridge-mode -1)
+    (display-line-numbers-mode -1)
+    (highlight-indent-guides-mode -1)
+    (visual-fill-column-mode -1)
     (rainbow-delimiters-mode -1)))
 (add-hook 'find-file-hook 'my/large-file-hook)
-;; 默认直接用 fundamental-mode 打开 json 和 log 文件, 确保其它 major-mode 不会先执行。
-(add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
-(add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
+;;(add-to-list 'auto-mode-alist '("\\.log?\\'" . fundamental-mode))
+;;(add-to-list 'auto-mode-alist '("\\.json?\\'" . fundamental-mode))
 
 (use-package emacs
   :straight (:type built-in)
@@ -2030,7 +2112,7 @@ mermaid.initialize({
           (message "File '%s' successfully renamed to '%s'"
                    name (file-name-nondirectory new-name)))))))
 
-(use-package hydra)
+(use-package hydra :commands defhydra)
 
 (global-set-key (kbd "RET") 'newline-and-indent)
 
@@ -2097,7 +2179,6 @@ mermaid.initialize({
 ;; 其它自定义绑定。
 (global-set-key (kbd "M-y") #'consult-yank-pop)
 (global-set-key (kbd "M-Y") #'consult-yank-from-kill-ring)
-(global-set-key (kbd "<help> a") #'consult-apropos)
 ;; M-g 绑定 (goto-map)
 (global-set-key (kbd "M-g e") #'consult-compile-error)
 ;;(global-set-key (kbd "M-g f") #'consult-flycheck)
@@ -2133,6 +2214,7 @@ mermaid.initialize({
 ;;:map minibuffer-local-map)
 (define-key minibuffer-local-map (kbd "M-s") #'consult-history)
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
+(global-set-key (kbd "C-c t") #'my/consult-buffer-vterm-only)
 
 ;;; embark
 (global-set-key (kbd "C-;") #'embark-act)
@@ -2189,8 +2271,6 @@ mermaid.initialize({
 ;; git-link
 (global-set-key (kbd "C-c g l") #'git-link)
 
-(global-set-key (kbd "s-@") 'hydra-hs/body)
-
 ;;; markdown grip-mode
 (define-key markdown-mode-command-map (kbd "g") #'grip-mode)
 
@@ -2244,7 +2324,8 @@ mermaid.initialize({
 (define-key acm-mode-map (kbd "M-j") nil)
 ;; 使用 TAB 而非回车键来选定。
 (define-key acm-mode-map (kbd "RET") nil)
-(define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-find-def-other-window)
+(define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-find-def)
+(define-key lsp-bridge-mode-map (kbd "C-u M-.") #'lsp-bridge-find-def-other-window)
 (define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-find-def-return)
 (define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
 (define-key lsp-bridge-mode-map (kbd "M-d") #'lsp-bridge-popup-documentation)
@@ -2283,40 +2364,6 @@ mermaid.initialize({
 ;;; vterm-extra
 (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer)
 
-;; ;;; grammatical-edit
-;; ;; 符号插入
-;; (define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
-;; (define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
-;; (define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
-;; (define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
-;; (define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
-;; (define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
-;; (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
-;; (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
-;; (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
-;; (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
-;; (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
-;; (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
-;; ;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
-;; ;; 删除
-;; (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
-;; (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
-;; (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
-;; ;; 包围
-;; (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
-;; (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
-;; (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
-;; (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
-;; (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
-;; (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
-;; ;; 移动
-;; (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
-;; (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
-;; ;; 跳出括号并换行
-;; ;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
-;; ;; 向父节点跳动
-;; (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
-
 ;; Symbol Overlay
 (global-set-key (kbd "M-i") 'symbol-overlay-put)
 (global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
@@ -2329,3 +2376,5 @@ mermaid.initialize({
 ;; (define-key symbol-overlay-map  (kbd "M-N") 'symbol-overlay-switch-forward)
 ;; (define-key symbol-overlay-map  (kbd "M-P") 'symbol-overlay-switch-backward)
 ;; (define-key symbol-overlay-map  (kbd "M-c") 'symbol-overlay-remove-all)
+
+(global-set-key (kbd "C-<tab>") 'ts-fold-toggle)

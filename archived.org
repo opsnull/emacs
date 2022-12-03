@@ -197,8 +197,16 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   :bind
   ("M-@" . er/expand-region))
 
-;; 管理 minior mode
-(use-package manage-minor-mode)
+(use-package manage-minor-mode
+  :straight (manage-minor-mode :host github :repo "emacsorphanage/manage-minor-mode")
+  :config
+  (setq manage-minor-mode-bals-exclude-list
+        '((global (recentf-mode global-font-lock-mode delete-selection-mode transient-mark-mode vertico-mode consult-mode))
+          (text-mode (line-number-mode))
+          (json-mode (tree-sitter-mode ts-fold-mode))
+          (javascript-mode (tree-sitter-mode ts-fold-mode))
+          (org-mode (line-number-mode blink-cursor-mode)))))
+
 (defvar hidden-minor-modes '(whitespace-mode))
 
 (use-package posframe-project-term
@@ -3502,3 +3510,55 @@ grammatical-edit 基于 tree-sitter 提供结构化编程能力。
 (use-package auto-sudoedit)
 (add-hook 'find-file-hook #'(lambda () (require 'auto-sudoedit) (auto-sudoedit)))
 #+end_src
+
+* hideshow
+
+打开 8MiB 左右 JSON 文件有严重性能问题：
+#+begin_src emacs-lisp
+(use-package hideshow
+  :disabled
+  :hook
+  (prog-mode . hs-minor-mode)
+  :bind
+  ("C-<tab>" . hs-cycle)
+  ("C-<iso-lefttab>" . hs-global-cycle)
+  ("C-S-<tab>" . hs-global-cycle))
+
+;; ref: https://karthinks.com/software/simple-folding-with-hideshow/
+(defun hs-cycle (&optional level)
+  (interactive "p")
+  (let (message-log-max
+        (inhibit-message t))
+    (if (= level 1)
+        (pcase last-command
+          ('hs-cycle
+           (hs-hide-level 1)
+           (setq this-command 'hs-cycle-children))
+          ('hs-cycle-children
+           ;; TODO: Fix this case. `hs-show-block' needs to be
+           ;; called twice to open all folds of the parent
+           ;; block.
+           (save-excursion (hs-show-block))
+           (hs-show-block)
+           (setq this-command 'hs-cycle-subtree))
+          ('hs-cycle-subtree
+           (hs-hide-block))
+          (_
+           (if (not (hs-already-hidden-p))
+               (hs-hide-block)
+             (hs-hide-level 1)
+             (setq this-command 'hs-cycle-children))))
+      (hs-hide-level level)
+      (setq this-command 'hs-hide-level))))
+
+(defun hs-global-cycle ()
+    (interactive)
+    (pcase last-command
+      ('hs-global-cycle
+       (save-excursion (hs-show-all))
+       (setq this-command 'hs-global-show))
+      (_ (hs-hide-all))))
+#+end_src
+
+
+
