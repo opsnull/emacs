@@ -1,4 +1,4 @@
-* Imported Feeds            :elfeed:
+* Imported Feeds                                                        :elfeed:
 ** release                                                          :release:
 *** [[https://github.com/istio/istio/releases.atom][Release istio]]                                                   :istio:
 *** [[https://github.com/kubernetes/kubernetes/releases.atom][Release kubernetes]]                                              :kubernetes:

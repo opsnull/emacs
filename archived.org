@@ -1093,21 +1093,27 @@ DIR must include a .project file to be considered a project."
   (define-key ansible-doc-mode-map (kbd "M-?") #'ansible-doc))
 #+end_src
 
-词典:
+在线词典:
 #+begin_src emacs-lisp
 (use-package go-translate
-  :bind
-  (("C-c d t" . gts-do-translate))
+  :straight (:host github :repo "lorniu/go-translate")
   :config
   (setq gts-translate-list '(("en" "zh")))
   (setq gts-default-translator
         (gts-translator
          :picker (gts-prompt-picker)
-         :engines (list (gts-bing-engine) (gts-google-engine))
+         :engines (list
+                   (gts-bing-engine)
+                   (gts-google-engine :parser (gts-google-summary-parser))
+                   (gts-google-rpc-engine)
+                   (gts-youdao-dict-engine))
          :render (gts-buffer-render))))
 
 ;; pip install jieba
 (use-package chinese-word-at-point)
+
+;;; go-translate
+(global-set-key (kbd "C-c d t") #'gts-do-translate)
 #+end_src
 
 在线搜索：
@@ -3437,72 +3443,6 @@ doom-themes:
 (use-package tree-sitter-langs :after (tree-sitter))
 #+end_src
 + 下载和安装各语言的语法 bundle 文件： =M-x tree-sitter-langs-install-grammars=
-* grammatical-edit
-
-grammatical-edit 基于 tree-sitter 提供结构化编程能力。
-
-#+begin_src emacs-lisp
-(use-package grammatical-edit
-  :straight (:host github :repo "manateelazycat/grammatical-edit")
-  :after (tree-sitter)
-  :disabled
-  :config
-  (dolist (hook (list
-                 'c-mode-common-hook
-                 'c-mode-hook
-                 'c++-mode-hook
-                 'java-mode-hook
-                 'emacs-lisp-mode-hook
-                 'lisp-interaction-mode-hook
-                 'lisp-mode-hook
-                 'sh-mode-hook
-                 'makefile-gmake-mode-hook
-                 'python-mode-hook
-                 'js-mode-hook
-                 'go-mode-hook
-                 'css-mode-hook
-                 'rust-mode-hook
-                 'minibuffer-inactive-mode-hook
-                 'typescript-mode-hook
-                 ))
-    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
-
-;;; grammatical-edit
-;; 符号插入
-(define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
-(define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
-(define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
-(define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
-(define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
-(define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
-(define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
-(define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
-(define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
-(define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
-(define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
-(define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
-;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
-;; 删除
-(define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
-(define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
-(define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
-;; 包围
-(define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
-(define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
-(define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
-(define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
-(define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
-(define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
-;; 移动
-(define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
-(define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
-;; 跳出括号并换行
-;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
-;; 向父节点跳动
-(define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
-#+end_src
-+ 不能与 smartparens 连用。
-
 * sudo-edit
 #+begin_src emacs-lisp
 ;; 当打开文件权限不足时，自动使用 sudo 打开该文件。
@@ -3558,6 +3498,319 @@ grammatical-edit 基于 tree-sitter 提供结构化编程能力。
        (save-excursion (hs-show-all))
        (setq this-command 'hs-global-show))
       (_ (hs-hide-all))))
+#+end_src
+
+
+* proxy
+
+全局 socks5 代理：
++ Mac 自带的 curl 不支持 socks 代理, 需要安装 =brew install curl= 并设置 ~export
+  PATH="/usr/local/opt/curl/bin:$PATH"~
++ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
++ 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
+
+  #+begin_src emacs-lisp
+(setq my/socks-proxy "127.0.0.1:13659")
+;;(setq my/socks-proxy "127.0.0.1:10000")
+
+(defun proxy-socks-show ()
+  "Show SOCKS proxy."
+  (interactive)
+  (if (bound-and-true-p socks-noproxy)
+      (message "Current SOCKS%d proxy is %s:%s"
+               (cadddr socks-server) (cadr socks-server) (caddr socks-server))
+    (message "No SOCKS proxy")))
+
+(defun proxy-socks-enable ()
+  "Enable SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'socks
+        socks-noproxy '("localhost"))
+  (let* ((proxy (split-string my/socks-proxy ":"))
+         (host (car proxy))
+         (port (string-to-number (cadr proxy))))
+    (setq socks-server `("Default server" ,host ,port 5)))
+  (setenv "all_proxy" (concat "socks5h://" my/socks-proxy))
+  (setenv "ALL_PROXY" (concat "socks5h://" my/socks-proxy))
+  (proxy-socks-show))
+
+(defun proxy-socks-disable ()
+  "Disable SOCKS proxy."
+  (interactive)
+  (setq url-gateway-method 'native
+        socks-noproxy nil
+        socks-server nil)
+  (setenv "all_proxy" "")
+  (setenv "ALL_PROXY" "")
+  (proxy-socks-show))
+
+(defun proxy-socks-toggle ()
+  "Toggle SOCKS proxy."
+  (interactive)
+  (if (bound-and-true-p socks-noproxy)
+      (proxy-socks-disable)
+    (proxy-socks-enable)))
+  #+end_src
+
+
+* proxy
+
+#+begin_src emacs-lisp
+;; 添加环境变量 export PATH="/usr/local/opt/curl/bin:$PATH"
+(use-package emacs
+  :straight (:type built-in)
+  :ensure-system-package ("/usr/local/opt/curl/bin/curl" . "brew install curl"))
+
+(setq my/socks-host "127.0.0.1")
+(setq my/socks-port 13659)
+(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+
+(use-package mb-url-http
+  :demand
+  :straight (mb-url :repo "dochang/mb-url")
+  :commands (mb-url-http-around-advice)
+  :init
+  (require 'auth-source)
+  (let ((credential (auth-source-user-and-password "api.github.com")))
+    (setq github-user (car credential)
+          github-password (cadr credential))
+    (setq github-auth (concat github-user ":" github-password))
+    (setq mb-url-http-backend 'mb-url-http-curl
+          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
+                                      ;;"--max-time" "300"
+                                      ;;"-u" ,github-auth
+                                      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+                                      ))))
+
+(defun proxy-socks-show ()
+  "Show SOCKS proxy."
+  (interactive)
+  (when (fboundp 'cadddr)
+    (if (bound-and-true-p socks-noproxy)
+        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
+      (message "No SOCKS proxy"))))
+
+(defun proxy-socks-enable ()
+  "使用 socks 代理 url 访问请求。"
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'socks
+        socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
+        socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
+  (setenv "all_proxy" my/socks-proxy)
+  (proxy-socks-show)
+  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
+  (advice-add 'url-http :around 'mb-url-http-around-advice))
+
+(defun proxy-socks-disable ()
+  "Disable SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'native
+        socks-noproxy nil)
+  (setenv "all_proxy" "")
+  (proxy-socks-show))
+
+(defun proxy-socks-toggle ()
+  "Toggle SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (if (bound-and-true-p socks-noproxy)
+      (proxy-socks-disable)
+    (proxy-socks-enable)))
+#+end_src
+
+
+
+* symbol-overlay
+
+#+begin_src emacs-lisp
+(use-package symbol-overlay
+  :diminish
+  :demand
+  :functions
+  (turn-off-symbol-overlay turn-on-symbol-overlay)
+  :custom-face
+  (symbol-overlay-default-face ((t (:inherit (region bold)))))
+  :hook
+  (((prog-mode yaml-mode) . symbol-overlay-mode)
+   ;; (iedit-mode . turn-off-symbol-overlay)
+   ;; (iedit-mode-end . turn-on-symbol-overlay)
+   )
+  :init
+  (setq symbol-overlay-idle-time 0.1)
+  ;;:config
+  ;; ;; Disable symbol highlighting while selecting
+  ;; (defun turn-off-symbol-overlay (&rest _)
+  ;;   "Turn off symbol highlighting."
+  ;;   (interactive)
+  ;;   (symbol-overlay-mode -1))
+  ;; (advice-add #'set-mark :after #'turn-off-symbol-overlay)
+
+  ;; (defun turn-on-symbol-overlay (&rest _)
+  ;;   "Turn on symbol highlighting."
+  ;;   (interactive)
+  ;;   (when (derived-mode-p 'prog-mode 'yaml-mode)
+  ;;     (symbol-overlay-mode 1)))
+  ;; (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay)
+  )
+
+;; Symbol Overlay
+(global-set-key (kbd "M-i") 'symbol-overlay-put)
+(global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
+(global-set-key (kbd "M-p") 'symbol-overlay-jump-prev)
+(global-set-key (kbd "M-N") 'symbol-overlay-switch-forward)
+(global-set-key (kbd "M-P") 'symbol-overlay-switch-backward)
+(global-set-key (kbd "M-c") 'symbol-overlay-remove-all)
+;; (define-key symbol-overlay-map  (kbd "M-n") 'symbol-overlay-jump-next)
+;; (define-key symbol-overlay-map  (kbd "M-p") 'symbol-overlay-jump-prev)
+;; (define-key symbol-overlay-map  (kbd "M-N") 'symbol-overlay-switch-forward)
+;; (define-key symbol-overlay-map  (kbd "M-P") 'symbol-overlay-switch-backward)
+;; (define-key symbol-overlay-map  (kbd "M-c") 'symbol-overlay-remove-all)
+#+end_src
+
+* parens
+
+#+begin_src emacs-lisp
+(use-package awesome-pair
+  :straight(awesome-pair :host github :repo "manateelazycat/awesome-pair")
+  :config
+  (dolist (hook (list
+               'c-mode-common-hook
+               'c-mode-hook
+               'emacs-lisp-mode-hook
+               'lisp-interaction-mode-hook
+               'lisp-mode-hook
+               'sh-mode-hook
+               'makefile-gmake-mode-hook
+               'python-mode-hook
+               'js-mode-hook
+               'go-mode-hook
+               'css-mode-hook
+               'minibuffer-inactive-mode-hook
+               ))
+  (add-hook hook '(lambda () (awesome-pair-mode 1)))))
+
+;; 智能括号。
+(use-package smartparens
+  :disabled
+  :config
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode t))
+
+#+end_src
+
+* winner
+使用内置的 tab-bar history 来代替：
+#+begin_src emacs-lisp
+(use-package winner
+  :straight (:type built-in)
+  :commands (winner-undo winner-redo)
+  :hook (after-init . winner-mode)
+  :init
+  (setq winner-boring-buffers
+        '("*Completions*"
+          "*Compile-Log*"
+          "*inferior-lisp*"
+          "*helpful"
+          "*lsp-help*"
+          "*Fuzzy Completions*"
+          "*Apropos*"
+          "*Help*"
+          "*cvs*"
+          "*Buffer List*"
+          "*Ibuffer*"
+          "*esh command on file*")))
+#+end_src
+
+* tabspaces
+
+#+begin_src emacs-lisp
+(use-package tabspaces
+  ;; use this next line only if you also use straight, otherwise ignore it. 
+  :straight (:type git :host github :repo "mclear-tools/tabspaces")
+  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
+  :commands (tabspaces-switch-or-create-workspace
+             tabspaces-open-or-create-project-and-workspace)
+  :custom
+  (tabspaces-use-filtered-buffers-as-default t)
+  (tabspaces-default-tab "Default")
+  (tabspaces-remove-to-default t)
+  (tabspaces-include-buffers '("*scratch*"))
+  ;; sessions
+  (tabspaces-session t)
+  (tabspaces-session-auto-restore t))
+  
+#+end_src
+
+* sort-tab
+
+
+#+begin_src emacs-lisp
+(use-package sort-tab
+  :demand
+  :disabled
+  :straight (:repo "manateelazycat/sort-tab" :host github)
+  :config
+  (sort-tab-mode 1)
+  (setq sort-tab-height 40)
+  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
+  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
+  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
+  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
+  ;; 设置 tab 颜色，M-x list-colors-display。
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
+  ;; 不显示背景颜色。
+  (set-face-background 'sort-tab-current-tab-face nil))
+#+end_src
+
+* awesome-tab
+
+#+begin_src emacs-lisp
+(use-package awesome-tab
+  :disabled
+  :config
+  (setq awesome-tab-label-fixed-length 20)
+  (setq awesome-tab-height 100)
+  ;; 不显示 tab 序号。
+  (setq awesome-tab-show-tab-index nil)
+  ;; 不显示 tab 的 buffer 名称, 需要先定义才生效。注意：有的 buffer 名称的 * 前有空格（如 Treemacs)。
+  (defun awesome-tab-hide-tab (x)
+    (let ((name (format "%s" x)))
+      (or
+       (string-prefix-p "*epc" name)
+       (string-prefix-p "*helm" name)
+       (string-prefix-p "*help" name)
+       (string-prefix-p "*Compile-Log*" name)
+       (string-prefix-p "*lsp" name)
+       (string-prefix-p "*gopls" name)
+       (string-prefix-p "*dashboard" name)
+       (string-prefix-p "*Warnings" name)
+       (string-prefix-p "*Messages" name)
+       (string-prefix-p "*scratch" name)
+       (string-prefix-p "*Help" name)
+       (string-prefix-p "*vterm" name)
+       (string-prefix-p " *lsp-bridge" name) ;; lsp-bridge
+       (string-prefix-p " *acm-doc" name) ;; lsp-bridge
+       (string-prefix-p " *Treemacs" name) ;; treemacs
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name))))))
+  (awesome-tab-mode t)
+  (global-set-key (kbd "s-1") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-0") 'awesome-tab-select-visible-tab)
+  (global-set-key (kbd "s-j") 'awesome-tab-ace-jump))
 #+end_src
 
 

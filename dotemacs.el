@@ -55,13 +55,13 @@
 
 ;; 缩短 fontify 时间。
 (setq jit-lock-defer-time nil)
-(setq jit-lock-context-time 0.1)
+(setq jit-lock-context-time 0.3)
 ;; 更积极的 fontify 。
 (setq fast-but-imprecise-scrolling nil)
 (setq redisplay-skip-fontification-on-input nil)
 
 ;; 缩短更新 screen 的时间。
-(setq idle-update-delay 0.1)
+(setq idle-update-delay 0.3)
 
 ;; 加快快捷键提示的速度。
 (setq echo-keystrokes 0.1)
@@ -132,18 +132,18 @@
 ;; 指针不闪动。
 (blink-cursor-mode -1)
 
-;; 调大 fringe, 避免行号列跳动。
-(set-fringe-mode 10)
+;; 设置 fringe, 避免行号列跳动。
+(set-fringe-mode 2)
 
 ;; 出错提示。
 (setq visible-bell t)
 
 ;; 窗口间显示分割线。
-(setq window-divider-default-places t)
-(add-hook 'window-setup-hook #'window-divider-mode)
+;;(setq window-divider-default-places t)
+;;(add-hook 'window-setup-hook #'window-divider-mode)
 
 ;; 30: 左右分屏, nil: 上下分屏。
-(setq split-width-threshold nil)
+(setq split-width-threshold 30)
 
 ;; 滚动一屏后显示 3 行上下文。
 (setq next-screen-context-lines 3)
@@ -163,35 +163,15 @@
 ;; 大文件不显示行号。
 (setq large-file-warning-threshold nil)
 (setq line-number-display-limit large-file-warning-threshold)
-(setq line-number-display-limit-width 1000)
+(setq line-number-display-limit-width 4)
+;; 开启 display-line-numbers-mode 后，空行的序号显示异常。
 (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 1))))
+(setq redisplay-dont-pause t)
 
 ;; 根据窗口自适应调整图片大小。
 (setq image-transform-resize t)
 (auto-image-file-mode t)
-
-(use-package doom-themes
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  :config
-  (doom-themes-visual-bell-config)
-  ;;(load-theme 'doom-palenight t)
-  (doom-themes-org-config))
-
-;;跟随 Mac 自动切换深浅主题。
-(defun my/load-light-theme () (interactive) (load-theme 'doom-one-light t)) ;; ef-day doom-one-light
-(defun my/load-dark-theme () (interactive) (load-theme 'doom-palenight t)) ;; ef-night doom-palenight
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
 
 (use-package doom-modeline
   :hook (after-init . doom-modeline-mode)
@@ -214,8 +194,9 @@
   (size-indication-mode -1)
   (display-time-mode t)
   (setq display-time-24hr-format t)
+  ;; system load 大于 10 时才在 modeline 显示；
   (setq display-time-default-load-average nil)
-  (setq display-time-load-average-threshold 5)
+  (setq display-time-load-average-threshold 10) 
   (setq display-time-format "%m/%d[%w]%H:%M")
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
@@ -238,6 +219,105 @@
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
   (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
+(use-package doom-themes
+  :disabled
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  :config
+  (doom-themes-visual-bell-config)
+  ;;(load-theme 'doom-palenight t)
+  (doom-themes-org-config)
+  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch nil)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+
+(use-package ef-themes
+  :straight (ef-themes :host github :repo "protesilaos/ef-themes")
+  :config
+  ;; Disable all other themes to avoid awkward blending:
+  (mapc #'disable-theme custom-enabled-themes)
+  (setq ef-themes-mixed-fonts t
+        ef-themes-variable-pitch-ui nil)
+  (setq ef-themes-region '(intense no-extend neutral))
+  )
+
+(defun my/load-light-theme () (interactive) (load-theme 'ef-day t)) ;; ef-day doom-one-light
+(defun my/load-dark-theme () (interactive) (load-theme 'ef-night t)) ;; ef-night doom-palenight
+(add-hook 'ns-system-appearance-change-functions
+          (lambda (appearance)
+            (pcase appearance
+              ('light (my/load-light-theme))
+              ('dark (my/load-dark-theme)))))
+
+;; (require 'tab-bar)
+;; (when (< 26 emacs-major-version)
+;;   (tab-bar-mode 1)                           ;; enable tab bar
+;;   (setq tab-bar-show t)                      ;; hide bar if <= 1 tabs open
+;;   (setq tab-bar-close-button-show nil)       ;; hide tab close / X button
+;;   ;;(setq tab-bar-new-tab-choice "*dashboard*");; buffer to show in new tabs
+;;   (setq tab-bar-tab-hints nil)                 ;; show tab numbers
+;;   (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
+;;   (setq tab-bar-format                    ;; Emacs 28
+;;         '(tab-bar-format-tabs-groups
+;; 	      tab-bar-format-align-right
+;; 	      tab-bar-format-global))
+;;   (setq tab-bar-select-tab-modifiers "super")
+;;   (tab-bar-history-mode 1)
+;;   ;;(display-time-mode 1)
+;;   (global-set-key (kbd "C-x <right>") 'tab-bar-history-forward)
+;;   (global-set-key (kbd "C-x <left>") 'tab-bar-history-back))
+
+(setq tab-line-new-button-show nil)  ;; do not show add-new button
+(setq tab-line-close-button-show nil)  ;; do not show close button
+(setq tab-line-separator "|")  ;; set it to empty
+
+(defvar buffer-project-name "~")
+(make-local-variable 'buffer-project-name)
+(defun my/update-buf-proj-name()
+  (if (project-current)
+      (setq-local buffer-project-name (file-name-nondirectory
+                                       (directory-file-name
+                                        (file-name-directory (project-root (project-current))))))
+    (setq-local buffer-project-name "other")))
+(add-hook 'after-change-major-mode-hook 'my/update-buf-proj-name)
+
+(defun my/tab-line-buffer-group (buffer)
+  (interactive)
+  (with-current-buffer buffer
+    (cond
+     ((s-match "scratch"  (buffer-name)) "Scratch")
+     ((string= major-mode "eshell-mode") "Eshell")
+     ((string= major-mode "dired-mode") "Dir")
+     ((string= major-mode "vterm-mode") "vTerm")
+     ((s-match "Customize"  (buffer-name)) "Customize")
+     ((s-match "magit:"  (buffer-name)) "Magit")
+     ((s-match "magit "  (buffer-name)) "Magit others")
+     ((s-match "magit-"  (buffer-name)) "Magit others")
+     ((string= (s-left 1 (buffer-name)) "*") "Utils")
+     ((string= (s-left 2 (buffer-name)) " *") "Utils")
+     ;; group buffers using projectile
+     ((boundp 'buffer-project-name) buffer-project-name)
+     (major-mode (format-mode-line mode-name))
+     (t "other"))))
+(setq tab-line-tabs-buffer-group-function #'my/tab-line-buffer-group)
+(setq tab-line-tabs-function #'tab-line-tabs-buffer-groups)
+(global-tab-line-mode t)
+(global-set-key (kbd "s-<tab>") 'tab-line-switch-to-next-tab)
+(global-set-key (kbd "s-S-<tab>") 'tab-line-switch-to-prev-tab)
+;; 不显示 tab-line 的 major-mode。
+(add-to-list 'tab-line-exclude-modes 'vterm-mode)
+(add-to-list 'tab-line-exclude-modes 'magit-mode)
+(add-to-list 'tab-line-exclude-modes 'magit-diff-mode)
+(add-to-list 'tab-line-exclude-modes 'magit-log-mode)
+(add-to-list 'tab-line-exclude-modes 'dashboard-mode)
+
 ;; 缺省字体（英文，如显示代码）。
 (setq +font-family "Fira Code Retina")
 (setq +modeline-font-family "Fira Code Retina")
@@ -245,7 +325,7 @@
 (setq +fixed-pitch-family "Sarasa Mono SC")
 (setq +variable-pitch-family "Sarasa Mono SC")
 (setq +font-unicode-family "Sarasa Mono SC")
-(setq +font-size 14)
+(setq +font-size 13)
 
 ;; 设置缺省字体。
 (defun +load-base-font ()
@@ -470,15 +550,16 @@
 (advice-add 'consult-line :around #'my/org-show-entry)
 (advice-add 'consult-line-multi :around #'my/org-show-entry)
 (advice-add 'consult-org-heading :around #'my/org-show-entry)
-(advice-add 'consult-org-heading :around #'consult--grep)
-(advice-add 'consult-grep :around #'my/org-show-entry)
-(advice-add 'consult-ripgrep :around #'my/org-show-entry)
+;;(advice-add 'consult-org-heading :around #'consult--grep)
+;;(advice-add 'consult-grep :around #'my/org-show-entry)
+;;(advice-add 'consult-ripgrep :around #'my/org-show-entry)
 
 (use-package embark
   :init
   ;; 使用 C-h 来显示 key preifx 绑定。
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
+  ;;(setq embark-quit-after-action t)
   (setq embark-prompter 'embark-keymap-prompter)
   (setq embark-collect-live-update-delay 0.5)
   (setq embark-collect-live-initial-delay 0.8)
@@ -486,12 +567,24 @@
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
                  nil
-                 (window-parameters (mode-line-format . none)))))
+                 (window-parameters (mode-line-format . none))))
+  ;; Automatically resizing auto-updating Embark Collect buffers to fit their contents.
+  (add-hook 'embark-collect-post-revert-hook
+          (defun resize-embark-collect-window (&rest _)
+            (when (memq embark-collect--kind '(:live :completions))
+              (fit-window-to-buffer (get-buffer-window)
+                                    (floor (frame-height) 2) 1)))))
 
 (use-package embark-consult
   :after (embark consult)
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
+
+(defun embark-act-noquit ()
+  "Run action but don't quit the minibuffer afterwards."
+  (interactive)
+  (let ((embark-quit-after-action nil))
+    (embark-act)))
 
 (use-package marginalia
   :init
@@ -525,7 +618,7 @@
   :after(consult yasnippet))
 
 ;; 避免报错：Symbol’s function definition is void: yasnippet-snippets--fixed-indent
-(use-package yasnippet-snippets)
+(use-package yasnippet-snippets :after(yasnippet))
 
 (use-package ace-window
   :init
@@ -552,25 +645,6 @@
   ;; 总是提示窗口选择，进而执行 ace 命令。
   ;;(setq aw-dispatch-always t)
   )
-
-(use-package winner
-  :straight (:type built-in)
-  :commands (winner-undo winner-redo)
-  :hook (after-init . winner-mode)
-  :init
-  (setq winner-boring-buffers
-        '("*Completions*"
-          "*Compile-Log*"
-          "*inferior-lisp*"
-          "*helpful"
-          "*lsp-help*"
-          "*Fuzzy Completions*"
-          "*Apropos*"
-          "*Help*"
-          "*cvs*"
-          "*Buffer List*"
-          "*Ibuffer*"
-          "*esh command on file*")))
 
 ;; https://github.com/manateelazycat/toggle-one-window/blob/main/toggle-one-window.el
 (defvar toggle-one-window-window-configuration nil
@@ -670,8 +744,8 @@
   (pyim-default-scheme 'quanpin)
   ;; 使用百度云拼音。
   (setq pyim-cloudim 'baidu)
-  ;; 开启代码搜索中文功能（比如拼音，五笔码等）。
-  (pyim-isearch-mode 1)
+  ;; 关闭代码搜索中文功能（比如拼音，五笔码等）， 会导致 isearch 卡死。
+  (pyim-isearch-mode nil)
   ;; 中文使用全角标点，英文使用半角标点。
   (setq-default pyim-punctuation-translate-p '(auto yes no))
   ;; posframe 性能更好且显式的较为干净, popup 较慢且容易干扰当前 buffer。
@@ -758,6 +832,7 @@
         org-mouse-1-follows-link t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
         org-link-file-path-type 'relative)
+  ;;(setq org-fold-core-style 'overlays)
   (setq org-catch-invisible-edits 'show)
   (setq org-todo-keywords
         '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
@@ -1083,6 +1158,18 @@
   ;;               :jump-to-captured t :immediate-finish t) org-capture-templates))
   )
 
+;; 修复报错： org-journal-display-entry: Symbol’s value as variable is void: displayed-month
+;; https://github.com/bastibe/org-journal/commit/1de9153f2120e92779d95d9e13f249e98ff1ad14
+(defun org-journal-display-entry (_arg &optional event)
+  "Display journal entry for selected date in another window."
+  (interactive
+   (list current-prefix-arg last-nonmenu-event))
+  (let* ((time (or (ignore-errors (org-journal-calendar-date->time (calendar-cursor-to-date t event)))
+                   (org-time-string-to-time (org-read-date nil nil nil "Date:")))))
+    ;; (let* ((time (org-journal--calendar-date->time
+    ;;               (calendar-cursor-to-date t event))))
+    (org-journal-read-or-display-entry time t)))
+
 (setq vc-follow-symlinks t)
 
 (use-package magit
@@ -1212,18 +1299,22 @@
   :config
   (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
+  ;;(setq lsp-bridge-signature-show-function 'lsp-bridge-signature-posframe)
   ;; word 补全。
   (setq acm-enable-search-file-words nil)
   (setq lsp-bridge-enable-search-words nil)
-  (setq lsp-bridge-search-words-rebuild-cache-idle 15)
+  (setq lsp-bridge-search-words-rebuild-cache-idle 10)
   (setq acm-candidate-match-function 'orderless-flex)
-  ;; The minimum characters to trigger completion, default is 0
-  (setq acm-backend-lsp-candidate-min-length 2)
-  (setq acm-backend-lsp-enable-auto-import nil)
+  ;; 至少输入 N 个字符后才开始补全。
+  (setq acm-backend-lsp-candidate-min-length 0)
+  ;;(setq acm-backend-lsp-enable-auto-import nil)
   (setq acm-backend-lsp-candidate-max-length 100)
+  (setq acm-enable-doc nil)
+  (setq acm-enable-telega nil)
+  (setq acm-enable-tabnine nil)
+  (setq acm-enable-quick-access t)
   (setq lsp-bridge-diagnostic-tooltip-border-width 0)
   (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
-  (setq lsp-bridge-search-words-rebuild-cache-idle 5)
   ;; 关闭 yas 补全。
   (setq acm-enable-yas nil)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
@@ -1472,12 +1563,6 @@ mermaid.initialize({
           nil)
       t)))
 
-;; 智能括号。
-(use-package smartparens
-  :config
-  (smartparens-global-mode t)
-  (show-smartparens-global-mode t))
-
 ;; 彩色括号。
 (use-package rainbow-delimiters
   :hook
@@ -1492,44 +1577,74 @@ mermaid.initialize({
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t))
 
-(use-package symbol-overlay
-  :diminish
-  :demand
-  :functions
-  (turn-off-symbol-overlay turn-on-symbol-overlay)
-  :custom-face
-  (symbol-overlay-default-face ((t (:inherit (region bold)))))
-  :hook
-  (((prog-mode yaml-mode) . symbol-overlay-mode)
-   ;; (iedit-mode . turn-off-symbol-overlay)
-   ;; (iedit-mode-end . turn-on-symbol-overlay)
-   )
-  :init
-  (setq symbol-overlay-idle-time 0.1)
-  ;;:config
-  ;; ;; Disable symbol highlighting while selecting
-  ;; (defun turn-off-symbol-overlay (&rest _)
-  ;;   "Turn off symbol highlighting."
-  ;;   (interactive)
-  ;;   (symbol-overlay-mode -1))
-  ;; (advice-add #'set-mark :after #'turn-off-symbol-overlay)
-
-  ;; (defun turn-on-symbol-overlay (&rest _)
-  ;;   "Turn on symbol highlighting."
-  ;;   (interactive)
-  ;;   (when (derived-mode-p 'prog-mode 'yaml-mode)
-  ;;     (symbol-overlay-mode 1)))
-  ;; (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay)
-  )
-
 (use-package tree-sitter
   :config
   (global-tree-sitter-mode)
+  ;; 由于会导致高亮异常，故关闭。
   ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
-  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。  
+  ;; (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+  )
 
 (use-package tree-sitter-langs :after (tree-sitter))
+
+(use-package grammatical-edit
+  :straight (:host github :repo "manateelazycat/grammatical-edit")
+  :after (tree-sitter)
+  :config
+  (dolist (hook (list
+                 'c-mode-common-hook
+                 'c-mode-hook
+                 'c++-mode-hook
+                 'java-mode-hook
+                 'emacs-lisp-mode-hook
+                 'lisp-interaction-mode-hook
+                 'lisp-mode-hook
+                 'sh-mode-hook
+                 'makefile-gmake-mode-hook
+                 'python-mode-hook
+                 'js-mode-hook
+                 'go-mode-hook
+                 'css-mode-hook
+                 'rust-mode-hook
+                 'minibuffer-inactive-mode-hook
+                 'typescript-mode-hook
+                 ))
+    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
+
+;;; grammatical-edit
+;; 符号插入
+(define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
+(define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
+(define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
+(define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
+(define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
+(define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
+;; (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
+;; (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
+;; (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
+;; (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
+;; (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
+;; (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
+;; ;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
+;; ;; 删除
+;; (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
+;; (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
+;; (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
+;; ;; 包围
+;; (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
+;; (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
+;; (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
+;; ;; 移动
+;; (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
+;; (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
+;; ;; 跳出括号并换行
+;; ;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
+;; ;; 向父节点跳动
+;; (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
 
 (use-package ts-fold
   :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")
@@ -1538,6 +1653,37 @@ mermaid.initialize({
   ;; indicators 影响性能；
   ;; (add-hook 'tree-sitter-after-on-hook #'ts-fold-indicators-mode)
   )
+
+(use-package hl-todo
+  :straight (hl-todo :host github :repo "tarsius/hl-todo")
+  :after (ef-themes) 
+  :config
+  (global-hl-todo-mode)
+  (defun my-ef-themes-hl-todo-faces ()
+    "Configure `hl-todo-keyword-faces' with Ef themes colors. The
+exact color values are taken from the active Ef theme."
+    (ef-themes-with-colors
+      (setq hl-todo-keyword-faces
+            `(("HOLD" . ,yellow)
+              ("TODO" . ,red)
+              ("NEXT" . ,blue)
+              ("THEM" . ,magenta)
+              ("PROG" . ,cyan-warmer)
+              ("OKAY" . ,green-warmer)
+              ("DONT" . ,yellow-warmer)
+              ("FAIL" . ,red-warmer)
+              ("BUG" . ,red-warmer)
+              ("DONE" . ,green)
+              ("NOTE" . ,blue-warmer)
+              ("KLUDGE" . ,cyan)
+              ("HACK" . ,cyan)
+              ("TEMP" . ,red)
+              ("FIXME" . ,red-warmer)
+              ("FIXME!!!" . ,red-warmer)
+              ("XXX+" . ,red-warmer)
+              ("REVIEW" . ,red)
+              ("DEPRECATED" . ,yellow)))))
+  (add-hook 'ef-themes-post-load-hook #'my-ef-themes-hl-todo-faces))
 
 (use-package sdcv
   :straight (:host github :repo "manateelazycat/sdcv")
@@ -1560,33 +1706,30 @@ mermaid.initialize({
           "KDic11万英汉词典"
           "牛津高阶英汉双解")))
 
-(use-package go-translate
-  :straight (:host github :repo "lorniu/go-translate")
+(use-package google-translate
+  :straight (:host github :repo "atykhonov/google-translate")
   :config
-  (setq gts-translate-list '(("en" "zh")))
-  (setq gts-default-translator
-        (gts-translator
-         :picker (gts-prompt-picker)
-         :engines (list
-                   (gts-bing-engine)
-                   (gts-google-engine :parser (gts-google-summary-parser))
-                   (gts-google-rpc-engine)
-                   (gts-youdao-dict-engine))
-         :render (gts-buffer-render))))
-
-;; pip install jieba
-(use-package chinese-word-at-point)
+  (setq max-mini-window-height 0.2)
+  ;;(setq google-translate-output-destination 'popup)
+  (setq google-translate-output-destination 'kill-ring)
+  (setq google-translate-translation-directions-alist
+      '(("en" . "zh-CN") ("zh-CN" . "en"))))
 
 (use-package project
   :custom
   (project-switch-commands
-   '((project-find-file "find file" ?p)
-     (project-dired "project dired" ?d)
-     (vterm-toggle-cd "vterm toggle" ?t)
+   '(
+     (consult-buffer "buffer" ?b)
+     (project-dired "dired" ?d)
      (magit-project-status "magit status" ?g)
-     (consult-ripgrep "consult rigprep" ?r)))
+     (project-find-file "find file" ?p)
+     (consult-ripgrep "rigprep" ?r)
+     (vterm-toggle-cd "vterm" ?t)))
   (compilation-always-kill t)
-  (project-vc-merge-submodules nil))
+  (project-vc-merge-submodules nil)
+  :config
+  ;; project-find-file 忽略的目录或文件列表。
+  (add-to-list 'vc-directory-exclusion-list "vendor"))
 
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
@@ -1635,14 +1778,104 @@ mermaid.initialize({
           (project-remember-projects-under file nil)
           (message "added project %s" file)))))
 
-(setq project-vc-ignores '("vendor/"))
-
 ;; 不将 tramp 项目记录到 projects 文件中，防止 emacs-dashboard 启动时检查 project 卡住。
 (defun my/project-remember-advice (fn pr &optional no-write)
   (let* ((remote? (file-remote-p (project-root pr)))
          (no-write (if remote? t no-write)))
     (funcall fn pr no-write)))
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
+
+(use-package treemacs
+  :init
+  (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+  :config
+  (setq
+   treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
+   treemacs-deferred-git-apply-delay      0.3
+   treemacs-display-in-side-window        t
+   treemacs-eldoc-display                 'simple
+   treemacs-file-event-delay              300
+   treemacs-file-follow-delay             0.1
+   treemacs-follow-after-init             t
+   treemacs-expand-after-init             t
+   treemacs-git-command-pipe              ""
+   treemacs-goto-tag-strategy             'refetch-index
+   treemacs-indentation                   1
+   treemacs-indentation-string            " "
+   treemacs-is-never-other-window         t
+   treemacs-max-git-entries               500
+   treemacs-missing-project-action        'ask
+   treemacs-no-png-images                 nil
+   treemacs-no-delete-other-windows       t
+   treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+   treemacs-position                      'left
+   treemacs-read-string-input             'from-minibuffer
+   treemacs-recenter-distance             0.01 ;; 缺省 0.1 
+   treemacs-recenter-after-file-follow    'on-distance
+   treemacs-recenter-after-tag-follow     'on-distance
+   treemacs-recenter-after-project-jump   'always
+   treemacs-recenter-after-project-expand 'on-distance
+   treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
+   treemacs-shownn-cursor                 t
+   treemacs-show-hidden-files             t
+   treemacs-silent-filewatch              nil
+   treemacs-silent-refresh                nil
+   treemacs-sorting                       'alphabetic-asc
+   treemacs-select-when-already-in-treemacs 'stay
+   treemacs-space-between-root-nodes      nil
+   treemacs-tag-follow-cleanup            t
+   treemacs-tag-follow-delay              0.5
+   treemacs-width                         35
+   treemacs-width-increment               5
+   treemacs-width-is-initially-locked     nil
+   treemacs-project-follow-cleanup        t
+   treemacs-git-commit-diff-mode          t
+   imenu-auto-rescan                      t)
+  (treemacs-resize-icons 11)
+  ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
+  (treemacs-follow-mode t)
+  ;;(treemacs-tag-follow-mode t)
+  ;;(treemacs-project-follow-mode t)
+  (treemacs-filewatch-mode t)
+  (treemacs-fringe-indicator-mode 'always)
+  (treemacs-indent-guide-mode t)
+  (treemacs-git-mode 'deferred)
+  (treemacs-hide-gitignored-files-mode t)
+  ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+  (add-hook 'buffer-list-update-hook
+            (lambda ()
+              (when (file-remote-p default-directory)
+                (require 'treemacs)
+                (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                    (delete-window (treemacs-get-local-window))))))
+  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+  (add-hook 'ediff-before-setup-hook
+            (lambda ()
+              (require 'treemacs)
+              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+                  (delete-window (treemacs-get-local-window)) ) ))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
+
+(use-package treemacs-magit
+  :after (treemacs magit)
+  :ensure t)
+
+(use-package treemacs-tab-bar
+  :disabled
+  :after (treemacs)
+  :ensure t
+  :config (treemacs-set-scope-type 'Tabs))
+
+(use-package deadgrep
+  :ensure-system-package (rg . ripgrep)
+  :bind ("<f5>" . deadgrep))
 
 (require 'grep)
 (dolist (dir '(".cache" "vendor" "node_modules"))
@@ -1655,13 +1888,13 @@ mermaid.initialize({
 (use-package wgrep)
 
 (use-package ctrlf
-  :disabled
   :config
   (ctrlf-mode +1)
   (add-hook 'pdf-isearch-minor-mode-hook (lambda () (ctrlf-local-mode -1))))
 
 ;; browser-url 使用 Mac 默认浏览器。
-(setq browse-url-browser-function 'browse-url-default-macosx-browser)
+;;(setq browse-url-browser-function 'browse-url-default-macosx-browser)
+(setq browse-url-browser-function 'xwidget-webkit-browse-url)
 
 (use-package engine-mode
   :config
@@ -1716,6 +1949,9 @@ mermaid.initialize({
         socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
+  (setenv "ALL_PROXY" my/socks-proxy)
+  (setenv "HTTP_PROXY" nil)
+  (setenv "HTTPS_PROXY" nil)
   (proxy-socks-show)
   ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
   (advice-add 'url-http :around 'mb-url-http-around-advice))
@@ -1727,6 +1963,7 @@ mermaid.initialize({
   (setq url-gateway-method 'native
         socks-noproxy nil)
   (setenv "all_proxy" "")
+  (setenv "ALL_PROXY" "")
   (proxy-socks-show))
 
 (defun proxy-socks-toggle ()
@@ -1867,6 +2104,9 @@ mermaid.initialize({
   ;; 即使 ~/.ssh/config 正确 Include 了 hosts 文件，这里还是需要配置，因为 consult-tramp 不会解析 Include 配置。
   (consult-tramp-ssh-config "~/work/proxylist/hosts_config"))
 
+(setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
+(setq xwidget-webkit-buffer-name-format "*webkit: %T")
+
 ;; 增加 imenu 行内容长度。
 (setq imenu-max-item-length 160)
 
@@ -1891,14 +2131,14 @@ mermaid.initialize({
     (setq buffer-read-only t)
     (font-lock-mode -1)
     (yas-minor-mode -1)
-    (smartparens-mode -1)
-    (show-paren-mode -1)
+    ;;(smartparens-mode -1)
+    ;;(show-paren-mode -1)
     (js2-minor-mode -1)
     (tree-sitter-hl-mode -1)
-    (fira-code-mode -1)
+    ;;(fira-code-mode -1)
     (prettify-symbols-mode -1)
-    (symbol-overlay-mode -1)
-    (show-smartparens-mode -1)
+    ;;(symbol-overlay-mode -1)
+    ;;(show-smartparens-mode -1)
     (lsp-bridge-mode -1)
     (display-line-numbers-mode -1)
     (highlight-indent-guides-mode -1)
@@ -2112,9 +2352,18 @@ mermaid.initialize({
           (message "File '%s' successfully renamed to '%s'"
                    name (file-name-nondirectory new-name)))))))
 
+(defun my/pin-buffer ()
+  "Pin buffer to current window."
+  (interactive)
+  (message
+   (if (let (window (get-buffer-window (current-buffer)))
+         (set-window-dedicated-p window (not (window-dedicated-p window))))
+       "pinned buffer" "un-pinned buffer")
+   ))
+
 (use-package hydra :commands defhydra)
 
-(global-set-key (kbd "RET") 'newline-and-indent)
+;;(global-set-key (kbd "RET") 'newline-and-indent)
 
 ;; macOS 按键调整。
 (setq mac-command-modifier 'meta)
@@ -2142,7 +2391,8 @@ mermaid.initialize({
 ;; 关闭 mouse-yank-primary 。
 (global-unset-key (kbd "<mouse-2>"))
 
-(global-set-key (kbd "<f5>") #'modus-themes-toggle)
+;; 手动刷行显示；
+(global-set-key (kbd "<f5>") #'redraw-display)
 
 ;;; vertico
 ;; 在多个 source 中切换(如 consult-buffer, consult-grep) 。
@@ -2200,7 +2450,7 @@ mermaid.initialize({
 (global-set-key (kbd "M-s l") #'consult-line)
 (global-set-key (kbd "M-s M-l") #'consult-line)
 (global-set-key (kbd "M-s L") #'consult-line-multi)
-(global-set-key (kbd "M-s o") #'consult-multi-occur)
+;;(global-set-key (kbd "M-s o") #'consult-multi-occur)
 (global-set-key (kbd "M-s k") #'consult-keep-lines)
 (global-set-key (kbd "M-s f") #'consult-focus-lines)
 ;; Isearch 集成。
@@ -2300,8 +2550,8 @@ mermaid.initialize({
 (global-set-key (kbd "C-c d I") #'sdcv-search-input)    ;; 输入的单词, buffer 显示。
 (global-set-key (kbd "C-c d i") #'sdcv-search-input+)
 
-;;; go-translate
-(global-set-key (kbd "C-c d t") #'gts-do-translate)
+;;; google-translate
+(global-set-key (kbd "C-c d t") #'google-translate-smooth-translate)
 
 ;;; go
 (define-key go-mode-map (kbd "C-c t a") #'go-tag-add)
@@ -2318,14 +2568,13 @@ mermaid.initialize({
 (define-key go-mode-map (kbd "C-c t c") #'go-test-current-coverage)
 (define-key go-mode-map (kbd "C-c t x") #'go-run)
 
-
 ;;; lsp-bridge
 ;; M-j 被预留给 pyim 使用。
 (define-key acm-mode-map (kbd "M-j") nil)
 ;; 使用 TAB 而非回车键来选定。
-(define-key acm-mode-map (kbd "RET") nil)
+;;(define-key acm-mode-map (kbd "RET") nil)
 (define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-find-def)
-(define-key lsp-bridge-mode-map (kbd "C-u M-.") #'lsp-bridge-find-def-other-window)
+(define-key lsp-bridge-mode-map (kbd "C-M-.") #'lsp-bridge-find-def-other-window)
 (define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-find-def-return)
 (define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
 (define-key lsp-bridge-mode-map (kbd "M-d") #'lsp-bridge-popup-documentation)
@@ -2364,17 +2613,120 @@ mermaid.initialize({
 ;;; vterm-extra
 (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer)
 
-;; Symbol Overlay
-(global-set-key (kbd "M-i") 'symbol-overlay-put)
-(global-set-key (kbd "M-n") 'symbol-overlay-jump-next)
-(global-set-key (kbd "M-p") 'symbol-overlay-jump-prev)
-(global-set-key (kbd "M-N") 'symbol-overlay-switch-forward)
-(global-set-key (kbd "M-P") 'symbol-overlay-switch-backward)
-(global-set-key (kbd "M-c") 'symbol-overlay-remove-all)
-;; (define-key symbol-overlay-map  (kbd "M-n") 'symbol-overlay-jump-next)
-;; (define-key symbol-overlay-map  (kbd "M-p") 'symbol-overlay-jump-prev)
-;; (define-key symbol-overlay-map  (kbd "M-N") 'symbol-overlay-switch-forward)
-;; (define-key symbol-overlay-map  (kbd "M-P") 'symbol-overlay-switch-backward)
-;; (define-key symbol-overlay-map  (kbd "M-c") 'symbol-overlay-remove-all)
+(global-set-key (kbd "C-c C-<tab>") 'ts-fold-toggle)
 
-(global-set-key (kbd "C-<tab>") 'ts-fold-toggle)
+(use-package elfeed
+  :demand
+  :config
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  (setq elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-program-name "/usr/local/opt/curl/bin/curl")
+  (setq elfeed-curl-timeout 30)  
+  (setf url-queue-timeout 40)
+  (push "-k" elfeed-curl-extra-arguments)
+  (setq elfeed-search-filter "@1-months-ago +unread")
+  ;; 在同一个 buffer 中显示条目。
+  (setq elfeed-show-unique-buffers nil)
+  (setq elfeed-search-title-max-width 150)
+  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
+  (setq elfeed-log-level 'warn)
+
+  ;; 支持收藏 feed, 参考：http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+  (defalias 'elfeed-toggle-star (elfeed-expose #'elfeed-search-toggle-all 'star))
+  (eval-after-load 'elfeed-search '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
+  (defface elfeed-search-star-title-face '((t :foreground "#f77")) "Marks a starred Elfeed entry.")
+  (push '(star elfeed-search-star-title-face) elfeed-search-face-alist))
+
+(use-package elfeed-org
+  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+  :hook
+  ((elfeed-dashboard-mode . elfeed-org)
+   (elfeed-show-mode . elfeed-org))
+  :config
+  (progn
+    (defun my/reload-org-feeds ()
+      (interactive)
+      (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
+    (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
+
+(use-package elfeed-dashboard
+  :config
+  (global-set-key (kbd "C-c f") 'elfeed-dashboard)
+  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
+
+(use-package elfeed-score
+  :config
+  (progn
+    (elfeed-score-enable)
+    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+
+(use-package elfeed-goodies
+  :config
+  (setq elfeed-goodies/entry-pane-position 'bottom)
+  (setq elfeed-goodies/feed-source-column-width 30)
+  (setq elfeed-goodies/tag-column-width 30)
+  (setq elfeed-goodies/powerline-default-separator 'arrow)
+  (elfeed-goodies/setup))
+
+;; elfeed-goodies 显示日期栏
+;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
+(defun elfeed-goodies/search-header-draw ()
+  "Returns the string to be used as the Elfeed header."
+  (if (zerop (elfeed-db-last-update))
+      (elfeed-search--intro-header)
+    (let* ((separator-left (intern (format "powerline-%s-%s"
+                                           elfeed-goodies/powerline-default-separator
+                                           (car powerline-default-separator-dir))))
+           (separator-right (intern (format "powerline-%s-%s"
+                                            elfeed-goodies/powerline-default-separator
+                                            (cdr powerline-default-separator-dir))))
+           (db-time (seconds-to-time (elfeed-db-last-update)))
+           (stats (-elfeed/feed-stats))
+           (search-filter (cond
+                           (elfeed-search-filter-active
+                            "")
+                           (elfeed-search-filter
+                            elfeed-search-filter)
+                           (""))))
+      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
+        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
+
+(defun elfeed-goodies/entry-line-draw (entry)
+  "Print ENTRY to the buffer."
+  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (date (elfeed-search-format-date (elfeed-entry-date entry)))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+                         elfeed-goodies/tag-column-width 4))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               title-width)
+                        :left))
+         (tag-column (elfeed-format-column
+                      tags-str (elfeed-clamp (length tags-str)
+                                             elfeed-goodies/tag-column-width
+                                             elfeed-goodies/tag-column-width)
+                      :left))
+         (feed-column (elfeed-format-column
+                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width)
+                       :left)))
+
+    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+        (progn
+          (insert (propertize date 'face 'elfeed-search-date-face) " ")
+          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
+          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
+          (insert (propertize title 'face title-faces 'kbd-help title)))
+      (insert (propertize title 'face title-faces 'kbd-help title)))))
