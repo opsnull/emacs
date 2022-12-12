@@ -1786,6 +1786,7 @@ exact color values are taken from the active Ef theme."
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
 
 (use-package treemacs
+  :straight (:files ("src/*/*" "icons"))
   :init
   (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
   :config
