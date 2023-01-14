@@ -163,11 +163,10 @@
 ;; 大文件不显示行号。
 (setq large-file-warning-threshold nil)
 (setq line-number-display-limit large-file-warning-threshold)
-(setq line-number-display-limit-width 4)
+(setq line-number-display-limit-width 1000)
 ;; 开启 display-line-numbers-mode 后，空行的序号显示异常。
 (dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 1))))
-(setq redisplay-dont-pause t)
 
 ;; 根据窗口自适应调整图片大小。
 (setq image-transform-resize t)
@@ -219,30 +218,12 @@
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
   (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
-(use-package doom-themes
-  :disabled
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  :config
-  (doom-themes-visual-bell-config)
-  ;;(load-theme 'doom-palenight t)
-  (doom-themes-org-config)
-  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
-  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
-  (setq doom-themes-treemacs-enable-variable-pitch nil)
-  (setq doom-themes-treemacs-theme "doom-colors")
-  (doom-themes-treemacs-config))
-
 (use-package ef-themes
   :straight (ef-themes :host github :repo "protesilaos/ef-themes")
   :config
   ;; Disable all other themes to avoid awkward blending:
   (mapc #'disable-theme custom-enabled-themes)
+  ;; 关闭 variable-pitch 模式，否则 modeline 可能溢出。
   (setq ef-themes-mixed-fonts t
         ef-themes-variable-pitch-ui nil)
   (setq ef-themes-region '(intense no-extend neutral))
@@ -256,67 +237,22 @@
               ('light (my/load-light-theme))
               ('dark (my/load-dark-theme)))))
 
-;; (require 'tab-bar)
-;; (when (< 26 emacs-major-version)
-;;   (tab-bar-mode 1)                           ;; enable tab bar
-;;   (setq tab-bar-show t)                      ;; hide bar if <= 1 tabs open
-;;   (setq tab-bar-close-button-show nil)       ;; hide tab close / X button
-;;   ;;(setq tab-bar-new-tab-choice "*dashboard*");; buffer to show in new tabs
-;;   (setq tab-bar-tab-hints nil)                 ;; show tab numbers
-;;   (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
-;;   (setq tab-bar-format                    ;; Emacs 28
-;;         '(tab-bar-format-tabs-groups
-;; 	      tab-bar-format-align-right
-;; 	      tab-bar-format-global))
-;;   (setq tab-bar-select-tab-modifiers "super")
-;;   (tab-bar-history-mode 1)
-;;   ;;(display-time-mode 1)
-;;   (global-set-key (kbd "C-x <right>") 'tab-bar-history-forward)
-;;   (global-set-key (kbd "C-x <left>") 'tab-bar-history-back))
-
-(setq tab-line-new-button-show nil)  ;; do not show add-new button
-(setq tab-line-close-button-show nil)  ;; do not show close button
-(setq tab-line-separator "|")  ;; set it to empty
-
-(defvar buffer-project-name "~")
-(make-local-variable 'buffer-project-name)
-(defun my/update-buf-proj-name()
-  (if (project-current)
-      (setq-local buffer-project-name (file-name-nondirectory
-                                       (directory-file-name
-                                        (file-name-directory (project-root (project-current))))))
-    (setq-local buffer-project-name "other")))
-(add-hook 'after-change-major-mode-hook 'my/update-buf-proj-name)
-
-(defun my/tab-line-buffer-group (buffer)
-  (interactive)
-  (with-current-buffer buffer
-    (cond
-     ((s-match "scratch"  (buffer-name)) "Scratch")
-     ((string= major-mode "eshell-mode") "Eshell")
-     ((string= major-mode "dired-mode") "Dir")
-     ((string= major-mode "vterm-mode") "vTerm")
-     ((s-match "Customize"  (buffer-name)) "Customize")
-     ((s-match "magit:"  (buffer-name)) "Magit")
-     ((s-match "magit "  (buffer-name)) "Magit others")
-     ((s-match "magit-"  (buffer-name)) "Magit others")
-     ((string= (s-left 1 (buffer-name)) "*") "Utils")
-     ((string= (s-left 2 (buffer-name)) " *") "Utils")
-     ;; group buffers using projectile
-     ((boundp 'buffer-project-name) buffer-project-name)
-     (major-mode (format-mode-line mode-name))
-     (t "other"))))
-(setq tab-line-tabs-buffer-group-function #'my/tab-line-buffer-group)
-(setq tab-line-tabs-function #'tab-line-tabs-buffer-groups)
-(global-tab-line-mode t)
-(global-set-key (kbd "s-<tab>") 'tab-line-switch-to-next-tab)
-(global-set-key (kbd "s-S-<tab>") 'tab-line-switch-to-prev-tab)
-;; 不显示 tab-line 的 major-mode。
-(add-to-list 'tab-line-exclude-modes 'vterm-mode)
-(add-to-list 'tab-line-exclude-modes 'magit-mode)
-(add-to-list 'tab-line-exclude-modes 'magit-diff-mode)
-(add-to-list 'tab-line-exclude-modes 'magit-log-mode)
-(add-to-list 'tab-line-exclude-modes 'dashboard-mode)
+(use-package tab-bar
+  :straight (:type built-in)
+  :bind (:map tab-prefix-map ("p" . my/new-project-tab))
+  :init
+  (require 's)
+  (defun my/new-project-tab ()
+    (interactive)
+    (tab-rename (s-chop-suffix "/" (car (project-roots (project-current))))))
+  :custom
+  (tab-bar-close-button-show nil)
+  (tab-bar-history-limit 10)
+  (tab-bar-new-tab-choice "*dashboard*")
+  (tab-bar-show 1)
+  (tab-bar-tab-hints nil)
+  :config
+  (tab-bar-history-mode t))
 
 ;; 缺省字体（英文，如显示代码）。
 (setq +font-family "Fira Code Retina")
@@ -385,36 +321,35 @@
 	(fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
 	:hook prog-mode))
 
-(use-package vertico
-  :straight (:repo "minad/vertico" :files ("*" "extensions/*.el" (:exclude ".git")))
-  :hook
-  (
-   ;; 在输入时清理文件路径。
-   (rfn-eshadow-update-overlay . vertico-directory-tidy)
-   ;; 确保 vertico 状态被保存（用于支持 vertico-repeat)。
-   (minibuffer-setup . vertico-repeat-save))
-  :config
-  ;; 显示的侯选者数量。
-  (setq vertico-count 20)
-  (setq vertico-cycle nil)
-  (vertico-mode 1)
-  ;; emacs profile 显示比较消耗 cpu/mem, 故关闭。
-  ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
-  ;;(vertico-multiform-mode)
-  ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
-  ;; 为 file 设置 grid 模式, grep buffer 模式与 awesome-tray 不兼容。
-  ;; (setq vertico-multiform-categories '((file grid)))
-  )
+  (use-package vertico
+    :straight (:repo "minad/vertico" :files ("*" "extensions/*.el" (:exclude ".git")))
+    :hook
+     ;; 在输入时清理文件路径。
+     (rfn-eshadow-update-overlay . vertico-directory-tidy)
+     ;; 确保 vertico 状态被保存（用于支持 vertico-repeat)。
+     ;;(minibuffer-setup . vertico-repeat-save))
+    :config
+    ;; 显示的侯选者数量。
+    (setq vertico-count 20)
+    (setq vertico-cycle nil)
+    (vertico-mode 1)
+    ;; emacs profile 显示比较消耗 cpu/mem, 故关闭。
+    ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
+    ;;(vertico-multiform-mode)
+    ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
+    ;; 为 file 设置 grid 模式, grep buffer 模式与 awesome-tray 不兼容。
+    ;; (setq vertico-multiform-categories '((file grid)))
+    )
 
-(use-package emacs
-  :init
-  ;; 在 minibuffer 中不显示光标。
-  (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-  ;; M-x 是不显示当前 mode 不支持的命令以及 vertico 相关命令。
-  (setq read-extended-command-predicate #'command-completion-default-include-p)
-  ;; 开启 minibuffer 递归编辑。
-  (setq enable-recursive-minibuffers t))
+  (use-package emacs
+    :init
+    ;; 在 minibuffer 中不显示光标。
+    (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
+    (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+    ;; M-x 是不显示当前 mode 不支持的命令以及 vertico 相关命令。
+    (setq read-extended-command-predicate #'command-completion-default-include-p)
+    ;; 开启 minibuffer 递归编辑。
+    (setq enable-recursive-minibuffers t))
 
 (use-package orderless
   :config
@@ -517,6 +452,7 @@
      "\\*lsp-bridge"
      "\\*Ibuffer"
      "\\*sort-tab"
+     "\\*Google Translate\\*"
      "[0-9]+.gpg"))
 
   ;; 使用 consult 预览显示 vterm buffer 候选列表;
@@ -681,6 +617,7 @@
                    "*Summary*"
                    "*lsp-help*"
                    "*vterm"
+                   "*Google Translate*"
                    "Shell Command Output") (0+ not-newline))
          (display-buffer-reuse-mode-window display-buffer-below-selected)
          (window-height . 0.33)
@@ -706,6 +643,7 @@
 
 (use-package dired
   :straight (:type built-in)
+  :ensure-system-package (tac  . coreutils)
   :config
   ;; re-use dired buffer, available in Emacs 28
   ;; @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
@@ -719,6 +657,7 @@
   ;; if another Dired buffer is visible in another window, use that directory as target for Rename/Copy
   ;;(setq dired-dwim-target t)
   ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
+  ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
   (setq dired-listing-switches "-laGh1v --group-directories-first")
   (put 'dired-find-alternate-file 'disabled nil))
 
@@ -790,7 +729,7 @@
   (pyim-tsinghua-dict-enable))
 
 (use-package org
-  :straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
+  ;;:straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :ensure-system-package
   ((watchexec . watchexec)
@@ -1257,8 +1196,11 @@
   (highlight-indent-guides-delay 0.1)
   :config
   (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'python-ts-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-ts-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'js-ts-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
 (use-package posframe)
@@ -1315,13 +1257,41 @@
   (setq acm-enable-quick-access t)
   (setq lsp-bridge-diagnostic-tooltip-border-width 0)
   (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
+  ;; 开启 citre 集成。
+  (setq acm-enable-citre t)
   ;; 关闭 yas 补全。
   (setq acm-enable-yas nil)
+  ;; 增加 treesit 相关的 xx-ts-mode
+  (setq lsp-bridge-single-lang-server-mode-list
+        '(((c-mode c-ts-mode c++-mode c++-ts-mode objc-mode) . lsp-bridge-c-lsp-server)
+          (cmake-mode . "cmake-language-server")
+          ((java-mode java-ts-mode) . "jdtls")
+          ((python-mode python-ts-mode) . lsp-bridge-python-lsp-server)
+          ((go-mode go-ts-mode) . "gopls")
+          ((js2-mode js-mode js-ts-mode rjsx-mode) . "javascript")
+          (typescript-tsx-mode . "typescriptreact")
+          ((typescript-mode typescript-ts-mode) . "typescript")
+          ((latex-mode Tex-latex-mode texmode context-mode texinfo-mode bibtex-mode) . lsp-bridge-tex-lsp-server)
+          ((sh-mode bash-ts-mode) . "bash-language-server")
+          ((css-mode css-ts-mode) . "vscode-css-language-server")
+          ((yaml-mode yaml-ts-mode) . "yaml-language-server")
+          ((json-mode json-ts-mode) . "vscode-json-language-server")
+          ((dockerfile-mode dockerfile-ts-mode) . "docker-langserver")))
+  ;; 添加 treesit 相关的 xx-ts-mode-hook 后，lsp-bridge 才会自动启动。
+  (add-to-list 'lsp-bridge-default-mode-hooks 'go-ts-mode-hook)
+  (add-to-list 'lsp-bridge-default-mode-hooks 'bash-ts-mode-hook)
+  (add-to-list 'lsp-bridge-default-mode-hooks 'python-ts-mode-hook)
+  (add-to-list 'lsp-bridge-default-mode-hooks 'js-ts-mode-hook)
+  (add-to-list 'lsp-bridge-default-mode-hooks 'typescript-ts-mode-hook)
+  (add-to-list 'lsp-bridge-default-mode-hooks 'css-ts-mode-hook)
+  (add-to-list 'lsp-bridge-default-mode-hooks 'yaml-ts-mode-hook)
+  (add-to-list 'lsp-bridge-default-mode-hooks 'json-ts-mode-hook)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
   (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
   ;; go 缩进。
   (add-to-list 'lsp-bridge-formatting-indent-alist '(go-mode . c-basic-offset))
+  (add-to-list 'lsp-bridge-formatting-indent-alist '(go-ts-mode . c-basic-offset))
   ;; go 注释字符后不提示补全。
   (add-to-list 'lsp-bridge-completion-hide-characters "/")
   (add-to-list 'lsp-bridge-completion-hide-characters "，")
@@ -1577,74 +1547,46 @@ mermaid.initialize({
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t))
 
-(use-package tree-sitter
-  :config
-  (global-tree-sitter-mode)
-  ;; 由于会导致高亮异常，故关闭。
-  ;; 对于支持的语言（tree-sitter-major-mode-language-alist）使用
-  ;; tree-sitter 提供的高亮来取代内置的、基于 font-lock 正则的低效高亮模式。  
-  ;; (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-  )
+;; Tree-sitter support
+;; https://github.com/seagle0128/.emacs.d/blob/master/lisp/init-prog.el
+;; @see https://github.com/casouri/tree-sitter-module
+;;      https://git.savannah.gnu.org/cgit/emacs.git/tree/admin/notes/tree-sitter/starter-guide?h=feature/tree-sitter
+(use-package treesit
+  :straight (:type built-in)
+  :init
+  (setq major-mode-remap-alist
+        '((c-mode          . c-ts-mode)
+          (c++-mode        . c++-ts-mode)
+          (cmake-mode      . cmake-ts-mode)
+          (conf-toml-mode  . toml-ts-mode)
+          (csharp-mode     . csharp-ts-mode)
+          (css-mode        . css-ts-mode)
+          (dockerfile-mode . dockerfile-ts-mode)
+          (go-mode         . go-ts-mode)
+          (java-mode       . java-ts-mode)
+          (json-mode       . json-ts-mode)
+          (js-json-mode    . json-ts-mode)
+          (js-mode         . js-ts-mode)
+          (python-mode     . python-ts-mode)
+          (rust-mode       . rust-ts-mode)
+          (sh-mode         . bash-ts-mode)
+          (typescript-mode . typescript-ts-mode))))
 
-(use-package tree-sitter-langs :after (tree-sitter))
+;; (use-package tree-sitter-module
+;;   :straight (tree-sitter-module
+;;              :type git :host github
+;;              :repo "casouri/tree-sitter-module"
+;;              :pre-build (("./batch.sh"))
+;;              :files ("dist/*.so" "dist/*.dll" "dist/*.dylib"))
+;;   :init
+;;   ;; Search for tree-sitter modules in this packages build directory.
+;;   (with-eval-after-load 'treesit
+;;     (add-to-list 'treesit-extra-load-path
+;;                  (straight--build-dir "tree-sitter-module"))))
 
-(use-package grammatical-edit
-  :straight (:host github :repo "manateelazycat/grammatical-edit")
-  :after (tree-sitter)
-  :config
-  (dolist (hook (list
-                 'c-mode-common-hook
-                 'c-mode-hook
-                 'c++-mode-hook
-                 'java-mode-hook
-                 'emacs-lisp-mode-hook
-                 'lisp-interaction-mode-hook
-                 'lisp-mode-hook
-                 'sh-mode-hook
-                 'makefile-gmake-mode-hook
-                 'python-mode-hook
-                 'js-mode-hook
-                 'go-mode-hook
-                 'css-mode-hook
-                 'rust-mode-hook
-                 'minibuffer-inactive-mode-hook
-                 'typescript-mode-hook
-                 ))
-    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
-
-;;; grammatical-edit
-;; 符号插入
-(define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
-(define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
-(define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
-(define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
-(define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
-(define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
-;; (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
-;; (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
-;; (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
-;; (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
-;; (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
-;; (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
-;; ;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
-;; ;; 删除
-;; (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
-;; (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
-;; (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
-;; ;; 包围
-;; (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
-;; (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
-;; (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
-;; (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
-;; (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
-;; (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
-;; ;; 移动
-;; (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
-;; (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
-;; ;; 跳出括号并换行
-;; ;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
-;; ;; 向父节点跳动
-;; (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
+(with-eval-after-load 'treesit
+  (add-to-list 'treesit-extra-load-path
+               (straight--build-dir "tree-sitter-module")))
 
 (use-package ts-fold
   :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")
@@ -1660,8 +1602,7 @@ mermaid.initialize({
   :config
   (global-hl-todo-mode)
   (defun my-ef-themes-hl-todo-faces ()
-    "Configure `hl-todo-keyword-faces' with Ef themes colors. The
-exact color values are taken from the active Ef theme."
+    "Configure `hl-todo-keyword-faces' with Ef themes colors. The exact color values are taken from the active Ef theme."
     (ef-themes-with-colors
       (setq hl-todo-keyword-faces
             `(("HOLD" . ,yellow)
@@ -1685,41 +1626,31 @@ exact color values are taken from the active Ef theme."
               ("DEPRECATED" . ,yellow)))))
   (add-hook 'ef-themes-post-load-hook #'my-ef-themes-hl-todo-faces))
 
-(use-package sdcv
-  :straight (:host github :repo "manateelazycat/sdcv")
-  :ensure-system-package (sdcv . "brew install sdcv")
-  :config
-  (setq sdcv-tooltip-timeout 0)
-  ;;say word after translation
-  (setq sdcv-say-word-p nil)               
-  (setq sdcv-dictionary-data-dir "/Users/zhangjun/.emacs.d/sync/stardict/dic") 
-  ;;setup dictionary list for simple search  
-  (setq sdcv-dictionary-simple-list    
-        '("朗道英汉字典5.0"
-          "朗道汉英字典5.0"
-          "KDic11万英汉词典"))
-
-  ;;setup dictionary list for complete search
-  (setq sdcv-dictionary-complete-list     
-        '("朗道汉英字典5.0"
-          "朗道英汉字典5.0"
-          "KDic11万英汉词典"
-          "牛津高阶英汉双解")))
+(use-package citre
+  :defer t
+  :straight (:host github :repo "universal-ctags/citre")
+  :init
+  ;; 当项目目录有 TAGS 文件时，自动开启 citre-mode.
+  (require 'citre-config)
+  (global-set-key (kbd "s-j") 'citre-jump)
+  (global-set-key (kbd "s-J") 'citre-jump-back)
+  (global-set-key (kbd "C-x c p") 'citre-peek) ;; or citre-ace-peek
+  (global-set-key (kbd "C-x c u") 'citre-update-this-tags-file))
 
 (use-package google-translate
   :straight (:host github :repo "atykhonov/google-translate")
   :config
   (setq max-mini-window-height 0.2)
   ;;(setq google-translate-output-destination 'popup)
-  (setq google-translate-output-destination 'kill-ring)
+  ;;(setq google-translate-output-destination 'kill-ring)
   (setq google-translate-translation-directions-alist
-      '(("en" . "zh-CN") ("zh-CN" . "en"))))
+        '(("en" . "zh-CN") ("zh-CN" . "en"))))
 
 (use-package project
   :custom
   (project-switch-commands
    '(
-     (consult-buffer "buffer" ?b)
+     (consult-project-buffer "buffer" ?b)
      (project-dired "dired" ?d)
      (magit-project-status "magit status" ?g)
      (project-find-file "find file" ?p)
@@ -1729,7 +1660,8 @@ exact color values are taken from the active Ef theme."
   (project-vc-merge-submodules nil)
   :config
   ;; project-find-file 忽略的目录或文件列表。
-  (add-to-list 'vc-directory-exclusion-list "vendor"))
+  (add-to-list 'vc-directory-exclusion-list "vendor")
+  (add-to-list 'vc-directory-exclusion-list "node_modules"))
 
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
@@ -1770,7 +1702,7 @@ exact color values are taken from the active Ef theme."
 
 (defun my/project-discover ()
   (interactive)
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*"))
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
       (when (file-directory-p file)
           (message "dir %s" file)
@@ -1785,98 +1717,89 @@ exact color values are taken from the active Ef theme."
     (funcall fn pr no-write)))
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
 
-(use-package treemacs
-  :straight (:files ("src/*/*" "icons"))
-  :init
-  (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-  :config
-  (setq
-   treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
-   treemacs-deferred-git-apply-delay      0.3
-   treemacs-display-in-side-window        t
-   treemacs-eldoc-display                 'simple
-   treemacs-file-event-delay              300
-   treemacs-file-follow-delay             0.1
-   treemacs-follow-after-init             t
-   treemacs-expand-after-init             t
-   treemacs-git-command-pipe              ""
-   treemacs-goto-tag-strategy             'refetch-index
-   treemacs-indentation                   1
-   treemacs-indentation-string            " "
-   treemacs-is-never-other-window         t
-   treemacs-max-git-entries               500
-   treemacs-missing-project-action        'ask
-   treemacs-no-png-images                 nil
-   treemacs-no-delete-other-windows       t
-   treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-   treemacs-position                      'left
-   treemacs-read-string-input             'from-minibuffer
-   treemacs-recenter-distance             0.01 ;; 缺省 0.1 
-   treemacs-recenter-after-file-follow    'on-distance
-   treemacs-recenter-after-tag-follow     'on-distance
-   treemacs-recenter-after-project-jump   'always
-   treemacs-recenter-after-project-expand 'on-distance
-   treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
-   treemacs-shownn-cursor                 t
-   treemacs-show-hidden-files             t
-   treemacs-silent-filewatch              nil
-   treemacs-silent-refresh                nil
-   treemacs-sorting                       'alphabetic-asc
-   treemacs-select-when-already-in-treemacs 'stay
-   treemacs-space-between-root-nodes      nil
-   treemacs-tag-follow-cleanup            t
-   treemacs-tag-follow-delay              0.5
-   treemacs-width                         35
-   treemacs-width-increment               5
-   treemacs-width-is-initially-locked     nil
-   treemacs-project-follow-cleanup        t
-   treemacs-git-commit-diff-mode          t
-   imenu-auto-rescan                      t)
-  (treemacs-resize-icons 11)
-  ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
-  (treemacs-follow-mode t)
-  ;;(treemacs-tag-follow-mode t)
-  ;;(treemacs-project-follow-mode t)
-  (treemacs-filewatch-mode t)
-  (treemacs-fringe-indicator-mode 'always)
-  (treemacs-indent-guide-mode t)
-  (treemacs-git-mode 'deferred)
-  (treemacs-hide-gitignored-files-mode t)
-  ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
-  (add-hook 'buffer-list-update-hook
-            (lambda ()
-              (when (file-remote-p default-directory)
-                (require 'treemacs)
-                (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-                    (delete-window (treemacs-get-local-window))))))
-  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
-  (add-hook 'ediff-before-setup-hook
-            (lambda ()
-              (require 'treemacs)
-              (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-                  (delete-window (treemacs-get-local-window)) ) ))
-  :bind
-  (:map global-map
-        ("M-0"       . treemacs-select-window)
-        ("C-x t 1"   . treemacs-delete-other-windows)
-        ("C-x t t"   . treemacs)
-        ("C-x t B"   . treemacs-bookmark)
-        ("C-x t C-t" . treemacs-find-file)
-        ("C-x t M-t" . treemacs-find-tag)))
+  (use-package treemacs
+    ;; 需要如下配置 files, treemacs 才能找到相关 py 脚本，否则报错。
+    :straight (:files ("src/elisp/*" "src/extra/*" "src/scripts/*" "icons"))
+    :init
+    (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+    :config
+    (setq
+     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
+     treemacs-deferred-git-apply-delay      0.5
+     treemacs-display-in-side-window        t
+     treemacs-eldoc-display                 'simple
+     treemacs-file-event-delay              2000
+     treemacs-file-follow-delay             0.1
+     treemacs-follow-after-init             t
+     treemacs-expand-after-init             t
+     treemacs-git-command-pipe              ""
+     treemacs-goto-tag-strategy             'refetch-index
+     treemacs-indentation                   1
+     treemacs-indentation-string            " "
+     treemacs-is-never-other-window         t
+     treemacs-max-git-entries               100
+     treemacs-missing-project-action        'ask
+     treemacs-no-png-images                 nil
+     treemacs-no-delete-other-windows       t
+     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+     treemacs-position                      'left
+     treemacs-read-string-input             'from-minibuffer
+     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
+     treemacs-recenter-after-file-follow    'on-distance
+     treemacs-recenter-after-tag-follow     'on-distance
+     treemacs-recenter-after-project-jump   'always
+     treemacs-recenter-after-project-expand 'on-distance
+     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
+     treemacs-shownn-cursor                 t
+     treemacs-show-hidden-files             t
+     treemacs-silent-filewatch              nil
+     treemacs-silent-refresh                nil
+     treemacs-sorting                       'alphabetic-asc
+     treemacs-select-when-already-in-treemacs 'stay
+     treemacs-space-between-root-nodes      nil
+     treemacs-tag-follow-cleanup            t
+     treemacs-tag-follow-delay              0.5
+     treemacs-width                         35
+     treemacs-width-increment               5
+     treemacs-width-is-initially-locked     nil
+     treemacs-project-follow-cleanup        t
+     treemacs-git-commit-diff-mode          t
+     imenu-auto-rescan                      t)
+    (treemacs-resize-icons 11)
+    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
+    (treemacs-follow-mode t)
+    ;;(treemacs-tag-follow-mode t)
+    ;;(treemacs-project-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-indent-guide-mode t)
+    (treemacs-git-mode 'deferred)
+    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
+    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+    (add-hook 'buffer-list-update-hook
+	      (lambda ()
+		(when (file-remote-p default-directory)
+		  (require 'treemacs)
+		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		      (delete-window (treemacs-get-local-window))))))
+    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+    (add-hook 'ediff-before-setup-hook
+	      (lambda ()
+		(require 'treemacs)
+		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		    (delete-window (treemacs-get-local-window)) ) ))
+    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
+    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
+    ;;(require 'treemacs-magit)
+    ;;(require 'treemacs-tar-bar)
+    ;;(treemacs-set-scope-type 'Tabs)
+    :bind
+    (:map global-map
+	      ("M-0" . treemacs-select-window)))
 
-(use-package treemacs-magit
-  :after (treemacs magit)
-  :ensure t)
-
-(use-package treemacs-tab-bar
-  :disabled
-  :after (treemacs)
-  :ensure t
-  :config (treemacs-set-scope-type 'Tabs))
-
-(use-package deadgrep
-  :ensure-system-package (rg . ripgrep)
-  :bind ("<f5>" . deadgrep))
+  (use-package deadgrep
+    :ensure-system-package (rg . ripgrep)
+    :bind ("<f5>" . deadgrep))
 
 (require 'grep)
 (dolist (dir '(".cache" "vendor" "node_modules"))
@@ -2010,8 +1933,16 @@ exact color values are taken from the active Ef theme."
 
 (use-package vterm-extra
   :straight (:host github :repo "Sbozzolo/vterm-extra")
-  :config
-  (advice-add #'vterm-extra-edit-done :after #'winner-undo))
+  ;;:config
+  ;;(advice-add #'vterm-extra-edit-done :after #'winner-undo)
+  )
+
+;; 在 $HOME 目录打开一个本地 vterm buffer.
+(defun my/vterm()
+  "my vterm buff."
+  (interactive)
+  (let ((default-directory "~/"))
+    (vterm)))
 
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-file-name "/bin/bash")
@@ -2192,8 +2123,10 @@ exact color values are taken from the active Ef theme."
   (setq recentf-max-menu-items 100)
   (setq recentf-max-saved-items 200) ;; default 20
   ;; recentf-exclude 的参数是正则表达式列表，不支持 ~ 引用家目录。
-  (setq recentf-exclude `(,(expand-file-name "\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\)/.*" user-emacs-directory)
-                          ,(expand-file-name "\\(recentf\\|bookmarks\\)" user-emacs-directory)
+  ;; emacs-dashboard 不显示这里排除的文件。
+  
+  (setq recentf-exclude `(,(recentf-expand-file-name "~\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
+                          ,(recentf-expand-file-name "~\\(recentf\\|bookmarks\\|archived.org\\)")
                           ,tramp-file-name-regexp ;; 不在 recentf 中记录 tramp 文件，防止 tramp 扫描时卡住。
                           "^/tmp" "\\.bak\\'" "\\.gpg\\'" "\\.gz\\'" "\\.tgz\\'" "\\.xz\\'" "\\.zip\\'" "^/ssh:" "\\.png\\'" "\\.jpg\\'" "/\\.git/"
                           "\\.gitignore\\'" "\\.log\\'" "COMMIT_EDITMSG" "\\.pyi\\'" "\\.pyc\\'"
@@ -2542,17 +2475,11 @@ exact color values are taken from the active Ef theme."
 (global-set-key (kbd "C-c d .") #'dash-at-point)
 (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
 
-;;; expand-region
-(global-set-key (kbd "C-=") #'er/expand-region)
-
-;;; sdcv
-(global-set-key (kbd "C-c d P") #'sdcv-search-pointer)  ;; 光标处的单词, buffer 显示。
-(global-set-key (kbd "C-c d p") #'sdcv-search-pointer+) ;; 光标处的单词, tooltip 显示。
-(global-set-key (kbd "C-c d I") #'sdcv-search-input)    ;; 输入的单词, buffer 显示。
-(global-set-key (kbd "C-c d i") #'sdcv-search-input+)
-
 ;;; google-translate
 (global-set-key (kbd "C-c d t") #'google-translate-smooth-translate)
+
+;;; expand-region
+(global-set-key (kbd "C-=") #'er/expand-region)
 
 ;;; go
 (define-key go-mode-map (kbd "C-c t a") #'go-tag-add)
@@ -2584,12 +2511,16 @@ exact color values are taken from the active Ef theme."
 ;; (define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
 (define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
 (define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
-(define-key lsp-bridge-mode-map (kbd "s-C-l") #'lsp-bridge-diagnostics-list)
-(define-key lsp-bridge-mode-map (kbd "s-C-n") #'lsp-bridge-diagnostic-jump-next)
-(define-key lsp-bridge-mode-map (kbd "s-C-p") #'lsp-bridge-diagnostic-jump-prev)
+(define-key lsp-bridge-mode-map (kbd "C-s-l") #'lsp-bridge-diagnostic-list)
+(define-key lsp-bridge-mode-map (kbd "C-s-n") #'lsp-bridge-diagnostic-jump-next)
+(define-key lsp-bridge-mode-map (kbd "C-s-p") #'lsp-bridge-diagnostic-jump-prev)
+
+;; tab-bar
+(global-set-key (kbd "C-s-j") 'tab-bar-history-back)
+(global-set-key (kbd "C-s-k") 'tab-bar-history-forward)
 
 ;;; vterm
-(global-set-key (kbd "s-c") 'vterm-copy-mode)
+;;(global-set-key (kbd "s-c") 'vterm-copy-mode)
 ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
 (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
 (define-key vterm-mode-map (kbd "C-l") nil)
@@ -2615,6 +2546,11 @@ exact color values are taken from the active Ef theme."
 (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer)
 
 (global-set-key (kbd "C-c C-<tab>") 'ts-fold-toggle)
+
+(global-set-key (kbd "C-M-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "C-M-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "C-M-<down>") 'shrink-window)
+(global-set-key (kbd "C-M-<up>") 'enlarge-windo)
 
 (use-package elfeed
   :demand

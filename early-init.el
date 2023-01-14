@@ -1,13 +1,17 @@
-;; Emacs 28
 (when (fboundp 'native-compile-async)
   (setenv "LIBRARY_PATH"
           (concat (getenv "LIBRARY_PATH")
                   "/usr/local/opt/gcc/lib/gcc/12:/usr/local/opt/gcc/lib/gcc/12/gcc/x86_64-apple-darwin21/12"))
   (setq native-comp-speed 2)
   (setq native-comp-async-jobs-number 4)
+  ;; Emacs 28;
   (setq native-comp-deferred-compilation nil)
+  ;; Emacs 29;
+  (setq inhibit-automatic-native-compilation t)
   (setq native-comp-deferred-compilation-deny-list '())
   (setq native-comp-async-report-warnings-errors 'silent))
+
+(require 'cl-lib)
 
 ;; 加载较新的 .el 文件。
 (setq-default load-prefer-newer t)
@@ -19,6 +23,10 @@
 
 ;; 关闭 package.el(后续使用 straight.el) 。
 (setq package-enable-at-startup nil)
+
+;; `use-package' is builtin since 29.
+;; It must be set before loading `use-package'.
+(setq use-package-enable-imenu-support t)
 
 ;; 启动时开启 debug, 启动后关闭。
 (setq debug-on-error t)

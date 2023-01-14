@@ -3813,5 +3813,221 @@ doom-themes:
   (global-set-key (kbd "s-j") 'awesome-tab-ace-jump))
 #+end_src
 
+* tabline
+
+#+begin_src emacs-lisp
+(setq tab-line-new-button-show nil)  ;; do not show add-new button
+(setq tab-line-close-button-show nil)  ;; do not show close button
+(setq tab-line-separator "|")  ;; set it to empty
+
+;; 切换 major-mode 时获得 bufer 对应的 project 名称。
+(defvar buffer-project-name "~")
+(make-local-variable 'buffer-project-name)
+(defun my/update-buf-proj-name()
+  (if (project-current)
+      (setq-local buffer-project-name (file-name-nondirectory
+                                       (directory-file-name
+                                        (file-name-directory (project-root (project-current))))))
+    (setq-local buffer-project-name "other")))
+(add-hook 'after-change-major-mode-hook 'my/update-buf-proj-name)
+
+(defun my/tab-line-buffer-group (buffer)
+  (interactive)
+  (with-current-buffer buffer
+    (cond
+     ((s-match "scratch"  (buffer-name)) "Scratch")
+     ((string= major-mode "eshell-mode") "Eshell")
+     ((string= major-mode "dired-mode") "Dir")
+     ((string= major-mode "vterm-mode") "vTerm")
+     ((s-match "Customize"  (buffer-name)) "Customize")
+     ((s-match "magit:"  (buffer-name)) "Magit")
+     ((s-match "magit "  (buffer-name)) "Magit others")
+     ((s-match "magit-"  (buffer-name)) "Magit others")
+     ((string= (s-left 1 (buffer-name)) "*") "Utils")
+     ((string= (s-left 2 (buffer-name)) " *") "Utils")
+     ;; 按照 project 分组。
+     ((boundp 'buffer-project-name) buffer-project-name)
+     (major-mode (format-mode-line mode-name))
+     (t "other"))))
+(setq tab-line-tabs-buffer-group-function #'my/tab-line-buffer-group)
+(setq tab-line-tabs-function #'tab-line-tabs-buffer-groups)
+(global-tab-line-mode t)
+(global-set-key (kbd "s-<tab>") 'tab-line-switch-to-next-tab)
+(global-set-key (kbd "s-S-<tab>") 'tab-line-switch-to-prev-tab)
+;; 不显示 tab-line 的 major-mode。
+(add-to-list 'tab-line-exclude-modes 'vterm-mode)
+(add-to-list 'tab-line-exclude-modes 'magit-mode)
+(add-to-list 'tab-line-exclude-modes 'magit-diff-mode)
+(add-to-list 'tab-line-exclude-modes 'magit-log-mode)
+(add-to-list 'tab-line-exclude-modes 'dashboard-mode)
+(add-to-list 'tab-line-exclude-modes 'ediff-mode)
+#+end_src
+
+* doom-theme
+
+#+begin_src emacs-lisp
+(use-package doom-themes
+  :disabled
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  :config
+  (doom-themes-visual-bell-config)
+  ;;(load-theme 'doom-palenight t)
+  (doom-themes-org-config)
+  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch nil)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+#+end_src
+
+* grammatical-edit
+
+grammatical-edit 基于 tree-sitter 提供结构化编程能力。
+#+begin_src emacs-lisp
+(use-package grammatical-edit
+  :straight (:host github :repo "manateelazycat/grammatical-edit")
+  :after (treesit)
+  :disabled
+  :config
+  (dolist (hook (list
+                 'c-mode-common-hook
+                 'c-mode-hook
+                 'c++-mode-hook
+                 'java-mode-hook
+                 'emacs-lisp-mode-hook
+                 'lisp-interaction-mode-hook
+                 'lisp-mode-hook
+                 'sh-mode-hook
+                 'makefile-gmake-mode-hook
+                 'python-mode-hook
+                 'js-mode-hook
+                 'go-mode-hook
+                 'css-mode-hook
+                 'rust-mode-hook
+                 'minibuffer-inactive-mode-hook
+                 'typescript-mode-hook
+                 ))
+    (add-hook hook '(lambda () (grammatical-edit-mode 1)))))
+
+;;; grammatical-edit
+;; 符号插入
+;; (define-key grammatical-edit-mode-map (kbd "(") 'grammatical-edit-open-round)  ;;智能 (
+;; (define-key grammatical-edit-mode-map (kbd "[") 'grammatical-edit-open-bracket) ;;智能 [
+;; (define-key grammatical-edit-mode-map (kbd "{") 'grammatical-edit-open-curly) ;;智能 {
+;; (define-key grammatical-edit-mode-map (kbd ")") 'grammatical-edit-close-round)  ;;智能 )
+;; (define-key grammatical-edit-mode-map (kbd "]") 'grammatical-edit-close-bracket) ;;智能 ]
+;; (define-key grammatical-edit-mode-map (kbd "}") 'grammatical-edit-close-curly) ;;智能 }
+;; (define-key grammatical-edit-mode-map (kbd "=") 'grammatical-edit-equal) ;;智能 =
+;; (define-key grammatical-edit-mode-map (kbd "%") 'grammatical-edit-match-paren) ;; 括号跳转
+;; (define-key grammatical-edit-mode-map (kbd "\"") 'grammatical-edit-double-quote) ;;智能 "
+;; (define-key grammatical-edit-mode-map (kbd "'") 'grammatical-edit-single-quote) ;;智能 '
+;; (define-key grammatical-edit-mode-map (kbd "SPC") 'grammatical-edit-space) ;;智能 space
+;; (define-key grammatical-edit-mode-map (kbd "C-j") 'grammatical-edit-newline) ;; 智能 newline
+;; ;;(define-key grammatical-edit-mode-map (kbd "RET") 'grammatical-edit-newline) ;; 智能 newline
+;; ;; 删除
+;; (define-key grammatical-edit-mode-map (kbd "M-S-d") 'grammatical-edit-backward-delete) ;;向后 kill
+;; (define-key grammatical-edit-mode-map (kbd "M-d") 'grammatical-edit-forward-delete) ;;向前 delete
+;; (define-key grammatical-edit-mode-map (kbd "C-k") 'grammatical-edit-kill) ;;向前 kill
+;; ;; 包围
+;; (define-key grammatical-edit-mode-map (kbd "M-\"") 'grammatical-edit-wrap-double-quote) ;; 用 " " 包围对象, 或跳出字符串
+;; (define-key grammatical-edit-mode-map (kbd "M-'") 'grammatical-edit-wrap-single-quote) ;;用 ' ' 包围对象, 或跳出字符串
+;; (define-key grammatical-edit-mode-map (kbd "M-[") 'grammatical-edit-wrap-bracket) ;; 用 [ ] 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-{") 'grammatical-edit-wrap-curly) ;; 用 { } 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-(") 'grammatical-edit-wrap-round) ;; 用 ( ) 包围对象
+;; (define-key grammatical-edit-mode-map (kbd "M-)") 'grammatical-edit-unwrap) ;; 去掉包围对象
+;; ;; 移动
+;; (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-right) ;; 左侧
+;; (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-left) ;; 右侧
+;; ;; 跳出括号并换行
+;; ;;(define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
+;; ;; 向父节点跳动
+;; (define-key grammatical-edit-mode-map (kbd "M-u") 'grammatical-edit-jump-up)
+#+end_src
++ 不能与 smartparens 连用。
+
+* dict
+
+macos 安装 stardict:
+#+begin_src shell :tangle no
+# 安装 sdcv 命令行版本
+brew install sdcv
+
+# 下载词典文件
+#牛津高阶英汉双解: 
+wget http://download.huzheng.org/zh_CN/stardict-oald-cn-2.4.2.tar.bz2
+#朗道英汉字典: 
+wget http://download.huzheng.org/zh_CN/stardict-langdao-ec-gb-2.4.2.tar.bz2
+#朗道汉英字典: 
+wget http://download.huzheng.org/zh_CN/stardict-langdao-ce-gb-2.4.2.tar.bz2
+#KDic11万英汉词典 - 计算机
+wget http://download.huzheng.org/zh_CN/stardict-kdic-ec-11w-2.4.2.tar.bz2
+
+# 解压词典
+mkdir ~/.emacs.d/stardict/dic
+tar -xzvf stardict-oald-cn-2.4.2.tar.bz2 -C  ~/.emacs.d/sync/stardict/dic
+tar -xzvf stardict-langdao-ec-gb-2.4.2.tar.bz2 -C ~/.emacs.d/sync/stardict/dic
+tar -xzvf stardict-langdao-ce-gb-2.4.2.tar.bz2 -C ~/.emacs.d/sync/stardict/dict
+tar -xzvf ~/Downloads/stardict-kdic-ec-11w-2.4.2.tar.bz2 -C ~/.emacs.d/sync/stardict/dic/
+
+# 测试
+$ sdcv -2 ~/.emacs.d/sync/stardict/dic/ -l
+Dictionary's name   Word count
+牛津高阶英汉双解    39433
+朗道汉英字典5.0    405719
+朗道英汉字典5.0    435468
+#+end_src
+
+本地翻译：
+#+begin_src emacs-lisp
+(use-package sdcv
+  :straight (:host github :repo "manateelazycat/sdcv")
+  :ensure-system-package (sdcv . "brew install sdcv")
+  :config
+  (setq sdcv-tooltip-timeout 0)
+  ;;say word after translation
+  (setq sdcv-say-word-p nil)               
+  (setq sdcv-dictionary-data-dir "/Users/zhangjun/.emacs.d/sync/stardict/dic") 
+  ;;setup dictionary list for simple search  
+  (setq sdcv-dictionary-simple-list    
+        '("朗道英汉字典5.0"
+          "朗道汉英字典5.0"
+          "KDic11万英汉词典"))
+
+  ;;setup dictionary list for complete search
+  (setq sdcv-dictionary-complete-list     
+        '("朗道汉英字典5.0"
+          "朗道英汉字典5.0"
+          "KDic11万英汉词典"
+          "牛津高阶英汉双解")))
+
+;;; sdcv
+(global-set-key (kbd "C-c d P") #'sdcv-search-pointer)  ;; 光标处的单词, buffer 显示。
+(global-set-key (kbd "C-c d p") #'sdcv-search-pointer+) ;; 光标处的单词, tooltip 显示。
+(global-set-key (kbd "C-c d I") #'sdcv-search-input)    ;; 输入的单词, buffer 显示。
+(global-set-key (kbd "C-c d i") #'sdcv-search-input+)
+#+end_src
+
+* emacs-eat
+
+#+begin_src emacs-lisp
+(use-package eat
+  :straight (eat :type git
+                 :repo "https://codeberg.org/akib/emacs-eat.git"
+                 :files ("*.el" ("term" "term/*.el") "*.texi"
+                         "*.ti" ("terminfo/e" "terminfo/e/*")
+                         ("terminfo/65" "terminfo/65/*")
+                         ("integration" "integration/*")
+                         (:exclude ".dir-locals.el" "*-tests.el")))
+  :config
+  (setq eat-term-terminfo-directory "/Users/zhangjun/.emacs.d/straight/build/eat/terminfo/e")
+  )
+#+end_src
+
 
 
