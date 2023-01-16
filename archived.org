@@ -4029,5 +4029,356 @@ Dictionary's name   Word count
   )
 #+end_src
 
+* ace-window
+#+begin_src emacs-lisp
+(use-package ace-window
+  :init
+  ;; 使用字母而非数字标记窗口，便于跳转。
+  (setq aw-keys '(?a ?w ?e ?g ?i ?j ?k ?l ?p))
+  ;; 根据自己的使用习惯来调整快捷键，这里使用大写字母避免与 aw-keys 冲突。
+  (setq aw-dispatch-alist
+        '((?0 aw-delete-window "Delete Window")
+          (?1 delete-other-windows "Delete Other Windows")
+          (?2 aw-split-window-vert "Split Vert Window")
+          (?3 aw-split-window-horz "Split Horz Window")
+          (?F aw-split-window-fair "Split Fair Window")
+          (?S aw-swap-window "Swap Windows")
+          (?M aw-move-window "Move Window")
+          (?C aw-copy-window "Copy Window")
+          ;; 为指定 window 选择新的 Buffer 并切换过去。
+          (?B aw-switch-buffer-in-window "Select Buffer")
+          ;; 为指定 window 选择新的 Buffer，切换到其它 buffer。
+          (?O aw-switch-buffer-other-window "Switch Buffer Other Window")
+          (?N aw-flip-window)
+          (?? aw-show-dispatch-help)))
+  :config
+  (setq aw-scope 'frame)
+  ;; 总是提示窗口选择，进而执行 ace 命令。
+  ;;(setq aw-dispatch-always t)
+  )
+
+;; https://github.com/manateelazycat/toggle-one-window/blob/main/toggle-one-window.el
+(defvar toggle-one-window-window-configuration nil
+  "The window configuration use for `toggle-one-window'.")
+
+(defun my/toggle-one-window ()
+  "Toggle between window layout and one window."
+  (interactive)
+  (if (equal (length (cl-remove-if #'window-dedicated-p (window-list))) 1)
+      (if toggle-one-window-window-configuration
+          (progn
+            (set-window-configuration toggle-one-window-window-configuration)
+            (setq toggle-one-window-window-configuration nil))
+        (message "No other windows exist."))
+    (setq toggle-one-window-window-configuration (current-window-configuration))
+    (delete-other-windows)))
+
+
+;;; ace-window
+(global-set-key (kbd "M-o") #'ace-window)
+
+(global-set-key (kbd "s-<f11>") #'my/toggle-one-window)
+#+end_src
+
+* hl-todo
+
+#+begin_src emacs-lisp
+(use-package hl-todo
+  :straight (hl-todo :host github :repo "tarsius/hl-todo")
+  :after (ef-themes) 
+  :config
+  (global-hl-todo-mode)
+  (defun my-ef-themes-hl-todo-faces ()
+    "Configure `hl-todo-keyword-faces' with Ef themes colors. The exact color values are taken from the active Ef theme."
+    (ef-themes-with-colors
+      (setq hl-todo-keyword-faces
+            `(("HOLD" . ,yellow)
+              ("TODO" . ,red)
+              ("NEXT" . ,blue)
+              ("THEM" . ,magenta)
+              ("PROG" . ,cyan-warmer)
+              ("OKAY" . ,green-warmer)
+              ("DONT" . ,yellow-warmer)
+              ("FAIL" . ,red-warmer)
+              ("BUG" . ,red-warmer)
+              ("DONE" . ,green)
+              ("NOTE" . ,blue-warmer)
+              ("KLUDGE" . ,cyan)
+              ("HACK" . ,cyan)
+              ("TEMP" . ,red)
+              ("FIXME" . ,red-warmer)
+              ("FIXME!!!" . ,red-warmer)
+              ("XXX+" . ,red-warmer)
+              ("REVIEW" . ,red)
+              ("DEPRECATED" . ,yellow)))))
+  (add-hook 'ef-themes-post-load-hook #'my-ef-themes-hl-todo-faces))
+#+end_src
+
+* vterm
+#+begin_src emacs-lisp
+  ;; 使用 consult 预览显示 vterm buffer 候选列表;
+  (setq my/consult--source-vterm-buffer
+        `(
+          :name "VTerm"
+          :narrow ?t
+          :category buffer
+          :face consult-buffer
+          :state ,#'consult--buffer-state
+          :annotate ,(lambda (cand)
+                       (let ((buf (get-buffer cand)))
+                         (buffer-local-value 'default-directory buf)))
+          :items ,(lambda () (consult--buffer-query :sort 'visibility
+                                               :as #'buffer-name
+                                               :include (list (rx bos "*vterm"))))))
+  (defun my/consult-buffer-vterm-only ()
+    (interactive)
+    (let ((consult-buffer-sources '(my/consult--source-vterm-buffer)))
+      (consult-buffer)))
+  )
+(global-set-key (kbd "C-c t") #'my/consult-buffer-vterm-only)
+
+#+end_src
+
+* window
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-M-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "C-M-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "C-M-<down>") 'shrink-window)
+(global-set-key (kbd "C-M-<up>") 'enlarge-windo)
+#+end_src
+
+* treemacs
+
+#+begin_src emacs-lisp
+  (use-package treemacs
+    ;; 需要如下配置 files, treemacs 才能找到相关 py 脚本，否则报错。
+    :straight (:files ("src/elisp/*" "src/extra/*" "src/scripts/*" "icons"))
+    :init
+    (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+    :config
+    (setq
+     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
+     treemacs-deferred-git-apply-delay      0.5
+     treemacs-display-in-side-window        t
+     treemacs-eldoc-display                 'simple
+     treemacs-file-event-delay              2000
+     treemacs-file-follow-delay             0.1
+     treemacs-follow-after-init             t
+     treemacs-expand-after-init             t
+     treemacs-git-command-pipe              ""
+     treemacs-goto-tag-strategy             'refetch-index
+     treemacs-indentation                   1
+     treemacs-indentation-string            " "
+     treemacs-is-never-other-window         t
+     treemacs-max-git-entries               100
+     treemacs-missing-project-action        'ask
+     treemacs-no-png-images                 nil
+     treemacs-no-delete-other-windows       t
+     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+     treemacs-position                      'left
+     treemacs-read-string-input             'from-minibuffer
+     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
+     treemacs-recenter-after-file-follow    'on-distance
+     treemacs-recenter-after-tag-follow     'on-distance
+     treemacs-recenter-after-project-jump   'always
+     treemacs-recenter-after-project-expand 'on-distance
+     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
+     treemacs-shownn-cursor                 t
+     treemacs-show-hidden-files             t
+     treemacs-silent-filewatch              nil
+     treemacs-silent-refresh                nil
+     treemacs-sorting                       'alphabetic-asc
+     treemacs-select-when-already-in-treemacs 'stay
+     treemacs-space-between-root-nodes      nil
+     treemacs-tag-follow-cleanup            t
+     treemacs-tag-follow-delay              0.5
+     treemacs-width                         35
+     treemacs-width-increment               5
+     treemacs-width-is-initially-locked     nil
+     treemacs-project-follow-cleanup        t
+     treemacs-git-commit-diff-mode          t
+     imenu-auto-rescan                      t)
+    (treemacs-resize-icons 11)
+    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
+    (treemacs-follow-mode t)
+    ;;(treemacs-tag-follow-mode t)
+    ;;(treemacs-project-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-indent-guide-mode t)
+    (treemacs-git-mode 'deferred)
+    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
+    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+    (add-hook 'buffer-list-update-hook
+	      (lambda ()
+		(when (file-remote-p default-directory)
+		  (require 'treemacs)
+		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		      (delete-window (treemacs-get-local-window))))))
+    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+    (add-hook 'ediff-before-setup-hook
+	      (lambda ()
+		(require 'treemacs)
+		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		    (delete-window (treemacs-get-local-window)) ) ))
+    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
+    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
+    ;;(require 'treemacs-magit)
+    ;;(require 'treemacs-tar-bar)
+    ;;(treemacs-set-scope-type 'Tabs)
+    :bind
+    (:map global-map
+	      ("M-0" . treemacs-select-window)))
+
+  (use-package deadgrep
+    :ensure-system-package (rg . ripgrep)
+    :bind ("<f5>" . deadgrep))
+#+end_src
++ 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
+  project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
+
+* elfeed
+
+#+begin_src emacs-lisp
+(use-package elfeed
+  :demand
+  :config
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  (setq elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-program-name "/usr/local/opt/curl/bin/curl")
+  (setq elfeed-curl-timeout 30)  
+  (setf url-queue-timeout 40)
+  (push "-k" elfeed-curl-extra-arguments)
+  (setq elfeed-search-filter "@1-months-ago +unread")
+  ;; 在同一个 buffer 中显示条目。
+  (setq elfeed-show-unique-buffers nil)
+  (setq elfeed-search-title-max-width 150)
+  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
+  (setq elfeed-log-level 'warn)
+
+  ;; 支持收藏 feed, 参考：http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+  (defalias 'elfeed-toggle-star (elfeed-expose #'elfeed-search-toggle-all 'star))
+  (eval-after-load 'elfeed-search '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
+  (defface elfeed-search-star-title-face '((t :foreground "#f77")) "Marks a starred Elfeed entry.")
+  (push '(star elfeed-search-star-title-face) elfeed-search-face-alist))
+
+(use-package elfeed-org
+  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+  :hook
+  ((elfeed-dashboard-mode . elfeed-org)
+   (elfeed-show-mode . elfeed-org))
+  :config
+  (progn
+    (defun my/reload-org-feeds ()
+      (interactive)
+      (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
+    (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
+
+(use-package elfeed-dashboard
+  :config
+  (global-set-key (kbd "C-c f") 'elfeed-dashboard)
+  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
+
+(use-package elfeed-score
+  :config
+  (progn
+    (elfeed-score-enable)
+    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+
+(use-package elfeed-goodies
+  :config
+  (setq elfeed-goodies/entry-pane-position 'bottom)
+  (setq elfeed-goodies/feed-source-column-width 30)
+  (setq elfeed-goodies/tag-column-width 30)
+  (setq elfeed-goodies/powerline-default-separator 'arrow)
+  (elfeed-goodies/setup))
+
+;; elfeed-goodies 显示日期栏
+;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
+(defun elfeed-goodies/search-header-draw ()
+  "Returns the string to be used as the Elfeed header."
+  (if (zerop (elfeed-db-last-update))
+      (elfeed-search--intro-header)
+    (let* ((separator-left (intern (format "powerline-%s-%s"
+                                           elfeed-goodies/powerline-default-separator
+                                           (car powerline-default-separator-dir))))
+           (separator-right (intern (format "powerline-%s-%s"
+                                            elfeed-goodies/powerline-default-separator
+                                            (cdr powerline-default-separator-dir))))
+           (db-time (seconds-to-time (elfeed-db-last-update)))
+           (stats (-elfeed/feed-stats))
+           (search-filter (cond
+                           (elfeed-search-filter-active
+                            "")
+                           (elfeed-search-filter
+                            elfeed-search-filter)
+                           (""))))
+      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
+        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
+
+(defun elfeed-goodies/entry-line-draw (entry)
+  "Print ENTRY to the buffer."
+  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (date (elfeed-search-format-date (elfeed-entry-date entry)))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+                         elfeed-goodies/tag-column-width 4))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               title-width)
+                        :left))
+         (tag-column (elfeed-format-column
+                      tags-str (elfeed-clamp (length tags-str)
+                                             elfeed-goodies/tag-column-width
+                                             elfeed-goodies/tag-column-width)
+                      :left))
+         (feed-column (elfeed-format-column
+                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width)
+                       :left)))
+
+    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+        (progn
+          (insert (propertize date 'face 'elfeed-search-date-face) " ")
+          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
+          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
+          (insert (propertize title 'face title-faces 'kbd-help title)))
+      (insert (propertize title 'face title-faces 'kbd-help title)))))
+#+end_src
+
+elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][语法参考]]):
+#+begin_src emacs-lisp :tangle ~/.emacs.d/elfeed.score
+;;; Elfeed score file                                     -*- lisp -*-
+(
+;; ("title"
+;;   (:text "opsnull" :value 250 :type S))
+;;  ("content"
+;;   (:text "type erasure" :value 500 :type s))
+ ("title-or-content"
+;;  (:text "emacs" :title-value 150 :content-value 100 :type s)
+  (:text "opsnull" :title-value 150 :content-value 100 :type w))
+ ("feed"
+  (:text "Irreal" :value 250 :type S :attr t)
+  (:text "emacs-news – sacha chua" :value 350 :type S :attr t :comment "Essential!"))
+;; ("authors"
+;;  (:text "opsnull" :value 500 :type s))
+;; ("tag"
+;;  (:tags (t . reddit-question)
+;;         :value 750
+;;         :comment "Add 750 points to any entry with a tag of reddit-question"))
+ (mark -2500))
+#+end_src
+
 
 

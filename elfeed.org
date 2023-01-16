@@ -43,45 +43,43 @@
 *** [[https://www.zhihu.com/rss][Zhihu]]
 *** [[https://lwn.net/headlines/rss][LWN]]
 ** emacs-project                                              :emacs:project:
-*** [[https://github.com/emacs-mirror/emacs/commits/emacs-28.atom][github-emacs-28]]
+*** [[https://github.com/emacs-mirror/emacs/commits/emacs-28.atom][github-emacs-28]] :ignore:
 *** [[https://github.com/manateelazycat/lsp-bridge][manateelazycat/lsp-bridge]]
 *** [[https://github.com/emacs-mirror/emacs/commits/master.atom][emacs-master]]
-*** [[https://github.com/minad/corfu/commits/main.atom][minad/corfu]]
+*** [[https://github.com/minad/corfu/commits/main.atom][minad/corfu]] :ignore:
 *** [[https://github.com/minad/consult/commits/main.atom][minad/consult]]
-*** [[https://github.com/minad/cape/commits/main.atom][minad/cape]]
+*** [[https://github.com/minad/cape/commits/main.atom][minad/cape]] :ignore:
 *** [[https://github.com/minad/vertico/commits/main.atom][minad/vertico]]
 *** [[https://github.com/oantolin/embark/commits/master.atom][oantolin/embark]]
 *** [[https://github.com/oantolin/orderless/commits/master.atom][oantolin/orderless]]
 *** [[https://github.com/d12frosted/homebrew-emacs-plus/commits/master.atom][homebrew-emacs-plus:master]]
 *** [[https://github.com/daviderestivo/homebrew-emacs-head/commits/master.atom][homebrew-emacs-head:master]]
 *** [[https://github.com/jimeh/build-emacs-for-macos/commits/master.atom][build-emacs-for-macos:master]]
-*** [[https://github.com/djcb/mu/commits/master.atom][mu:master]]
-*** [[https://github.com/emacs-lsp/lsp-mode/commits/master.atom][lsp-mode:master]]
-*** [[https://github.com/emacs-lsp/lsp-java/commits/master.atom][lsp-java:master]]
-*** [[https://github.com/emacs-lsp/lsp-pyright/commits/master.atom][lsp-pyright:master]]
-*** [[https://github.com/emacs-lsp/lsp-treemacs/commits/master.atom][lsp-treemacs:master]]
-*** [[https://github.com/company-mode/company-mode/commits/master.atom][company-mode:master]]
-*** [[https://github.com/bbatsov/projectile/commits/master.atom][projectile:master]]
+*** [[https://github.com/djcb/mu/commits/master.atom][mu:master]] :ignore:
+*** [[https://github.com/emacs-lsp/lsp-mode/commits/master.atom][lsp-mode:master]] :ignore:
+*** [[https://github.com/emacs-lsp/lsp-java/commits/master.atom][lsp-java:master]] :ignore:
+*** [[https://github.com/emacs-lsp/lsp-pyright/commits/master.atom][lsp-pyright:master]] :ignore:
+*** [[https://github.com/emacs-lsp/lsp-treemacs/commits/master.atom][lsp-treemacs:master]] :ignore:
+*** [[https://github.com/company-mode/company-mode/commits/master.atom][company-mode:master]] :ignore:
+*** [[https://github.com/bbatsov/projectile/commits/master.atom][projectile:master]] :ignore:
 *** [[https://github.com/Alexander-Miller/treemacs/commits/master.atom][treemacs:master]]
-*** [[https://github.com/misohena/el-easydraw/commits/master.atom][el-easydraw:master]]
+*** [[https://github.com/misohena/el-easydraw/commits/master.atom][el-easydraw:master]] :ignore:
 *** [[https://github.com/akermu/emacs-libvterm/commits/master.atom][emacs-libvterm:master]]
 *** [[https://github.com/jixiuf/vterm-toggle/commits/master.atom][vterm-toggle:master]]
-*** [[https://github.com/DogLooksGood/emacs-rime/commits/master.atom][emacs-rime:master]]
-*** [[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/commits/master.atom][fcitx5-pinyin-zhwiki:master]]
+*** [[https://github.com/DogLooksGood/emacs-rime/commits/master.atom][emacs-rime:master]] :ignore:
+*** [[https://github.com/felixonmars/fcitx5-pinyin-zhwiki/commits/master.atom][fcitx5-pinyin-zhwiki:master]] :ignore:
 *** [[https://github.com/laishulu/emacs-smart-input-source/commits/master.atom][emacs-smart-input-source:master]]
 
 *** [[https://github.com/hlissner/emacs-doom-themes/commits/master.atom][emacs-doom-themes:master]]
 *** [[https://github.com/seagle0128/doom-modeline/commits/master.atom][doom-modeline:master]]
 
 *** [[https://github.com/vedang/pdf-tools/commits/master.atom][pdf-tools:master]]
-
-*** [[https://github.com/gagbo/consult-lsp/commits/main.atom][consult-lsp:main]]
+*** [[https://github.com/gagbo/consult-lsp/commits/main.atom][consult-lsp:main]] :ignore:
 *** [[https://github.com/minad/marginalia/commits/main.atom][marginalia:main]]
 *** [[https://github.com/emacs-dashboard/emacs-dashboard/commits/master.atom][emacs-dashboard:master]]
 *** [[https://github.com/magit/magit/commits/master.atom][magit:master]]
-*** [[https://github.com/muffinmad/emacs-mini-frame/commits/master.atom][emacs-mini-frame:master]]
-
-*** [[https://github.com/tumashu/vertico-posframe/commits/main.atom][vertico-posframe:main]]
+*** [[https://github.com/muffinmad/emacs-mini-frame/commits/master.atom][emacs-mini-frame:master]] :ignore:
+*** [[https://github.com/tumashu/vertico-posframe/commits/main.atom][vertico-posframe:main]] :ignore:
 *** [[https://github.com/bastibe/org-journal/commits/master.atom][org-journal]]
 ** emacs-conf                                                    :emacs:conf:
 *** [[https://github.com/ksqsf/emacs-config][ksqsf/emacs-config]]
@@ -105,6 +103,7 @@
 *** [[https://github.com/xenodium/dotsies/commits/main.atom][xenodium/dotsies:main]]
 *** [[https://github.com/cormullion/juliamono/commits/master.atom][juliamono:master]]
 *** [[https://github.com/GTrunSec/my-profile/commits/master.atom][GTrunSec/my-profile:master]]
+*** [[https://gitlab.com/skybert/my-little-friends/-/commits/master.atom][skybert/my-little-friends]]
 ** emacs-blog                                                    :emacs:blog:
 *** [[http://planet.emacslife.com/atom.xml][Planet Emacslife]]
 *** [[http://xenodium.com/rss.xml][Alvaro Ramirez's notes]]
