@@ -1,44 +1,35 @@
-(require 'package)
-(setq package-archives '(("elpa" . "https://elpa.gnu.org/packages/")
-                         ("melpa" . "https://melpa.org/packages/")))
-(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
-
-;; 配置 straight 参数，以支持被集成进 use-package。
+;; 配置 use-package 使用 straight.el 安装包。
 (setq straight-use-package-by-default t)
+;; 只 clone 最近一次 commit 历史, 减少磁盘空间占用。
 (setq straight-vc-git-default-clone-depth 1)
-(setq straight-recipes-gnu-elpa-use-mirror t)
 (setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
 (setq straight-host-usernames '((github . "opsnull")))
 
 ;; 安装 straight.el。
 (defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+(let ((bootstrap-file (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
         (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
          'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-;; 安装 use-package。
 (setq use-package-verbose t)
 (setq use-package-always-demand t)
 (setq use-package-compute-statistics t)
+;; 安装 use-package。
 (straight-use-package 'use-package)
-
-;; 为 use-package 添加 :ensure-system-package 指令。
-(use-package use-package-ensure-system-package)
 
 (use-package exec-path-from-shell
   :custom
   ;; 去掉 -l 参数, 加快启动速度。
   (exec-path-from-shell-arguments '("-l")) 
   (exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE" "GOFLAGS" "GO111MODULE"))
+  (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE" "GOFLAGS" "GO111MODULE" "PYTHONPATH"))
   :config
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
@@ -79,6 +70,7 @@
 (global-unset-key (kbd "s-w"))
 (global-unset-key (kbd "C-z"))
 (global-unset-key (kbd "<mouse-2>"))
+(global-unset-key (kbd "s-k"))
 (global-unset-key (kbd "s-o"))
 (global-unset-key (kbd "s-t"))
 (global-unset-key (kbd "s-p"))
@@ -104,7 +96,7 @@
 ;; 指针闪动。
 (blink-cursor-mode t)
 ;; 光标和字符宽度一致（如 TAB)
-(setq x-stretch-cursor t)
+(setq x-stretch-cursor nil)
 
 ;; 不显示 window fringe, 显示多个 window 时更紧凑。
 (set-fringe-style 0)
@@ -171,13 +163,20 @@
                    "*helpful"
                    "*info*"
                    "*Summary*"
-                   "*lsp-help*"
                    "*vterm"
+                   "*lsp-bridge"
+                   "*Org"
                    "*Google Translate*"
                    "Shell Command Output") (0+ not-newline))
          (display-buffer-reuse-mode-window display-buffer-below-selected)
          (window-height . 0.33)
          (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
+
+;; 透明背景。
+(defun my/toggle-transparency ()
+  (interactive)
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
 (use-package dashboard
   :config
@@ -217,20 +216,7 @@
   (setq display-time-load-average-threshold 10)
   (setq display-time-format "%m/%d[%w]%H:%M")
   (setq display-time-day-and-date t)
-  (setq indicate-buffer-boundaries (quote left))
-  ;; 自定义 vterm mode 的 copy-mode 指示。
-  (doom-modeline-def-segment vterm-copy-mode-info
-    (concat "[NonCopy]" vterm-copy-mode))
-  (doom-modeline-def-modeline 'my-simple-line
-    '(bar matches buffer-info remote-host buffer-position parrot selection-info)
-    '(misc-info input-method major-mode vterm-copy-mode-info process))
-  (add-to-list 'doom-modeline-mode-alist '(vterm-mode . my-simple-line)))
-
-;; 透明背景。
-(defun my/toggle-transparency ()
-  (interactive)
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
+  (setq indicate-buffer-boundaries (quote left)))
 
 (use-package ef-themes
   :straight (ef-themes :host github :repo "protesilaos/ef-themes")
@@ -254,15 +240,50 @@
   :straight (:type built-in)
   :custom
   (tab-bar-close-button-show nil)
-  (tab-bar-history-limit 10)
+  (tab-bar-history-limit 20)
   (tab-bar-new-tab-choice "*dashboard*")
   (tab-bar-show 1)
-  (tab-bar-tab-hints nil)
+  (tab-bar-tab-hints t) ;; 显示 tab 序号。
+  (tab-bar-select-tab-modifiers "super") ;; 使用 super + N 来切换 tab。
   :config
   (tab-bar-history-mode t)
-  (global-unset-key (kbd "s-k")) ;; kill-current-buffer
+  ;;(setq tab-bar-format '(tab-bar-format-tabs-groups))
+  ;;(add-to-list 'tab-bar-format #'tab-bar-format-tabs-groups)
   (global-set-key (kbd "C-s-j") 'tab-bar-history-back)
-  (global-set-key (kbd "C-s-k") 'tab-bar-history-forward))
+  (global-set-key (kbd "C-s-k") 'tab-bar-history-forward)  
+  (global-set-key (kbd "s-[") 'tab-bar-switch-to-prev-tab)
+  (global-set-key (kbd "s-]") 'tab-bar-switch-to-next-tab)
+  (global-set-key (kbd "s-t") 'tab-bar-new-tab)
+  (global-set-key (kbd "s-w") 'tab-bar-close-tab)
+  (global-set-key (kbd "s-1") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-2") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-3") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-4") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-5") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-6") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-7") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-8") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
+
+(use-package sort-tab
+  :demand
+  :straight (:repo "manateelazycat/sort-tab" :host github)
+  ;; emacs 启动后再启用 sort-tab 防止显示异常。
+  :hook (after-init . sort-tab-mode)
+  :config
+  ;;(sort-tab-mode 1)
+  (setq sort-tab-show-index-number t)
+  (setq sort-tab-height 40)
+  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
+  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
+  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
+  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
+  ;; 设置 tab 颜色，M-x list-colors-display。
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
+  ;; 不显示背景颜色。
+  (set-face-background 'sort-tab-current-tab-face nil))
 
 ;; 缺省字体（英文，如显示代码）。
 (setq +font-family "Fira Code Retina")
@@ -422,13 +443,13 @@
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
 
 (use-package consult
-  :ensure-system-package (rg . ripgrep)
+  :straight (consult :host github :repo "minad/consult")
   :hook
   (completion-list-mode . consult-preview-at-point-mode)
   :init
   ;; 如果搜索字符少于 3，可以添加后缀#开始搜索，如 #gr#。
   (setq consult-async-min-input 3)
-  ;; 从头开始搜索（而非当前位置）。
+  ;; 从头开始搜索（而非前位置）。
   (setq consult-line-start-from-top t)
   ;; 预览寄存器。
   (setq register-preview-function #'consult-register-format)
@@ -438,7 +459,7 @@
   (setq xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 Buffer 列表中有大文件或远程文件时会卡住。
-  (setq consult-preview-key (kbd "C-l"))
+  (setq consult-preview-key "C-l")
   (setq completion-in-region-function #'consult-completion-in-region)
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil)
@@ -453,7 +474,6 @@
      "Pfuture-Callback.*"
      "\\*epc con"
      "\\*dashboard"
-     "\\*lsp-bridge"
      "\\*Ibuffer"
      "\\*sort-tab"
      "\\*Google Translate\\*"
@@ -472,7 +492,9 @@
 
 ;;; consult
 ;; C-c 绑定 (mode-specific-map)
-(global-set-key (kbd "C-c m") #'consult-mode-command)
+(global-set-key (kbd "C-c M-x") #'consult-mode-command)
+(global-set-key (kbd "C-c i") #'consult-info)
+(global-set-key (kbd "C-c m") #'consult-man)
 ;; C-x 绑定 (ctl-x-map)
 ;; 使用 savehist 持久化保存的 minibuffer 历史。
 (global-set-key (kbd "C-M-;") #'consult-complex-command) 
@@ -520,9 +542,11 @@
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
 
 (use-package embark
+  :straight (embark :files ("*.el"))
   :init
   ;; 使用 C-h 来显示 key preifx 绑定。
   (setq prefix-help-command #'embark-prefix-help-command)
+  (setq embark-quit-after-action nil)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
   ;; 隐藏 Embark live/completions buffers 的 modeline.
@@ -567,7 +591,6 @@
 
 (use-package dired
   :straight (:type built-in)
-  :ensure-system-package (tac . coreutils)
   :config
   ;; re-use dired buffer, available in Emacs 28, @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
   (setq dired-kill-when-opening-new-dired-buffer t)
@@ -635,8 +658,8 @@
   (add-hook 'pdf-isearch-minor-mode-hook (lambda () (ctrlf-local-mode -1))))
 
 ;; browser-url 使用 Mac 默认浏览器。
-;;(setq browse-url-browser-function 'browse-url-default-macosx-browser)
-(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+(setq browse-url-browser-function 'browse-url-default-macosx-browser)
+;;(setq browse-url-browser-function 'xwidget-webkit-browse-url)
 (setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
 (setq xwidget-webkit-buffer-name-format "*webkit: %T")
 
@@ -715,15 +738,13 @@
 (use-package org
   ;;:straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
-  :ensure-system-package
-  ((watchexec . watchexec)
-   (pygmentize . pygments)
-   (magick . imagemagick))
   :config
-  (setq org-ellipsis ".."
-        org-ellipsis " ⭍"
+  (setq org-ellipsis " ⭍" ;; ".."
+        ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符， M-x org-entities-help 查看所有特殊字符。
         org-pretty-entities t
         org-highlight-latex-and-related '(latex)
+        ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
+        org-export-with-latex 'verbatim
         ;; 隐藏标记。
         org-hide-emphasis-markers t
         ;; 去掉 * 和 /, 使它们不再具有强调含义。
@@ -738,25 +759,46 @@
         org-cycle-separator-lines 2
         org-cycle-level-faces t
         org-n-level-faces 4
-        org-tags-column -80
+        ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
         org-log-into-drawer t
-        org-log-done 'note
+        ;; TODO 状态更新时记录 note.
+        org-log-done 'note ;; note, time
+        ;; 默认显示 inline image.
+        org-startup-with-inline-images t
         ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
         org-image-actual-width '(300)
+        ;; cycle headline 时显示 image.
+        org-cycle-inline-images-display t
         org-export-with-broken-links t
+        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
+        org-link-file-path-type 'relative
         org-startup-folded 'content
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
         org-use-sub-superscripts nil
+        ;; headerline 默认加序号。
+        org-startup-numerated t
         ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
         org-export-with-sub-superscripts nil
-        org-startup-indented t
-        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
-        org-link-file-path-type 'relative)
+        ;; heaerline 不显示 *。
+        org-hide-leading-stars t
+        ;; 缩进 4 个字符。
+        org-indent-indentation-per-level 4
+        ;; 内容缩进与对应 headerline 一致。
+        org-adapt-indentation t
+        org-startup-indented t)
   ;;(setq org-fold-core-style 'overlays)
-  (setq org-catch-invisible-edits 'show)
+  (setq org-tags-column 0)
+  (setq  org-auto-align-tags nil)
+  ;; 显示不可见的编辑。
+  (setq org-catch-invisible-edits 'show-and-error)
+  (setq org-fold-catch-invisible-edits t)
+  (setq org-insert-heading-respect-content t)
+  ;; 支持 ID property 作为 internal link target(默认是 CUSTOM_ID property)
+  (setq org-id-link-to-org-use-id t)
+  ;; 光标位于 section 中间时不 split line.
+  (setq org-M-RET-may-split-line nil)
   (setq org-todo-keywords
-        '((sequence "☞ TODO(t)" "PROJ(p)" "⚔ INPROCESS(s)" "⚑ WAITING(w)"
-                    "|" "☟ NEXT(n)" "✰ Important(i)" "✔ DONE(d)" "✘ CANCELED(c@)")
+        '((sequence "☞ TODO(t@)" "⚔ INPROCESS(s@)" "⚑ WAITING(w!)" "|" "☟ NEXT(n)" "✰ Important(i!)" "✔ DONE(d!)" "✘ CANCELED(c!)")
           (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
@@ -765,10 +807,9 @@
 (define-key org-mode-map (kbd "C-,") nil)
 (define-key org-mode-map (kbd "C-'") nil)
 ;; 关闭容易误碰的按键。
-(define-key org-mode-map (kbd "C-c C-x a") nil)
-(define-key org-mode-map (kbd "C-c C-x A") nil)
-(define-key org-mode-map (kbd "C-c C-x C-a") nil)
-(define-key org-mode-map (kbd "C-c C-x C-s") nil)
+;; (define-key org-mode-map (kbd "C-c C-x a") nil)
+;; (define-key org-mode-map (kbd "C-c C-x A") nil)
+;; (define-key org-mode-map (kbd "C-c C-x C-s") nil)
 ;; 全局快捷键。
 (global-set-key (kbd "C-c l") #'org-store-link)
 (global-set-key (kbd "C-c a") #'org-agenda)
@@ -787,7 +828,7 @@
   (add-hook 'org-mode-hook #'org-make-toc-mode))
 
 ;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
-(setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
+;;(setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
 
 (defun my/org-faces ()
   (setq-default line-spacing 2)
@@ -802,8 +843,7 @@
     (set-face-attribute (car face) nil :height (cdr face)))
   ;; 美化 BEGIN_SRC 整行。
   (setq org-fontify-whole-block-delimiter-line t)
-  ;; 如果配置参数 :inherit 'fixed-pitch, 则需要明确设置 fixed-pitch 字体，
-  ;; 否则选择的缺省字体可能导致显示问题。
+  ;; 如果配置参数 :inherit 'fixed-pitch, 则需要明确设置 fixed-pitch 字体，否则选择的缺省字体可能导致显示问题。
   (custom-theme-set-faces
    'user
    '(org-block ((t (:height 0.9))))
@@ -826,14 +866,11 @@
    '(org-todo ((t (:inherit 'fixed-pitch))))
    '(org-done ((t (:inherit 'fixed-pitch))))
    '(org-ellipsis ((t (:inherit 'fixed-pitch))))
-   '(org-property-value ((t (:inherit 'fixed-pitch)))))
-  (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»")
-                                         ("#+END_SRC" . "«")
-                                         ("#+begin_src" . "»")
-                                         ("#+end_src" . "«")))
-  (setq prettify-symbols-unprettify-at-point 'right-edge))
+   '(org-property-value ((t (:inherit 'fixed-pitch))))))
 (add-hook 'org-mode-hook 'my/org-faces)
 (add-hook 'org-mode-hook 'prettify-symbols-mode)
+(setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»") ("#+END_SRC" . "«") ("#+begin_src" . "»") ("#+end_src" . "«")))
+(setq prettify-symbols-unprettify-at-point 'right-edge)
 
 (use-package org-superstar
   :after (org)
@@ -849,14 +886,20 @@
   (org-superstar-header-bullet ((t (:height 200 :inherit 'fixed-pitch)))))
 
 (use-package org-fancy-priorities
-  :after (org)
+  :ensure t
   :hook
   (org-mode . org-fancy-priorities-mode)
   :config
-  (setq org-fancy-priorities-list '("[A]" "[B]" "[C]")))
+  ;; org 默认最低优先级是 C, 这里加一级。
+  (setq org-priority-lowest ?D)
+  (setq org-fancy-priorities-list '("[⚡A]" "[⬆B]" "[⬇C]" "[☕D]")))
 
 ;; 编辑时显示隐藏的标记。
-(use-package org-appear :config (add-hook 'org-mode-hook 'org-appear-mode))
+(use-package org-appear
+  :config
+  (add-hook 'org-mode-hook 'org-appear-mode)
+  ;; 删除 * 和 / 类型的标记。
+  (setq org-appear-elements '(underline strike-through verbatim code)))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -878,7 +921,6 @@
   (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
 
 (use-package org-download
-  :ensure-system-package pngpaste
   :config
   (setq-default org-download-image-dir "./images/")
   (setq org-download-method 'directory
@@ -891,6 +933,8 @@
 
 ;; eval 前需要确认。
 (setq org-confirm-babel-evaluate t)
+;; 关闭 C-c C-c 触发 eval code.
+;;(setq org-babel-no-eval-on-ctrl-c-ctrl-c nil)
 (setq org-src-fontify-natively t)
 (setq org-src-tab-acts-natively t)
 ;; 为 #+begin_quote 和  #+begin_verse 添加特殊 face 。
@@ -900,33 +944,47 @@
 (setq org-edit-src-content-indentation 0)
 ;; 在当前窗口编辑 SRC Block.
 (setq org-src-window-setup 'current-window)
+;; export 输出类型。
+(setq org-export-backends '(go md gfm html latex man))
 
 (require 'org)
-(use-package ob-go)
-(use-package ox-reveal)
-(use-package ox-gfm)
-
+;; org bable 完整支持的语言列表（ob- 开头的文件）：
+;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp
+;; 对于官方不支持的语言，可以通过 use-pacakge 来安装。
+(use-package ob-go) ;; golang 
+(use-package ox-reveal) ;; reveal.js
+(use-package ox-gfm) ;; github flavor markdown
+;; 启用的 org babel 的语言列表。
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((shell . t)
    (js . t)
+   (java . t)
+   (makefile . t)
    (go . t)
    (emacs-lisp . t)
    (python . t)
+   (sed . t)
+   (awk . t)
    (dot . t)
    (css . t)))
 
 (use-package org-contrib
-  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-+end_src"))
+  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib"))
 
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
   (setq org-latex-image-default-width "0.7\\linewidth")
-  ;; 默认使用 booktabs 来格式化表格。
+  ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
   ;; 保存 LaTeX 日志文件。
   (setq org-latex-remove-logfiles nil)
+  ;; 使用 minted 而非默认的 listings, 支持更多的语言类型，否则编译时报错。
+  (setq org-latex-listings 'minted)
+  ;; 目录页前后分页。
+  (setq org-latex-toc-command "\\clearpage \\tableofcontents \\clearpage")
+  ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   ;; ;; Alist of packages to be inserted in every LaTeX header.
   ;; (setq org-latex-packages-alist
@@ -973,8 +1031,11 @@
           (bash "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
           (shell "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
           (shellinput "\\begin{shellinput}[%c]\n%s\\end{shellinput}")
-          (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}")))
-  (setq org-latex-listings 'listings))
+          (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}"))))
+
+;; org export html 格式时需要 htmlize.el 包来格式化代码。
+(use-package htmlize
+  :straight (htmlize :host github :repo "hniksic/emacs-htmlize"))
 
 (use-package org-tree-slide
   :after (org)
@@ -1102,10 +1163,7 @@
   ;; diff org-mode 时展开内容。
   (add-hook 'magit-diff-visit-file-hook (lambda() (when (derived-mode-p 'org-mode)(org-fold-show-entry)))))
 
-(use-package git-link
-  :config
-  (setq git-link-use-commit t)
-  (global-set-key (kbd "C-c g l") #'git-link))
+(use-package git-link :config (setq git-link-use-commit t))
 
 (use-package diff-mode
   :straight (:type built-in)
@@ -1148,7 +1206,7 @@
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t)
   ;; Highlight blocks of code in bold
-  (setq show-paren-style 'expression)
+  (setq show-paren-style 'parenthesis) ;; parenthesis, expression
   (set-face-attribute 'show-paren-match nil :weight 'extra-bold))
 
 ;; 智能括号。
@@ -1157,11 +1215,13 @@
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
-(use-package envrc :ensure-system-package direnv :hook (after-init . envrc-global-mode))
+(use-package envrc :hook (after-init . envrc-global-mode))
 
 (use-package posframe)
 
+;; dump-jump 支持 GNU Global 的 gtags 跳转。
 (use-package  dumb-jump
+  :demand
   :config
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
@@ -1195,7 +1255,7 @@
   ;; 不在 modeline 显示 lsp-bridge 信息。
   (lsp-bridge-enable-mode-line nil)
   :config
-  (setq lsp-bridge-enable-log nil)
+  (setq lsp-bridge-enable-log t)
   (setq lsp-bridge-enable-signature-help t)
   ;;(setq lsp-bridge-signature-show-function 'lsp-bridge-signature-posframe)
   ;; word 补全。
@@ -1205,14 +1265,17 @@
   (setq acm-candidate-match-function 'orderless-flex)
   ;; 至少输入 N 个字符后才开始补全。
   (setq acm-backend-lsp-candidate-min-length 0)
-  ;;(setq acm-backend-lsp-enable-auto-import nil)
+  (setq acm-backend-lsp-enable-auto-import nil)
   (setq acm-backend-lsp-candidate-max-length 100)
   (setq acm-enable-doc nil)
   (setq acm-enable-telega nil)
   (setq acm-enable-tabnine nil)
   (setq acm-enable-quick-access t)
   (setq lsp-bridge-diagnostic-tooltip-border-width 0)
+  (setq lsp-bridge-enable-hover-diagnostic t)
   (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
+  ;;  过滤 warnning.
+  (setq lsp-bridge-diagnostic-hide-severities '(2 3 4))
   ;; 开启 citre 集成。
   (setq acm-enable-citre t)
   ;; 关闭 yas 补全。
@@ -1245,6 +1308,7 @@
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
   (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "go")
   ;; go 缩进。
   (add-to-list 'lsp-bridge-formatting-indent-alist '(go-mode . c-basic-offset))
   (add-to-list 'lsp-bridge-formatting-indent-alist '(go-ts-mode . c-basic-offset))
@@ -1272,12 +1336,6 @@
   (define-key lsp-bridge-mode-map (kbd "C-s-n") #'lsp-bridge-diagnostic-jump-next)
   (define-key lsp-bridge-mode-map (kbd "C-s-p") #'lsp-bridge-diagnostic-jump-prev))
 
-(use-package emacs
-  :straight (:type built-in)
-  :ensure-system-package
-  ((pyenv . "brew install --HEAD pyenv")
-   (pyenv-virtualenv . "brew install --HEAD pyenv-virtualenv")))
-
 (defun my/python-setup-shell (&rest args)
   (if (executable-find "ipython")
       (progn
@@ -1291,12 +1349,7 @@
 (use-package yapfify :straight (:host github :repo "JorisE/yapfify"))
 
 (use-package python
-  :ensure-system-package
-  ((pylint . pylint)
-   (flake8 . flake8)
-   (pyright . "npm update -g pyright")
-   (yapf . "pip install yapf")
-   (ipython . "pip install ipython"))
+  :defer
   :init
   (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
   (if (not (file-exists-p pyright-directory))
@@ -1304,21 +1357,25 @@
   (setq python-indent-guess-indent-offset t)  
   (setq python-indent-guess-indent-offset-verbose nil)
   (setq python-indent-offset 2)
-  (with-eval-after-load 'exec-path-from-shell (exec-path-from-shell-copy-env "PYTHONPATH"))
+  ;;(with-eval-after-load 'exec-path-from-shell (exec-path-from-shell-copy-env "PYTHONPATH"))
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
                    (yapf-mode))))
 
+(defun my/go-setup ()
+    (setenv "GOOS" "linux")
+    (setenv "GOARCH" "amd64")
+     ;; go-mode 默认启用 tabs.
+    (setq indent-tabs-mode t)
+    (setq c-ts-common-indent-offset 8)
+    (setq c-basic-offset 8))
+
 (use-package go-mode
-  :ensure-system-package (gopls . "go install golang.org/x/tools/gopls@latest")
   :init
-  (setq godoc-reuse-buffer t)
-  :hook
-  ((go-mode . (lambda()
-                ;; go-mode 默认启用 tabs.
-                (setq indent-tabs-mode t)
-                (setq c-basic-offset 2)))))
+  (setq godoc-reuse-buffer t))
+(add-hook 'go-mode-hook 'my/go-setup)
+(add-hook 'go-ts-mode-hook 'my/go-setup)
 
 (defvar go--tools '("golang.org/x/tools/gopls"
                     "golang.org/x/tools/cmd/goimports"
@@ -1351,7 +1408,6 @@
 (use-package go-playground :commands (go-playground-mode))
 
 (use-package markdown-mode
-  :ensure-system-package multimarkdown
   :commands (markdown-mode gfm-mode)
   :mode
   (("README\\.md\\'" . gfm-mode) ;; gfm: github flavored markdown.
@@ -1403,7 +1459,7 @@ mermaid.initialize({
 "))
 
 (use-package grip-mode
-  :ensure-system-package (grip . "pip install grip")
+  :after (markdown-mode)
   :config
   (setq grip-preview-use-webkit nil)
   ;; 支持网络访问（默认 localhost）。
@@ -1414,9 +1470,9 @@ mermaid.initialize({
   (require 'auth-source)
   (let ((credential (auth-source-user-and-password "api.github.com")))
     (setq grip-github-user (car credential)
-          grip-github-password (cadr credential))))
-;;; markdown grip-mode
-(define-key markdown-mode-command-map (kbd "g") #'grip-mode)
+          grip-github-password (cadr credential)))
+  ;;; markdown grip-mode
+  (define-key markdown-mode-command-map (kbd "g") #'grip-mode))
 
 (use-package markdown-toc
   :after(markdown-mode)
@@ -1426,14 +1482,6 @@ mermaid.initialize({
 ;; for .ts/.tsx file
 (use-package typescript-mode
   :mode "\\.tsx?\\'"
-  :ensure-system-package
-  (
-   (tsc . "npm install -g typescript")
-   (typescript-language-server . "npm install -g typescript-language-server")
-   (eslint . "npm install -g eslint babel-eslint eslint-plugin-react")
-   (prettier . "npm install -g prettier")
-   (importjs . "npm install -g import-js")
-  )
   :config
   (setq typescript-indent-level 2))
 
@@ -1479,8 +1527,6 @@ mermaid.initialize({
 
 (use-package yaml-mode
   :mode "\\.ya?ml\\'"
-  :ensure-system-package
-  (yaml-language-server . "npm install -g yaml-language-server")
   :config
   (define-key yaml-mode-map (kbd "\C-m") #'newline-and-indent))
 
@@ -1493,40 +1539,62 @@ mermaid.initialize({
 ;;      https://git.savannah.gnu.org/cgit/emacs.git/tree/admin/notes/tree-sitter/starter-guide?h=feature/tree-sitter
 (use-package treesit
   :straight (:type built-in)
-  :init
-  (setq major-mode-remap-alist
-        '((c-mode          . c-ts-mode)
-          (c++-mode        . c++-ts-mode)
-          (cmake-mode      . cmake-ts-mode)
-          (conf-toml-mode  . toml-ts-mode)
-          (csharp-mode     . csharp-ts-mode)
-          (css-mode        . css-ts-mode)
-          (dockerfile-mode . dockerfile-ts-mode)
-          (go-mode         . go-ts-mode)
-          (java-mode       . java-ts-mode)
-          (json-mode       . json-ts-mode)
-          (js-json-mode    . json-ts-mode)
-          (js-mode         . js-ts-mode)
-          (python-mode     . python-ts-mode)
-          (rust-mode       . rust-ts-mode)
-          (sh-mode         . bash-ts-mode)
-          (typescript-mode . typescript-ts-mode))))
+  :when (and (fboundp 'treesit-available-p)
+             (treesit-available-p))
+  ;; :custom (major-mode-remap-alist
+  ;;          '((c-mode          . c-ts-mode)
+  ;;            (c++-mode        . c++-ts-mode)
+  ;;            (cmake-mode      . cmake-ts-mode)
+  ;;            (conf-toml-mode  . toml-ts-mode)
+  ;;            (css-mode        . css-ts-mode)
+  ;;            (dockerfile-mode . dockerfile-ts-mode)
+  ;;            (go-mode         . go-ts-mode)
+  ;;            (java-mode       . java-ts-mode)
+  ;;            (json-mode       . json-ts-mode)
+  ;;            (js-json-mode    . json-ts-mode)
+  ;;            (js-mode         . js-ts-mode)
+  ;;            (python-mode     . python-ts-mode)
+  ;;            (rust-mode       . rust-ts-mode)
+  ;;            (sh-mode         . bash-ts-mode)
+  ;;            (typescript-mode . typescript-ts-mode)))
+  ;; :config
+  ;; (add-to-list 'auto-mode-alist '("\\(?:CMakeLists\\.txt\\|\\.cmake\\)\\'" . cmake-ts-mode))
+  ;; (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-ts-mode))
+  ;; (add-to-list 'auto-mode-alist '("\\.go\\'" . go-ts-mode))
+  ;; (add-to-list 'auto-mode-alist '("\\.py\\'" . python-ts-mode))
+  ;; (add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
+  ;; (add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))
+  ;; (add-to-list 'auto-mode-alist '("\\.ya?ml\\'" . yaml-ts-mode))
+  )
 
-;; (use-package tree-sitter-module
-;;   :straight (tree-sitter-module
-;;              :type git :host github
-;;              :repo "casouri/tree-sitter-module"
-;;              :pre-build (("./batch.sh"))
-;;              :files ("dist/*.so" "dist/*.dll" "dist/*.dylib"))
-;;   :init
-;;   ;; Search for tree-sitter modules in this packages build directory.
-;;   (with-eval-after-load 'treesit
-;;     (add-to-list 'treesit-extra-load-path
-;;                  (straight--build-dir "tree-sitter-module"))))
+(use-package treesit-auto
+  :straight (treesit-auto :type git :host github :repo "renzmann/treesit-auto")
+  :demand t
+  :config
+  (setq treesit-auto t)
+  (global-treesit-auto-mode))
 
-(with-eval-after-load 'treesit
-  (add-to-list 'treesit-extra-load-path
-               (straight--build-dir "tree-sitter-module")))
+(use-package ts-movement
+  :straight (ts-movement :type git :host github :repo "haritkapadia/ts-movement")
+  :hook
+  (bash-ts-mode-hook . ts-movement-mode)
+  (c++-ts-mode-hook . ts-movement-mode)
+  (c-ts-mode-hook . ts-movement-mode)
+  (cmake-ts-mode-hook . ts-movement-mode)
+  (csharp-ts-mode-hook . ts-movement-mode)
+  (css-ts-mode-hook . ts-movement-mode)
+  (dockerfile-ts-mode-hook . ts-movement-mode)
+  (go-ts-mode-hook . ts-movement-mode)
+  (java-ts-mode-hook . ts-movement-mode)
+  (js-ts-mode-hook . ts-movement-mode)
+  (json-ts-mode-hook . ts-movement-mode)
+  (python-ts-mode-hook . ts-movement-mode)
+  (ruby-ts-mode-hook . ts-movement-mode)
+  (rust-ts-mode-hook . ts-movement-mode)
+  (toml-ts-mode-hook . ts-movement-mode)
+  (tsx-ts-mode-hook . ts-movement-mode)
+  (typescript-ts-mode-hook . ts-movement-mode)
+  (yaml-ts-mode-hook . ts-movement-mode))
 
 (use-package ts-fold
   :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")
@@ -1538,15 +1606,21 @@ mermaid.initialize({
   ;; (add-hook 'tree-sitter-after-on-hook #'ts-fold-indicators-mode)
   )
 
+;; GNU Global gtags
+(setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
+(setenv "GTAGSCONF" "/usr/local/Cellar/global/6.6.9/share/gtags/gtags.conf")
+(setenv "GTAGSLABEL" "pygments")
+
 (use-package citre
   :defer t
   :straight (:host github :repo "universal-ctags/citre")
   :init
   ;; 当项目目录有 TAGS 文件时，自动开启 citre-mode.
   (require 'citre-config)
+  (setq citre-peek-file-content-height 20)
   (global-set-key (kbd "s-.") 'citre-jump)
   (global-set-key (kbd "s-,") 'citre-jump-back)
-  (global-set-key (kbd "C-x c p") 'citre-peek) ;; or citre-ace-peek
+  (global-set-key (kbd "s-?") 'citre-peek) ;; or citre-ace-peek
   (global-set-key (kbd "C-x c u") 'citre-update-this-tags-file))
 
 ;; Don't ask before killing the current compilation. This is useful if
@@ -1596,6 +1670,11 @@ mermaid.initialize({
       t))
   :config
   (global-set-key (kbd "C-=") #'er/expand-region))
+
+(use-package blink-search
+  :straight (blink-search :host github :repo "manateelazycat/blink-search" :files ("*" "backend/*" ))
+  :demand
+)
 
 (use-package project
   :custom
@@ -1668,11 +1747,7 @@ mermaid.initialize({
     (funcall fn pr no-write)))
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
 
-;; 添加环境变量 export PATH="/usr/local/opt/curl/bin:$PATH"
-(use-package emacs
-  :straight (:type built-in)
-  :ensure-system-package ("/usr/local/opt/curl/bin/curl" . "brew install curl"))
-
+;; 添加环境变量 
 (setq my/socks-host "127.0.0.1")
 (setq my/socks-port 13659)
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
@@ -1737,10 +1812,6 @@ mermaid.initialize({
     (proxy-socks-enable)))
 
 (use-package vterm
-  :ensure-system-package
-  ((cmake . cmake)
-   (glibtool . libtool)
-   (exiftran . exiftran))
   :hook
   ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
   (vterm-mode . (lambda ()
@@ -1904,7 +1975,7 @@ mermaid.initialize({
 ;; 增加 imenu 行内容长度。
 ;;(setq imenu-max-item-length 160)
 
-(setq tab-width 2)
+(setq tab-width 4)
 ;; 不插入 tab (按照 tab-width 转换为空格插入) 。
 (setq-default indent-tabs-mode nil)
 
@@ -1941,11 +2012,6 @@ mermaid.initialize({
 
 (use-package emacs
   :straight (:type built-in)
-  :ensure-system-package
-  ;; artist-mode 依赖的两个程序。
-  ((figlet . "brew install figlet")
-   ;; 触摸板三指点按模拟鼠标中键。
-   ("/Applications/MiddleClick.app" . "brew install --cask --no-quarantine middleclick"))
   :init
   ;; 粘贴于光标处, 而不是鼠标指针处。
   (setq mouse-yank-at-point t)
@@ -1970,7 +2036,6 @@ mermaid.initialize({
 
 (use-package ibuffer
   :straight (:type built-in)
-  :defer
   :config
   (setq ibuffer-expert t)
   (setq ibuffer-use-other-window t)
@@ -1981,8 +2046,8 @@ mermaid.initialize({
   (global-set-key (kbd "C-x C-b") #'ibuffer))
 
 ;; Navigate between buffer and window.
-(global-set-key (kbd "s-p") 'previous-buffer)
-(global-set-key (kbd "s-n") 'next-buffer)
+;;(global-set-key (kbd "s-p") 'previous-buffer)
+;;(global-set-key (kbd "s-n") 'next-buffer)
 (global-set-key (kbd "M-o") 'other-window)
 
 (use-package recentf
@@ -2069,7 +2134,6 @@ mermaid.initialize({
 
 ;; 删除文件时, 将文件移动到回收站。
 (use-package osx-trash
-  :ensure-system-package trash
   :config
   (when (eq system-type 'darwin)
     (osx-trash-setup))
