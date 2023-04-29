@@ -19,35 +19,9 @@
       color={[rgb]{1,1,0.0}},
       width=0.8em,position=1pt]{#1}}}
 
-% 自定义 programlist 语言环境
-% https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
-\usepackage{tcolorbox}
-\tcbuselibrary{breakable,skins,raster,external,listings,minted}
-\tcbEXTERNALIZE
-\newtcblisting[
-  auto counter,
-  number within=section]{programlist}[3][]{
-  listing engine=minted,
-  minted style=emacs,
-  minted language=#2,
-  minted options={autogobble,fontsize=\footnotesize,breaklines,breakanywhere,baselinestretch=1.2,linenos,numbersep=3mm},
-  % 不显示 title
-  %title={\sffamily\bfseries 代码块 \thetcbcounter},
-  %title={\sffamily\bfseries 代码块 \thetcbcounter #3},
-  after,
-  breakable=true,
-  lowerbox=ignored,
-  hyphenationfix=true,
-  %边框颜色
-  %colback=blue!5!white,
-  %colframe=blue!85!black,
-  listing only,
-  enhanced,
-  drop fuzzy shadow southeast,
-  left=5mm,
-  overlay={\begin{tcbclipinterior}\fill[red!20!blue!20!white] (frame.south west) rectangle ([xshift=5mm]frame.north west);\end{tcbclipinterior}},
-  #1
-}
+% 代码高亮
+\usepackage{minted}
+\usemintedstyle{emacs}
 
 % 提示 title
 \usepackage[explicit]{titlesec}
@@ -71,7 +45,7 @@
 \setmainfont{Noto Serif SC}
 \setsansfont{Noto Sans SC}[Scale=MatchLowercase]
 \setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
-\setCJKmainfont[BoldFont = Noto Serif SC]{Noto Serif SC}
+\setCJKmainfont[BoldFont=Noto Serif SC]{Noto Serif SC}
 \setCJKsansfont{Noto Sans SC}
 \setCJKmonofont{Noto Sans Mono CJK SC}
 

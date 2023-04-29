@@ -1,21 +1,7 @@
-(when (fboundp 'native-compile-async)
-  (setenv "LIBRARY_PATH"
-          (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/12:/usr/local/opt/gcc/lib/gcc/12/gcc/x86_64-apple-darwin21/12"))
-  (setq native-comp-speed 2)
-  (setq native-comp-async-jobs-number 4)
-  ;; Emacs 29;
-  ;;(setq inhibit-automatic-native-compilation t)
-  ;;(setq native-comp-async-report-warnings-errors 'silent)
-  )
-
 ;; 加载较新的 .el 文件。
 (setq-default load-prefer-newer t)
 (setq-default lexical-binding t)
 (setq lexical-binding t)
-
-;; 关闭 cl 告警。
-(require 'cl-lib)
-(setq byte-compile-warnings '(cl-functions))
 
 ;; 关闭 package.el(后续使用 straight.el) 。
 (setq package-enable-at-startup nil)

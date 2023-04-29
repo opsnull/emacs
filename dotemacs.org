@@ -1,7 +1,10 @@
+#+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-02-20T12:02:16+0800
+#+LASTMOD: 2023-04-29T21:04:04+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
+#+OPTIONS: prop:t ^:nil
+#+LANGUAGE: zh-CN
 
 * install
 
@@ -13,53 +16,19 @@ brew link --overwrite emacs-plus@29
 ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 #+end_src
 
-* init
-
-=early-init.el= 是 =Emacs= 启动时最开始执行的文件，执行复杂逻辑可能导致启动失败，所以该文件尽量以变量定义为主。
-#+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
-(when (fboundp 'native-compile-async)
-  (setenv "LIBRARY_PATH"
-          (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/12:/usr/local/opt/gcc/lib/gcc/12/gcc/x86_64-apple-darwin21/12"))
-  (setq native-comp-speed 2)
-  (setq native-comp-async-jobs-number 4)
-  ;; Emacs 29;
-  ;;(setq inhibit-automatic-native-compilation t)
-  ;;(setq native-comp-async-report-warnings-errors 'silent)
-  )
-
-;; 加载较新的 .el 文件。
-(setq-default load-prefer-newer t)
-(setq-default lexical-binding t)
-(setq lexical-binding t)
-
-;; 关闭 cl 告警。
-(require 'cl-lib)
-(setq byte-compile-warnings '(cl-functions))
-
-;; 关闭 package.el(后续使用 straight.el) 。
-(setq package-enable-at-startup nil)
-
-;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
-(setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
-(add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
-
-;; 个人信息。
-(setq user-full-name "zhangjun")
-(setq user-mail-address "geekard@qq.com")
-#+end_src
-
 * package
 
 使用 straight.el 替换 Emacs 内置的 package.el, 它用 =Git Checkout+Build= 机制安装软件包（而非直接从软件源下载）：
 + use-package 可以和 straight.el 和 package.el 结合使用。
 + M-x use-package-report :: 查看 package 加载时间（按 S 排序）。
 #+begin_src emacs-lisp
+;; 关闭 package.el(后续使用 straight.el) 。
+(setq package-enable-at-startup nil)
+
 ;; 配置 use-package 使用 straight.el 安装包。
 (setq straight-use-package-by-default t)
 ;; 只 clone 最近一次 commit 历史, 减少磁盘空间占用。
 (setq straight-vc-git-default-clone-depth 1)
-(setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
-(setq straight-host-usernames '((github . "opsnull")))
 
 ;; 安装 straight.el。
 (defvar bootstrap-version)
@@ -143,6 +112,10 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 (global-unset-key (kbd "s-."))
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
+
+;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
+(setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
+(add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 #+end_src
 
 * face
@@ -156,29 +129,21 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   (setq use-file-dialog nil)
   (setq use-dialog-box nil))
 
-;; 关闭启动消息。
-(setq inhibit-startup-screen t)
-(setq inhibit-startup-message t)
-(setq inhibit-startup-echo-area-message t)
-(setq initial-scratch-message nil)
+;; Emacs 29: 不显示 Title Bar（依赖编译时指定 --with-no-frame-refocus 参数。）
+(add-to-list 'default-frame-alist '(undecorated-round . t))
 
 ;; 指针闪动。
 (blink-cursor-mode t)
+
 ;; 光标和字符宽度一致（如 TAB)
 (setq x-stretch-cursor nil)
 
 ;; 不显示 window fringe, 显示多个 window 时更紧凑。
 (set-fringe-style 0)
 
-;; 出错提示。
-(setq visible-bell t)
-
-;; 窗口间显示分割线。
-;;(setq window-divider-default-places t)
-;;(add-hook 'window-setup-hook #'window-divider-mode)
-
 ;; 30: 左右分屏, nil: 上下分屏。
 (setq split-width-threshold 30)
+
 ;; 滚动一屏后显示 3 行上下文。
 (setq next-screen-context-lines 3)
 
@@ -186,25 +151,9 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 (setq global-hl-line-sticky-flag t)
 (global-hl-line-mode t)
 
-;; 平滑地进行半屏滚动(默认避免滚动后进行 recenter)。
-(setq scroll-step 1)
-(setq scroll-conservatively 10000)
-(setq scroll-margin 2)
-;; 像素平滑滚动（Emacs 29 开始支持）。
+;; 像素平滑滚动。
 (if (boundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode t))
-
-;; 大文件不显示行号。
-(setq large-file-warning-threshold nil)
-(setq line-number-display-limit large-file-warning-threshold)
-(setq line-number-display-limit-width 1000)
-
-;; 显示行号。
-(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 1))))
-
-;; Emacs 29: No Titlebar
-(add-to-list 'default-frame-alist '(undecorated-round . t))
 
 ;; 加 t 参数让 togg-frame-XX 最后运行，这样最大化才生效。
 ;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
@@ -212,16 +161,11 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 
 ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
 (setq ns-pop-up-frames nil)
+
 ;; 复用当前 frame。
 (setq display-buffer-reuse-frames t)
-(setq display-buffer-base-action
-      '(display-buffer-reuse-mode-window
-        display-buffer-reuse-window
-        display-buffer-same-window))
-;; If a popup does happen, don't resize windows to be equal-sized
-(setq even-window-sizes nil)
 
-;; 手动刷行显示.
+;; 手动刷行显示。
 (global-set-key (kbd "<f5>") #'redraw-display)
 
 ;; 在 frame 底部显示窗口。
@@ -237,15 +181,47 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
                    "*Org"
                    "*Google Translate*"
                    "Shell Command Output") (0+ not-newline))
-         (display-buffer-reuse-mode-window display-buffer-below-selected)
-         (window-height . 0.33)
-         (mode apropos-mode help-mode helpful-mode Info-mode Man-mode))))
+         (display-buffer-below-selected display-buffer-at-bottom)
+         (inhibit-same-window . t)
+         (window-height . 0.33))))
 
 ;; 透明背景。
 (defun my/toggle-transparency ()
   (interactive)
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
   (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
+
+;; 高亮光标移动到的行。
+(use-package pulsar
+  :straight (pulsar :host github :repo "protesilaos/pulsar")
+  :config
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 0.25)
+  (setq pulsar-iterations 15)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+  (pulsar-global-mode 1)
+  (add-hook 'next-error-hook #'pulsar-pulse-line-red)
+  ;; integration with the `consult' package:
+  (add-hook 'consult-after-jump-hook #'pulsar-recenter-top)
+  (add-hook 'consult-after-jump-hook #'pulsar-reveal-entry)
+  ;; integration with the built-in `imenu':
+  (add-hook 'imenu-after-jump-hook #'pulsar-recenter-top)
+  (add-hook 'imenu-after-jump-hook #'pulsar-reveal-entry))
+
+;; 调整窗口大小。
+(global-set-key (kbd "C-M-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "C-M-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "C-M-<down>") 'shrink-window)
+(global-set-key (kbd "C-M-<up>") 'enlarge-window)
+
+;; 快速窗口切换。选择 s-X 是由于 vterm 默认将 M-x 等快捷键拦截，所以不生效，但不拦截 s-X。
+;; vterm 默认不拦截的快捷键参考 vterm-keymap-exceptions， 包含 M-o。
+(global-set-key (kbd "s-o") 'other-window)
+(global-set-key (kbd "s-C-o") #'prev-window)
+(defun prev-window ()
+  (interactive)
+  (other-window -1))
 #+end_src
 + 不开启 =variable-pitch= face 和 mode, 否则 doom-modeline 右侧容易溢出。
 
@@ -284,19 +260,102 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   (doom-modeline-time-icon nil)
   :config
   ;; 电池和日期。
-  (display-battery-mode -1)
+  (display-battery-mode 1)
   (column-number-mode t)
-  (size-indication-mode -1)
+  (size-indication-mode t)
   (display-time-mode t)
   (setq display-time-24hr-format t)
   ;; system load 大于 10 时才在 modeline 显示；
   (setq display-time-default-load-average nil)
   (setq display-time-load-average-threshold 10)
-  (setq display-time-format "%m/%d[%w]%H:%M")
+  (setq display-time-format "%m/%d[%w]%H:%M ")
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 #+end_src
 
+** font
+
++ 英文字体：Iosevka Comfy: https://github.com/protesilaos/iosevka-comfy
+  + 只需安装：iosevka-comfy, 它是 Iosevka monospace 类型的字体，也适用于终端显示；
++ 中文字体：霞鹜文楷屏幕阅读版 [[https://github.com/lxgw/LxgwWenKai-Screen/releases][LxgwWenKai-Screen]]
+  + 屏幕阅读版主要是对字体做了加粗，便于屏幕阅读。
+  + 另一种适用于终端显示的中文等宽字体：Sarasa-Term-SC-Nerd ：https://github.com/laishulu/Sarasa-Term-SC-Nerd
++ Symbols 字体:  Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
++ 花園明朝：HanaMinB：http://fonts.jp/hanazono/
++ Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
+  
+英文 Iosevka/Sarasa 字体和中文 LxgwWenKai 字体，按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
++ https://github.com/LuciusChen/.emacs.d/blob/main/lisp/init-font.el
+#+begin_src emacs-lisp
+;; 基本英文字体。
+(setq +font-family "Iosevka Comfy")
+(setq +modeline-font-family "Iosevka Comfy")
+(setq +fixed-pitch-family "Iosevka Comfy")
+(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +font-unicode-family "LXGW WenKai Screen")
+;; 中文字体和英文字体按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
+(setq +font-size 14)
+(setq face-font-rescale-alist '(("LXGW WenKai Screen" . 1)))
+
+;; 设置缺省字体。
+(defun +load-base-font ()
+  ;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
+  (let* ((font-spec (format "%s-%d" +font-family +font-size)))
+    (set-frame-parameter nil 'font font-spec)
+    (add-to-list 'default-frame-alist `(font . ,font-spec))))
+
+;; 设置各特定 face 的字体。
+(defun +load-face-font (&optional frame)
+  (let ((font-spec (format "%s" +font-family))
+	(modeline-font-spec (format "%s" +modeline-font-family))
+	(variable-pitch-font-spec (format "%s" +variable-pitch-family))
+	(fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
+    (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec)
+    (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec)
+    (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec)
+    (set-face-attribute 'tab-bar frame :font font-spec)
+    (set-face-attribute 'mode-line frame :font modeline-font-spec)
+    (set-face-attribute 'mode-line-inactive frame :font modeline-font-spec)))
+
+;; 设置中文字体。
+(defun +load-ext-font ()
+  (when window-system
+    (let ((font (frame-parameter nil 'font))
+	  (font-spec (font-spec :family +font-unicode-family)))
+      (dolist (charset '(kana han hangul cjk-misc bopomofo))
+	(set-fontset-font font charset font-spec)))))
+
+;; 设置 Emoji 和 Symbol 字体。
+(defun +load-emoji-font ()
+  (when window-system
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
+    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols")))) ;; Symbola
+
+(add-hook 'after-make-frame-functions 
+	  ( lambda (f) 
+	    (+load-face-font)
+	    (+load-ext-font)
+	    (+load-emoji-font)))
+
+;; 加载字体。
+(defun +load-font ()
+  (+load-base-font)
+  (+load-face-font)
+  (+load-ext-font)
+  (+load-emoji-font))
+
+(+load-font)
+
+;; all-the-icons 只能在 GUI 模式下使用。
+(when (display-graphic-p)
+  (use-package all-the-icons :demand))
+  #+end_src
+
++ 查看 Emacs 支持的字体名称： =(print (font-family-list))=
++ 安装、更新 Icon 字体： =M-x all-the-icons-install-fonts=
++ 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
+  
 ** ef-themes
 
 #+begin_src emacs-lisp
@@ -306,14 +365,28 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   ;; Disable all other themes to avoid awkward blending:
   (mapc #'disable-theme custom-enabled-themes)
   ;; 关闭 variable-pitch 模式，否则 modeline 可能溢出。
-  (setq ef-themes-mixed-fonts t
-        ef-themes-variable-pitch-ui nil)
+  (setq ef-themes-variable-pitch-ui t
+        ef-themes-mixed-fonts t
+        ;; 调整 org-mode 等 header 的显示比例。
+        ef-themes-headings
+        '((0 . (variable-pitch light 1.5))
+          (1 . (variable-pitch light 1.4))
+          (2 . (variable-pitch regular 1.3))
+          (3 . (variable-pitch regular 1.2))
+          (4 . (variable-pitch regular 1.1))
+          (5 . (variable-pitch 1.1)) ; absence of weight means `bold'
+          (6 . (variable-pitch 1.1))
+          (7 . (variable-pitch 1.1))
+          (agenda-date . (semilight 1.5))
+          (agenda-structure . (variable-pitch light 1.9))
+          (t . (variable-pitch 1.1))))
+
   (setq ef-themes-region '(intense no-extend neutral)))
 #+end_src
 
 跟随 Mac 自动切换深浅主题:
 #+begin_src emacs-lisp
-(defun my/load-light-theme () (interactive) (load-theme 'ef-day t)) ;; ef-day doom-one-light
+(defun my/load-light-theme () (interactive) (load-theme 'ef-spring t)) ;; ef-day doom-one-light
 (defun my/load-dark-theme () (interactive) (load-theme 'ef-night t)) ;; ef-night doom-palenight
 (add-hook 'ns-system-appearance-change-functions
           (lambda (appearance)
@@ -329,21 +402,25 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   :straight (:type built-in)
   :custom
   (tab-bar-close-button-show nil)
+  (tab-bar-new-button-show nil)
   (tab-bar-history-limit 20)
   (tab-bar-new-tab-choice "*dashboard*")
   (tab-bar-show 1)
   (tab-bar-tab-hints t) ;; 显示 tab 序号。
   (tab-bar-select-tab-modifiers "super") ;; 使用 super + N 来切换 tab。
   :config
+  ;; 去掉最左侧的 < 和 >
+  (setq tab-bar-format '(tab-bar-format-tabs-groups
+                         tab-bar-separator
+                         tab-bar-format-add-tab ))
+
+  ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
   (tab-bar-history-mode t)
-  ;;(setq tab-bar-format '(tab-bar-format-tabs-groups))
-  ;;(add-to-list 'tab-bar-format #'tab-bar-format-tabs-groups)
   (global-set-key (kbd "C-s-j") 'tab-bar-history-back)
-  (global-set-key (kbd "C-s-k") 'tab-bar-history-forward)  
-  (global-set-key (kbd "s-[") 'tab-bar-switch-to-prev-tab)
-  (global-set-key (kbd "s-]") 'tab-bar-switch-to-next-tab)
+  (global-set-key (kbd "C-s-k") 'tab-bar-history-forward)
+  ;; 快速 tab 操作。
   (global-set-key (kbd "s-t") 'tab-bar-new-tab)
-  (global-set-key (kbd "s-w") 'tab-bar-close-tab)
+  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
   (global-set-key (kbd "s-1") 'tab-bar-select-tab)
   (global-set-key (kbd "s-2") 'tab-bar-select-tab)
   (global-set-key (kbd "s-3") 'tab-bar-select-tab)
@@ -356,6 +433,7 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 #+end_src
 
 ** sort-tab
+
 #+begin_src emacs-lisp
 (use-package sort-tab
   :demand
@@ -368,98 +446,13 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   (setq sort-tab-height 40)
   (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
   (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
-  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
-  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
+  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
   ;; 设置 tab 颜色，M-x list-colors-display。
   (set-face-foreground 'sort-tab-current-tab-face "peru")
   ;; 不显示背景颜色。
   (set-face-background 'sort-tab-current-tab-face nil))
 #+end_src
 
-* font
-
-+ 中文（显示）：更纱黑体 Sarasa Mono SC: https://github.com/be5invis/Sarasa-Gothic
-+ 英文（显示）：Fira Code : https://github.com/tonsky/FiraCode/wiki/Installing
-+ 中英文（PDF) ：Noto CJK SC: https://github.com/googlefonts/noto-cjk.git
-+ Symbols 字体:  Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
-+ 花園明朝：HanaMinB：http://fonts.jp/hanazono/
-+ Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
-#+begin_src emacs-lisp
-;; 缺省字体（英文，如显示代码）。
-(setq +font-family "Fira Code Retina")
-(setq +modeline-font-family "Fira Code Retina")
-;; 其它均使用 Sarasa Mono SC 字体。
-(setq +fixed-pitch-family "Sarasa Mono SC")
-(setq +variable-pitch-family "Sarasa Mono SC")
-(setq +font-unicode-family "Sarasa Mono SC")
-(setq +font-size 13)
-
-;; 设置缺省字体。
-(defun +load-base-font ()
-  ;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
-  (let* ((font-spec (format "%s-%d" +font-family +font-size)))
-	(set-frame-parameter nil 'font font-spec)
-	(add-to-list 'default-frame-alist `(font . ,font-spec))))
-
-;; 设置各特定 face 的字体。
-(defun +load-face-font (&optional frame)
-  (let ((font-spec (format "%s" +font-family))
-	    (modeline-font-spec (format "%s" +modeline-font-family))
-	    (variable-pitch-font-spec (format "%s" +variable-pitch-family))
-	    (fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
-	(set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec :height 1.0)
-	(set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec :height 1.1)
-	(set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec :height 1.0)
-	(set-face-attribute 'tab-bar frame :font font-spec :height 1.0)
-	(set-face-attribute 'mode-line frame :font modeline-font-spec :height 1.0)
-	(set-face-attribute 'mode-line-inactive frame :font modeline-font-spec :height 1.0)))
-
-;; 设置中文字体。
-(defun +load-ext-font ()
-  (when window-system
-	(let ((font (frame-parameter nil 'font))
-		  (font-spec (font-spec :family +font-unicode-family)))
-	  (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
-	    (set-fontset-font font charset font-spec)))))
-
-;; 设置 Emoji 字体。
-(defun +load-emoji-font ()
-  (when window-system
-	(setq use-default-font-for-symbols nil)
-	(set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-	(set-fontset-font t 'symbol (font-spec :family "Symbola"))))
-
-(add-hook 'after-make-frame-functions 
-		  ( lambda (f) 
-		    (+load-face-font f)
-		    (+load-ext-font)
-		    (+load-emoji-font)))
-
-;; 加载字体。
-(defun +load-font ()
-  (+load-base-font)
-  (+load-face-font)
-  (+load-ext-font)
-  (+load-emoji-font))
-
-(+load-font)
-
-;; all-the-icons 和 fire-code-mode 只能在 GUI 模式下使用。
-(when (display-graphic-p)
-  (use-package all-the-icons :demand)
-  (use-package fira-code-mode
-	:custom
-	(fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
-	:hook prog-mode))
-  #+end_src
-
-+ 查看 Emacs 支持的字体名称： =(print (font-family-list))=
-+ 安装、更新 FiraCode Symbol 字体： =M-x fira-code-mode-install-fonts=
-+ 安装、更新 Icon 字体： =M-x all-the-icons-install-fonts=
-+ 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
-  
 * completion
 ** vertico
 
@@ -486,7 +479,7 @@ Emacs 补全的完全兼容命令和完成表。Vertico 仅提供完成 UI，但
   ;; 在 minibuffer 中不显示光标。
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-  ;; M-x 是不显示当前 mode 不支持的命令以及 vertico 相关命令。
+  ;; M-x 时只显示当前 mode 支持的命令的命令。
   (setq read-extended-command-predicate #'command-completion-default-include-p)
   ;; 开启 minibuffer 递归编辑。
   (setq enable-recursive-minibuffers t))
@@ -496,34 +489,35 @@ Emacs 补全的完全兼容命令和完成表。Vertico 仅提供完成 UI，但
 
 这个包提供名为 orderless 补全风格，它使用空格分割匹配模式，模式的顺序没有关系，但是 AND 关系。各模式可以使用如
 下几种类型：
-1. 字面意思(literally);
-2. 正则表达式(regexp);
-3. 首字母缩写(initialism);
-4. flex 样式或多个单词前缀。
+1. 字面意思(literally): the component is treated as a literal string that must occur in the candidate.
+2. 正则表达式(regexp): the component is treated as a regexp that must match somewhere in the candidate.
+3. 首字母缩写(initialism): each character of the component should appear as the beginning of a word in the
+   candidate, in order. This maps abc to \<a.*\<b.*\c.
+4. flex 样式或多个单词前缀：the characters of the component should appear in that order in the candidate, but
+   not necessarily consecutively. This maps abc to a.*b.*c.
 
-默认情况下，启用正则表达式和文字匹配。
+默认情况下，启用字面意思和正则表达式匹配。
 
-orderless 过滤 vertico 提供的候选者, [[https://github.com/minad/consult/wiki][支持多种 dispatch 组合]], 如 =!zhangjun hang$=:
-+ ~~flex flex~~
-+ ~=literal literal=~
-+ ~%char-fold char-fold%~
-+ ~`initialism initialism`~
-+ ~!without-literal without-literal!~ 
-+ ~.ext(file extension)~
-+ ~regexp$(regexp matching at end)~
+orderless 的 style dispatchers 机制可以更灵活的定义输入字符串的匹配风格，可以通过变量
+orderless-style-dispatchers 来定义，默认值为 orderless-affix-dispatch, 它使用一种简单的前缀或后缀的字符(串)来
+表示各种风格：
++ ~!~ :: makes the rest of the component match using =orderless-without-literal=, that is, both =!bad and bad!= will
+  match strings that =do not contain the substring bad=.
++ ~,~ :: uses orderless-initialism.
++ ~=~ :: uses orderless-literal.
++ ~~~ :: uses orderless-flex.
++ ~%~ ::  makes the string match ignoring diacritics and similar inflections on characters (it uses the function
+  =char-fold-to-regexp= to do this).
+
+! 只能对 =字面量= 匹配取反（orderless-without-literal) ，和其他 dispatch 字符连用时, ! 需要前缀形式，如 ~!=.go~ 将
+不匹配含有字面量 .go 的候选者。
 
 #+begin_src  emacs-lisp
 (use-package orderless
   :config
-  ;; @minad’s orderless configuration: https://github.com/minad/consult/wiki#minads-orderless-configuration
-  (defvar +orderless-dispatch-alist
-    '((?% . char-fold-to-regexp)
-      (?! . orderless-without-literal)
-      (?`. orderless-initialism)
-      (?= . orderless-literal)
-      (?~ . orderless-flex)))
-
-  (defun +orderless--suffix-regexp ()
+  ;; https://github.com/minad/consult/wiki#minads-orderless-configuration
+  (defun +orderless--consult-suffix ()
+    "Regexp which matches the end of string with Consult tofu support."
     (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
         (format "[%c-%c]*$"
                 consult--tofu-char
@@ -531,37 +525,28 @@ orderless 过滤 vertico 提供的候选者, [[https://github.com/minad/consult/
       "$"))
 
   ;; Recognizes the following patterns:
-  ;; * ~flex flex~
-  ;; * =literal literal=
-  ;; * %char-fold char-fold%
-  ;; * `initialism initialism`
-  ;; * !without-literal without-literal!
   ;; * .ext (file extension)
   ;; * regexp$ (regexp matching at end)
-  (defun +orderless-dispatch (word _index _total)
+  (defun +orderless-consult-dispatch (word _index _total)
     (cond
      ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
      ((string-suffix-p "$" word)
-      `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--suffix-regexp))))
+      `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
      ;; File extensions
      ((and (or minibuffer-completing-file-name
                (derived-mode-p 'eshell-mode))
            (string-match-p "\\`\\.." word))
-      `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--suffix-regexp))))
-     ;; Ignore single !
-     ((equal "!" word) `(orderless-literal . ""))
-     ;; Prefix and suffix
-     ((if-let (x (assq (aref word 0) +orderless-dispatch-alist))
-          (cons (cdr x) (substring word 1))
-        (when-let (x (assq (aref word (1- (length word))) +orderless-dispatch-alist))
-          (cons (cdr x) (substring word 0 -1)))))))
-  ;; 使用上面自定义的 dispatch。
-  (setq orderless-style-dispatchers '(+orderless-dispatch))
-  
+      `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
+
+  ;; 在 orderless-affix-dispatch 的基础上添加上面支持文件名扩展和 正则表达式$ 的 dispatchers 。
+  (setq orderless-style-dispatchers (list #'+orderless-consult-dispatch
+                                          #'orderless-affix-dispatch))
+
   ;; 自定义名为 +orderless-with-initialism 的 orderless 风格。
   (orderless-define-completion-style +orderless-with-initialism
     (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
-  ;; 使用 orderless 和 emacs 原生的 basic 补全风格， 且 orderless 的优先级更高。
+  
+  ;; 使用 orderless 和 emacs 原生的 basic 补全风格， 但 orderless 的优先级更高。
   (setq completion-styles '(orderless basic))
   (setq completion-category-defaults nil)
   ;; 进一步设置各 category 使用的补全风格。
@@ -569,16 +554,19 @@ orderless 过滤 vertico 提供的候选者, [[https://github.com/minad/consult/
         '(;; buffer name 补全
           (buffer (styles +orderless-with-initialism)) 
           ;; file path&name 补全, partial-completion 提供了 wildcard 支持。
-          (file (styles partial-completion basic)) 
+          (file (styles basic partial-completion)) 
           ;; M-x Command 补全
           (command (styles +orderless-with-initialism)) 
           ;; variable 补全
           (variable (styles +orderless-with-initialism))
           ;; symbol 补全
-          (symbol (styles +orderless-with-initialism)))) 
+          (symbol (styles +orderless-with-initialism))
+          )) 
   ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
 #+end_src
++ partial-completion 支持 shell wildcards 和部分文件路径，如 /u/s/l for /usr/share/local;
++ 已知的 [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/prot-emacs-modules/prot-emacs-completion-common.el#L60][completion categories]];
 
 ** consult
 
@@ -600,12 +588,14 @@ which rg || brew install ripgrep
   ;; 预览寄存器。
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
-  ;; 引用定义和跳转。
+  ;; 使用 consult 来预览 xref 的引用定义和跳转。
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
   :config
   ;; 按 C-l 激活预览，否则 Buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key "C-l")
+  ;; Use minibuffer completion as the UI for completion-at-point. 也可以使用 Corfu 或 Company 等直接在 buffer
+  ;; 中 popup 显示补全。
   (setq completion-in-region-function #'consult-completion-in-region)
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil)
@@ -665,15 +655,23 @@ which rg || brew install ripgrep
 (global-set-key (kbd "M-g m") #'consult-mark)
 (global-set-key (kbd "M-g k") #'consult-global-mark)
 (global-set-key (kbd "M-g i") #'consult-imenu)
+;;Jump to imenu item in project buffers, with the same major mode as the current buffer. 
 (global-set-key (kbd "M-g I") #'consult-imenu-multi)
-;; M-s 绑定 (search-map)
-(global-set-key (kbd "M-s d") #'consult-find)
-(global-set-key (kbd "M-s D") #'consult-locate)
+;; M-s 绑定 (search-map)使用 # 分割的两段式匹配, 第一段为正则表达式, 例如: #regexps#filter-string, 输入的必须
+;; 时 Emacs 正则表达式, consult 再转换为对应 grep/ripgrep 正则表达式。多个正则表达式使用空格分割，必须都需要匹
+;; 配。如果要批评空格，则需要使用转移字符。filter-string 是对正则批评的内容进行过滤，支持 orderless 风格的匹配
+;; 字符串列表。例如: #\(consult\|embark\): Search for “consult” or “embark” using grep. Note the usage of
+;; Emacs-style regular expressions.
 (global-set-key (kbd "M-s g") #'consult-grep)
 (global-set-key (kbd "M-s G") #'consult-git-grep)
 (global-set-key (kbd "M-s r") #'consult-ripgrep)
+;; 对文件名使用正则匹配。
+(global-set-key (kbd "M-s d") #'consult-find)
+(global-set-key (kbd "M-s D") #'consult-locate)
 (global-set-key (kbd "M-s l") #'consult-line)
 (global-set-key (kbd "M-s M-l") #'consult-line)
+;; Search dynamically across multiple buffers. By default search across project buffers. If invoked with a
+;; prefix argument search across all buffers.
 (global-set-key (kbd "M-s L") #'consult-line-multi)
 ;; Isearch 集成。
 (global-set-key (kbd "M-s e") #'consult-isearch-history)
@@ -698,7 +696,8 @@ which rg || brew install ripgrep
   :init
   ;; 使用 C-h 来显示 key preifx 绑定。
   (setq prefix-help-command #'embark-prefix-help-command)
-  (setq embark-quit-after-action nil)
+  ;; 执行完 action 后不关闭 window 。
+  ;;(setq embark-quit-after-action nil)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
   ;; 隐藏 Embark live/completions buffers 的 modeline.
@@ -707,12 +706,18 @@ which rg || brew install ripgrep
                  nil
                  (window-parameters (mode-line-format . none))))
   (global-set-key (kbd "C-;") #'embark-act)
+  ;; 描述当前 buffer 可以使用的快捷键。
   (define-key global-map [remap describe-bindings] #'embark-bindings))
 
-(use-package embark-consult :after (embark consult)  :hook  (embark-collect-mode . consult-preview-at-point-mode))
+;; embark-consult 支持 embark 和 consult 集成，如使用 wgrep 编辑 consult grep/line 的 export 的结果。
+(use-package embark-consult
+  :after (embark consult)
+  :hook  (embark-collect-mode . consult-preview-at-point-mode))
+
+;; 编辑 grep buffers, 可以和 consult-grep 和 embark-export 联合使用。
+(use-package wgrep)
 #+end_src
 + 使用 gnu find 命令, 需要加环境变量 ~export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"~
-+ embark-consult 支持 embark 和 consult 集成，如使用 wgrep 编辑 consult grep/line 的 export 的结果。
 
 ** marginalia
 
@@ -743,7 +748,6 @@ which rg || brew install ripgrep
   (yas-global-mode 1))
 
 (use-package consult-yasnippet
-  :defer
   :after(consult yasnippet)
   :config
   (define-key yas-minor-mode-map (kbd "C-c y") #'consult-yasnippet))
@@ -756,7 +760,7 @@ which rg || brew install ripgrep
 
 * dired
 
-安装 coreutils 包：
+使用 GNU 系列替换 MacOS 自带的 BSD 风格包：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 which tac || brew install coreutils
 #+end_src
@@ -793,7 +797,6 @@ which tac || brew install coreutils
           ".idea"
           ".project"
           ".settings"
-          ".svn"
           "bootstrap*"
           "pyenv"
           "target"
@@ -810,33 +813,22 @@ which tac || brew install coreutils
           "*.jar"
           "*.xd"
           "TAGS"
-          "dependency-reduced-pom.xml"
           "projectile.cache"
-          "workbench.xmi"
           "GPATH"
           "GRTAGS"
           "GTAGS"
-          ".TAGS"
           "TAGS"
-          ".classpath"
           ".project"
           ".DS_Store"
           )
 	 grep-find-ignored-files)))
 
-;; 编辑 grep buffers, 可以和 consult-grep 和 embark-export 联合使用。
-(use-package wgrep)
-
 (global-set-key "\C-cn" 'find-dired)
 (global-set-key "\C-cN" 'grep-find)
-#+end_src
 
-ctrlf 是 isearch 更好的替代品（搜索结果编号，支持：C-v, M-v, M-<, M->, C-l）:
-#+begin_src emacs-lisp
-(use-package ctrlf
-  :config
-  (ctrlf-mode +1)
-  (add-hook 'pdf-isearch-minor-mode-hook (lambda () (ctrlf-local-mode -1))))
+;; 显示当前和总的数量。
+(setq isearch-lazy-count t)
+(setq isearch-lazy-highlight t)
 #+end_src
 
 在线搜索：
@@ -855,76 +847,268 @@ ctrlf 是 isearch 更好的替代品（搜索结果编号，支持：C-v, M-v, M
   (engine-mode t)
   ;;(setq engine/browser-function 'eww-browse-url)
   (defengine github "https://github.com/search?ref=simplesearch&q=%s" :keybinding "h")
-  (defengine google "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s" :keybinding "g")
-  (defengine twitter "https://twitter.com/search?q=%s" :keybinding "t")
-  (defengine wikipedia "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s" :keybinding "w" :docstring "Searchin' the wikis."))
+  (defengine google "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s" :keybinding "g"))
 #+end_src
 
-* pyim
+* rime
 
+Mac 系统安装 RIME 输入法：
+1. 下载鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
+   + 或者 rime 核心开发者的 Fork: [[https://github.com/LEOYoon-Tsaw/squirrel][LEOYoon-Tsaw/squirrel]]。 
+2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
+3. 重新登录用户，然后就可以使用 =Control-+= 来触发 RIME 输入法了。
+4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
+5. 部署生效,:
+   + 如果修改了 =~/Library/Rime= 下的配置，必须点击鼠须管的 “重新部署” 才能生效。
+   + 对于 emacs-rime，如果修改了 =~/Library/Rime= 下的配置，需要执行 =M-x rime-deploy= 生效；
+
+下载 [[https://github.com/rime/librime/releases][librime]] 库, emacs-rime 使用它与系统的 RIME 交互：
+#+begin_src bash :tangle no
+curl -L -O https://github.com/rime/librime/releases/download/1.8.5/rime-08dd95f-macOS.tar.bz2
+bunzip2 rime-08dd95f-macOS.tar.bz2
+mkdir ~/.emacs.d/librime
+mv rime-08dd95f-macOS/dist ~/.emacs.d/librime
+$ ls ~/.emacs.d/librime/dist/
+bin/  include/  lib/  share/
+rm -rf rime-08dd95f-macOS.tar.bz2
+# 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
+sudo spctl --master-disable
+# 后续再开启：sudo spctl --master-enable
+#+end_src
+
+下载 [[https://github.com/iDvel/rime-ice.git][iDvel/rime-ice]] 雾凇拼音输入法方案：
+#+begin_src shell :tangle no
+$ mv Rime Rime.bak.20230406
+$ cd
+$ mkdir ~/Library/Rime
+$ git clone https://github.com/iDvel/rime-ice --depth=1
+$ cp -r rime-ice/* ~/Library/Rime
+# 后续可以 git pull 更新 rime-ice。
+#+end_src
++ 修改 ~/Library/Rime/installation.yaml 文件， 添加 sync_dir: /Users/zhangjun/.emacs.d/sync/rime, 表示将用户数据
+  同步到这个目录下。然后执行 M-x rime-deploy;
++ 常见问题：https://github.com/iDvel/rime-ice/issues/133
+
+配置个人同步目录：
+#+begin_src yaml :tangle ~/Library/Rime/installation.yaml
+distribution_code_name: "emacs-rime"
+distribution_name: Rime
+distribution_version: 1.0.1
+install_time: "Thu Apr  6 17:33:36 2023"
+# 本机的 ID 标志，默认是一串 UUID
+# 生成的文件夹是这个名字，可以改成更好识别的名称
+installation_id: "cde8ff26-5e08-466c-bd2d-aac2aeaedb25"
+rime_version: 1.8.5
+update_time: "Thu Apr  6 21:04:16 2023"
+# 同步的路径，默认是当前配置目录下的 `sync/`
+sync_dir: /Users/zhangjun/.emacs.d/sync/rime
+# 点击「同步用户数据」后，Rime 会和配置目录下的 *.userdb/ 进行双向更新同步。
+# 同步目录（/path/RimeSync/MBP-001）下生成的 *.userdb.txt 就是用户词典了，里面都是输入过的内容。
+#+end_src
+
+RIME 输入法自定义缺省配置中文：
++ 注意：对于列表类型的 patch, 必须列出修改后的整个列表值，不支持不分列表。
+#+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
+patch:
+  # 方案列表
+  schema_list:
+    - schema: rime_ice
+    #- schema: double_pinyin
+    #- schema: double_pinyin_flypy
+  menu/page_size: 9
+  ascii_composer/good_old_caps_lock: true
+  ascii_composer/switch_key:
+    Caps_Lock: clear # commit_code | commit_text | clear
+    Shift_L: commit_code # commit_code | commit_text | inline_ascii | clear | noop, 下同
+    Shift_R: noop
+    Control_L: noop
+    Control_R: noop
+  switcher/hotkeys:
+  - F4
+  - "Control+plus" # 使用 C-+ 调出输入法菜单
+  key_binder/bindings:
+  - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
+  - { when: paging, accept: minus, send: Page_Up }                 # 上一页
+  - { when: always, accept: "Control+period", toggle: ascii_mode}   # 中英文切换, Control+equal
+  - { when: always, accept: "Control+comma", toggle: ascii_punct} # 中英文标点切换
+  #- { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
+# 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
+#+end_src
+
+模糊音配置：
++ 注意：对于列表类型的 patch, 必须列出修改后的整个列表值，不支持不分列表。
+#+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml 
+patch:
+  # 模糊拼音
+  "speller/algebra":
+    ### 模糊音
+    # 声母
+    - derive/^([zcs])h/$1/          # z c s → zh ch sh
+    - derive/^([zcs])([^h])/$1h$2/  # zh ch sh → z c s
+    #- derive/^l/n/  # n → l
+    #- derive/^n/l/  # l → n
+    #- derive/^f/h/  # …………
+    #- derive/^h/f/  # …………
+    # 韵母
+    - derive/in/ing/
+    - derive/ing/in/
+
+    ### 超级简拼
+    - erase/^hm$/ # 响应超级简拼，取消「噷 hm」的独占
+    - erase/^m$/  # 响应超级简拼，取消「呣 m」的独占
+    - erase/^n$/  # 响应超级简拼，取消「嗯 n」的独占
+    - erase/^ng$/ # 响应超级简拼，取消「嗯 ng」的独占
+    - abbrev/^([a-z]).+$/$1/   # 超级简拼
+    - abbrev/^([zcs]h).+$/$1/  # 超级简拼中，zh ch sh 视为整体（ch'sh → 城市），而不是像这样分开（c'h's'h → 吃好睡好）。
+
+    ### v u 转换，增加对词库中「nue/nve」「qu/qv」等不同注音的支持
+    - derive/^([nl])ue$/$1ve/
+    - derive/^([nl])ve$/$1ue/
+    - derive/^([jqxy])u/$1v/
+    - derive/^([jqxy])v/$1u/
+
+    ### 可输入大写字母，做了 xlit 转写是为了适配双拼
+    - xlit/āḃçďēḟḡĥīĵḱĺḿńōṕɋŕśťūṽẃẋȳź/ABCDEFGHIJKLMNOPQRSTUVWXYZ/
+
+    ### 自动纠错
+    # 有些规则对全拼简拼混输有副作用：如「x'ai 喜爱」被纠错为「xia 下」
+    # zh、ch、sh
+    - derive/([zcs])h(a|e|i|u|ai|ei|an|en|ou|uo|ua|un|ui|uan|uai|uang|ang|eng|ong)$/h$1$2/  # hzi → zhi
+    - derive/([zcs])h([aeiu])$/$1$2h/  # zih → zhi
+    # ai
+    - derive/^([wghk])ai$/$1ia/  # wia → wai
+    # ia
+    - derive/([qjx])ia$/$1ai/  # qai → qia
+    # ei
+    - derive/([wtfghkz])ei$/$1ie/
+    # ie
+    - derive/([jqx])ie$/$1ei/
+    # ao
+    - derive/([rtypsdghklzcbnm])ao$/$1oa/
+    # ou
+    - derive/([ypfm])ou$/$1uo/
+    # uo（无）
+    # an
+    - derive/([wrtypsdfghklzcbnm])an$/$1na/
+    # en
+    - derive/([wrpsdfghklzcbnm])en$/$1ne/
+    # ang
+    - derive/([wrtypsdfghklzcbnm])ang$/$1nag/
+    - derive/([wrtypsdfghklzcbnm])ang$/$1agn/
+    # eng
+    - derive/([wrtpsdfghklzcbnm])eng$/$1neg/
+    - derive/([wrtpsdfghklzcbnm])eng$/$1egn/
+    # ing
+    - derive/([qtypdjlxbnm])ing$/$1nig/
+    - derive/([qtypdjlxbnm])ing$/$1ign/
+    # ong
+    - derive/([rtysdghklzcn])ong$/$1nog/
+    - derive/([rtysdghklzcn])ong$/$1ogn/
+    # iao
+    - derive/([qtpdjlxbnm])iao$/$1ioa/
+    - derive/([qtpdjlxbnm])iao$/$1oia/
+    # ui
+    - derive/([rtsghkzc])ui$/$1iu/
+    # iu
+    - derive/([qjlxnm])iu$/$1ui/
+    # ian
+    - derive/([qtpdjlxbnm])ian$/$1ain/
+    # - derive/([qtpdjlxbnm])ian$/$1ina/ # 和「李娜、蒂娜、缉拿」等常用词有冲突
+    # in
+    - derive/([qypjlxbnm])in$/$1ni/
+    # iang
+    - derive/([qjlxn])iang$/$1aing/
+    - derive/([qjlxn])iang$/$1inag/
+    # ua
+    - derive/([g|k|h|zh|sh])ua$/$1au/
+    # uai
+    - derive/([g|h|k|zh|ch|sh])uai$/$1aui/
+    - derive/([g|h|k|zh|ch|sh])uai$/$1uia/
+    # uan
+    - derive/([qrtysdghjklzxcn])uan$/$1aun/
+    # - derive/([qrtysdghjklzxcn])uan$/$1una/ # 和「去哪、露娜」等常用词有冲突
+    # un
+    - derive/([qrtysdghjklzxc])un$/$1nu/
+    # ue
+    - derive/([nlyjqx])ue$/$1eu/
+    # uang
+    - derive/([g|h|k|zh|ch|sh])uang$/$1aung/
+    - derive/([g|h|k|zh|ch|sh])uang$/$1uagn/
+    - derive/([g|h|k|zh|ch|sh])uang$/$1unag/
+    - derive/([g|h|k|zh|ch|sh])uang$/$1augn/
+    # iong
+    - derive/([jqx])iong$/$1inog/
+    - derive/([jqx])iong$/$1oing/
+    - derive/([jqx])iong$/$1iogn/
+    - derive/([jqx])iong$/$1oign/
+    # 其他
+    - derive/([rtsdghkzc])o(u|ng)$/$1o/ # do → dou|dong
+    - derive/ong$/on/ # lon → long
+    - derive/([tl])eng$/$1en/ # ten → teng
+    - derive/([qwrtypsdfghjklzxcbnm])([aeio])ng$/$1ng/ # lng → lang、leng、ling、long
+#+end_src
+
+配置 Emacs:
 #+begin_src emacs-lisp
-(setq-default default-input-method "pyim")
-
-(use-package pyim
-  :straight (pyim :repo "tumashu/pyim")
+(use-package rime
+  ;;:ensure-system-package
+  ;;("/Applications/SwitchKey.app" . "brew install --cask switchkey")
+  :custom
+  (rime-user-data-dir "~/Library/Rime/")
+  (rime-librime-root "~/.emacs.d/librime/dist")
+  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@29/include")
   :hook
-  ;; 设置缺省输入法为 pyim。
-  (emacs-startup . (lambda () (setq default-input-method "pyim")))
+  (emacs-startup . (lambda () (setq default-input-method "rime")))
+  :bind
+  ( :map rime-active-mode-map
+    ;; 在已经激活 Rime 候选菜单时，强制在中英文之间切换，直到按回车。
+    ("M-j" . 'rime-inline-ascii)
+    :map rime-mode-map
+    ;; 强制切换到中文模式
+    ("M-j" . 'rime-force-enable)
+    ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings 配置相匹配。
+    ;; 中英文切换
+    ("C-." . 'rime-send-keybinding)
+    ;; 输入法菜单
+    ("C-+" . 'rime-send-keybinding)
+    ;; 中英文标点切换
+    ("C-," . 'rime-send-keybinding)
+    ;; 全半角切换
+    ;; ("C-," . 'rime-send-keybinding)
+    )
   :config
-  (setq pyim-title "IM")
-  (setq pyim-indicator-modeline-string '("CN" "EN"))
-  ;; 单字符快捷键，可以实现快速切换标点符号和添加个人生词。
-  (setq pyim-outcome-trigger "^")
-  (setq pyim-dcache-directory "~/.emacs.d/sync/pyim/dcache/")
-  ;; 使用全拼。
-  (pyim-default-scheme 'quanpin)
-  ;; 使用百度云拼音。
-  (setq pyim-cloudim 'baidu)
-  ;; 关闭代码搜索中文功能（比如拼音，五笔码等）， 会导致 isearch 卡死。
-  (pyim-isearch-mode nil)
-  ;; 中文使用全角标点，英文使用半角标点。
-  (setq-default pyim-punctuation-translate-p '(auto yes no))
-  ;; posframe 性能更好且显式的较为干净, popup 较慢且容易干扰当前 buffer。
-  (setq-default pyim-page-tooltip 'posframe)
-  ;; 设置模糊音。
-  (setq pyim-pinyin-fuzzy-alist '( ("z" "zh") ("c" "ch") ("s" "sh") ("en" "eng") ("in" "ing")))
-  ;; Dictionaries:
-  ;;   pyim-greatdict is not recommended. It has too many useless words and slows down pyim.
-  ;;
-  ;;   Download pyim-bigdict,
-  ;;   curl -L http://tumashu.github.io/pyim-bigdict/pyim-bigdict.pyim.gz | zcat > ~/.eim/pyim-bigdict.pyim
-  ;;
-  ;;   Download pyim-tsinghua (recommended),
-  ;;   curl -L https://raw.githubusercontent.com/redguardtoo/pyim-tsinghua-dict/master/pyim-tsinghua-dict.pyim > ~/.eim/pyim-tsinghua-dict.pyim
-  (setq pyim-dicts '(
-                     (:name "tsinghua" :file "~/.emacs.d/straight/repos/pyim-tsinghua-dict/pyim-tsinghua-dict.pyim")
-                     ;; (:name "pyim-bigdict" :file "~/.emacs.d/sync/pyim/pyim-bigdict.pyim")
-                     ))
-  ;; 使用性能更好的 pyim-dregcache dcache 后端。
-  ;;(setq pyim-dcache-backend 'pyim-dregcache)
-  ;; 设置中英文自动切换。
-  (setq-default pyim-english-input-switch-functions
-    	        '(pyim-probe-program-mode
-    	          pyim-probe-auto-english
-    	          pyim-probe-dynamic-english
-    	          ;; pyim-probe-org-structure-template
-    	          ))
-  ;; 显示候选词数量。
-  (setq pyim-page-length 8)
-  ;; 输入法切换。
-  (global-set-key (kbd "C-\\") #'toggle-input-method)
-  ;; 中英文切换。
-  (global-set-key (kbd "C-.") #'pyim-toggle-input-ascii)
-  ;; 金手指设置，将光标处的拼音字符串转换为中文。
-  (global-set-key (kbd "M-j") #'pyim-convert-string-at-point))
+  ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
+  (setq mode-line-mule-info '((:eval (rime-lighter))))
+  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
+  (setq rime-inline-ascii-trigger 'shift-l)
+  ;; 临时英文模式。
+  (setq rime-disable-predicates
+        '(rime-predicate-ace-window-p
+          rime-predicate-hydra-p
+          rime-predicate-current-uppercase-letter-p
+          ;;rime-predicate-after-alphabet-char-p
+          ;;rime-predicate-prog-in-code-p
+          ))
+  (setq rime-show-candidate 'posframe)
+  (setq default-input-method "rime")
 
-;; 清华大学开放中文词库。
-(use-package pyim-tsinghua-dict
-  :straight (pyim-tsinghua-dict :host github :repo "redguardtoo/pyim-tsinghua-dict")
-  :after pyim
-  :config
-  (pyim-tsinghua-dict-enable))
+  (setq rime-posframe-properties
+        (list :background-color "#333333"
+              :foreground-color "#dcdccc"
+              :internal-border-width 2))
+
+  ;; 部分 major-mode 关闭 RIME 输入法。
+  (defadvice switch-to-buffer (after activate-input-method activate)
+    (if (or (string-match "vterm-mode" (symbol-name major-mode))
+            (string-match "dired-mode" (symbol-name major-mode))
+            (string-match "image-mode" (symbol-name major-mode))
+            (string-match "minibuffer-mode" (symbol-name major-mode)))
+        (activate-input-method nil)
+      (activate-input-method "rime"))))
 #+end_src
++ 使用 [[https://github.com/itsuhane/SwitchKey][SwitchKey]] 将 Emacs 的默认系统输入法设置为英文，防止搜狗输入法干扰 RIME。
++ 后续如果修改 ~/Library/Rime 目录下的内容， 则需要执行命令 =M-x rime-deploy= 命令生效。
++ [[https://github.com/iDvel/rime-ice][雾凇拼音]] 主页有一些输入用例， 如果你打同样的拼音可以补全相同的中文候选词就证明已经成功用上了雾凇拼音。
 
 * org
 ** org
@@ -935,9 +1119,12 @@ which watchexec || brew install watchexec
 which pygmentize || brew install pygments
 which magick || brew install imagemagick
 #+end_src
++ pygments 实现 Latex PDF 代码语法高亮；
++ imagemagick 用于图片分辨率转换；
 
 #+begin_src emacs-lisp
 (use-package org
+  :straight (:type built-in)
   ;;:straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :config
@@ -983,10 +1170,12 @@ which magick || brew install imagemagick
         org-export-with-sub-superscripts nil
         ;; heaerline 不显示 *。
         org-hide-leading-stars t
-        ;; 缩进 4 个字符。
-        org-indent-indentation-per-level 4
+        ;; 缩进 2 个字符。
+        org-indent-indentation-per-level 2
         ;; 内容缩进与对应 headerline 一致。
-        org-adapt-indentation t
+        ;;org-adapt-indentation t
+        org-list-indent-offset 2
+        org-html-validation-link nil
         org-startup-indented t)
   ;;(setq org-fold-core-style 'overlays)
   (setq org-tags-column 0)
@@ -999,9 +1188,11 @@ which magick || brew install imagemagick
   (setq org-id-link-to-org-use-id t)
   ;; 光标位于 section 中间时不 split line.
   (setq org-M-RET-may-split-line nil)
-  (setq org-todo-keywords
-        '((sequence "☞ TODO(t@)" "⚔ INPROCESS(s@)" "⚑ WAITING(w!)" "|" "☟ NEXT(n)" "✰ Important(i!)" "✔ DONE(d!)" "✘ CANCELED(c!)")
-          (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
+  (setq org-todo-keywords '((sequence "TODO(t)" "DOING(d)" "|" "DONE(d)")
+                            (sequence "BLOCKED(b)" "|" "CANCELLED(c)")))
+  ;; (setq org-todo-keywords
+  ;;       '((sequence "☞ TODO(t@)" "⚔ INPROCESS(s@)" "⚑ WAITING(w!)" "|" "☟ NEXT(n)" "✰ Important(i!)" "✔ DONE(d!)" "✘ CANCELED(c!)")
+  ;;         (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
@@ -1031,27 +1222,28 @@ which magick || brew install imagemagick
 
 ;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
 ;;(setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
+(setq org-element-use-cache nil)
 #+END_SRC
-+ pygments 实现 Latex PDF 代码语法高亮；
-+ imagemagick 用于图片分辨率装换；
   
 ** face
 
 #+begin_src emacs-lisp
 (defun my/org-faces ()
+  ;; 行之间添加 2 像素的间距。
   (setq-default line-spacing 2)
-  (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.1)
-                  (org-level-6 . 1.1)
-                  (org-level-7 . 1.1)
-                  (org-level-8 . 1.1)))
-    (set-face-attribute (car face) nil :height (cdr face)))
+  ;; (dolist (face '((org-level-1 . 1.2)
+  ;;                 (org-level-2 . 1.1)
+  ;;                 (org-level-3 . 1.05)
+  ;;                 (org-level-4 . 1.0)
+  ;;                 (org-level-5 . 1.1)
+  ;;                 (org-level-6 . 1.1)
+  ;;                 (org-level-7 . 1.1)
+  ;;                 (org-level-8 . 1.1)))
+  ;;   (set-face-attribute (car face) nil :height (cdr face)))
   ;; 美化 BEGIN_SRC 整行。
   (setq org-fontify-whole-block-delimiter-line t)
   ;; 如果配置参数 :inherit 'fixed-pitch, 则需要明确设置 fixed-pitch 字体，否则选择的缺省字体可能导致显示问题。
+  ;; 不建议配置 org-table 的字体和 height, 否则会导致中英文对不齐。
   (custom-theme-set-faces
    'user
    '(org-block ((t (:height 0.9))))
@@ -1068,7 +1260,7 @@ which magick || brew install imagemagick
    '(org-drawer ((t (:height 0.8))) t)
    '(org-special-keyword ((t (:height 0.8 :inherit 'fixed-pitch))))
    ;; table 使用中英文严格等宽的 Sarasa Mono SC 字体, 避免中英文不对齐。
-   '(org-table ((t (:font "Sarasa Mono SC" :height 0.9))))
+   ;;'(org-table ((t (:font "Sarasa Mono SC" :height 0.9))))
    '(org-verbatim ((t (:height 0.9))))
    '(org-tag ((t (:weight bold :height 0.8))))
    '(org-todo ((t (:inherit 'fixed-pitch))))
@@ -1086,8 +1278,8 @@ which magick || brew install imagemagick
   (org-mode . org-superstar-mode)
   :custom
   (org-superstar-remove-leading-stars t)
-  (org-superstar-headline-bullets-list '("◉"  "🞛" "✿" "○" "▷"))
-  (org-superstar-headline-bullets-list '("☰" "☱" "☲" "☳" "☴" "☵" "☶" "☷"))
+  (org-superstar-headline-bullets-list '("◉" "○" "▷" "🞛"))
+  ;;(org-superstar-headline-bullets-list '("☰" "☱" "☲" "☳" "☴" "☵" "☶" "☷"))
   (org-superstar-item-bullet-alist '((43 . "⬧") (45 . "⬨")))
   :custom-face
   (org-superstar-item ((t (:inherit 'fixed-pitch))))
@@ -1163,6 +1355,7 @@ which pngpaste || brew install pngpaste
 ;; 关闭 C-c C-c 触发 eval code.
 ;;(setq org-babel-no-eval-on-ctrl-c-ctrl-c nil)
 (setq org-src-fontify-natively t)
+;; 使用各语言的 Major Mode 来编辑 src block。
 (setq org-src-tab-acts-natively t)
 ;; 为 #+begin_quote 和  #+begin_verse 添加特殊 face 。
 (setq org-fontify-quote-and-verse-blocks t)
@@ -1170,10 +1363,13 @@ which pngpaste || brew install pngpaste
 (setq org-src-preserve-indentation t)
 (setq org-edit-src-content-indentation 0)
 ;; 在当前窗口编辑 SRC Block.
-(setq org-src-window-setup 'current-window)
+;; 2023.04.05 设置为 current-window 后会导致 src window 不退出。
+;;(setq org-src-window-setup 'current-window)
 ;; export 输出类型。
 (setq org-export-backends '(go md gfm html latex man))
-
+;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，
+;; 否则编辑 yaml src block 时提示找不到 yaml-mode。
+(add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
 (require 'org)
 ;; org bable 完整支持的语言列表（ob- 开头的文件）：
 ;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp
@@ -1186,13 +1382,13 @@ which pngpaste || brew install pngpaste
  'org-babel-load-languages
  '((shell . t)
    (js . t)
-   (java . t)
    (makefile . t)
    (go . t)
    (emacs-lisp . t)
    (python . t)
    (sed . t)
    (awk . t)
+   (plantuml . t)
    (dot . t)
    (css . t)))
 
@@ -1201,6 +1397,10 @@ which pngpaste || brew install pngpaste
 #+end_src
 
 ** tex
+
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+which pygmentize || brew install pygments
+#+end_src
 
 在 org 文档的头部添加参数：
 #+begin_verse :tangle no
@@ -1212,6 +1412,26 @@ which pngpaste || brew install pngpaste
 #+end_verse
 
 #+begin_src emacs-lisp
+;; engrave-faces 相比 minted 渲染速度更快。
+(use-package engrave-faces
+  :straight (:repo "tecosaur/engrave-faces")
+  :after ox-latex
+  :config
+  (require 'engrave-faces-latex)
+  ;; 使用默认 options, 否则生成 PDF 会报错。
+  ;; (setq org-latex-engraved-options
+  ;;       '(("commandchars" . "\\\\\\{\\}")
+  ;;         ("highlightcolor" . "white!95!black!80!blue")
+  ;;         ("breaklines" . "true")
+  ;;         ("breaksymbol" . "\\color{white!60!black}\\tiny\\ensuremath{\\hookrightarrow}")
+  ;;         ("frame" . "lines")
+  ;;         ("linenos" "true")
+  ;;         ("breaklines" "true")
+  ;;         ("numbersep" "2mm")
+  ;;         ("xleftmargin" "0.25in")
+  ;;         ))
+  (setq org-latex-src-block-backend 'engraved))
+
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
@@ -1219,21 +1439,26 @@ which pngpaste || brew install pngpaste
   ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
   ;; 保存 LaTeX 日志文件。
-  (setq org-latex-remove-logfiles nil)
+  ;;(setq org-latex-remove-logfiles nil)
+
   ;; 使用 minted 而非默认的 listings, 支持更多的语言类型，否则编译时报错。
-  (setq org-latex-listings 'minted)
+  ;;(setq org-latex-src-block-backend 'minted) ;; org-latex-listing 是该选项的别名。
+  ;; minted 配置。
+  ;; (setq org-latex-minted-options '(("frame" "lines")
+  ;;                                  ("framesep=2mm")
+  ;;                                  ("linenos" "true")
+  ;;                                  ("bgcolor" "lightgrey") ;; mystyle.sty 中定义的 color 名称
+  ;;                                  ("breaklines" "true")
+  ;;                                  ("breakanywhere" "true")
+  ;;                                  ("baselinestretch=1.2")
+  ;;                                  ("fontsize=\\footnotesize")
+  ;;                                  ("numbersep" "2mm")
+  ;;                                  ("xleftmargin" "0.25in")))
+  
   ;; 目录页前后分页。
   (setq org-latex-toc-command "\\clearpage \\tableofcontents \\clearpage")
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
-  ;; ;; Alist of packages to be inserted in every LaTeX header.
-  ;; (setq org-latex-packages-alist
-  ;;       (quote (("" "color" t)
-  ;;               ("" "xcolor" t)
-  ;;               ("" "listings" t)
-  ;;               ("" "fontspec" t)
-  ;;               ("" "parskip" t) ;; 增加正文段落的间距
-  ;;               ("AUTO" "inputenc" t))))
   (add-to-list 'org-latex-classes
                '("ctexart"
                  "\\documentclass[lang=cn,11pt,a4paper,table]{ctexart}
@@ -1244,34 +1469,7 @@ which pngpaste || brew install pngpaste
                  ("\\subsection{%s}" . "\\subsection*{%s}")
                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
                  ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
-  ;; 自定义 latex 语言环境(基于 tcolorbox), 参考：https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
-  (setq org-latex-custom-lang-environments
-        '((c "\\begin{programlist}[label={%l}]{c}{: %c}\n%s\\end{programlist}")
-          (ditaa "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (emacs-lisp "\\begin{programlist}[label={%l}]{lisp}{: %c}\n%s\\end{programlist}")
-          (ruby "\\begin{programlist}[label={%l}]{ruby}{: %c}\n%s\\end{programlist}")
-          (latex "\\begin{programlist}[label={%l}]{latex}{: %c}\n%s\\end{programlist}")
-          (go "\\begin{programlist}[label={%l}]{go}{: %c}\n%s\\end{programlist}")
-          (lua "\\begin{programlist}[label={%l}]{lua}{: %c}\n%s\\end{programlist}")
-          (java "\\begin{programlist}[label={%l}]{java}{: %c}\n%s\\end{programlist}")
-          (javascript "\\begin{programlist}[label={%l}]{javascript}{: %c}\n%s\\end{programlist}")
-          (json "\\begin{programlist}[label={%l}]{json}{: %c}\n%s\\end{programlist}")
-          (plantuml "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (yaml "\\begin{programlist}[label={%l}]{yaml}{: %c}\n%s\\end{programlist}")
-          (maxima "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (ipython "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
-          (python "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
-          (perl "\\begin{programlist}[label={%l}]{perl}{: %c}\n%s\\end{programlist}")
-          (html "\\begin{programlist}[label={%l}]{html}{: %c}\n%s\\end{programlist}")
-          (org "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (typescript "\\begin{programlist}[label={%l}]{typescript}{: %c}\n%s\\end{programlist}")
-          (scss "\\begin{programlist}[label={%l}]{scss}{: %c}\n%s\\end{programlist}")
-          (sh "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
-          (bash "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
-          (shell "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
-          (shellinput "\\begin{shellinput}[%c]\n%s\\end{shellinput}")
-          (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}"))))
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
 
 ;; org export html 格式时需要 htmlize.el 包来格式化代码。
 (use-package htmlize
@@ -1305,35 +1503,9 @@ which pngpaste || brew install pngpaste
       color={[rgb]{1,1,0.0}},
       width=0.8em,position=1pt]{#1}}}
 
-% 自定义 programlist 语言环境
-% https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
-\usepackage{tcolorbox}
-\tcbuselibrary{breakable,skins,raster,external,listings,minted}
-\tcbEXTERNALIZE
-\newtcblisting[
-  auto counter,
-  number within=section]{programlist}[3][]{
-  listing engine=minted,
-  minted style=emacs,
-  minted language=#2,
-  minted options={autogobble,fontsize=\footnotesize,breaklines,breakanywhere,baselinestretch=1.2,linenos,numbersep=3mm},
-  % 不显示 title
-  %title={\sffamily\bfseries 代码块 \thetcbcounter},
-  %title={\sffamily\bfseries 代码块 \thetcbcounter #3},
-  after,
-  breakable=true,
-  lowerbox=ignored,
-  hyphenationfix=true,
-  %边框颜色
-  %colback=blue!5!white,
-  %colframe=blue!85!black,
-  listing only,
-  enhanced,
-  drop fuzzy shadow southeast,
-  left=5mm,
-  overlay={\begin{tcbclipinterior}\fill[red!20!blue!20!white] (frame.south west) rectangle ([xshift=5mm]frame.north west);\end{tcbclipinterior}},
-  #1
-}
+% 代码高亮
+\usepackage{minted}
+\usemintedstyle{emacs}
 
 % 提示 title
 \usepackage[explicit]{titlesec}
@@ -1357,7 +1529,7 @@ which pngpaste || brew install pngpaste
 \setmainfont{Noto Serif SC}
 \setsansfont{Noto Sans SC}[Scale=MatchLowercase]
 \setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
-\setCJKmainfont[BoldFont = Noto Serif SC]{Noto Serif SC}
+\setCJKmainfont[BoldFont=Noto Serif SC]{Noto Serif SC}
 \setCJKsansfont{Noto Sans SC}
 \setCJKmonofont{Noto Sans Mono CJK SC}
 
@@ -1429,20 +1601,14 @@ which pngpaste || brew install pngpaste
   ((org-tree-slide-play . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor -1)
-                            ;;(beacon-mode -1)
                             (redraw-display)
                             (org-display-inline-images)
                             (text-scale-increase 1)
-                            ;;(centaur-tabs-mode 0)
-                            ;;(awesome-tab-mode 0)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
                             (text-scale-increase 0)
-                            ;;(beacon-mode +1)
-                            ;;(centaur-tabs-mode 1)
-                            ;;(awesome-tab-mode 1)
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header nil)
@@ -1528,7 +1694,37 @@ which pngpaste || brew install pngpaste
 #+end_src
 + 不开启 org-journal-enable-agenda-integration, 而是向 org-agenda-files 变量添加日志文件的方式。否则在历史日记
   被删除的情况下, 可能导致 Dashbard 显示 agenda 时 hang 。
-  
+
+为 org-mode 和 org-journal-mode 设置关键字提示：
+#+begin_src emacs-lisp
+(dolist (m '(org-mode org-journal-mode))
+  (font-lock-add-keywords m                        ; A bit silly but my headers are now
+                          `(("^\\*+ \\(TODO\\) "   ; shorter, and that is nice canceled
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "⚑") nil)))
+                            ("^\\*+ \\(DOING\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "⚐") nil)))
+                            ("^\\*+ \\(CANCELED\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "✘") nil)))
+                            ("^\\*+ \\(BLOCKED\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "✋") nil)))
+                            ("^\\*+ \\(DONE\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "✔") nil)))
+                            ;; Here is my approach for making the initial asterisks for listing items and
+                            ;; whatnot, appear as Unicode bullets ;; (without actually affecting the text
+                            ;; file or the behavior).
+                            ("^ +\\([-*]\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
+ #+end_src
+
+** memacs
+
+#+begin_src shell
+(setq org-link-abbrev-alist
+'(
+        	("tsfile" . "/Users/zhangjun/org/memacs/filenametimestamps.org_archive::/\*.*%s/")
+	))
+#+end_src
+
 * magit
 
 magit 是全宇宙最强大、最好用的 git 客户端，没有之一！
@@ -1541,6 +1737,10 @@ magit 是全宇宙最强大、最好用的 git 客户端，没有之一！
   ;; 在当前 window 中显示 magit buffer。
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
   (magit-log-arguments '("-n256" "--graph" "--decorate" "--color"))
+  ;; 按照 word 展示 diff。
+  (magit-diff-refine-hunk t)
+  ;; magit-clone 缺省保存的目录。
+  (magit-clone-default-directory "~/go/src/gitlab.alibaba-inc.com/apsara_paas")
   :config
   ;; kill 所有 magit buffer。
   (defun my-magit-kill-buffers (&rest _)
@@ -1664,13 +1864,19 @@ which direnv || brew install direnv
 
 ** lsp-bridge
 
-lsp-bridge 依赖 markdown-mode 和 python-epc(pip install epc).
+lsp-bridge 依赖如下 python packages:
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+pip3 install epc orjson sexpdata six paramiko
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package posframe)
 
 ;; dump-jump 支持 GNU Global 的 gtags 跳转。
 (use-package  dumb-jump
   :demand
+  :init
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
   :config
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
@@ -1704,7 +1910,7 @@ lsp-bridge 依赖 markdown-mode 和 python-epc(pip install epc).
   ;; 不在 modeline 显示 lsp-bridge 信息。
   (lsp-bridge-enable-mode-line nil)
   :config
-  (setq lsp-bridge-enable-log t)
+  (setq lsp-bridge-enable-log nil)
   (setq lsp-bridge-enable-signature-help t)
   ;;(setq lsp-bridge-signature-show-function 'lsp-bridge-signature-posframe)
   ;; word 补全。
@@ -1716,12 +1922,16 @@ lsp-bridge 依赖 markdown-mode 和 python-epc(pip install epc).
   (setq acm-backend-lsp-candidate-min-length 0)
   (setq acm-backend-lsp-enable-auto-import nil)
   (setq acm-backend-lsp-candidate-max-length 100)
+  (setq acm-enable-icon nil)
   (setq acm-enable-doc nil)
   (setq acm-enable-telega nil)
   (setq acm-enable-tabnine nil)
   (setq acm-enable-quick-access t)
   (setq lsp-bridge-diagnostic-tooltip-border-width 0)
   (setq lsp-bridge-enable-hover-diagnostic t)
+  ;; 关闭 code action 的 popup-menu.
+  (setq lsp-bridge-code-action-enable-popup-menu nil)
+  (setq lsp-bridge-lookup-doc-tooltip-max-width 100)
   (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
   ;;  过滤 warnning.
   (setq lsp-bridge-diagnostic-hide-severities '(2 3 4))
@@ -1826,6 +2036,7 @@ which yapf || pip install yapf
 which ipython || pip install ipython
 #+end_src
 
+使用 Emacs 内置的 python-mode：
 #+begin_src emacs-lisp
 (defun my/python-setup-shell (&rest args)
   (if (executable-find "ipython")
@@ -1840,7 +2051,7 @@ which ipython || pip install ipython
 (use-package yapfify :straight (:host github :repo "JorisE/yapfify"))
 
 (use-package python
-  :defer
+  :straight (:type built-in)
   :init
   (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
   (if (not (file-exists-p pyright-directory))
@@ -1914,23 +2125,26 @@ executionEnvironments：
 =*lsp-log*= buffer 的日志。
 
 ** go
+
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 which gopls || go install golang.org/x/tools/gopls@latest
 #+end_src
 
+使用 Emacs 内置的 go-ts-mode：
 #+begin_src emacs-lisp
 (defun my/go-setup ()
-    (setenv "GOOS" "linux")
-    (setenv "GOARCH" "amd64")
-     ;; go-mode 默认启用 tabs.
-    (setq indent-tabs-mode t)
-    (setq c-ts-common-indent-offset 8)
-    (setq c-basic-offset 8))
+  ;; 如果 GOOS 设置为 linux, 会导致 lsp-bridge 不可用。
+  ;;(setenv "GOOS" "linux")
+  ;;(setenv "GOARCH" "amd64")
+  ;; go-mode 默认启用 tabs.
+  (setq indent-tabs-mode t)
+  (setq c-ts-common-indent-offset 8)
+  (setq c-basic-offset 8))
 
-(use-package go-mode
-  :init
-  (setq godoc-reuse-buffer t))
-(add-hook 'go-mode-hook 'my/go-setup)
+;; (use-package go-mode
+;;   :init
+;;   (setq godoc-reuse-buffer t))
+;; (add-hook 'go-mode-hook 'my/go-setup)
 (add-hook 'go-ts-mode-hook 'my/go-setup)
 #+end_src
 + godoc-gogetdoc 调用外部命令 gogetdoc 来获取文档，速度慢，而且不显示类型的方法，不好用！
@@ -2114,14 +2328,16 @@ which vscode-css-language-server &>/dev/null || npm i -g vscode-langservers-extr
 #+end_src
 
 *** typescript
-typescript-mode 为 typescript 文件（扩展名为 .ts 和 .tsx) 提供编辑支持（major-mode)。 js-mode/js2-mode 则
-为.js/.jsx 文件提供编辑支持。
+
+使用 Emacs 内置的 typescript-ts-mode 为 typescript 文件（扩展名为 .ts 和 .tsx) 提供编辑支持（major-mode)。
+js-mode/js2-mode 则为 .js/.jsx 文件提供编辑支持。
 #+begin_src emacs-lisp
 ;; for .ts/.tsx file
-(use-package typescript-mode
-  :mode "\\.tsx?\\'"
-  :config
-  (setq typescript-indent-level 2))
+;; (use-package typescript-mode
+;;   :mode "\\.tsx?\\'"
+;;   :config
+;;   (setq typescript-indent-level 2))
+(setq typescript-ts-mode-indent-offset 2)
 #+end_src
 
 在安装 typescript-mode 包的同时，确保已安装 typescript 和 typescript-language-server 包：
@@ -2141,17 +2357,18 @@ prettier 提供了 javascript/typescript 的格式化的功能。import-js 则�
 
 *** js
 
-Emacs 27 内置的 js-mode 完整支持 .js/.jsx 文件的编辑, [[https://github.com/mooz/js2-mode#react-and-jsx][官方建议]]将 js2 作为 js-mode 的 minor-mode 来一起使用，这
-样 js2 为 js-mode 提供了更好的 AST 和 JavaScript linting 支持能力。
+Emacs 内置的 js-ts-mode 完整支持 .js/.jsx 文件的编辑, [[https://github.com/mooz/js2-mode#react-and-jsx][官方建议]]将 js2 作为 js-ts-mode 的 minor-mode 来一起使用，
+这样 js2 为 js-ts-mode 提供了更好的 AST 和 JavaScript linting 支持能力。
+
 #+begin_src emacs-lisp
 (use-package js2-mode
   :init
-  (add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js-mode))
+  (add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js-ts-mode))
   :config
-  ;; 仍然使用 js-mode 作为 .js/.jsx 的 marjor-mode, 但使用 js2-minor-mode 提供 AST 解析。
-  (add-hook 'js-mode-hook 'js2-minor-mode)
+  ;; 仍然使用 js-ts-mode 作为 .js/.jsx 的 marjor-mode, 但使用 js2-minor-mode 提供 AST 解析。
+  (add-hook 'js-ts-mode-hook 'js2-minor-mode)
   ;; 将 js2-mode 作为 .js/.jsx 的 major-mode
-  ;;(add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+  ;;(add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js2-mode))
   ;; 由于 lsp 已经提供了 diagnose 功能，故关闭 js2 自带的错误检查，防止干扰。
   (setq js2-mode-show-strict-warnings nil)
   (setq js2-mode-show-parse-errors nil)
@@ -2161,8 +2378,9 @@ Emacs 27 内置的 js-mode 完整支持 .js/.jsx 文件的编辑, [[https://gith
   (setq js2-basic-offset 2)
   (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
 
+;; 不再使用第三方 json-mode 包来打开 JSON 文件，内置的 json-ts-mode 性能更高。
 ;; json mode。
-(use-package json-mode :straight t :defer t)
+;;(use-package json-mode :straight t :defer t)
 #+end_src
 
 *** web-mode
@@ -2203,35 +2421,38 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
   
 ** yaml
 
+YAML 使用 Emacs 内置的 yaml-ts-mode。
 #+begin_src  emacs-lisp
-(use-package yaml-mode
+(use-package yaml-ts-mode
+  :straight (:type built-in)
   :mode "\\.ya?ml\\'"
   :config
-  (define-key yaml-mode-map (kbd "\C-m") #'newline-and-indent))
+  (define-key yaml-ts-mode-map (kbd "\C-m") #'newline-and-indent))
 #+end_src
 
 ** shell
 
-Emacs 通过名为 =Shell-script(sh-mode)= 的 major mode 来支持编辑 shell 脚本，由于各种 shell 脚本语法类似，所以
-sh-mode 其实也支持多种 shell 类型。
+Emacs 通过名为 =bash-ts-mode= 的 major mode 来支持编辑 shell 脚本。
 
 安装 bash language server:
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-bash-language-server -v &>/dev/null || npm i -g bash-language-serverw
+bash-language-server -v &>/dev/null || npm i -g bash-language-server
 #+end_src
 
-安装 Shell 脚本的静态分析工具 ShellCheck:
+bash language server 使用 shellcheck 做语法检查和静态分析，使用 lsp diagnose 机制来提示错误（不需要再安装
+flymake/flycheck)。 这里安装 Shell 脚本静态分析工具 ShellCheck, 支持对 shell 进行语法检查和错误诊断:
 #+begin_src bash ~/.emacs.d/init.sh
 shellcheck -V &>/dev/null || brew install shellcheck
 #+end_src
 
-bash language server 使用 shellcheck 做语法检查和静态分析，使用 lsp diagnose 机制来提示错误（不需要再安装
-flymake/flycheck)。
-
+设置 shell 脚本缩进规则：
 #+begin_src emacs-lisp
 (setq sh-basic-offset 2)
 (setq sh-indentation 2)
 #+end_src
+
+其它：
+1. [[https://google.github.io/styleguide/shellguide.html][Google Shell Style Guide]]
 
 ** treesit
 
@@ -2274,9 +2495,10 @@ flymake/flycheck)。
   :straight (treesit-auto :type git :host github :repo "renzmann/treesit-auto")
   :demand t
   :config
-  (setq treesit-auto t)
+  (setq treesit-auto-install nil)
   (global-treesit-auto-mode))
 #+end_src
++ 执行 M-x treesit-auto-install-all 来安装所有的 treesit modules。
 
 ** ts-fold
 
@@ -2306,7 +2528,7 @@ flymake/flycheck)。
   (yaml-ts-mode-hook . ts-movement-mode))
 
 (use-package ts-fold
-  :straight (ts-fold :type git :host github :repo "emacs-tree-sitter/ts-fold")
+  :straight (ts-fold :host github :repo "emacs-tree-sitter/ts-fold")
   :disabled
   :config
   (global-ts-fold-mode)
@@ -2324,8 +2546,9 @@ reference 搜索。
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 pip install pygments
 python -m pygments -h # gtags 使用 pygments 支持跟多语言
-
 brew install global
+
+# 在 ~/.bashrc 中添加如下配置：
 # 统一的 tags 文件目录
 export GTAGSOBJDIRPREFIX=~/.cache/gtags/ 
 mkdir $GTAGSOBJDIRPREFIX
@@ -2363,25 +2586,11 @@ citre 是基于 TAGS 文件的代码浏览工具， 支持[[https://github.com/u
   (global-set-key (kbd "C-x c u") 'citre-update-this-tags-file))
 #+end_src
 
-创建 Global TAG 数据库文件（~/.cache/gtags/)：
-+ M-x citre-global-update-database
-+ M-x citre-global-create-database
-
-使用 citre: 
-+ M-x citre-jump-to-reference, which reuses the citre-jump UI;
-+ M-x citre-peek-references, equivalent to citre-peek;
-+ M-x citre-ace-peek-references, equivalent to citre-ace-peek;
-+ M-x citre-peek-through-references, equivalent to citre-peek-through.
-
-citre 默认支持 imenu 和 xref 集成（通过向 xref-backend-functions hook 添加 citre-xref-backend）， 所以可以使用
-~M-.~ 和 ~M-,~ 跳转, 也可以使用 consult-imenu 展示当前 buffer 的条目。
-
-在 citre-jump 的弹出时 buffer 中可以使用正则语法对候选者进行过滤, 例如:
-: something kind:^member$ kind:^macro$ input:.c$
-
 ** compile
 
 #+begin_src emacs-lisp
+;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
+
 ;; Don't ask before killing the current compilation. This is useful if
 ;; you're running servers after compiling them, so that the compilation never finishes.
 (setq compilation-ask-about-save nil
@@ -2404,11 +2613,20 @@ citre 默认支持 imenu 和 xref 集成（通过向 xref-backend-functions hook
          (msg (format "Compilation took: %s" (format-time-string "%T.%N" elapsed t))))
     (save-excursion (goto-char (point-max)) (insert msg))
     (message "Compilation %s: %s" (string-trim-right why) msg)))
+
+(defun my/goto-compilation()
+  (interactive)
+  (switch-to-buffer
+   (get-buffer-create "*compilation*")))
+(global-set-key (kbd "C-c c") 'my/goto-compilation)
 #+end_src
 
 ** others
 
 #+begin_src emacs-lisp
+;; xref 的 history 局限于当前窗口（默认全局）。
+(setq xref-history-storage 'xref-window-local-history)
+
 ;; 移动到行或代码的开头、结尾。
 (use-package mwim
   :config
@@ -2418,8 +2636,21 @@ citre 默认支持 imenu 和 xref 集成（通过向 xref-backend-functions hook
 ;; 开发文档。
 (use-package dash-at-point
   :config
+  ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
   (global-set-key (kbd "C-c d .") #'dash-at-point)
-  (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset))
+  ;; 提示选择 docset;
+  (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
+  ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
+  (add-to-list 'dash-at-point-docsets "spf13/viper")
+  (add-to-list 'dash-at-point-docsets "spf13/cobra")
+  (add-to-list 'dash-at-point-docsets "spf13/pflag")
+  (add-to-list 'dash-at-point-docsets "k8s.io/api")
+  (add-to-list 'dash-at-point-docsets "k8s.io/apimachineary")
+  (add-to-list 'dash-at-point-docsets "k8s.io/client-go")
+  (add-to-list 'dash-at-point-docsets "k8s.io/klog")  
+  (add-to-list 'dash-at-point-docsets "sig.k8s.io/controller-runtime")
+  (add-to-list 'dash-at-point-docsets "k8s.io/componet-base")
+  (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))
 
 (use-package expand-region
   :init
@@ -2435,13 +2666,27 @@ citre 默认支持 imenu 和 xref 集成（通过向 xref-backend-functions hook
   (global-set-key (kbd "C-=") #'er/expand-region))
 #+end_src
 
-** blink-search
+** chatgpt-shell
 
+在 ~/.authinfo.gpg 文件中添加 api.openai.com 的 key，然后使用本地 socks5h 代理访问 API。
 #+begin_src emacs-lisp
-(use-package blink-search
-  :straight (blink-search :host github :repo "manateelazycat/blink-search" :files ("*" "backend/*" ))
-  :demand
-)
+(use-package shell-maker
+  :straight (:host github :repo "xenodium/chatgpt-shell" :files ("shell-maker.el")))
+
+(use-package chatgpt-shell
+  :requires shell-maker
+  :straight (:host github :repo "xenodium/chatgpt-shell")
+  :config
+  (setq chatgpt-shell-openai-key
+        (auth-source-pick-first-password :host "ai.opsnull.com"))
+  (setq chatgpt-shell-chatgpt-streaming t)
+  (setq chatgpt-shell-model-version "gpt-4") ;; gpt-3.5-turbo
+  (setq chatgpt-shell-request-timeout 300)
+  (require 'ob-chatgpt-shell)
+  (ob-chatgpt-shell-setup)
+  (require 'ob-dall-e-shell)
+  (ob-dall-e-shell-setup)
+  (setq chatgpt-shell--url "http://127.0.0.1:1090/v1/chat/completions"))
 #+end_src
 
 * project
@@ -2503,7 +2748,8 @@ citre 默认支持 imenu 和 xref 集成（通过向 xref-backend-functions hook
 
 (defun my/project-discover ()
   (interactive)
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
+  ;; 去掉 "~/go/src/k8s.io/*" 目录。
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
       (when (file-directory-p file)
           (message "dir %s" file)
@@ -2535,7 +2781,8 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 #+begin_src emacs-lisp
 ;; 添加环境变量 
 (setq my/socks-host "127.0.0.1")
-(setq my/socks-port 13659)
+(setq my/socks-port 1080)
+;; socks5h 相比 socks5 会额外代理域名解析，解决域名投毒问题。
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 (use-package mb-url-http
@@ -2605,7 +2852,6 @@ which cmake || brew install cmake
 which glibtool || brew install libtool
 which exiftran || brew install fxiftran
 #+end_src
-
 
 #+begin_src emacs-lisp
 (use-package vterm
@@ -2693,7 +2939,8 @@ eshell：
 
 #+begin_src emacs-lisp
 (use-package tramp
-  :straight (tramp :files ("lisp/*"))
+  :straight (:type built-in)
+  ;;:straight (tramp :files ("lisp/*"))
   :config
   ;; 使用远程主机自己的 PATH(默认是本地的 PATH)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
@@ -2864,11 +3111,6 @@ which trash || brew install trash
   (add-hook 'ibuffer-mode-hook #'hl-line-mode)
   (global-set-key (kbd "C-x C-b") #'ibuffer))
 
-;; Navigate between buffer and window.
-;;(global-set-key (kbd "s-p") 'previous-buffer)
-;;(global-set-key (kbd "s-n") 'next-buffer)
-(global-set-key (kbd "M-o") 'other-window)
-
 (use-package recentf
   :straight (:type built-in)
   :config
@@ -2916,7 +3158,12 @@ which trash || brew install trash
 (setq auto-save-default t)
 (setq auto-save-list-file-prefix autosave-dir)
 (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
-;;(global-auto-revert-mode)
+
+;; Revert
+;;(global-set-key (kbd "<f5>") #'revert-buffer)
+(global-auto-revert-mode 1)
+(setq revert-without-query (list "\\.png$" "\\.svg$")
+      auto-revert-verbose nil)
 
 (setq global-mark-ring-max 100)
 (setq mark-ring-max 100 )
@@ -2948,7 +3195,13 @@ which trash || brew install trash
 (setq select-enable-primary t)
 
 ;; UTF8 字符。
-(prefer-coding-system 'utf-8-unix)
+(prefer-coding-system 'utf-8)
+(setq locale-coding-system 'utf-8
+      default-buffer-file-coding-system 'utf-8)
+(set-buffer-file-coding-system 'utf-8)
+(set-language-environment "UTF-8")
+(set-default buffer-file-coding-system 'utf8)
+(set-default-coding-systems 'utf-8)
 (setenv "LC_ALL" "zh_CN.UTF-8")
 
 ;; 删除文件时, 将文件移动到回收站。
@@ -3047,6 +3300,23 @@ which trash || brew install trash
            filename
            (file-name-nondirectory new-name))))))))
 (global-set-key (kbd "C-x C-r") 'my/rename-this-buffer-and-file)
+
+;; 创建名为 *tmp-<N>* 的临时 buffer;
+(defun create-temp-buffer ()
+  "Create a new temporary buffer with a specific prefix."
+  (interactive)
+  (let ((temp-buffer-prefix "tmp-")
+        (buffer-counter 1))
+    (while (get-buffer (format "*%s%d*" temp-buffer-prefix buffer-counter))
+      (setq buffer-counter (1+ buffer-counter)))
+    (switch-to-buffer (format "*%s%d*" temp-buffer-prefix buffer-counter))))
+
+(global-set-key (kbd "C-c t") 'create-temp-buffer)
+
+(defun my/insert-date ()
+  (interactive)
+  (let (( time (current-time-string) ))
+    (insert (format-time-string "%Y-%m-%d"))))
 #+end_src
 + osx-trash 不支持 TRAMP 删除远程文件，解决办法：用 %m 标记文件，然后按 ! 执行 rm 命令。
 + 参考： [[https://www.masteringemacs.org/article/mastering-key-bindings-emacs][Mastering Key Bindings in Emacs]]
@@ -3065,4 +3335,3 @@ which trash || brew install trash
 8. [[https://github.com/natecox/dotfiles/][natecox/dotfiles]]
 9. [[https://config.daviwil.com/emacs][daviwil]]
 10. [[https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs][skybert/my-little-friends]]
-

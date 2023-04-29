@@ -14,7 +14,11 @@ which magick || brew install imagemagick
 
 which pngpaste || brew install pngpaste
 
+which pygmentize || brew install pygments
+
 which direnv || brew install direnv
+
+pip3 install epc orjson sexpdata six paramiko
 
 which pyenv || brew install --HEAD pyenv
 which pyenv-virtualenv || brew install --HEAD pyenv-virtualenv
@@ -38,12 +42,13 @@ which importjs || npm install -g import-js
 which yaml-language-server || npm install -g yaml-language-server
 which vscode-css-language-server &>/dev/null || npm i -g vscode-langservers-extracted
 
-bash-language-server -v &>/dev/null || npm i -g bash-language-serverw
+bash-language-server -v &>/dev/null || npm i -g bash-language-server
 
 pip install pygments
 python -m pygments -h # gtags 使用 pygments 支持跟多语言
-
 brew install global
+
+# 在 ~/.bashrc 中添加如下配置：
 # 统一的 tags 文件目录
 export GTAGSOBJDIRPREFIX=~/.cache/gtags/ 
 mkdir $GTAGSOBJDIRPREFIX

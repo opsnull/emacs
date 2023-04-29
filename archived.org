@@ -1806,6 +1806,19 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 
 * font
 
+不再使用 fira-code-mode: 
+#+begin_src emacs-lisp
+;; all-the-icons 和 fire-code-mode 只能在 GUI 模式下使用。
+(when (display-graphic-p)
+  (use-package all-the-icons :demand)
+  ;; (use-package fira-code-mode
+  ;;   :custom
+  ;;   (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
+  ;;   :hook prog-mode)
+  )
+#+end_src
++ 安装、更新 FiraCode Symbol 字体： =M-x fira-code-mode-install-fonts=
+
 不开启 variable-pitch-mode, 否则 doom-modeline 右侧容易溢出。
 #+begin_src emacs-lisp
 ;; 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
@@ -1906,9 +1919,20 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 (setq inhibit-compacting-font-caches t)
   #+end_src
 
-* cnfonts
+#+begin_src emacs-lisp
+(setq +font-family "Fira Code Retina")
+(setq +modeline-font-family "Fira Code Retina")
+;; 其它均使用 Sarasa Mono SC 字体。
+(setq +fixed-pitch-family "Sarasa Mono SC")
+(setq +variable-pitch-family "Sarasa Mono SC")
+(setq +font-unicode-family "Sarasa Mono SC")
+(setq +font-size 13)
+#+end_src
+
+** cnfonts
 
 #+begin_src emacs-lisp
+
 (use-package cnfonts
   :demand
   :init
@@ -1924,6 +1948,96 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
     (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
   (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
   (cnfonts-enable))
+#+end_src
+
+** fontine
+
+#+begin_src emacs-lisp
+(use-package fontaine
+  :straight (:host github :repo "protesilaos/fontaine")
+  :config
+  ;; This is defined in Emacs C code: it belongs to font settings.
+  (setq x-underline-at-descent-line nil)
+
+  ;; And this is for Emacs28.
+  (setq-default text-scale-remap-header-line t)
+
+  ;; This is the default value.  Just including it here for completeness.
+  (setq fontaine-latest-state-file (locate-user-emacs-file "fontaine-latest-state.eld"))
+
+  ;; Iosevka Comfy is my highly customised build of Iosevka with monospaced and duospaced (quasi-proportional)
+  ;; variants as well as support or no support for ligatures: <https://git.sr.ht/~protesilaos/iosevka-comfy>.
+  ;;
+  ;; Iosevka Comfy            == monospaced, supports ligatures
+  ;; Iosevka Comfy Fixed      == monospaced, no ligatures
+  ;; Iosevka Comfy Duo        == quasi-proportional, supports ligatures
+  ;; Iosevka Comfy Wide       == like Iosevka Comfy, but wider
+  ;; Iosevka Comfy Wide Fixed == like Iosevka Comfy Fixed, but wider
+  ;; Iosevka Comfy Motion     == monospaced, supports ligatures, fancier glyphs
+  ;; Iosevka Comfy Motion Duo == as above, but quasi-proportional
+  (setq fontaine-presets
+        '((small
+           :default-family "Iosevka Comfy Fixed"
+           :default-height 80
+           :variable-pitch-family "Iosevka Comfy Wide Duo")
+          (regular
+           :default-height 100)
+          (large
+           :default-weight semilight
+           :default-height 140
+           :bold-weight extrabold)
+          (code-demo
+           :default-family "Iosevka Comfy Fixed"
+           :default-weight semilight
+           :default-height 170
+           :variable-pitch-family "Iosevka Comfy Duo"
+           :bold-weight extrabold)
+          (presentation
+           :inherit code-demo
+           :default-height 220)
+          (t
+           ;; I keep all properties for didactic purposes, but most can be
+           ;; omitted.  See the fontaine manual for the technicalities:
+           ;; <https://protesilaos.com/emacs/fontaine>.
+           :default-family "Iosevka Comfy"
+           :default-weight regular
+           :default-height 100
+           :fixed-pitch-family nil ; falls back to :default-family
+           :fixed-pitch-weight nil ; falls back to :default-weight
+           :fixed-pitch-height 1.0
+           :fixed-pitch-serif-family nil ; falls back to :default-family
+           :fixed-pitch-serif-weight nil ; falls back to :default-weight
+           :fixed-pitch-serif-height 1.0
+           :variable-pitch-family "Iosevka Comfy Motion Duo"
+           :variable-pitch-weight nil
+           :variable-pitch-height 1.0
+           :bold-family nil ; use whatever the underlying face has
+           :bold-weight bold
+           :italic-family nil
+           :italic-slant italic
+           :line-spacing nil)))
+
+  ;; Set last preset or fall back to desired style from `fontaine-presets'.
+  (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))
+
+  ;; The other side of `fontaine-restore-latest-preset'.
+  (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset)
+
+  ;; Persist font configurations while switching themes (doing it with
+  ;; my `modus-themes' and `ef-themes' via the hooks they provide).
+  ;;(dolist (hook '(modus-themes-after-load-theme-hook ef-themes-post-load-hook))
+  ;;(add-hook hook #'fontaine-apply-current-preset))
+
+  (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
+  (define-key global-map (kbd "C-c F") #'fontaine-set-face-font)
+
+  ;; 中文字体
+  (when window-system
+    (let ((font (frame-parameter nil 'font))
+	  (font-spec (font-spec :family +font-unicode-family)))
+      (dolist (charset '(kana han hangul cjk-misc bopomofo symbol))
+	(set-fontset-font font charset font-spec))))
+  )
 #+end_src
 
 * face
@@ -3500,7 +3614,6 @@ doom-themes:
       (_ (hs-hide-all))))
 #+end_src
 
-
 * proxy
 
 全局 socks5 代理：
@@ -3552,7 +3665,6 @@ doom-themes:
       (proxy-socks-disable)
     (proxy-socks-enable)))
   #+end_src
-
 
 * proxy
 
@@ -3621,7 +3733,6 @@ doom-themes:
       (proxy-socks-disable)
     (proxy-socks-enable)))
 #+end_src
-
 
 
 * symbol-overlay
@@ -4380,5 +4491,220 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
  (mark -2500))
 #+end_src
 
+* ctrlf
 
+ctrlf 是 isearch 更好的替代品（搜索结果编号，支持：C-v, M-v, M-<, M->, C-l）:
+#+begin_src emacs-lisp
+(use-package ctrlf
+  :disabled
+  :config
+  (ctrlf-mode +1)
+  (add-hook 'pdf-isearch-minor-mode-hook (lambda () (ctrlf-local-mode -1))))
+#+end_src
+
+* native-compile
+#+begin_src emacs-lisp
+(when (fboundp 'native-compile-async)
+  (setenv "LIBRARY_PATH"
+          (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/12:/usr/local/opt/gcc/lib/gcc/12/gcc/x86_64-apple-darwin21/12"))
+  (setq native-comp-speed 2)
+  (setq native-comp-async-jobs-number 4)
+  ;; Emacs 29;
+  ;;(setq inhibit-automatic-native-compilation t)
+  ;;(setq native-comp-async-report-warnings-errors 'silent)
+  )
+
+;; 关闭 cl 告警。
+(require 'cl-lib)
+(setq byte-compile-warnings '(cl-functions))
+#+end_src
+
+* ui
+#+begin_src emacs-lisp
+;; 平滑地进行半屏滚动(默认避免滚动后进行 recenter)。
+(setq scroll-step 1)
+(setq scroll-conservatively 10000)
+(setq scroll-margin 2)
+#+end_src
+
+* org latex
+#+begin_src emacs-lisp
+  ;; ;; Alist of packages to be inserted in every LaTeX header.
+  ;; (setq org-latex-packages-alist
+  ;;       (quote (("" "color" t)
+  ;;               ("" "xcolor" t)
+  ;;               ("" "listings" t)
+  ;;               ("" "fontspec" t)
+  ;;               ("" "parskip" t) ;; 增加正文段落的间距
+  ;;               ("AUTO" "inputenc" t))))
+
+  ;; 自定义 latex 语言环境(基于 tcolorbox), 参考：https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
+  (setq org-latex-custom-lang-environments
+        '((c "\\begin{programlist}[label={%l}]{c}{: %c}\n%s\\end{programlist}")
+          (ditaa "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (emacs-lisp "\\begin{programlist}[label={%l}]{lisp}{: %c}\n%s\\end{programlist}")
+          (ruby "\\begin{programlist}[label={%l}]{ruby}{: %c}\n%s\\end{programlist}")
+          (latex "\\begin{programlist}[label={%l}]{latex}{: %c}\n%s\\end{programlist}")
+          (go "\\begin{programlist}[label={%l}]{go}{: %c}\n%s\\end{programlist}")
+          (lua "\\begin{programlist}[label={%l}]{lua}{: %c}\n%s\\end{programlist}")
+          (java "\\begin{programlist}[label={%l}]{java}{: %c}\n%s\\end{programlist}")
+          (javascript "\\begin{programlist}[label={%l}]{javascript}{: %c}\n%s\\end{programlist}")
+          (json "\\begin{programlist}[label={%l}]{json}{: %c}\n%s\\end{programlist}")
+          (plantuml "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (yaml "\\begin{programlist}[label={%l}]{yaml}{: %c}\n%s\\end{programlist}")
+          (maxima "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (ipython "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
+          (python "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
+          (perl "\\begin{programlist}[label={%l}]{perl}{: %c}\n%s\\end{programlist}")
+          (html "\\begin{programlist}[label={%l}]{html}{: %c}\n%s\\end{programlist}")
+          (org "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
+          (typescript "\\begin{programlist}[label={%l}]{typescript}{: %c}\n%s\\end{programlist}")
+          (scss "\\begin{programlist}[label={%l}]{scss}{: %c}\n%s\\end{programlist}")
+          (sh "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
+          (bash "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
+          (shell "\\\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\\\end{programlist}")
+          (shellinput "\\begin{shellinput}[%c]\n%s\\end{shellinput}")
+          (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}"))))
+
+#+end_src
+
+* simplify
+
+init: 
+=early-init.el= 是 =Emacs= 启动时最开始执行的文件，执行复杂逻辑可能导致启动失败，所以该文件尽量以变量定义为主。
+#+begin_src emacs-lisp
+;; 加载较新的 .el 文件。
+(setq-default load-prefer-newer t)
+(setq-default lexical-binding t)
+(setq lexical-binding t)
+
+;; 个人信息。
+(setq user-full-name "zhangjun")
+(setq user-mail-address "geekard@qq.com")
+#+end_src
+
+package:
+#+begin_src emacs-lisp
+(setq straight-host-usernames '((github . "opsnull")))
+(setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
+#+end_src
+
+ui:
+#+begin_src emacs-lisp
+;; 关闭启动消息。
+(setq inhibit-startup-screen t)
+(setq inhibit-startup-message t)
+(setq inhibit-startup-echo-area-message t)
+(setq initial-scratch-message nil)
+
+;; 出错提示。
+(setq visible-bell t)
+
+;; 窗口间显示分割线。
+;;(setq window-divider-default-places t)
+;;(add-hook 'window-setup-hook #'window-divider-mode)
+
+
+;; 大文件不显示行号。
+(setq large-file-warning-threshold nil)
+(setq line-number-display-limit large-file-warning-threshold)
+(setq line-number-display-limit-width 1000)
+
+;; 显示行号。
+(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+
+;; 下面的 reuse window 的配置会导致 sort-tab 与 ibuffer/embark 等不兼容（这些 mode 起的
+;; 临时 buffer 会在 sort-tab 的地方显示, 导致不可用)。
+;; (setq display-buffer-base-action
+;;       '(display-buffer-reuse-mode-window
+;;         display-buffer-reuse-window
+;;         display-buffer-same-window))
+#+end_src
+
+tar-bar:
+#+begin_src emacs-lisp
+ (setq tab-bar-format '(
+                         ;;tab-bar-format-history ;; 不显示最左侧的 < 和 >
+                         ;;tab-bar-format-tabs
+                         tab-bar-format-tabs-groups
+                         tab-bar-separator
+                         tab-bar-format-add-tab
+                         ;; tab-bar-format-align-right ;; 后续内容右对齐
+                         ;; tab-bar-format-global
+                         ;; current-time-string
+                         ;; tab-bar-separator
+                         ))
+#+end_src
+
+* pyim
+
+#+begin_src emacs-lisp
+(use-package pyim
+  :straight (pyim :repo "tumashu/pyim")
+  :disabled
+  :hook
+  ;; 设置缺省输入法为 pyim。
+  (emacs-startup . (lambda () (setq default-input-method "pyim")))
+  :config
+  (setq-default default-input-method "pyim")
+  (setq pyim-title "IM")
+  (setq pyim-indicator-modeline-string '("CN" "EN"))
+  ;; 单字符快捷键，可以实现快速切换标点符号和添加个人生词。
+  (setq pyim-outcome-trigger "^")
+  (setq pyim-dcache-directory "~/.emacs.d/sync/pyim/dcache/")
+  ;; 使用全拼。
+  (pyim-default-scheme 'quanpin)
+  ;; 使用百度云拼音。
+  (setq pyim-cloudim 'baidu)
+  ;; 关闭代码搜索中文功能（比如拼音，五笔码等）， 会导致 isearch 卡死。
+  (pyim-isearch-mode nil)
+  ;; 中文使用全角标点，英文使用半角标点。
+  (setq-default pyim-punctuation-translate-p '(auto yes no))
+  ;; posframe 性能更好且显式的较为干净, popup 较慢且容易干扰当前 buffer。
+  (setq-default pyim-page-tooltip 'posframe)
+  ;; 设置模糊音。
+  (setq pyim-pinyin-fuzzy-alist '( ("z" "zh") ("c" "ch") ("s" "sh") ("en" "eng") ("in" "ing")))
+  ;; Dictionaries:
+  ;;   pyim-greatdict is not recommended. It has too many useless words and slows down pyim.
+  ;;
+  ;;   Download pyim-bigdict,
+  ;;   curl -L http://tumashu.github.io/pyim-bigdict/pyim-bigdict.pyim.gz | zcat > ~/.eim/pyim-bigdict.pyim
+  ;;
+  ;;   Download pyim-tsinghua (recommended),
+  ;;   curl -L https://raw.githubusercontent.com/redguardtoo/pyim-tsinghua-dict/master/pyim-tsinghua-dict.pyim > ~/.eim/pyim-tsinghua-dict.pyim
+  (setq pyim-dicts '(
+                     (:name "tsinghua" :file "~/.emacs.d/straight/repos/pyim-tsinghua-dict/pyim-tsinghua-dict.pyim")
+                     ;; (:name "pyim-bigdict" :file "~/.emacs.d/sync/pyim/pyim-bigdict.pyim")
+                     ))
+  ;; 使用性能更好的 pyim-dregcache dcache 后端。
+  ;;(setq pyim-dcache-backend 'pyim-dregcache)
+  ;; 设置中英文自动切换。
+  (setq-default pyim-english-input-switch-functions
+    	        '(pyim-probe-program-mode
+    	          pyim-probe-auto-english
+    	          pyim-probe-dynamic-english
+    	          ;; pyim-probe-org-structure-template
+    	          ))
+  ;; 显示候选词数量。
+  (setq pyim-page-length 8)
+  ;; 输入法切换。
+  (global-set-key (kbd "C-\\") #'toggle-input-method)
+  ;; 中英文切换。
+  (global-set-key (kbd "C-.") #'pyim-toggle-input-ascii)
+  ;; 金手指设置，将光标处的拼音字符串转换为中文。
+  (global-set-key (kbd "M-j") #'pyim-convert-string-at-point))
+
+;; 清华大学开放中文词库。
+(use-package pyim-tsinghua-dict
+  :straight (pyim-tsinghua-dict :host github :repo "redguardtoo/pyim-tsinghua-dict")
+  :after pyim
+  :config
+  (pyim-tsinghua-dict-enable))
+#+end_src
+
+* rime
+
+
+全拼配置:
 
