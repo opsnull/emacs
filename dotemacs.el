@@ -226,11 +226,15 @@
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
-;; 基本英文字体。
+;; 缺省字体；
 (setq +font-family "Iosevka Comfy")
+;; modeline 字体，未设置的情况下使用 variable-pitch 字体。
 (setq +modeline-font-family "Iosevka Comfy")
+;; fixed-pitch 字体；
 (setq +fixed-pitch-family "Iosevka Comfy")
+;; variable-pitch 字体；
 (setq +variable-pitch-family "LXGW WenKai Screen")
+;; 中文字体；
 (setq +font-unicode-family "LXGW WenKai Screen")
 ;; 中文字体和英文字体按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
 (setq +font-size 14)
@@ -296,22 +300,27 @@
   ;; Disable all other themes to avoid awkward blending:
   (mapc #'disable-theme custom-enabled-themes)
   ;; 关闭 variable-pitch 模式，否则 modeline 可能溢出。
-  (setq ef-themes-variable-pitch-ui t
-        ef-themes-mixed-fonts t
-        ;; 调整 org-mode 等 header 的显示比例。
-        ef-themes-headings
-        '((0 . (variable-pitch light 1.5))
-          (1 . (variable-pitch light 1.4))
-          (2 . (variable-pitch regular 1.3))
-          (3 . (variable-pitch regular 1.2))
-          (4 . (variable-pitch regular 1.1))
+  (setq ef-themes-variable-pitch-ui t)
+  ;; strictly spacing-sensitive constructs inherit from fixed-pitch (a monospaced font family) faces
+  ;; such as for Org tables, inline code, code blocks, and the like, are rendered in a monospaced font
+  ;; at all times
+  (setq ef-themes-mixed-fonts t)
+  ;; 调整 org-mode 等 header 的显示比例。
+  (setq ef-themes-headings
+        '(
+          ;; level 0 是文档 title，1-8 是普通的文档 headling。
+          (0 . (variable-pitch semibold 1.6))
+          (1 . (variable-pitch light 1.5))
+          (2 . (variable-pitch regular 1.4))
+          (3 . (variable-pitch regular 1.3))
+          (4 . (variable-pitch regular 1.2))
           (5 . (variable-pitch 1.1)) ; absence of weight means `bold'
           (6 . (variable-pitch 1.1))
           (7 . (variable-pitch 1.1))
           (agenda-date . (semilight 1.5))
           (agenda-structure . (variable-pitch light 1.9))
+          ;; default style for all unspecified levels
           (t . (variable-pitch 1.1))))
-
   (setq ef-themes-region '(intense no-extend neutral)))
 
 (defun my/load-light-theme () (interactive) (load-theme 'ef-spring t)) ;; ef-day doom-one-light
@@ -714,6 +723,12 @@
   :config
   ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
   (setq mode-line-mule-info '((:eval (rime-lighter))))
+  ;; 将如下快捷键发送给 rime，同时需要在 rime 的 key_binder/bindings 的部分配置才会生效。
+  (add-to-list 'rime-translate-keybindings "C-h") ;; 删除拼音字符
+  (add-to-list 'rime-translate-keybindings "C-d")
+  (add-to-list 'rime-translate-keybindings "C-k") 
+  (add-to-list 'rime-translate-keybindings "C-a") ;; 跳转到第一个拼音字符
+  (add-to-list 'rime-translate-keybindings "C-e") ;; 跳转到最后一个拼音字符
   ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
   (setq rime-inline-ascii-trigger 'shift-l)
   ;; 临时英文模式。
@@ -743,10 +758,9 @@
 
 (use-package org
   :straight (:type built-in)
-  ;;:straight (org :repo "https://git.savannah.gnu.org/git/emacs/org-mode.git")
   :ensure auctex
   :config
-  (setq org-ellipsis " ⭍" ;; ".."
+  (setq org-ellipsis "..." ;; " ⭍"
         ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符， M-x org-entities-help 查看所有特殊字符。
         org-pretty-entities t
         org-highlight-latex-and-related '(latex)
@@ -796,10 +810,12 @@
         org-html-validation-link nil
         org-startup-indented t)
   ;;(setq org-fold-core-style 'overlays)
+  ;; 不自动对齐 tag
   (setq org-tags-column 0)
   (setq  org-auto-align-tags nil)
   ;; 显示不可见的编辑。
   (setq org-catch-invisible-edits 'show-and-error)
+  (setq org-special-ctrl-a/e t)
   (setq org-fold-catch-invisible-edits t)
   (setq org-insert-heading-respect-content t)
   ;; 支持 ID property 作为 internal link target(默认是 CUSTOM_ID property)
@@ -808,9 +824,6 @@
   (setq org-M-RET-may-split-line nil)
   (setq org-todo-keywords '((sequence "TODO(t)" "DOING(d)" "|" "DONE(d)")
                             (sequence "BLOCKED(b)" "|" "CANCELLED(c)")))
-  ;; (setq org-todo-keywords
-  ;;       '((sequence "☞ TODO(t@)" "⚔ INPROCESS(s@)" "⚑ WAITING(w!)" "|" "☟ NEXT(n)" "✰ Important(i!)" "✔ DONE(d!)" "✘ CANCELED(c!)")
-  ;;         (sequence "✍ NOTE(N)" "FIXME(f)" "☕ BREAK(b)" "❤ Love(l)" "REVIEW(r)" )))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
@@ -842,78 +855,19 @@
 ;;(setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
 (setq org-element-use-cache nil)
 
-(defun my/org-faces ()
-  ;; 行之间添加 2 像素的间距。
-  (setq-default line-spacing 2)
-  ;; (dolist (face '((org-level-1 . 1.2)
-  ;;                 (org-level-2 . 1.1)
-  ;;                 (org-level-3 . 1.05)
-  ;;                 (org-level-4 . 1.0)
-  ;;                 (org-level-5 . 1.1)
-  ;;                 (org-level-6 . 1.1)
-  ;;                 (org-level-7 . 1.1)
-  ;;                 (org-level-8 . 1.1)))
-  ;;   (set-face-attribute (car face) nil :height (cdr face)))
-  ;; 美化 BEGIN_SRC 整行。
-  (setq org-fontify-whole-block-delimiter-line t)
-  ;; 如果配置参数 :inherit 'fixed-pitch, 则需要明确设置 fixed-pitch 字体，否则选择的缺省字体可能导致显示问题。
-  ;; 不建议配置 org-table 的字体和 height, 否则会导致中英文对不齐。
-  (custom-theme-set-faces
-   'user
-   '(org-block ((t (:height 0.9))))
-   '(org-code ((t (:height 0.9))))
-   ;; 调小高度 , 并设置下划线。
-   '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
-   '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
-   '(org-meta-line ((t (:height 0.7))))
-   '(org-document-info-keyword ((t (:height 0.6))))
-   '(org-document-info ((t (:height 0.8))))
-   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
-   '(org-link ((t (:foreground "royal blue" :underline t))))
-   '(org-property-value ((t (:height 0.8))) t)
-   '(org-drawer ((t (:height 0.8))) t)
-   '(org-special-keyword ((t (:height 0.8 :inherit 'fixed-pitch))))
-   ;; table 使用中英文严格等宽的 Sarasa Mono SC 字体, 避免中英文不对齐。
-   ;;'(org-table ((t (:font "Sarasa Mono SC" :height 0.9))))
-   '(org-verbatim ((t (:height 0.9))))
-   '(org-tag ((t (:weight bold :height 0.8))))
-   '(org-todo ((t (:inherit 'fixed-pitch))))
-   '(org-done ((t (:inherit 'fixed-pitch))))
-   '(org-ellipsis ((t (:inherit 'fixed-pitch))))
-   '(org-property-value ((t (:inherit 'fixed-pitch))))))
-(add-hook 'org-mode-hook 'my/org-faces)
-(add-hook 'org-mode-hook 'prettify-symbols-mode)
-(setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»") ("#+END_SRC" . "«") ("#+begin_src" . "»") ("#+end_src" . "«")))
-(setq prettify-symbols-unprettify-at-point 'right-edge)
-
-(use-package org-superstar
-  :after (org)
-  :hook
-  (org-mode . org-superstar-mode)
-  :custom
-  (org-superstar-remove-leading-stars t)
-  (org-superstar-headline-bullets-list '("◉" "○" "▷" "🞛"))
-  ;;(org-superstar-headline-bullets-list '("☰" "☱" "☲" "☳" "☴" "☵" "☶" "☷"))
-  (org-superstar-item-bullet-alist '((43 . "⬧") (45 . "⬨")))
-  :custom-face
-  (org-superstar-item ((t (:inherit 'fixed-pitch))))
-  (org-superstar-header-bullet ((t (:height 200 :inherit 'fixed-pitch)))))
-
-(use-package org-fancy-priorities
-  :ensure t
-  :hook
-  (org-mode . org-fancy-priorities-mode)
-  :config
-  ;; org 默认最低优先级是 C, 这里加一级。
-  (setq org-priority-lowest ?D)
-  (setq org-fancy-priorities-list '("[⚡A]" "[⬆B]" "[⬇C]" "[☕D]")))
-
 ;; 编辑时显示隐藏的标记。
 (use-package org-appear
   :config
   (add-hook 'org-mode-hook 'org-appear-mode)
   ;; 删除 * 和 / 类型的标记。
   (setq org-appear-elements '(underline strike-through verbatim code)))
+
+(use-package org-modern
+  :after (org)
+  :demand
+  :straight (:host github :repo "minad/org-modern")
+  :config
+  (with-eval-after-load 'org (global-org-modern-mode)))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -957,17 +911,20 @@
 ;; 不自动缩进。
 (setq org-src-preserve-indentation t)
 (setq org-edit-src-content-indentation 0)
+
 ;; 在当前窗口编辑 SRC Block.
 ;; 2023.04.05 设置为 current-window 后会导致 src window 不退出。
 ;;(setq org-src-window-setup 'current-window)
+
 ;; export 输出类型。
 (setq org-export-backends '(go md gfm html latex man))
+
 ;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，
 ;; 否则编辑 yaml src block 时提示找不到 yaml-mode。
 (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
+
 (require 'org)
-;; org bable 完整支持的语言列表（ob- 开头的文件）：
-;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp
+;; org bable 完整支持的语言列表（ob- 开头的文件）：https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp
 ;; 对于官方不支持的语言，可以通过 use-pacakge 来安装。
 (use-package ob-go) ;; golang 
 (use-package ox-reveal) ;; reveal.js

@@ -2678,6 +2678,96 @@ patch:
 #+end_src
 
 * org
+** face
+
+#+begin_src emacs-lisp
+(defun my/org-faces ()
+  ;; 行之间添加 2 像素的间距。
+  (setq-default line-spacing 2)
+  ;; (dolist (face '((org-level-1 . 1.2)
+  ;;                 (org-level-2 . 1.1)
+  ;;                 (org-level-3 . 1.05)
+  ;;                 (org-level-4 . 1.0)
+  ;;                 (org-level-5 . 1.1)
+  ;;                 (org-level-6 . 1.1)
+  ;;                 (org-level-7 . 1.1)
+  ;;                 (org-level-8 . 1.1)))
+  ;;   (set-face-attribute (car face) nil :height (cdr face)))
+  ;; 美化 BEGIN_SRC 整行。
+  (setq org-fontify-whole-block-delimiter-line t)
+  ;; 如果配置参数 :inherit 'fixed-pitch, 则需要明确设置 fixed-pitch 字体，否则选择的缺省字体可能导致显示问题。
+  ;; 不建议配置 org-table 的字体和 height, 否则会导致中英文对不齐。
+  (custom-theme-set-faces
+   'user
+   '(org-block ((t (:height 0.9))))
+   '(org-code ((t (:height 0.9))))
+   ;; 调小高度 , 并设置下划线。
+   '(org-block-begin-line ((t (:height 0.8 :underline "#A7A6AA"))))
+   '(org-block-end-line ((t (:height 0.8 :underline "#A7A6AA"))))
+   '(org-meta-line ((t (:height 0.7))))
+   '(org-document-info-keyword ((t (:height 0.6))))
+   '(org-document-info ((t (:height 0.8))))
+   '(org-document-title ((t (:foreground "#ffb86c" :weight bold :height 1.5))))
+   '(org-link ((t (:foreground "royal blue" :underline t))))
+   '(org-property-value ((t (:height 0.8))) t)
+   '(org-drawer ((t (:height 0.8))) t)
+   '(org-special-keyword ((t (:height 0.8 :inherit 'fixed-pitch))))
+   ;; table 使用中英文严格等宽的 Sarasa Mono SC 字体, 避免中英文不对齐。
+   ;;'(org-table ((t (:font "Sarasa Mono SC" :height 0.9))))
+   '(org-verbatim ((t (:height 0.9))))
+   '(org-tag ((t (:weight bold :height 0.8))))
+   '(org-todo ((t (:inherit 'fixed-pitch))))
+   '(org-done ((t (:inherit 'fixed-pitch))))
+   '(org-ellipsis ((t (:inherit 'fixed-pitch))))
+   '(org-property-value ((t (:inherit 'fixed-pitch))))))
+;;(add-hook 'org-mode-hook 'my/org-faces)
+
+(add-hook 'org-mode-hook 'prettify-symbols-mode)
+(setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "»") ("#+END_SRC" . "«") ("#+begin_src" . "»") ("#+end_src" . "«")))
+(setq prettify-symbols-unprettify-at-point 'right-edge)
+
+(use-package org-superstar
+  :after (org)
+  :disabled
+  :hook
+  (org-mode . org-superstar-mode)
+  :custom
+  (org-superstar-remove-leading-stars t)
+  (org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "▷" "🞛"))
+  ;;(org-superstar-headline-bullets-list '("☰" "☱" "☲" "☳" "☴" "☵" "☶" "☷"))
+  ;; (org-superstar-item-bullet-alist '((43 . "⬧") (45 . "⬨")))
+  ;; :custom-face
+  ;; (org-superstar-item ((t (:inherit 'fixed-pitch))))
+  ;; (org-superstar-header-bullet ((t (:height 200 :inherit 'fixed-pitch))))
+  )
+
+(use-package org-fancy-priorities
+  :ensure t
+  :disabled
+  :hook
+  (org-mode . org-fancy-priorities-mode)
+  :config
+  ;; org 默认最低优先级是 C, 这里加一级。
+  (setq org-priority-lowest ?D)
+  (setq org-fancy-priorities-list '("[⚡A]" "[⬆B]" "[⬇C]" "[☕D]")))
+
+;; 编辑时显示隐藏的标记。
+(use-package org-appear
+  :config
+  (add-hook 'org-mode-hook 'org-appear-mode)
+  ;; 删除 * 和 / 类型的标记。
+  (setq org-appear-elements '(underline strike-through verbatim code)))
+
+(use-package org-modern
+  :after (org)
+  :demand
+  :straight (:host github :repo "minad/org-modern")
+  :config
+  (with-eval-after-load 'org (global-org-modern-mode))
+  )
+#+end_src
+    
+
 ** capture
 
 自动 Capture 浏览器发来的网址或选中的内容:
