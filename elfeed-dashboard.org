@@ -8,12 +8,17 @@
 
 * Bookmarks
 
- [u] Unread      ([[elfeed:+unread @1-months-ago][  1072]]/[[elfeed:@1-months-ago][  1073]])
- [b] Blog        ([[elfeed:+unread @1-months-ago -emacs +blog][    16]]/[[elfeed:@1-months-ago -emacs +blog][    16]])
- [e] Emacs       ([[elfeed:+unread @1-months-ago +emacs][   460]]/[[elfeed:@1-months-ago +emacs][   460]])
-    - [b] blog   ([[elfeed:+unread @1-months-ago +blog][ 109]]/[[elfeed:@1-months-ago +blog][  109]])
-    - [c] conf   ([[elfeed:+unread @1-months-ago +conf][  132]]/[[elfeed:@1-months-ago +conf][  132]])
-    - [p] project          ([[elfeed:+unread @1-months-ago +project][   235]]/[[elfeed:@1-months-ago +project][   235]])
+ [u] Unread      ([[elfeed:+unread @1-months-ago][  2536]]/[[elfeed:@1-months-ago][  2536]])
+ [a] ai ([[elfeed:+unread @1-months-ago +ai][17]]/[[elfeed:@1-months-ago +ai][17]])
+ [b] Blog        ([[elfeed:+unread @1-months-ago -emacs +blog][    17]]/[[elfeed:@1-months-ago -emacs +blog][    17]])
+ [v] v2ex  ([[elfeed:+unread @1-months-ago +v2ex][17]]/[[elfeed:@1-months-ago +v2ex][17]])
+ [e] Emacs       ([[elfeed:+unread @1-months-ago +emacs][   245]]/[[elfeed:@1-months-ago +emacs][   245]])
+    - [b] blog   ([[elfeed:+unread @1-months-ago +blog][ 150]]/[[elfeed:@1-months-ago +blog][  150]])
+    - [c] conf   ([[elfeed:+unread @1-months-ago +conf][   29]]/[[elfeed:@1-months-ago +conf][   29]])
+    - [p] project          ([[elfeed:+unread @1-months-ago +project][    83]]/[[elfeed:@1-months-ago +project][    83]])
+ [n] news       ([[elfeed:+unread @1-months-ago +news][245]]/[[elfeed:@1-months-ago +news][245]])
+    - [s] solidot   ([[elfeed:+unread @1-months-ago +news =solidot][150]]/[[elfeed:@1-months-ago +news =solidot][150]])
+    - [p] Hacker News ([[elfeed:+unread @1-months-ago +news =hacker][83]]/[[elfeed:@1-months-ago +news =hacker][83]])
 
 * Configuration
   :PROPERTIES:

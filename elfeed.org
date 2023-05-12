@@ -18,7 +18,6 @@
 *** [[https://blog.cloudflare.com/rss/][Cloudflare]]
 *** [[https://blog.envoyproxy.io/feed][Envoy Proxy]]                                                       :envoy:
 *** [[https://www.elastic.co/blog/feed][Elastic Blog]]
-*** [[https://eng.uber.com/feed/][Uber Engineering Blog]]
 *** [[http://www.raychase.net/feed][四火的唠叨]]
 *** [[http://feed.tonybai.com/][Tony Bai]]
 *** [[http://colobu.com/atom.xml][鸟窝]]
@@ -44,7 +43,7 @@
 *** [[https://lwn.net/headlines/rss][LWN]]
 ** emacs-project                                              :emacs:project:
 *** [[https://github.com/emacs-mirror/emacs/commits/emacs-28.atom][github-emacs-28]] :ignore:
-*** [[https://github.com/manateelazycat/lsp-bridge][manateelazycat/lsp-bridge]]
+*** [[https://github.com/manateelazycat/lsp-bridge/commits/master.atom][manateelazycat/lsp-bridge]]
 *** [[https://github.com/emacs-mirror/emacs/commits/master.atom][emacs-master]]
 *** [[https://github.com/minad/corfu/commits/main.atom][minad/corfu]] :ignore:
 *** [[https://github.com/minad/consult/commits/main.atom][minad/consult]]
@@ -82,9 +81,9 @@
 *** [[https://github.com/tumashu/vertico-posframe/commits/main.atom][vertico-posframe:main]] :ignore:
 *** [[https://github.com/bastibe/org-journal/commits/master.atom][org-journal]]
 ** emacs-conf                                                    :emacs:conf:
-*** [[https://github.com/ksqsf/emacs-config][ksqsf/emacs-config]]
-*** [[https://github.com/SystemCrafters/rational-emacs][SystemCrafters/rational-emacs]]
-*** [[https://github.com/natecox/dotfiles/][natecox/dotfiles]]
+*** [[https://github.com/ksqsf/emacs-config/commits/master.atom][ksqsf/emacs-config]]
+*** [[https://github.com/SystemCrafters/rational-emacs/commits/master.atom][SystemCrafters/rational-emacs]]
+*** [[https://github.com/natecox/dotfiles/commits/main.atom][natecox/dotfiles]]
 *** [[https://github.com/seagle0128/.emacs.d/commits/master.atom][seagle0128/.emacs.d]]
 *** [[https://github.com/jiacai2050/dotfiles/commits/master.atom][jiacai2050/dotfiles]]
 *** [[https://github.com/blahgeek/emacs.d/commits/master.atom][blahgeek/emacs.d]]
@@ -95,7 +94,7 @@
 *** [[https://github.com/MatthewZMD/.emacs.d/commits/master.atom][MatthewZMD/.emacs.d]]
 *** [[https://github.com/oantolin/emacs-config/commits/master.atom][emacs-config:master]]
 *** [[https://github.com/TxGVNN/dots/commits/master.atom][dots:master]]
-*** [[https://github.com/redguardtoo/emacs.d/commits/master.atom][emacs.d:master]]
+*** [[https://github.com/redguardtoo/emacs.d/commits/master.atom][redguardtoo/emacs.d:master]]
 *** [[https://github.com/daviwil/dotfiles/commits/master.atom][daviwil/dotfiles:master]]
 *** [[https://github.com/manateelazycat/lazycat-emacs/commits/master.atom][lazycat-emacs:master]]
 *** [[https://github.com/mpereira/.emacs.d/commits/master.atom][mpereira/.emacs.d:master]]
@@ -115,7 +114,7 @@
 *** [[http://ergoemacs.org/emacs/blog.xml][Xah Emacs Blog]]
 *** [[https://emacsair.me/feed.xml][Emacsair]]
 *** [[https://jao.io/blog/rss.xml][programming (and other) musings]]
-*** [[https://emacstalk.github.io/index.xml][EmacsTalk]]
+*** [[https://emacstalk.codeberg.page/podcast/index.xml][EmacsTalk]]
 *** [[https://fuco1.github.io/rss.xml][Matus Goljer (Fuco1)]]
 *** [[https://blog.aaronbieber.com/posts/index.xml][Posts on The Chronicle]]
 *** [[https://jherrlin.github.io/index.xml][jherrlin]]
@@ -131,3 +130,6 @@
 *** [[https://www.v2ex.com/feed/programmer.xml][v2ex-programmer]]
 *** [[https://www.v2ex.com/feed/share.xml][v2ex-share]]
 *** [[https://www.v2ex.com/feed/k8s.xml][v2ex-k8s]]
+** ai :ai:
+***  [[https://github.com/yetone/openai-translator/commits/main.atom][yetone/openai-translator]]
+*** [[https://github.com/xenodium/chatgpt-shell/commits/main.atom][xenodium/chatgpt-shell]]

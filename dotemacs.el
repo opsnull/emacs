@@ -51,21 +51,24 @@
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
-;; 缺省使用 email 地址加密。
-(setq-default epa-file-select-keys nil)
-(setq-default epa-file-encrypt-to user-mail-address)
-;; 使用 minibuffer 输入 GPG 密码。
-(setq-default epa-pinentry-mode 'loopback)
-;; 认证信息文件。
-(setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
-;; 缓存对称加密密码。
-(setq epa-file-cache-passphrase-for-symmetric-encryption t)
-;; gpg 文件。
-(require 'epa-file)
-(epa-file-enable)
-;; 认证不过期, 默认 7200。
-(setq auth-source-cache-expiry nil)
-;;(setq auth-source-debug t)
+;; EasyPG 加密。
+(use-package epa
+  :config
+  ;; 缺省使用 email 地址加密。
+  (setq-default epa-file-select-keys nil)
+  (setq-default epa-file-encrypt-to user-mail-address)
+  ;; 使用 minibuffer 输入 GPG 密码。
+  (setq-default epa-pinentry-mode 'loopback)
+  ;; 认证信息文件。
+  (setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
+  ;; 认证不过期, 默认 7200。
+  (setq auth-source-cache-expiry nil)
+  ;;(setq auth-source-debug t)
+  ;; 缓存对称加密密码。
+  (setq epa-file-cache-passphrase-for-symmetric-encryption t)
+  ;; gpg 文件。
+  (require 'epa-file)
+  (epa-file-enable))
 
 ;; 关闭容易误操作的按键。
 (global-unset-key (kbd "s-w"))
@@ -92,11 +95,20 @@
   (setq use-file-dialog nil)
   (setq use-dialog-box nil))
 
+;; 向下翻另外的窗口。
+(global-set-key (kbd "s-v") 'scroll-other-window)  
+ ;; 向上翻另外的窗口。
+(global-set-key (kbd "C-s-v") 'scroll-other-window-down)
+
 ;; Emacs 29: 不显示 Title Bar（依赖编译时指定 --with-no-frame-refocus 参数。）
 (add-to-list 'default-frame-alist '(undecorated-round . t))
 
+;; 高亮当前行。
+;;(setq global-hl-line-sticky-flag t)
+;;(global-hl-line-mode t)
+
 ;; 指针闪动。
-(blink-cursor-mode t)
+;;(blink-cursor-mode t)
 
 ;; 光标和字符宽度一致（如 TAB)
 (setq x-stretch-cursor nil)
@@ -104,15 +116,14 @@
 ;; 不显示 window fringe, 显示多个 window 时更紧凑。
 (set-fringe-style 0)
 
+;; 增加行间距。
+(setq-default line-spacing 0.05)
+
 ;; 30: 左右分屏, nil: 上下分屏。
 (setq split-width-threshold 30)
 
 ;; 滚动一屏后显示 3 行上下文。
 (setq next-screen-context-lines 3)
-
-;; 高亮当前行。
-(setq global-hl-line-sticky-flag t)
-(global-hl-line-mode t)
 
 ;; 像素平滑滚动。
 (if (boundp 'pixel-scroll-precision-mode)
@@ -173,18 +184,28 @@
   (add-hook 'imenu-after-jump-hook #'pulsar-reveal-entry))
 
 ;; 调整窗口大小。
-(global-set-key (kbd "C-M-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "C-M-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "C-M-<down>") 'shrink-window)
-(global-set-key (kbd "C-M-<up>") 'enlarge-window)
+(global-set-key (kbd "C-s-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "C-s-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "C-s-<down>") 'shrink-window)
+(global-set-key (kbd "C-s-<up>") 'enlarge-window)
 
-;; 快速窗口切换。选择 s-X 是由于 vterm 默认将 M-x 等快捷键拦截，所以不生效，但不拦截 s-X。
-;; vterm 默认不拦截的快捷键参考 vterm-keymap-exceptions， 包含 M-o。
-(global-set-key (kbd "s-o") 'other-window)
-(global-set-key (kbd "s-C-o") #'prev-window)
-(defun prev-window ()
-  (interactive)
-  (other-window -1))
+;; window 窗口选择。
+(global-set-key (kbd "s-o") #'other-window)
+;; (global-set-key (kbd "s-h") #'windmove-left)
+;; (global-set-key (kbd "s-j") #'windmove-down)
+;; (global-set-key (kbd "s-k") #'windmove-up)
+;; (global-set-key (kbd "s-l") #'windmove-right)
+;;(global-set-key (kbd "s-s") #'save-buffer)
+;;(global-set-key (kbd "s-w") #'delete-frame)
+
+;; buffer 窗口移动。
+(use-package buffer-move
+  :straight (:host github :repo "lukhas/buffer-move")
+  :config
+  (global-set-key (kbd "C-s-k") #'buf-move-up)
+  (global-set-key (kbd "C-s-j") #'buf-move-down)
+  (global-set-key (kbd "C-s-h") #'buf-move-left)
+  (global-set-key (kbd "C-s-l") #'buf-move-right))
 
 (use-package dashboard
   :config
@@ -349,8 +370,8 @@
 
   ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
   (tab-bar-history-mode t)
-  (global-set-key (kbd "C-s-j") 'tab-bar-history-back)
-  (global-set-key (kbd "C-s-k") 'tab-bar-history-forward)
+  (global-set-key (kbd "s-f") 'tab-bar-history-forward)
+  (global-set-key (kbd "s-b") 'tab-bar-history-back)
   ;; 快速 tab 操作。
   (global-set-key (kbd "s-t") 'tab-bar-new-tab)
   (global-set-key (kbd "s-0") 'tab-bar-close-tab)
@@ -680,9 +701,9 @@
 (setq isearch-lazy-count t)
 (setq isearch-lazy-highlight t)
 
-;; browser-url 使用 Mac 默认浏览器。
-(setq browse-url-browser-function 'browse-url-default-macosx-browser)
-;;(setq browse-url-browser-function 'xwidget-webkit-browse-url)
+;; browser-url 使用 Firefox 浏览器。
+(setq browse-url-firefox-program "/Applications/Firefox.app/Contents/MacOS/firefox")
+(setq browse-url-browser-function 'browse-url-firefox) ;; browse-url-default-macosx-browser, xwidget-webkit-browse-url
 (setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
 (setq xwidget-webkit-buffer-name-format "*webkit: %T")
 
@@ -822,7 +843,7 @@
   (setq org-id-link-to-org-use-id t)
   ;; 光标位于 section 中间时不 split line.
   (setq org-M-RET-may-split-line nil)
-  (setq org-todo-keywords '((sequence "TODO(t)" "DOING(d)" "|" "DONE(d)")
+  (setq org-todo-keywords '((sequence "TODO(t)" "DOING(d)" "|" "DONE(D)")
                             (sequence "BLOCKED(b)" "|" "CANCELLED(c)")))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
@@ -854,6 +875,10 @@
 ;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
 ;;(setq warning-suppress-types (append warning-suppress-types '((org-element-cache))))
 (setq org-element-use-cache nil)
+
+;; 从各种 Mac 应用（如 finder/浏览器）获取 org-mode 链接。
+(use-package org-mac-link
+  :commands (org-mac-grab-link))
 
 ;; 编辑时显示隐藏的标记。
 (use-package org-appear
@@ -917,11 +942,12 @@
 ;;(setq org-src-window-setup 'current-window)
 
 ;; export 输出类型。
-(setq org-export-backends '(go md gfm html latex man))
+;;(setq org-export-backends '(go md gfm html latex man hugo))
 
 ;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，
 ;; 否则编辑 yaml src block 时提示找不到 yaml-mode。
 (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
+(add-to-list 'org-src-lang-modes '("cue" . cue))
 
 (require 'org)
 ;; org bable 完整支持的语言列表（ob- 开头的文件）：https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp
@@ -974,22 +1000,7 @@
   ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
   ;; 保存 LaTeX 日志文件。
-  ;;(setq org-latex-remove-logfiles nil)
-
-  ;; 使用 minted 而非默认的 listings, 支持更多的语言类型，否则编译时报错。
-  ;;(setq org-latex-src-block-backend 'minted) ;; org-latex-listing 是该选项的别名。
-  ;; minted 配置。
-  ;; (setq org-latex-minted-options '(("frame" "lines")
-  ;;                                  ("framesep=2mm")
-  ;;                                  ("linenos" "true")
-  ;;                                  ("bgcolor" "lightgrey") ;; mystyle.sty 中定义的 color 名称
-  ;;                                  ("breaklines" "true")
-  ;;                                  ("breakanywhere" "true")
-  ;;                                  ("baselinestretch=1.2")
-  ;;                                  ("fontsize=\\footnotesize")
-  ;;                                  ("numbersep" "2mm")
-  ;;                                  ("xleftmargin" "0.25in")))
-  
+  ;;(setq org-latex-remove-logfiles nil)  
   ;; 目录页前后分页。
   (setq org-latex-toc-command "\\clearpage \\tableofcontents \\clearpage")
   ;; 使用支持中文的 xelatex。
@@ -1120,6 +1131,14 @@
                             ;; file or the behavior).
                             ("^ +\\([-*]\\) "
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
+
+(use-package ox-hugo
+  :after ox
+  :config
+  (setq org-hugo-base-dir "~/blog/blog.opsnull.com")
+  (setq org-hugo-section "post")
+  (setq org-hugo-export-with-section-numbers t)
+  (setq org-hugo-auto-set-lastmod t))
 
 (setq vc-follow-symlinks t)
 
@@ -1327,7 +1346,7 @@
   ;; (define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
   (define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
   (define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
-  (define-key lsp-bridge-mode-map (kbd "C-s-l") #'lsp-bridge-diagnostic-list)
+  (define-key lsp-bridge-mode-map (kbd "C-s-d") #'lsp-bridge-diagnostic-list)
   (define-key lsp-bridge-mode-map (kbd "C-s-n") #'lsp-bridge-diagnostic-jump-next)
   (define-key lsp-bridge-mode-map (kbd "C-s-p") #'lsp-bridge-diagnostic-jump-prev))
 
@@ -1706,11 +1725,36 @@ mermaid.initialize({
   (setq chatgpt-shell-chatgpt-streaming t)
   (setq chatgpt-shell-model-version "gpt-4") ;; gpt-3.5-turbo
   (setq chatgpt-shell-request-timeout 300)
+  ;; 在另外的 buffer 显示查询结果.
+  (setq chatgpt-shell-insert-queries-inline nil)
   (require 'ob-chatgpt-shell)
   (ob-chatgpt-shell-setup)
   (require 'ob-dall-e-shell)
   (ob-dall-e-shell-setup)
-  (setq chatgpt-shell--url "http://127.0.0.1:1090/v1/chat/completions"))
+  (setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
+  ;; (setq chatgpt-shell--url "http://127.0.0.1:1090/v1/chat/completions")
+  )
+
+  ;; (setq chatgpt-shell-display-function #'my/chatgpt-shell-frame)
+
+  ;; (defun my/chatgpt-shell-frame (bname)
+  ;;   (let ((cur-f (selected-frame))
+  ;;         (f (my/find-or-make-frame "chatgpt")))
+  ;;     (select-frame-by-name "chatgpt")
+  ;;     (pop-to-buffer-same-window bname)
+  ;;     (set-frame-position f (/ (display-pixel-width) 2) 0)
+  ;;     (set-frame-height f (frame-height cur-f))
+  ;;     (set-frame-width f  (frame-width cur-f) 1)))
+
+  ;; (defun my/find-or-make-frame (fname)
+  ;;   (condition-case
+  ;;       nil
+  ;;       (select-frame-by-name fname)
+  ;;     (error (make-frame `((name . ,fname))))))
+
+(use-package cue-mode
+  :straight (:host github :repo "russell/cue-mode")
+  :demand)
 
 (use-package project
   :custom
@@ -1998,6 +2042,122 @@ mermaid.initialize({
   (consult-tramp-path "/root/")
   ;; 即使 ~/.ssh/config 正确 Include 了 hosts 文件，这里还是需要配置，因为 consult-tramp 不会解析 Include 配置。
   (consult-tramp-ssh-config "~/work/proxylist/hosts_config"))
+
+(use-package elfeed
+  :demand
+  :config
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  (setq elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-max-connections 32)
+  (setq elfeed-curl-timeout 60)
+  (setf url-queue-timeout 120)
+  (push "-k" elfeed-curl-extra-arguments)
+  (setq elfeed-search-filter "@1-months-ago +unread")
+  ;; 在同一个 buffer 中显示条目。
+  (setq elfeed-show-unique-buffers nil)
+  (setq elfeed-search-title-max-width 150)
+  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
+  (setq elfeed-log-level 'warn)
+
+  ;; 支持收藏 feed, 参考：http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+  (defalias 'elfeed-toggle-star (elfeed-expose #'elfeed-search-toggle-all 'star))
+  (eval-after-load 'elfeed-search '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
+  (defface elfeed-search-star-title-face '((t :foreground "#f77")) "Marks a starred Elfeed entry.")
+  (push '(star elfeed-search-star-title-face) elfeed-search-face-alist))
+
+(use-package elfeed-org
+  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+  :hook
+  ((elfeed-dashboard-mode . elfeed-org)
+   (elfeed-show-mode . elfeed-org))
+  :config
+  (progn
+    (defun my/reload-org-feeds ()
+      (interactive)
+      (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
+    (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds)))
+
+(use-package elfeed-dashboard
+  :config
+  (global-set-key (kbd "C-c f") 'elfeed-dashboard)
+  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
+
+(use-package elfeed-score
+  :config
+  (progn
+    (elfeed-score-enable)
+    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+
+(use-package elfeed-goodies
+  :config
+  (setq elfeed-goodies/entry-pane-position 'bottom)
+  (setq elfeed-goodies/feed-source-column-width 30)
+  (setq elfeed-goodies/tag-column-width 30)
+  (setq elfeed-goodies/powerline-default-separator 'arrow)
+  (elfeed-goodies/setup))
+
+;; elfeed-goodies 显示日期栏
+;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
+(defun elfeed-goodies/search-header-draw ()
+  "Returns the string to be used as the Elfeed header."
+  (if (zerop (elfeed-db-last-update))
+      (elfeed-search--intro-header)
+    (let* ((separator-left (intern (format "powerline-%s-%s"
+                                           elfeed-goodies/powerline-default-separator
+                                           (car powerline-default-separator-dir))))
+           (separator-right (intern (format "powerline-%s-%s"
+                                            elfeed-goodies/powerline-default-separator
+                                            (cdr powerline-default-separator-dir))))
+           (db-time (seconds-to-time (elfeed-db-last-update)))
+           (stats (-elfeed/feed-stats))
+           (search-filter (cond
+                           (elfeed-search-filter-active
+                            "")
+                           (elfeed-search-filter
+                            elfeed-search-filter)
+                           (""))))
+      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
+        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
+
+(defun elfeed-goodies/entry-line-draw (entry)
+  "Print ENTRY to the buffer."
+  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (date (elfeed-search-format-date (elfeed-entry-date entry)))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+                         elfeed-goodies/tag-column-width 4))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               title-width)
+                        :left))
+         (tag-column (elfeed-format-column
+                      tags-str (elfeed-clamp (length tags-str)
+                                             elfeed-goodies/tag-column-width
+                                             elfeed-goodies/tag-column-width)
+                      :left))
+         (feed-column (elfeed-format-column
+                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width)
+                       :left)))
+
+    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+        (progn
+          (insert (propertize date 'face 'elfeed-search-date-face) " ")
+          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
+          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
+          (insert (propertize title 'face title-faces 'kbd-help title)))
+      (insert (propertize title 'face title-faces 'kbd-help title)))))
 
 ;;; Google 翻译
 (use-package google-translate

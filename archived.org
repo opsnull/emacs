@@ -2191,6 +2191,17 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   (add-hook 'org-mode-hook #'valign-mode))
 #+end_src
 
+** ui
+#+begin_src emacs-lisp
+;; 快速窗口切换。选择 s-X 是由于 vterm 默认将 M-x 等快捷键拦截，所以不生效，但不拦截 s-X。
+;; vterm 默认不拦截的快捷键参考 vterm-keymap-exceptions， 包含 M-o。
+(global-set-key (kbd "s-o") 'other-window)
+(global-set-key (kbd "s-C-o") #'prev-window)
+(defun prev-window ()
+  (interactive)
+  (other-window -1))
+#+end_src
+
 * projectile
 
 #+begin_src emacs-lisp
