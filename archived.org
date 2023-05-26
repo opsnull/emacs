@@ -4809,3 +4809,22 @@ tar-bar:
 
 全拼配置:
 
+* buffer move
+#+begin_src emacs-lisp
+;;(global-set-key (kbd "s-h") #'windmove-left)
+;;(global-set-key (kbd "s-j") #'windmove-down)
+;;(global-set-key (kbd "s-k") #'windmove-up)
+;;(global-set-key (kbd "s-l") #'windmove-right)
+;;(global-set-key (kbd "s-s") #'save-buffer)
+;;(global-set-key (kbd "s-w") #'delete-frame)
+
+;; buffer 窗口移动。
+(use-package buffer-move
+  :straight (:host github :repo "lukhas/buffer-move")
+  :disabled
+  :config
+  (global-set-key (kbd "C-s-k") #'buf-move-up)
+  (global-set-key (kbd "C-s-j") #'buf-move-down)
+  (global-set-key (kbd "C-s-h") #'buf-move-left)
+  (global-set-key (kbd "C-s-l") #'buf-move-right))
+#+end_src

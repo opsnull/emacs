@@ -9,7 +9,7 @@
   (:text "opsnull" :title-value 150 :content-value 100 :type w))
  ("feed"
   (:text "Irreal" :value 250 :type S :attr t)
-  (:text "emacs-news – sacha chua" :value 350 :type S :attr t :comment "Essential!"))
+  (:text "Sacha Chua" :value 350 :type S :attr t :comment "Essential!"))
 ;; ("authors"
 ;;  (:text "opsnull" :value 500 :type s))
 ;; ("tag"

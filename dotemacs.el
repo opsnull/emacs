@@ -162,7 +162,7 @@
 ;; 透明背景。
 (defun my/toggle-transparency ()
   (interactive)
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90)) ;; 分别为 frame 获得焦点和失去焦点的不透明度。
   (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
 
 ;; 高亮光标移动到的行。
@@ -191,21 +191,10 @@
 
 ;; window 窗口选择。
 (global-set-key (kbd "s-o") #'other-window)
-;; (global-set-key (kbd "s-h") #'windmove-left)
-;; (global-set-key (kbd "s-j") #'windmove-down)
-;; (global-set-key (kbd "s-k") #'windmove-up)
-;; (global-set-key (kbd "s-l") #'windmove-right)
-;;(global-set-key (kbd "s-s") #'save-buffer)
-;;(global-set-key (kbd "s-w") #'delete-frame)
 
-;; buffer 窗口移动。
-(use-package buffer-move
-  :straight (:host github :repo "lukhas/buffer-move")
-  :config
-  (global-set-key (kbd "C-s-k") #'buf-move-up)
-  (global-set-key (kbd "C-s-j") #'buf-move-down)
-  (global-set-key (kbd "C-s-h") #'buf-move-left)
-  (global-set-key (kbd "C-s-l") #'buf-move-right))
+;; 滚动显示。
+(global-set-key (kbd "C-s-j") (lambda () (interactive) (scroll-up 2)))
+(global-set-key (kbd "C-s-k") (lambda () (interactive) (scroll-down 2)))
 
 (use-package dashboard
   :config
@@ -697,6 +686,7 @@
 (global-set-key "\C-cn" 'find-dired)
 (global-set-key "\C-cN" 'grep-find)
 
+(setq isearch-allow-scroll 'unlimited)
 ;; 显示当前和总的数量。
 (setq isearch-lazy-count t)
 (setq isearch-lazy-highlight t)
@@ -829,6 +819,8 @@
         ;;org-adapt-indentation t
         org-list-indent-offset 2
         org-html-validation-link nil
+        ;; org-timer 到期时发送声音提示。
+        org-clock-sound t
         org-startup-indented t)
   ;;(setq org-fold-core-style 'overlays)
   ;; 不自动对齐 tag
@@ -843,8 +835,8 @@
   (setq org-id-link-to-org-use-id t)
   ;; 光标位于 section 中间时不 split line.
   (setq org-M-RET-may-split-line nil)
-  (setq org-todo-keywords '((sequence "TODO(t)" "DOING(d)" "|" "DONE(D)")
-                            (sequence "BLOCKED(b)" "|" "CANCELLED(c)")))
+  (setq org-todo-keywords '((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
+                            (sequence "BLOCKED(b@)" "|" "CANCELLED(c@)")))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
@@ -1136,7 +1128,7 @@
   :after ox
   :config
   (setq org-hugo-base-dir "~/blog/blog.opsnull.com")
-  (setq org-hugo-section "post")
+  (setq org-hugo-section "posts")
   (setq org-hugo-export-with-section-numbers t)
   (setq org-hugo-auto-set-lastmod t))
 
@@ -1524,6 +1516,7 @@ mermaid.initialize({
 
 (use-package web-mode
   :mode "(\\.\\(jinja2\\|j2\\|css\\|vue\\|tmpl\\|gotmpl\\|html?\\|ejs\\)\\'"
+  :disabled ;; 使用内置的 TypeScript mode
   :custom
   (css-indent-offset 2)
   (web-mode-attr-indent-offset 2)
@@ -1726,7 +1719,7 @@ mermaid.initialize({
   (setq chatgpt-shell-model-version "gpt-4") ;; gpt-3.5-turbo
   (setq chatgpt-shell-request-timeout 300)
   ;; 在另外的 buffer 显示查询结果.
-  (setq chatgpt-shell-insert-queries-inline nil)
+  (setq chatgpt-shell-insert-queries-inline t)
   (require 'ob-chatgpt-shell)
   (ob-chatgpt-shell-setup)
   (require 'ob-dall-e-shell)
@@ -2080,6 +2073,7 @@ mermaid.initialize({
 (use-package elfeed-dashboard
   :config
   (global-set-key (kbd "C-c f") 'elfeed-dashboard)
+  ;; dashboard 配置，例如各种 feed 查询书签。
   (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
   (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
 
