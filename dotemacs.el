@@ -100,7 +100,7 @@
  ;; 向上翻另外的窗口。
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
 
-;; Emacs 29: 不显示 Title Bar（依赖编译时指定 --with-no-frame-refocus 参数。）
+;; 不显示 Title Bar（依赖编译时指定 --with-no-frame-refocus 参数。）
 (add-to-list 'default-frame-alist '(undecorated-round . t))
 
 ;; 高亮当前行。
@@ -215,7 +215,7 @@
   (doom-modeline-buffer-encoding nil)
   ;; 显示语言版本。
   (doom-modeline-env-version t)
-  ;; 不显示 Go 版本。
+  ;; 不显示 go 版本。
   (doom-modeline-env-enable-go nil)
   (doom-modeline-buffer-file-name-style 'truncate-nil) ;; relative-from-project
   (doom-modeline-vcs-max-length 30)
@@ -247,8 +247,9 @@
 ;; 中文字体；
 (setq +font-unicode-family "LXGW WenKai Screen")
 ;; 中文字体和英文字体按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
-(setq +font-size 14)
-(setq face-font-rescale-alist '(("LXGW WenKai Screen" . 1)))
+(setq face-font-rescale-alist '(("LXGW WenKai Screen" . 1))) ;; 1:1 缩放。
+(setq +font-size 14) ;; 偶数字号。
+
 
 ;; 设置缺省字体。
 (defun +load-base-font ()
@@ -777,14 +778,16 @@
         org-highlight-latex-and-related '(latex)
         ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
         org-export-with-latex 'verbatim
-        ;; 隐藏标记。
+        ;; 隐藏标记字符。
         org-hide-emphasis-markers t
+
         ;; 去掉 * 和 /, 使它们不再具有强调含义。
-        org-emphasis-alist
-        '(("_" underline)
-          ("=" org-verbatim verbatim)
-          ("~" org-code verbatim)
-          ("+" (:strike-through t)))
+        ;; org-emphasis-alist
+        ;; '(("_" underline)
+        ;;   ("=" org-verbatim verbatim)
+        ;;   ("~" org-code verbatim)
+        ;;   ("+" (:strike-through t)))
+
         ;; 隐藏 block
         org-hide-block-startup t
         org-hidden-keywords '(title)
@@ -809,6 +812,7 @@
         org-use-sub-superscripts nil
         ;; headerline 默认加序号。
         org-startup-numerated t
+        org-startup-indented t
         ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
         org-export-with-sub-superscripts nil
         ;; heaerline 不显示 *。
@@ -816,12 +820,11 @@
         ;; 缩进 2 个字符。
         org-indent-indentation-per-level 2
         ;; 内容缩进与对应 headerline 一致。
-        ;;org-adapt-indentation t
+        org-adapt-indentation t
         org-list-indent-offset 2
         org-html-validation-link nil
         ;; org-timer 到期时发送声音提示。
-        org-clock-sound t
-        org-startup-indented t)
+        org-clock-sound t)
   ;;(setq org-fold-core-style 'overlays)
   ;; 不自动对齐 tag
   (setq org-tags-column 0)
@@ -877,14 +880,39 @@
   :config
   (add-hook 'org-mode-hook 'org-appear-mode)
   ;; 删除 * 和 / 类型的标记。
-  (setq org-appear-elements '(underline strike-through verbatim code)))
+  ;; (setq org-appear-elements '(underline strike-through verbatim code))
+  )
 
+;; Org-modern replaces Org-superstar.
 (use-package org-modern
   :after (org)
   :demand
   :straight (:host github :repo "minad/org-modern")
   :config
   (with-eval-after-load 'org (global-org-modern-mode)))
+
+;; 使用 font-lock 来隐藏中文前后的空格。
+;; https://emacs-china.org/t/org-mode/22313
+(font-lock-add-keywords 'org-mode
+                        '(("\\cc\\( \\)[/+*_=~][^a-zA-Z0-9/+*_=~\n]+?[/+*_=~]\\( \\)?\\cc?"
+                           (1 (prog1 () (compose-region (match-beginning 1) (match-end 1) ""))))
+                          ("\\cc?\\( \\)?[/+*_=~][^a-zA-Z0-9/+*_=~\n]+?[/+*_=~]\\( \\)\\cc"
+                           (2 (prog1 () (compose-region (match-beginning 2) (match-end 2) "")))))
+                        'append)
+;; 导出时删除空格。
+(with-eval-after-load 'ox
+  (defun eli-strip-ws-maybe (text _backend _info)
+    (let* ((text (replace-regexp-in-string
+                  "\\(\\cc\\) *\n *\\(\\cc\\)"
+                  "\\1\\2" text));; remove whitespace from line break
+           ;; remove whitespace from `org-emphasis-alist'
+           (text (replace-regexp-in-string "\\(\\cc\\) \\(.*?\\) \\(\\cc\\)"
+                                           "\\1\\2\\3" text))
+           ;; restore whitespace between English words and Chinese words
+           (text (replace-regexp-in-string "\\(\\cc\\)\\(\\(?:<[^>]+>\\)?[a-z0-9A-Z-]+\\(?:<[^>]+>\\)?\\)\\(\\cc\\)"
+                                           "\\1 \\2 \\3" text)))
+      text))
+  (add-to-list 'org-export-filter-paragraph-functions #'eli-strip-ws-maybe))
 
 (defun my/org-mode-visual-fill (fill width)
   (setq-default
@@ -1619,20 +1647,32 @@ mermaid.initialize({
 
 ;; GNU Global gtags
 (setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
-(setenv "GTAGSCONF" "/usr/local/Cellar/global/6.6.9/share/gtags/gtags.conf")
+;; brew update 可能会更新 Global 版本，故这里使用 glob 匹配版本号。
+(setenv "GTAGSCONF" (car (file-expand-wildcards "/usr/local/Cellar/global/*/share/gtags/gtags.conf")))
 (setenv "GTAGSLABEL" "pygments")
 
 (use-package citre
   :defer t
   :straight (:host github :repo "universal-ctags/citre")
   :init
-  ;; 当项目目录有 TAGS 文件时，自动开启 citre-mode.
+  ;; 当打开一个文件时，如果可以找到对应的 TAGS 文件时则自动开启 citre-mode。开启了 citre-mode 后，会自动向
+  ;; xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
   (require 'citre-config)
+  :config
+  ;; 只使用 GNU Global tags。
+  (setq citre-completion-backends '(global))
+  (setq citre-find-definition-backends '(global))
+  (setq citre-find-reference-backends '(global))
+  (setq citre-tags-in-buffer-backends  '(global))
+  (setq citre-auto-enable-citre-mode-backends '(global))
+  ;; citre-config 的逻辑只对 prog-mode 的文件有效。
+  (setq citre-auto-enable-citre-mode-modes '(prog-mode))
+  (setq citre-use-project-root-when-creating-tags t)
   (setq citre-peek-file-content-height 20)
   (global-set-key (kbd "s-.") 'citre-jump)
   (global-set-key (kbd "s-,") 'citre-jump-back)
-  (global-set-key (kbd "s-?") 'citre-peek) ;; or citre-ace-peek
-  (global-set-key (kbd "C-x c u") 'citre-update-this-tags-file))
+  (global-set-key (kbd "s-?") 'citre-peek-reference) ;; or citre-peek
+  (global-set-key (kbd "C-x c u") 'citre-global-update-database))
 
 ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
 
@@ -1663,7 +1703,6 @@ mermaid.initialize({
   (interactive)
   (switch-to-buffer
    (get-buffer-create "*compilation*")))
-(global-set-key (kbd "C-c c") 'my/goto-compilation)
 
 ;; xref 的 history 局限于当前窗口（默认全局）。
 (setq xref-history-storage 'xref-window-local-history)

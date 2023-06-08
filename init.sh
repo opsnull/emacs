@@ -46,13 +46,13 @@ bash-language-server -v &>/dev/null || npm i -g bash-language-server
 
 pip install pygments
 python -m pygments -h # gtags 使用 pygments 支持跟多语言
-brew install global
+brew install global # 提供 global、gtags 命令
 
 # 在 ~/.bashrc 中添加如下配置：
 # 统一的 tags 文件目录
 export GTAGSOBJDIRPREFIX=~/.cache/gtags/ 
 mkdir $GTAGSOBJDIRPREFIX
-export GTAGSCONF=/usr/local/Cellar/global/6.6.9/share/gtags/gtags.conf
+export GTAGSCONF=/usr/local/Cellar/global/*/share/gtags/gtags.conf
 # 使用 pygments 支持更多的语言，他噢夹南是支持 reference 搜索。
 export GTAGSLABEL=pygments
 
