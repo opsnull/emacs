@@ -1,6 +1,8 @@
 ;; 关闭 package.el(后续使用 straight.el) 。
 (setq package-enable-at-startup nil)
 
+;;(setq load-suffixes '(".el"))
+
 ;; 配置 use-package 使用 straight.el 安装包。
 (setq straight-use-package-by-default t)
 ;; 只 clone 最近一次 commit 历史, 减少磁盘空间占用。
@@ -154,6 +156,8 @@
                    "*lsp-bridge"
                    "*Org"
                    "*Google Translate*"
+                   "*eldoc*"
+                   " *eglot"
                    "Shell Command Output") (0+ not-newline))
          (display-buffer-below-selected display-buffer-at-bottom)
          (inhibit-same-window . t)
@@ -364,16 +368,19 @@
   (global-set-key (kbd "s-b") 'tab-bar-history-back)
   ;; 快速 tab 操作。
   (global-set-key (kbd "s-t") 'tab-bar-new-tab)
-  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
-  (global-set-key (kbd "s-1") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-2") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-3") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-4") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-5") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-6") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-7") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-8") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
+  (global-set-key (kbd "s-n") 'tab-bar-switch-to-next-tab) ;; 自动轮转。
+  (global-set-key (kbd "s-p") 'tab-bar-switch-to-prev-tab)
+  ;; (global-set-key (kbd "s-0") 'tab-bar-close-tab)
+  ;; (global-set-key (kbd "s-1") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-2") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-3") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-4") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-5") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-6") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-7") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-8") 'tab-bar-select-tab)
+  ;; (global-set-key (kbd "s-9") 'tab-bar-select-tab)
+  )
 
 (use-package sort-tab
   :demand
@@ -384,9 +391,19 @@
   ;;(sort-tab-mode 1)
   (setq sort-tab-show-index-number t)
   (setq sort-tab-height 40)
-  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
-  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
+  ;;(global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  ;;(global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
+  ;;(global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
+  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
   ;; 设置 tab 颜色，M-x list-colors-display。
   (set-face-foreground 'sort-tab-current-tab-face "peru")
   ;; 不显示背景颜色。
@@ -464,6 +481,9 @@
           (variable (styles +orderless-with-initialism))
           ;; symbol 补全
           (symbol (styles +orderless-with-initialism))
+          ;; eglot will change the completion-category-defaults to flex, BAD!
+          ;; https://github.com/minad/corfu/issues/136#issuecomment-1052843656
+          (eglot (styles . (orderless flex)))
           )) 
   ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
@@ -539,7 +559,7 @@
 (global-set-key (kbd "M-Y") #'consult-yank-from-kill-ring)
 ;; M-g 绑定 (goto-map)
 (global-set-key (kbd "M-g e") #'consult-compile-error)
-;;(global-set-key (kbd "M-g f") #'consult-flycheck)
+(global-set-key (kbd "M-g f") #'consult-flymake)
 (global-set-key (kbd "M-g g") #'consult-goto-line)
 (global-set-key (kbd "M-g o") #'consult-outline)
 ;; consult-buffer 默认已包含 recent file.
@@ -1245,7 +1265,7 @@
 
 (use-package envrc :hook (after-init . envrc-global-mode))
 
-(use-package posframe)
+;;(use-package posframe)
 
 ;; dump-jump 支持 GNU Global 的 gtags 跳转。
 (use-package  dumb-jump
@@ -1279,78 +1299,63 @@
     (dumb-jump-back))))
 
 (use-package lsp-bridge
+  :disabled
   :after (markdown-mode)
   :straight (:host github :repo "manateelazycat/lsp-bridge" :files ("*" "acm/*"))
+  :no-native-compile t ;; straight pull 包后不编译为 elc。
   :custom
   ;; 不在 modeline 显示 lsp-bridge 信息。
   (lsp-bridge-enable-mode-line nil)
   :config
-  (setq lsp-bridge-enable-log nil)
+  (setq lsp-bridge-enable-log t)
   (setq lsp-bridge-enable-signature-help t)
   ;;(setq lsp-bridge-signature-show-function 'lsp-bridge-signature-posframe)
   ;; word 补全。
   (setq acm-enable-search-file-words nil)
   (setq lsp-bridge-enable-search-words nil)
-  (setq lsp-bridge-search-words-rebuild-cache-idle 10)
-  (setq acm-candidate-match-function 'orderless-flex)
+  ;; (setq lsp-bridge-search-words-rebuild-cache-idle 10)
+  ;; (setq acm-candidate-match-function 'orderless-flex)
   ;; 至少输入 N 个字符后才开始补全。
-  (setq acm-backend-lsp-candidate-min-length 0)
+  ;; (setq acm-backend-lsp-candidate-min-length 0)
   (setq acm-backend-lsp-enable-auto-import nil)
-  (setq acm-backend-lsp-candidate-max-length 100)
-  (setq acm-enable-icon nil)
-  (setq acm-enable-doc nil)
-  (setq acm-enable-telega nil)
+  ;; (setq acm-backend-lsp-candidate-max-length 100)
+  ;; (setq acm-enable-icon nil)
+  ;; (setq acm-enable-doc nil)
+  ;; (setq acm-enable-telega nil)
   (setq acm-enable-tabnine nil)
-  (setq acm-enable-quick-access t)
   (setq lsp-bridge-diagnostic-tooltip-border-width 0)
   (setq lsp-bridge-enable-hover-diagnostic t)
+  (setq lsp-bridge-diagnostic-display-errors-delay 1)
   ;; 关闭 code action 的 popup-menu.
   (setq lsp-bridge-code-action-enable-popup-menu nil)
-  (setq lsp-bridge-lookup-doc-tooltip-max-width 100)
-  (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
+  ;; (setq lsp-bridge-lookup-doc-tooltip-max-width 100)
+  ;; (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
   ;;  过滤 warnning.
-  (setq lsp-bridge-diagnostic-hide-severities '(2 3 4))
+  ;;(setq lsp-bridge-diagnostic-hide-severities '(2 3 4))
   ;; 开启 citre 集成。
-  (setq acm-enable-citre t)
+  ;;(setq acm-enable-citre t)
   ;; 关闭 yas 补全。
-  (setq acm-enable-yas nil)
-  ;; 增加 treesit 相关的 xx-ts-mode
-  (setq lsp-bridge-single-lang-server-mode-list
-        '(((c-mode c-ts-mode c++-mode c++-ts-mode objc-mode) . lsp-bridge-c-lsp-server)
-          (cmake-mode . "cmake-language-server")
-          ((java-mode java-ts-mode) . "jdtls")
-          ((python-mode python-ts-mode) . lsp-bridge-python-lsp-server)
-          ((go-mode go-ts-mode) . "gopls")
-          ((js2-mode js-mode js-ts-mode rjsx-mode) . "javascript")
-          (typescript-tsx-mode . "typescriptreact")
-          ((typescript-mode typescript-ts-mode) . "typescript")
-          ((latex-mode Tex-latex-mode texmode context-mode texinfo-mode bibtex-mode) . lsp-bridge-tex-lsp-server)
-          ((sh-mode bash-ts-mode) . "bash-language-server")
-          ((css-mode css-ts-mode) . "vscode-css-language-server")
-          ((yaml-mode yaml-ts-mode) . "yaml-language-server")
-          ((json-mode json-ts-mode) . "vscode-json-language-server")
-          ((dockerfile-mode dockerfile-ts-mode) . "docker-langserver")))
-  ;; 添加 treesit 相关的 xx-ts-mode-hook 后，lsp-bridge 才会自动启动。
-  (add-to-list 'lsp-bridge-default-mode-hooks 'go-ts-mode-hook)
-  (add-to-list 'lsp-bridge-default-mode-hooks 'bash-ts-mode-hook)
-  (add-to-list 'lsp-bridge-default-mode-hooks 'python-ts-mode-hook)
-  (add-to-list 'lsp-bridge-default-mode-hooks 'js-ts-mode-hook)
-  (add-to-list 'lsp-bridge-default-mode-hooks 'typescript-ts-mode-hook)
-  (add-to-list 'lsp-bridge-default-mode-hooks 'css-ts-mode-hook)
-  (add-to-list 'lsp-bridge-default-mode-hooks 'yaml-ts-mode-hook)
-  (add-to-list 'lsp-bridge-default-mode-hooks 'json-ts-mode-hook)
+  ;;(setq acm-enable-yas nil)
   (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
   (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
   (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
   (add-to-list 'lsp-bridge-org-babel-lang-list "go")
   ;; go 缩进。
-  (add-to-list 'lsp-bridge-formatting-indent-alist '(go-mode . c-basic-offset))
-  (add-to-list 'lsp-bridge-formatting-indent-alist '(go-ts-mode . c-basic-offset))
+  ;;(add-to-list 'lsp-bridge-formatting-indent-alist '(go-mode . c-basic-offset))
+  ;;(add-to-list 'lsp-bridge-formatting-indent-alist '(go-ts-mode . c-basic-offset))
   ;; go 注释字符后不提示补全。
-  (add-to-list 'lsp-bridge-completion-hide-characters "/")
-  (add-to-list 'lsp-bridge-completion-hide-characters "，")
-  (add-to-list 'lsp-bridge-completion-hide-characters "。")
+  ;; (add-to-list 'lsp-bridge-completion-hide-characters "/")
+  ;; (add-to-list 'lsp-bridge-completion-hide-characters "，")
+  ;; (add-to-list 'lsp-bridge-completion-hide-characters "。")
   (global-lsp-bridge-mode)
+  ;; 关闭自动补全；
+  (setq lsp-bridge-complete-manually t)
+  ;; 手动触发自动补全。
+  (global-set-key (kbd "M-SPC") 'lsp-bridge-popup-complete-menu)
+  ;; (define-key acm-mode-map [tab] 'acm-select-next)
+  ;; (define-key acm-mode-map [backtab] 'acm-select-prev)
+  ;; (define-key acm-mode-map "\M-j" 'acm-complete)
+
   ;;; lsp-bridge
   ;; M-j 被预留给 pyim 使用。
   (define-key acm-mode-map (kbd "M-j") nil)
@@ -1403,14 +1408,27 @@
   ;;(setenv "GOARCH" "amd64")
   ;; go-mode 默认启用 tabs.
   (setq indent-tabs-mode t)
-  (setq c-ts-common-indent-offset 8)
-  (setq c-basic-offset 8))
+  (setq c-ts-common-indent-offset 4)
+  (setq c-basic-offset 4))
 
 ;; (use-package go-mode
 ;;   :init
 ;;   (setq godoc-reuse-buffer t))
 ;; (add-hook 'go-mode-hook 'my/go-setup)
 (add-hook 'go-ts-mode-hook 'my/go-setup)
+
+;; https://go.googlesource.com/tools/+/refs/heads/master/gopls/doc/emacs.md
+;; Optional: install eglot-format-buffer as a save hook.
+;; The depth of -10 places this before eglot's willSave notification,
+;; so that that notification reports the actual contents that will be saved.
+(defun eglot-format-buffer-on-save ()
+  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+(add-hook 'go-ts-mode-hook #'eglot-format-buffer-on-save)
+(add-hook 'go-ts-mode-hook #'eglot-ensure)
+(setq-default eglot-workspace-configuration
+    '((:gopls .
+        ((staticcheck . t)
+         (matcher . "CaseSensitive")))))
 
 (defvar go--tools '("golang.org/x/tools/gopls"
                     "golang.org/x/tools/cmd/goimports"
@@ -1669,9 +1687,19 @@ mermaid.initialize({
   (setq citre-auto-enable-citre-mode-modes '(prog-mode))
   (setq citre-use-project-root-when-creating-tags t)
   (setq citre-peek-file-content-height 20)
-  (global-set-key (kbd "s-.") 'citre-jump)
-  (global-set-key (kbd "s-,") 'citre-jump-back)
-  (global-set-key (kbd "s-?") 'citre-peek-reference) ;; or citre-peek
+
+  ;; 优化 key 绑定，都以 s- 开头。
+  ;; (global-set-key (kbd "s-.") 'citre-jump)
+  ;; (global-set-key (kbd "s-,") 'citre-jump-back)
+  ;; (global-set-key (kbd "s-?") 'citre-peek-reference)
+  (define-key citre-mode-map (kbd "s-.") 'citre-jump)
+  (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
+  (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
+  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
+  (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
+  (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
+  (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
+  (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
   (global-set-key (kbd "C-x c u") 'citre-global-update-database))
 
 ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
@@ -1721,15 +1749,15 @@ mermaid.initialize({
   ;; 提示选择 docset;
   (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
   ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
-  (add-to-list 'dash-at-point-docsets "spf13/viper")
-  (add-to-list 'dash-at-point-docsets "spf13/cobra")
-  (add-to-list 'dash-at-point-docsets "spf13/pflag")
+  (add-to-list 'dash-at-point-docsets "viper")
+  (add-to-list 'dash-at-point-docsets "cobra")
+  (add-to-list 'dash-at-point-docsets "pflag")
   (add-to-list 'dash-at-point-docsets "k8s.io/api")
-  (add-to-list 'dash-at-point-docsets "k8s.io/apimachineary")
-  (add-to-list 'dash-at-point-docsets "k8s.io/client-go")
-  (add-to-list 'dash-at-point-docsets "k8s.io/klog")  
-  (add-to-list 'dash-at-point-docsets "sig.k8s.io/controller-runtime")
-  (add-to-list 'dash-at-point-docsets "k8s.io/componet-base")
+  (add-to-list 'dash-at-point-docsets "apimachineary")
+  (add-to-list 'dash-at-point-docsets "client-go")
+  (add-to-list 'dash-at-point-docsets "klog")  
+  (add-to-list 'dash-at-point-docsets "controller-runtime")
+  (add-to-list 'dash-at-point-docsets "componet-base")
   (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))
 
 (use-package expand-region
@@ -1787,6 +1815,183 @@ mermaid.initialize({
 (use-package cue-mode
   :straight (:host github :repo "russell/cue-mode")
   :demand)
+
+(use-package flymake
+  :ensure t
+  :straight (:type built-in)
+  :config
+  (setq flymake-no-changes-timeout nil)
+  (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
+  (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error))
+
+(use-package eldoc
+  :ensure t
+  :straight (:type built-in)
+  :config
+  ;; 打开或关闭 *eldoc* 函数帮助或 hover buffer。
+  (global-set-key (kbd "M-`")
+                  (
+                   lambda()
+                   (interactive)
+                   (if (get-buffer-window "*eldoc*")
+                       (delete-window (get-buffer-window "*eldoc*"))
+                     (display-buffer "*eldoc*")))))
+
+(use-package company
+  :straight (:host github :repo "company-mode/company-mode")
+  :bind
+  (:map company-mode-map
+        ([remap completion-at-point] . company-complete)
+        :map company-active-map
+        ([escape] . company-abort)
+        ("C-p"     . company-select-previous)
+        ("C-n"     . company-select-next)
+        ("C-s"     . company-filter-candidates)
+        ([tab]     . company-complete-common-or-cycle)
+        ([backtab] . company-select-previous-or-abort)
+        :map company-search-map
+        ([escape] . company-search-abort)
+        ("C-p"    . company-select-previous)
+        ("C-n"    . company-select-next))
+  :custom
+
+  ;; allow input string that do not match candidate words
+  ;; 开启后有大量不匹配的候选情况，故关闭。
+  ;;(company-require-match nil)
+  
+  ;; pop up a completion menu by tapping a character
+  (company-minimum-prefix-length 1) ;; default: 3
+
+  ;; trigger completion immediately.
+  (company-idle-delay 0)
+  (company-echo-delay 0)
+
+  (company-global-modes '(not message-mode help-mode eshell-mode comint-mode))
+  
+  (company-tooltip-limit 14) ;; default 10;
+  ;; tooltip 的 annotations 右对齐。
+  (company-tooltip-align-annotations t)
+  
+  (company-dabbrev-minimum-length 2)
+  ;; Only search the current buffer for `company-dabbrev' (a backend that
+  ;; suggests text your open buffers). This prevents Company from causing
+  ;; lag once you have a lot of buffers open.
+  (company-dabbrev-other-buffers nil)
+  ;; Make `company-dabbrev' fully case-sensitive, to improve UX with
+  ;; domain-specific words with particular casing.
+  (company-dabbrev-ignore-case nil)
+  ;; Don't downcase the returned candidates.
+  (company-dabbrev-downcase nil)
+
+  (company-files-exclusions '(".git/" ".DS_Store" "vendor/"))
+
+  (company-transformers '(delete-consecutive-dups
+                          company-sort-by-occurrence))
+
+  ;; 候选框宽度
+  (company-tooltip-minimum-width 70)
+  (company-tooltip-maximum-width 100)
+
+  ;; 补全后端
+  (company-backends '(company-capf
+                      company-clang
+                      company-files
+                      company-gtags
+                      ;;(company-dabbrev-code company-gtags company-keywords)                      
+                      ;;company-dabbrev                      
+                      ))
+  :config
+  ;; 高亮候选者（orderless 排序）。
+  (defun just-one-face (fn &rest args)
+    (let ((orderless-match-faces [completions-common-part]))
+      (apply fn args)))
+  (advice-add 'company-capf--candidates :around #'just-one-face)
+  (global-company-mode t))
+
+;; https://github.com/redguardtoo/emacs.d/blob/master/lisp/init-gtags.el
+(defun my-gtags-produce-tags-if-needed (directory)
+  "Product gtags tags file (index file) from DIRECTORY."
+  (if (not (= 0 (call-process "global" nil nil nil " -p")))
+      (let ((default-directory directory))
+        (shell-command "gtags")
+        (message "Tag file was created by GNU Global."))
+    ;;  Tag file already exists; update it
+    (shell-command "global -u")
+    (message "Tag file was updated by GNU Global.")))
+
+;; @see http://emacs-fu.blogspot.com.au/2008/01/navigating-through-source-code-using.html
+(defun my-gtags-create-or-update ()
+  "Create or update the gnu global tag file."
+  (interactive)
+  (my-gtags-produce-tags-if-needed (read-directory-name
+                            "gtags: top of source tree:" default-directory)))
+
+(defun my-gtags-add-gtagslibpath (libdir)
+  "Add external library directory LIBDIR to gtags' environment variable.
+Gtags scans that directory if needed."
+  (interactive "DDirectory containing GTAGS:\nP")
+  (let (sl
+        (gtags-lib-path (getenv "GTAGSLIBPATH")))
+    (unless (file-exists-p (concat (file-name-as-directory libdir) "GTAGS"))
+      ;; create tags
+      (let ((default-directory libdir))
+        (shell-command "gtags")
+        (message "tag file is created by GNU Global")))
+
+    (setq libdir (directory-file-name libdir)) ;remove final slash
+    (setq sl (split-string (or gtags-lib-path "")  ":" t))
+    (setq sl (delete libdir sl))
+    (push libdir sl)
+    (setenv "GTAGSLIBPATH" (mapconcat 'identity sl ":"))))
+
+(defun my-gtags-print-gtagslibpath ()
+  "Print the gtags default library path (for debug purpose)."
+  (interactive)
+  (message "GTAGSLIBPATH=%s" (getenv "GTAGSLIBPATH")))
+
+(use-package eglot
+  :ensure t
+  :defer t
+  :straight (:type built-in)
+  :bind (:map eglot-mode-map
+              ("C-c C-a" . eglot-code-actions)
+              ("C-c C-d" . eldoc)
+              ("C-c C-f" . eglot-format-buffer)
+              ("C-c C-r" . eglot-rename)
+)
+  :config
+  (setq eglot-events-buffer-size 0)
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显示 LSP 发送
+  ;; 的诊断消息。
+  (setq eglot-send-changes-idle-time 0.3)
+
+  (add-hook 'prog-mode-hook #'eglot-ensure)
+
+  ;; 在 eldoc bufer 中只显示帮助文档。
+  (defun /eglot-managed-mode-initialize ()
+    ;; 不显示 flymake 错误和函数签名，放置后续的 eldoc buffer 内容来回变。
+    (setq-local
+     eldoc-documentation-functions
+     (list
+      ;; 关闭自动在 eldoc 显示 flymake 的错误， 这样 eldoc 只显示函数签名或文档，后续 flymake 的错误单独在
+      ;; echo area 显示。      
+      ;;#'flymake-eldoc-function 
+      ;;#'eglot-signature-eldoc-function ;; 关闭自动在 eldoc 自动显示函数签名，使用 M-x eldoc 手动显示函数帮助。
+      #'eglot-hover-eldoc-function))
+
+    ;; 在单独的 buffer 中显示 eldoc 而非 echo area。
+    (setq-local
+     eldoc-display-functions
+     (list
+      ;;#'eldoc-display-in-echo-area
+      #'eldoc-display-in-buffer)))
+  (add-hook 'eglot-managed-mode-hook #'/eglot-managed-mode-initialize))
+
+(use-package consult-eglot
+  :straight (:host github :repo "mohkale/consult-eglot")
+  :after (eglot consult)
+  :demand
+)
 
 (use-package project
   :custom

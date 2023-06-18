@@ -3367,6 +3367,7 @@ Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包
   (corfu-doc-max-height 30))
 #+end_src
 + Corfu: 支持 ~orderless~ 过滤候选列表, 使用 ~M-SPC~ 来插入多个过滤模式;
+  
 * capf
 
 capf 给补全系统添加额外的候选者类型：
@@ -4073,29 +4074,6 @@ doom-themes:
 (add-to-list 'tab-line-exclude-modes 'magit-log-mode)
 (add-to-list 'tab-line-exclude-modes 'dashboard-mode)
 (add-to-list 'tab-line-exclude-modes 'ediff-mode)
-#+end_src
-
-* doom-theme
-
-#+begin_src emacs-lisp
-(use-package doom-themes
-  :disabled
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  :config
-  (doom-themes-visual-bell-config)
-  ;;(load-theme 'doom-palenight t)
-  (doom-themes-org-config)
-  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
-  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
-  (setq doom-themes-treemacs-enable-variable-pitch nil)
-  (setq doom-themes-treemacs-theme "doom-colors")
-  (doom-themes-treemacs-config))
 #+end_src
 
 * grammatical-edit
@@ -4828,3 +4806,139 @@ tar-bar:
   (global-set-key (kbd "C-s-h") #'buf-move-left)
   (global-set-key (kbd "C-s-l") #'buf-move-right))
 #+end_src
+
+* doom-theme
+
+#+begin_src emacs-lisp
+(use-package doom-themes
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  :config
+  (doom-themes-visual-bell-config)
+  ;;(load-theme 'doom-palenight t)
+  (doom-themes-org-config)
+  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch nil)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+#+end_src
+
+
+* cape
+
+A minimal ui for completion-in-region:
+#+begin_src emacs-lisp
+(use-package corfu
+  :straight (:host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
+  :init
+  (global-corfu-mode)
+  (corfu-echo-mode)
+  (corfu-history-mode)
+  (corfu-popupinfo-mode)
+  ;; TAB-and-Go completion
+  :bind
+  (:map corfu-map
+        ("TAB" . corfu-next)
+        ([tab] . corfu-next)
+        ("S-TAB" . corfu-previous)
+        ([backtab] . corfu-previous)) 
+  :custom
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-separator ?\s)          ;; Orderless field separator
+  (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+  (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+  (corfu-preview-current nil)    ;; Disable current candidate preview
+  (corfu-preselect 'prompt)      ;; Preselect the prompt
+  (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+  (corfu-scroll-margin 5)        ;; Use scroll margin
+
+  ;; (corfu-min-width 80)
+  ;; (corfu-max-width corfu-min-width)
+  ;; (corfu-count 14)
+  ;; (corfu-scroll-margin 4)
+
+    :hook ((prog-mode . corfu-mode)
+         (shell-mode . corfu-mode)
+         (eshell-mode . corfu-mode))
+  
+  :config
+  (savehist-mode 1)
+  (add-to-list 'savehist-additional-variables 'corfu-history)
+
+  (defun corfu-enable-always-in-minibuffer ()
+    (setq-local corfu-auto nil)
+    (corfu-mode 1))
+  (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1))
+
+
+;; A few more useful configurations...
+(use-package emacs
+  :init
+  ;; 总是在弹出菜单中显示候选者。
+  ;; TAB cycle if there are only few candidates
+  (setq completion-cycle-threshold nil)
+
+  ;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
+  (setq tab-always-indent 'complete))
+
+;; Add extensions
+(use-package cape
+  :straight (:host github :repo "minad/cape")
+  ;; Bind dedicated completion commands
+  ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+  :bind (("C-c p p" . completion-at-point) ;; capf
+         ("C-c p t" . complete-tag)        ;; etags
+         ("C-c p d" . cape-dabbrev)        ;; or dabbrev-completion
+         ("C-c p h" . cape-history)
+         ("C-c p f" . cape-file)
+         ("C-c p k" . cape-keyword)
+         ("C-c p s" . cape-symbol)
+         ("C-c p a" . cape-abbrev)
+         ("C-c p l" . cape-line)
+         ("C-c p w" . cape-dict)
+         ("C-c p \\" . cape-tex)
+         ("C-c p _" . cape-tex)
+         ("C-c p ^" . cape-tex)
+         ("C-c p &" . cape-sgml)
+         ("C-c p r" . cape-rfc1345))
+  :init
+  ;; Add `completion-at-point-functions', used by `completion-at-point'.
+  ;; NOTE: The order matters!
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-elisp-block)
+  ;;(add-to-list 'completion-at-point-functions #'cape-history)
+  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  :config
+  (setq dabbrev-check-other-buffers nil
+        dabbrev-check-all-buffers nil
+        cape-dabbrev-min-length 3)
+  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
+  (cape-wrap-prefix-length #'cape-dabbrev 3)
+  )
+
+(use-package kind-icon
+  :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
+  :after corfu
+  :demand
+  :custom
+  (kind-icon-default-face 'corfu-default)
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+#+end_src
+
