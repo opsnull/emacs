@@ -6,6 +6,13 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 which rg || brew install ripgrep
 
 which tac || brew install coreutils
+# Macos 在启动 GUI 程序时自动注入 /etc/paths.d 下的环境变量。
+zj-ali-pc:~ root# cat >/etc/paths.d/opsnull <<EOF
+> /usr/local/opt/coreutils/libexec/gnubin
+> /usr/local/opt/findutils/libexec/gnubin
+> /usr/local/opt/curl/bin
+> /Users/zhangjun/go/bin
+> EOF
 
 # org
 which watchexec || brew install watchexec
@@ -17,8 +24,6 @@ which pngpaste || brew install pngpaste
 which pygmentize || brew install pygments
 
 which direnv || brew install direnv
-
-pip3 install epc orjson sexpdata six paramiko
 
 which pyenv || brew install --HEAD pyenv
 which pyenv-virtualenv || brew install --HEAD pyenv-virtualenv

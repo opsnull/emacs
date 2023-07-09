@@ -2778,7 +2778,6 @@ patch:
   )
 #+end_src
     
-
 ** capture
 
 自动 Capture 浏览器发来的网址或选中的内容:
@@ -4829,17 +4828,341 @@ tar-bar:
   (doom-themes-treemacs-config))
 #+end_src
 
+* lsp-bridge
 
-* cape
+lsp-bridge 依赖如下 python packages:
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+pip3 install epc orjson sexpdata six paramiko
+#+end_src
 
-A minimal ui for completion-in-region:
+#+begin_src emacs-lisp
+;;(use-package posframe)
+
+;; dump-jump 支持 GNU Global 的 gtags 跳转。
+(use-package  dumb-jump
+  :demand
+  :init
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
+;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转。
+(defun lsp-bridge-jump ()
+  (interactive)
+  (cond
+   ((eq major-mode 'emacs-lisp-mode)
+    (let ((symb (function-called-at-point)))
+      (when symb
+        (find-function symb))))
+   (lsp-bridge-mode
+    (lsp-bridge-find-def))
+   (t
+    (require 'dumb-jump)
+    (dumb-jump-go))))
+
+(defun lsp-bridge-jump-back ()
+  (interactive)
+  (cond
+   (lsp-bridge-mode
+    (lsp-bridge-return-from-def))
+   (t
+    (require 'dumb-jump)
+    (dumb-jump-back))))
+
+(use-package lsp-bridge
+  :disabled
+  :after (markdown-mode)
+  :straight (:host github :repo "manateelazycat/lsp-bridge" :files ("*" "acm/*"))
+  :no-native-compile t ;; straight pull 包后不编译为 elc。
+  :custom
+  ;; 不在 modeline 显示 lsp-bridge 信息。
+  (lsp-bridge-enable-mode-line nil)
+  :config
+  (setq lsp-bridge-enable-log t)
+  (setq lsp-bridge-enable-signature-help t)
+  ;;(setq lsp-bridge-signature-show-function 'lsp-bridge-signature-posframe)
+  ;; word 补全。
+  (setq acm-enable-search-file-words nil)
+  (setq lsp-bridge-enable-search-words nil)
+  ;; (setq lsp-bridge-search-words-rebuild-cache-idle 10)
+  ;; (setq acm-candidate-match-function 'orderless-flex)
+  ;; 至少输入 N 个字符后才开始补全。
+  ;; (setq acm-backend-lsp-candidate-min-length 0)
+  (setq acm-backend-lsp-enable-auto-import nil)
+  ;; (setq acm-backend-lsp-candidate-max-length 100)
+  ;; (setq acm-enable-icon nil)
+  ;; (setq acm-enable-doc nil)
+  ;; (setq acm-enable-telega nil)
+  (setq acm-enable-tabnine nil)
+  (setq lsp-bridge-diagnostic-tooltip-border-width 0)
+  (setq lsp-bridge-enable-hover-diagnostic t)
+  (setq lsp-bridge-diagnostic-display-errors-delay 1)
+  ;; 关闭 code action 的 popup-menu.
+  (setq lsp-bridge-code-action-enable-popup-menu nil)
+  ;; (setq lsp-bridge-lookup-doc-tooltip-max-width 100)
+  ;; (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
+  ;;  过滤 warnning.
+  ;;(setq lsp-bridge-diagnostic-hide-severities '(2 3 4))
+  ;; 开启 citre 集成。
+  ;;(setq acm-enable-citre t)
+  ;; 关闭 yas 补全。
+  ;;(setq acm-enable-yas nil)
+  (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "go")
+  ;; go 缩进。
+  ;;(add-to-list 'lsp-bridge-formatting-indent-alist '(go-mode . c-basic-offset))
+  ;;(add-to-list 'lsp-bridge-formatting-indent-alist '(go-ts-mode . c-basic-offset))
+  ;; go 注释字符后不提示补全。
+  ;; (add-to-list 'lsp-bridge-completion-hide-characters "/")
+  ;; (add-to-list 'lsp-bridge-completion-hide-characters "，")
+  ;; (add-to-list 'lsp-bridge-completion-hide-characters "。")
+  (global-lsp-bridge-mode)
+  ;; 关闭自动补全；
+  (setq lsp-bridge-complete-manually t)
+  ;; 手动触发自动补全。
+  (global-set-key (kbd "M-SPC") 'lsp-bridge-popup-complete-menu)
+  ;; (define-key acm-mode-map [tab] 'acm-select-next)
+  ;; (define-key acm-mode-map [backtab] 'acm-select-prev)
+  ;; (define-key acm-mode-map "\M-j" 'acm-complete)
+
+  ;;; lsp-bridge
+  ;; M-j 被预留给 pyim 使用。
+  (define-key acm-mode-map (kbd "M-j") nil)
+  ;; 使用 TAB 而非回车键来选定。
+  ;;(define-key acm-mode-map (kbd "RET") nil)
+  (define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-find-def)
+  (define-key lsp-bridge-mode-map (kbd "C-M-.") #'lsp-bridge-find-def-other-window)
+  (define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-find-def-return)
+  (define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
+  (define-key lsp-bridge-mode-map (kbd "M-d") #'lsp-bridge-popup-documentation)
+  ;; 这两个快捷键让位于 symobl-overlay
+  ;; (define-key lsp-bridge-mode-map (kbd "M-n") #'lsp-bridge-popup-documentation-scroll-up)
+  ;; (define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
+  (define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
+  (define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
+  (define-key lsp-bridge-mode-map (kbd "C-s-d") #'lsp-bridge-diagnostic-list)
+  (define-key lsp-bridge-mode-map (kbd "C-s-n") #'lsp-bridge-diagnostic-jump-next)
+  (define-key lsp-bridge-mode-map (kbd "C-s-p") #'lsp-bridge-diagnostic-jump-prev))
+#+end_src
++ acm-backend-search-words, 用来替换 acm-backend-dabbrev, acm-backend-search-words 后端的原理是， Emacs 告诉
+  Python 进程哪些文件被打开了， Python 进程就开一个子线程在后台计算每个文件的单词， 并对提取的单词进行清洗、去
+  重和排序。
++ M-x lsp-bridge-toggle-english-helper: 快速切换英文单词补全后端；
+
+lsp-bridge 在开启了编译后，大概率会报错，故关闭：  
+#+begin_src emacs-lisp  :tangle ~/.emacs.d/straight/build/lsp-bridge/.dir-locals.el
+((emacs-lisp-mode . ((no-byte-compile . t))))
+#+end_src
+
+* company
+
+company-capf 使用 completion-at-point 机制，所以自动的会使用 orderless。但是 orderless 的过滤 style 貌似不能正
+常工作，所以切换到 corfu。
+#+begin_src emacs-lisp
+(use-package company
+  :straight (:host github :repo "company-mode/company-mode")
+  :disabled
+  :bind
+  (:map company-mode-map
+        ([remap completion-at-point] . company-complete)
+        :map company-active-map
+        ([escape] . company-abort)
+        ("C-p"     . company-select-previous)
+        ("C-n"     . company-select-next)
+        ("C-s"     . company-filter-candidates)
+        ([tab]     . company-complete-common-or-cycle)
+        ([backtab] . company-select-previous-or-abort)
+        :map company-search-map
+        ([escape] . company-search-abort)
+        ("C-p"    . company-select-previous)
+        ("C-n"    . company-select-next))
+  :custom
+
+  ;; allow input string that do not match candidate words
+  ;; 开启后有大量不匹配的候选情况，故关闭。
+  ;;(company-require-match nil)
+  
+  ;; pop up a completion menu by tapping a character
+  (company-minimum-prefix-length 1) ;; default: 3
+
+  ;; trigger completion immediately.
+  (company-idle-delay 0)
+  (company-echo-delay 0)
+
+  (company-global-modes '(not message-mode help-mode eshell-mode comint-mode))
+  
+  (company-tooltip-limit 14) ;; default 10;
+  ;; tooltip 的 annotations 右对齐。
+  (company-tooltip-align-annotations t)
+  
+  (company-dabbrev-minimum-length 2)
+  ;; Only search the current buffer for `company-dabbrev' (a backend that
+  ;; suggests text your open buffers). This prevents Company from causing
+  ;; lag once you have a lot of buffers open.
+  (company-dabbrev-other-buffers nil)
+  ;; Make `company-dabbrev' fully case-sensitive, to improve UX with
+  ;; domain-specific words with particular casing.
+  (company-dabbrev-ignore-case nil)
+  ;; Don't downcase the returned candidates.
+  (company-dabbrev-downcase nil)
+
+  (company-files-exclusions '(".git/" ".DS_Store" "vendor/"))
+
+  ;; (company-transformers '(delete-consecutive-dups
+  ;;                          company-sort-by-occurrence))
+
+  ;; 候选框宽度
+  (company-tooltip-minimum-width 70)
+  (company-tooltip-maximum-width 100)
+
+  ;; (setq company-frontends
+  ;;     '(company-pseudo-tooltip-unless-just-one-frontend
+  ;;       company-preview-frontend
+  ;;       company-echo-metadata-frontend))
+
+  ;; 补全后端
+  (company-backends '(company-capf
+                      ;;company-clang
+                      company-files
+                      company-gtags
+                      ;;(company-dabbrev-code company-gtags company-keywords)                      
+                      ;;company-dabbrev                      
+                      ))
+  :config
+  ;; 不考虑大小写。
+  (setq completion-ignore-case t)
+
+  ;; 高亮候选者（orderless 排序）。
+  (defun just-one-face (fn &rest args)
+    (let ((orderless-match-faces [completions-common-part]))
+      (apply fn args)))
+  (advice-add 'company-capf--candidates :around #'just-one-face)
+
+;; We follow a suggestion by company maintainer u/hvis:
+;; https://www.reddit.com/r/emacs/comments/nichkl/comment/gz1jr3s/
+(defun company-completion-styles (capf-fn &rest args)
+  (let ((completion-styles '(basic partial-completion)))
+    (apply capf-fn args)))
+(advice-add 'company-capf :around #'company-completion-styles)
+  (global-company-mode t))
+
+#+end_src
++ C-h: Display a buffer with the documentation for the selected candidate (company-show-doc-buffer).
++ C-w: Display a buffer with the definition of the selected candidate (company-show-location).
++ C-s: By default, when company-mode is in action, a key binding C-s starts looking for matches to
+  additionally typed characters among the displayed candidates.
+  + 由参数 company-search-regexp-function 控制，默认为 regexp-quote， 表示 Exact match；
+
+The full list of the default key bindings is stored in the variables company-active-map and
+company-search-map 2. 
+
++ M-x company-diag: 诊断。
+
+*  zenburn
+
+#+begin_src emacs-lisp
+(use-package color-theme-sanityinc-tomorrow
+  :straight (:host github :repo "purcell/color-theme-sanityinc-tomorrow")
+)
+
+(use-package zenburn-theme
+  :straight (:host github :repo "bbatsov/zenburn-emacs")
+  :config
+  ;; use variable-pitch fonts for some headings and titles
+(setq zenburn-use-variable-pitch t)
+
+;; scale headings in org-mode
+(setq zenburn-scale-org-headlines t)
+
+;; scale headings in outline-mode
+(setq zenburn-scale-outline-headlines t)
+(setq zenburn-height-plus-1 1.2)
+(setq zenburn-height-plus-2 1.3)
+(setq zenburn-height-plus-3 1.4)
+(setq zenburn-height-plus-4 1.5)
+  )
+#+end_src
+
+*  doom-theme
+
+#+begin_src emacs-lisp
+(use-package doom-themes
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
+  :config
+  (doom-themes-visual-bell-config)
+  ;;(load-theme 'doom-palenight t)
+  (doom-themes-org-config)
+  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch nil)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+#+end_src
+
+
+*  flymake
+
+eglot 使用 Emacs 内置的 flymake 而非 flycheck 来接收和显示 LSP Server 发送的 publishDiagnostics 事件。flymake
+默认在三种情况下检查 buffer 错误：
+1. 执行 M-x flymake-start 命令；
+2. flymake-no-changes-timeout 时间以后，默认为 0.5， 设置为 nil 后表示无限长。
+3. buffer 被报错。
+
+将 flymake-no-changes-timeout 设置为 nil 后，eglot 不会显示实时的诊断消息，而是当保存 buffer 内容后，经过
+eglot-send-changes-idle-time 时间后才显示 LSP 诊断消息，这样可以避免显示无意义的错误。
++ https://github.com/joaotavora/eglot/commit/2b87b06d9ef15e7c39d87fd5a4375b6deaa7e322
+#+begin_src emacs-lisp
+(use-package flymake
+  :ensure t
+  :straight (:type built-in)
+  :config
+  (setq flymake-no-changes-timeout nil)
+  (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
+  (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error))
+#+end_src
++ M-x flymake-show-buffer-diagnostics
++ M-x flymake-show-project-diagnostics 
+
+* eldoc
+
+eldoc 是 echo area 显示当前 symbol 信息，如函数签名或参数类型。global-eldoc-mode 变量默认为 t，则表示 eldoc 默
+认在所有 major mode 均开启。
+
+#+begin_src emacs-lisp
+(use-package eldoc
+  :ensure t
+  :straight (:type built-in)
+  :config
+  ;; 打开或关闭 *eldoc* 函数帮助或 hover buffer。
+  (global-set-key (kbd "M-`")
+                  (
+                   lambda()
+                   (interactive)
+                   (if (get-buffer-window "*eldoc*")
+                       (delete-window (get-buffer-window "*eldoc*"))
+                     (display-buffer "*eldoc*")))))
+#+end_src
++ M-x eldoc 或 eldoc-doc-buffer: 在独立的 buffer *eldoc* 中显示 eldoc 文档；
+  
+* corfu
+
+A minimal ui for completion-in-region。corfu 与 orderless 的匹配性更好，比如可以对候选词使用 orderless 的过滤
+方式。但是 company-mode 与 orderless 的匹配性不好，不能使用空格，模糊匹配等特性。
 #+begin_src emacs-lisp
 (use-package corfu
   :straight (:host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
   :init
   (global-corfu-mode)
-  (corfu-echo-mode)
-  (corfu-history-mode)
+  ;;(corfu-echo-mode)
+  ;;(corfu-history-mode) ;; 需要和 company-mode 联合使用。
   (corfu-popupinfo-mode)
   ;; TAB-and-Go completion
   :bind
@@ -4850,7 +5173,7 @@ A minimal ui for completion-in-region:
         ([backtab] . corfu-previous)) 
   :custom
   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
+  ;;(corfu-auto t)                 ;; Enable auto completion
   (corfu-separator ?\s)          ;; Orderless field separator
   (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
   (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
@@ -4869,6 +5192,7 @@ A minimal ui for completion-in-region:
          (eshell-mode . corfu-mode))
   
   :config
+  ;; Enable `corfu-history-mode' to sort candidates by their history position.
   (savehist-mode 1)
   (add-to-list 'savehist-additional-variables 'corfu-history)
 
@@ -4891,6 +5215,8 @@ A minimal ui for completion-in-region:
 ;; Add extensions
 (use-package cape
   :straight (:host github :repo "minad/cape")
+  :disabled
+  :demand
   ;; Bind dedicated completion commands
   ;; Alternative prefix keys: C-c p, M-p, M-+, ...
   :bind (("C-c p p" . completion-at-point) ;; capf
@@ -4909,12 +5235,11 @@ A minimal ui for completion-in-region:
          ("C-c p &" . cape-sgml)
          ("C-c p r" . cape-rfc1345))
   :init
-  ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  ;; NOTE: The order matters!
+  ;; completion-at-point 使用的函数列表，注意顺序。
   (add-to-list 'completion-at-point-functions #'cape-symbol)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
   (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-elisp-block)
   ;;(add-to-list 'completion-at-point-functions #'cape-history)
   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
@@ -4922,15 +5247,13 @@ A minimal ui for completion-in-region:
   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
   ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
   :config
   (setq dabbrev-check-other-buffers nil
         dabbrev-check-all-buffers nil
         cape-dabbrev-min-length 3)
   ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
-  (cape-wrap-prefix-length #'cape-dabbrev 3)
-  )
+  (cape-wrap-prefix-length #'cape-dabbrev 3))
 
 (use-package kind-icon
   :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
@@ -4941,4 +5264,283 @@ A minimal ui for completion-in-region:
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 #+end_src
+
+* eglot
+
+elgot 使用 Emacs 内置的 flymake（而非 flycheck）、xref、eldoc、project。
+
+#+begin_src emacs-lisp
+(use-package eglot
+  :ensure t
+  :defer t
+  :straight (:type built-in)
+  :bind (:map eglot-mode-map
+              ("C-c C-a" . eglot-code-actions)
+              ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 命令来重新触发诊断。
+              ("C-c C-c" . flymake-start)
+              ("C-c C-d" . eldoc)
+              ("C-c C-f" . eglot-format-buffer)
+              ("C-c C-r" . eglot-rename)
+)
+  :config
+  (setq eglot-events-buffer-size 0)
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显示 LSP 发送
+  ;; 的诊断消息。
+  (setq eglot-send-changes-idle-time 0.3)
+
+  (add-hook 'prog-mode-hook #'eglot-ensure)
+
+  ;; 在 eldoc bufer 中只显示帮助文档。
+  (defun /eglot-managed-mode-initialize ()
+    ;; 不显示 flymake 错误和函数签名，放置后续的 eldoc buffer 内容来回变。
+    (setq-local
+     eldoc-documentation-functions
+     (list
+      ;; 关闭自动在 eldoc 显示 flymake 的错误， 这样 eldoc 只显示函数签名或文档，后续 flymake 的错误单独在
+      ;; echo area 显示。      
+      ;;#'flymake-eldoc-function 
+      ;;#'eglot-signature-eldoc-function ;; 关闭自动在 eldoc 自动显示函数签名，使用 M-x eldoc 手动显示函数帮助。
+      #'eglot-hover-eldoc-function))
+
+    ;; 在单独的 buffer 中显示 eldoc 而非 echo area。
+    (setq-local
+     eldoc-display-functions
+     (list
+      ;;#'eldoc-display-in-echo-area
+      #'eldoc-display-in-buffer)))
+  (add-hook 'eglot-managed-mode-hook #'/eglot-managed-mode-initialize))
+
+;; https://go.googlesource.com/tools/+/refs/heads/master/gopls/doc/emacs.md
+;; Optional: install eglot-format-buffer as a save hook.
+;; The depth of -10 places this before eglot's willSave notification,
+;; so that that notification reports the actual contents that will be saved.
+(defun eglot-format-buffer-on-save ()
+  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+(add-hook 'go-ts-mode-hook #'eglot-format-buffer-on-save)
+(add-hook 'go-ts-mode-hook #'eglot-ensure)
+(setq-default eglot-workspace-configuration
+    '((:gopls .
+        ((staticcheck . t)
+         (matcher . "CaseSensitive")))))
+#+end_src
++ 更新内置的 elgot： M-x eglot-upgrade-eglot。
++ eldoc，eldoc-doc-buffer： C-h-.
+
+consult-eglot 提供 consult-eglot-symbols 函数，可以选择 workspace 中的 symbol：
+#+begin_src emacs-lisp
+(use-package consult-eglot
+  :straight (:host github :repo "mohkale/consult-eglot")
+  :after (eglot consult))  
+#+end_src
+
+* cape
+#+begin_src emacs-lisp
+;; cape 补全融合
+(use-package cape)
+(defalias #'my/eglot-citre-capf
+  (cape-super-capf #'eglot-completion-at-point #'citre-completion-at-point))
+
+(defun my/toggle-citre-eglot-capf ()
+  (if (eglot-managed-p)
+      (add-to-list 'completion-at-point-functions #'my/eglot-citre-capf)
+    (setq-local completion-at-point-functions
+                (delq #'my/eglot-citre-capf completion-at-point-functions))))
+(add-hook
+ 'eglot-managed-mode-hook #'my/toggle-citre-eglot-capf)
+#+end_src
+
+
+* eshell
+#+begin_src emacs-lisp
+  (defun tab-to-eshell ()
+  "Open a tab with eshell. If that tab doesn't exist, create it. If
+already in that tab, switch to previous tab."
+  (interactive)
+  (if (equal (tab-bar-tab-name-current) "*eshell*<43>")
+      (tab-bar-switch-to-prev-tab)
+    (eshell 43)))
+(add-to-list 'display-buffer-alist
+             '("\\*eshell\\*<43>"
+               (display-buffer-in-tab)
+               (tab-name . "*eshell*<43>")))
+
+#+end_src
+
+* dump-jump
+
+#+begin_src emacs-lisp
+(use-package hydra)
+;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转。相比
+;; 使用 TAGS 的 citre（适合静态浏览）以及 lsp 方案，更通用和轻量。
+(use-package dumb-jump
+  :demand
+  :config
+  ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用
+  ;; etags 作为数据源。将 dump-jump 加到 xref 后端中，作为其它 backend，
+  ;; 如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  ;; dumb-jump 发现支持的语言和项目后，会自动生效。
+  ;;; 将 Go module 文件作为 project root 标识。
+  (add-to-list 'dumb-jump-project-denoters "go.mod")
+  (defhydra dumb-jump-hydra (:color blue :columns 3)
+    "Dumb Jump"
+    ("j" dumb-jump-go "Go")
+    ("o" dumb-jump-go-other-window "Other window")
+    ("e" dumb-jump-go-prefer-external "Go external")
+    ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
+    ("i" dumb-jump-go-prompt "Prompt")
+    ("l" dumb-jump-quick-look "Quick look")
+    ("b" dumb-jump-back "Back"))
+  (keymap-set dumb-jump-mode-map "C-M-y" #'dumb-jump-hydra/body))
+#+end_src
+
+* exec-path-from-shell
+
+不再使用了，而是直接设置 emacs 的exec-path 和PATH 环境变量。
+
+=exec-path-from-shell= 将 =Shell= 环境变量拷贝到 =Emacs= ：
+#+begin_src emacs-lisp
+  (use-package exec-path-from-shell
+    :disabled
+    :custom
+    ;; 去掉 -l 参数, 加快启动速度。
+    (exec-path-from-shell-arguments '("-l")) 
+    (exec-path-from-shell-check-startup-files nil)
+    (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOPROXY" "GOPRIVATE" "GOFLAGS" "GO111MODULE" "PYTHONPATH"))
+    :config
+    (when (memq window-system '(mac ns x))
+      (exec-path-from-shell-initialize)))
+#+end_src
+
+* lsp-bridge
+
+lsp-bridge 依赖如下 python packages:
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+pip3 install epc orjson sexpdata six paramiko
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package posframe)
+
+;; dump-jump 支持 GNU Global 的 gtags 跳转。
+(use-package  dumb-jump
+  :demand
+  :init
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
+;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转。
+(defun lsp-bridge-jump ()
+  (interactive)
+  (cond
+   ((eq major-mode 'emacs-lisp-mode)
+    (let ((symb (function-called-at-point)))
+      (when symb
+        (find-function symb))))
+   (lsp-bridge-mode
+    (lsp-bridge-find-def))
+   (t
+    (require 'dumb-jump)
+    (dumb-jump-go))))
+
+(defun lsp-bridge-jump-back ()
+  (interactive)
+  (cond
+   (lsp-bridge-mode
+    (lsp-bridge-return-from-def))
+   (t
+    (require 'dumb-jump)
+    (dumb-jump-back))))
+
+(use-package lsp-bridge
+  :after (markdown-mode)
+  ;;:no-native-compile t: straight pull 包后不编译为 elc。
+  :straight (:no-native-compile t :host github :repo "manateelazycat/lsp-bridge" :files ("*" "acm/*"))
+  :custom
+  ;; 不在 modeline 显示 lsp-bridge 信息。
+  (lsp-bridge-enable-mode-line nil)
+  :config
+  ;; 调试模式。
+  (setq lsp-bridge-enable-log nil)
+  (setq lsp-bridge-enable-hover-diagnostic t)
+  (setq lsp-bridge-diagnostic-fetch-idle 1) ;; default 0.5
+  (setq lsp-bridge-diagnostic-tooltip-border-width 0)
+  (setq lsp-bridge-diagnostic-display-errors-delay 3)
+  (setq lsp-bridge-diagnostic-hide-severities '(2 3 4))   ;; 过滤 warnning.
+  ;; 关闭 code action 的 popup-menu。
+  (setq lsp-bridge-code-action-enable-popup-menu nil)
+  (setq lsp-bridge-enable-signature-help t)
+  ;; 关闭 word 补全。
+  (setq acm-enable-search-file-words nil)
+  (setq lsp-bridge-enable-search-words nil)
+  ;; 自动补全。
+  (setq acm-backend-lsp-enable-auto-import t)
+  (setq acm-backend-lsp-candidate-min-length 0)
+  (setq acm-backend-lsp-candidate-max-length 100)
+  ;; 使用 orderless flex 过滤。
+  (setq acm-candidate-match-function 'orderless-flex)
+  ;; 显示 incon。
+  (setq acm-enable-icon t)
+  ;; 关闭不必要的配置。
+  (setq acm-enable-doc nil)
+  (setq acm-enable-telega nil)
+  (setq acm-enable-tabnine nil)
+  ;; 关闭 yas 补全。
+  (setq acm-enable-yas nil)
+  ;;开启 citre 集成。
+  (setq acm-enable-citre t)
+  (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
+  (add-to-list 'lsp-bridge-org-babel-lang-list "go")
+  (global-lsp-bridge-mode)
+  ;; M-j 被预留给 pyim 使用。
+  (define-key acm-mode-map (kbd "M-j") nil)
+  (define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-find-def)
+  (define-key lsp-bridge-mode-map (kbd "C-M-.") #'lsp-bridge-find-def-other-window)
+  (define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-find-def-return)
+  (define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
+  (define-key lsp-bridge-mode-map (kbd "M-d") #'lsp-bridge-popup-documentation)
+  (define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
+  (define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
+  (define-key lsp-bridge-mode-map (kbd "C-s-l") #'lsp-bridge-diagnostic-list)
+  (define-key lsp-bridge-mode-map (kbd "C-s-n") #'lsp-bridge-diagnostic-jump-next)
+  (define-key lsp-bridge-mode-map (kbd "C-s-p") #'lsp-bridge-diagnostic-jump-prev))
+#+end_src
++ acm-backend-search-words, 用来替换 acm-backend-dabbrev, acm-backend-search-words 后端的原理是， Emacs 告诉
+  Python 进程哪些文件被打开了， Python 进程就开一个子线程在后台计算每个文件的单词， 并对提取的单词进行清洗、去
+  重和排序。
++ M-x lsp-bridge-toggle-english-helper: 快速切换英文单词补全后端；
+
+lsp-bridge 在开启了编译后，大概率会报错，故关闭：  
+#+begin_src emacs-lisp  :tangle ~/.emacs.d/straight/build/lsp-bridge/.dir-locals.el
+((emacs-lisp-mode . ((no-byte-compile . t))))
+#+end_src
+
+* sis
+#+begin_src emacs-lisp
+;; brew tap laishulu/macism && brew install macism
+(use-package sis
+  :disabled
+  :config
+  ;;执行 macism 命令查看输入法名称。
+  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+  ;; 添加 emabark 前缀快捷键, 需要在打开 sis-global-xx-mode 之前设置才
+  ;; 生效。
+  (add-to-list 'sis-prefix-override-keys "C-;")
+  (add-to-list 'sis-prefix-override-keys "M-s")
+  (add-to-list 'sis-prefix-override-keys "M-g")
+  (sis-global-cursor-color-mode t)
+  (sis-global-respect-mode t)
+  (sis-global-context-mode t)
+  (sis-global-inline-mode t)
+  ;; 切换系统输入法。
+  (global-set-key (kbd "M-\\") 'sis-switch)
+  (global-set-key (kbd "C-\\") 'sis-switch)
+  ;; 为一些打开 minimibuffer 的命令设置英文输入法。
+  (add-to-list 'sis-respect-minibuffer-triggers
+               (cons 'embark-act (lambda () 'other))))
+#+end_src
+
 
