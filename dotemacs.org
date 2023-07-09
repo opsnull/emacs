@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-07-09T19:07:17+0800
+#+LASTMOD: 2023-07-09T20:07:26+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -1818,11 +1818,12 @@ which pygmentize || brew install pygments
 #+end_src
 
 ** org-hugo
+
 #+begin_src emacs-lisp
 (use-package ox-hugo
   :after ox
   :config
-  (setq org-hugo-base-dir "~/blog/blog.opsnull.com")
+  (setq org-hugo-base-dir (expand-file-name "~/blog/blog.opsnull.com"))
   (setq org-hugo-section "posts")
   (setq org-hugo-export-with-section-numbers t)
   (setq org-hugo-auto-set-lastmod t))
