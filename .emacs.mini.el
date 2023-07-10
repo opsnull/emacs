@@ -4,9 +4,11 @@
 (setq load-prefer-newer t)
 
 (require 'package)
-(setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+(setq package-archives '(("elpa" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+			 ("elpa-devel" . "https://mirrors.ustc.edu.cn/elpa/gnu-devel/")
                          ("melpa" . "https://mirrors.ustc.edu.cn/elpa/melpa/")
-                         ("nongnu" . "https://mirrors.ustc.edu.cn/elpa/nongnu/")))
+                         ("nongnu" . "https://mirrors.ustc.edu.cn/elpa/nongnu/")
+			 ("nongnu-devel" . "https://mirrors.ustc.edu.cn/elpa/nongnu-devel/")))
 (package-initialize)
 (when (not package-archive-contents)
   (package-refresh-contents))
