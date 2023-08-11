@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-11T22:08:35+0800
+#+LASTMOD: 2023-08-12T00:08:14+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -22,70 +22,161 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 + use-package 可以和 straight.el 和 package.el 结合使用。
 + M-x use-package-report :: 查看 package 加载时间（按 S 排序）。
 #+begin_src emacs-lisp
-;; (require 'package)
-;; (setq package-archives '(("elpa" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
-;; 			 ("elpa-devel" . "https://mirrors.ustc.edu.cn/elpa/gnu-devel/")
-;;                          ("melpa" . "https://mirrors.ustc.edu.cn/elpa/melpa/")
-;;                          ("nongnu" . "https://mirrors.ustc.edu.cn/elpa/nongnu/")
-;; 			 ("nongnu-devel" . "https://mirrors.ustc.edu.cn/elpa/nongnu-devel/")))
-;; (package-initialize)
-;; (when (not package-archive-contents)
-;;   (package-refresh-contents))
+  (require 'package)
+  (setq package-archives '(("elpa" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+			   ("elpa-devel" . "https://mirrors.ustc.edu.cn/elpa/gnu-devel/")
+			   ("melpa" . "https://mirrors.ustc.edu.cn/elpa/melpa/")
+			   ("nongnu" . "https://mirrors.ustc.edu.cn/elpa/nongnu/")
+			   ("nongnu-devel" . "https://mirrors.ustc.edu.cn/elpa/nongnu-devel/")))
+  (package-initialize)
+  (when (not package-archive-contents)
+    (package-refresh-contents))
 
-;; 关闭 package.el(后续使用 straight.el) 。
-(setq package-enable-at-startup nil)
+  ;; ;; 关闭 package.el(后续使用 straight.el) 。
+  ;; (setq package-enable-at-startup nil)
 
-;; 配置 use-package 使用 straight.el 安装包。
-(setq straight-use-package-by-default t)
+  ;; 配置 use-package 使用 straight.el 安装包。
+  (setq straight-use-package-by-default t)
 
-(defvar bootstrap-version)
-(let ((bootstrap-file (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-	(url-retrieve-synchronously
-	 "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-	 'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+  ;; (defvar bootstrap-version)
+  ;; (let ((bootstrap-file (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+  ;; 	(bootstrap-version 5))
+  ;;   (unless (file-exists-p bootstrap-file)
+  ;;     (with-current-buffer
+  ;; 	  (url-retrieve-synchronously
+  ;; 	   "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+  ;; 	   'silent 'inhibit-cookies)
+  ;; 	(goto-char (point-max))
+  ;; 	(eval-print-last-sexp)))
+  ;;   (load bootstrap-file nil 'nomessage))
 
-(setq use-package-verbose t)
-(setq use-package-always-ensure t)
-(setq use-package-always-demand t)
-(setq use-package-compute-statistics t)
+  (setq use-package-verbose t)
+  (setq use-package-always-ensure t)
+  (setq use-package-always-demand t)
+  (setq use-package-compute-statistics t)
 
-;; 可以升级内置包。
-(setq package-install-upgrade-built-in t)
+  ;; 可以升级内置包。
+  (setq package-install-upgrade-built-in t)
 
-;; 安装 use-package。
-(straight-use-package 'use-package)
+  ;; ;; 安装 use-package。
+  ;; (straight-use-package 'use-package)
 
-;; 设置自定义环境变量。
-;; 后续的 proxy 使用的 curl, 以及dired 使用的 ls 来住 GNU 版本。
-(setq my-bin-path '(
-		    ;;"/usr/local/opt/coreutils/libexec/gnubin"
-		    ;;"/usr/local/opt/findutils/libexec/gnubin"
-		    ;;"/usr/local/opt/curl/bin"
-		    "/Users/zhangjun/go/bin"
-		    ))
-;; 设置 PATH 环境变量，后续 Emacs 启动外部程序时会查找。
-(mapc (lambda (p) (setenv "PATH" (concat p ":" (getenv "PATH"))))
-      my-bin-path)
+  (unless (package-installed-p 'vc-use-package)
+    (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
-;; Emacs 自身使用 exed-path 而非 PATH 来查找外部程序。
-(let ((paths my-bin-path))
-  (dolist (path paths)
-    (setq exec-path (cons path exec-path))))
+  ;; 设置自定义环境变量。
+  ;; 后续的 proxy 使用的 curl, 以及dired 使用的 ls 来住 GNU 版本。
+  (setq my-bin-path '(
+		      ;;"/usr/local/opt/coreutils/libexec/gnubin"
+		      ;;"/usr/local/opt/findutils/libexec/gnubin"
+		      ;;"/usr/local/opt/curl/bin"
+		      "/Users/zhangjun/go/bin"
+		      ))
+  ;; 设置 PATH 环境变量，后续 Emacs 启动外部程序时会查找。
+  (mapc (lambda (p) (setenv "PATH" (concat p ":" (getenv "PATH"))))
+	my-bin-path)
 
-(dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
-               ("GOPROXY" "https://proxy.golang.org")
-               ("GOPRIVATE" "*.alibaba-inc.com")
-	       ;;("PYTHONPATH" "")
-	       ;;("GOFLAGS" "-mod=readonly")
-	       ;;("GO111MODULE" "on")
-	       ))
-  (setenv (car env) (cadr env)))
+  ;; Emacs 自身使用 exed-path 而非 PATH 来查找外部程序。
+  (let ((paths my-bin-path))
+    (dolist (path paths)
+      (setq exec-path (cons path exec-path))))
+
+  (dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
+		 ("GOPROXY" "https://proxy.golang.org")
+		 ("GOPRIVATE" "*.alibaba-inc.com")
+		 ;;("PYTHONPATH" "")
+		 ;;("GOFLAGS" "-mod=readonly")
+		 ;;("GO111MODULE" "on")
+		 ))
+    (setenv (car env) (cadr env)))
+#+end_src
+
+* proxy
+
+全局 socks5 代理：
++ Mac 自带的 curl 不支持 socks 代理, 需要安装 =brew install curl= 并设置
+   ~export PATH="/usr/local/opt/curl/bin:$PATH"~
++ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
++ 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
+
+#+begin_src bash :tangle  ~/.emacs.d/init.sh
+ls -l /usr/local/opt/curl/bin/curl || brew install curl
+export PATH="/usr/local/opt/curl/bin:$PATH"
+#+end_src
+
+#+begin_src emacs-lisp
+;; 将安装的 curl 二进制路径加入到 emacs 搜索路径中。
+(setq my-coreutils-path "/usr/local/opt/curl/bin")
+(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+(setq exec-path (cons my-coreutils-path  exec-path))
+
+;; 添加环境变量 
+(setq my/socks-host "127.0.0.1")
+(setq my/socks-port 1080)
+;; socks5h 相比 socks5 会额外代理域名解析，解决域名投毒问题。
+(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+
+(use-package mb-url-http
+  :demand
+  :vc (:fetcher github :repo dochang/mb-url)
+  ;;:straight (mb-url :repo "dochang/mb-url")
+  :commands (mb-url-http-around-advice)
+  :init
+  (require 'auth-source)
+  (let ((credential (auth-source-user-and-password "api.github.com")))
+    (setq github-user (car credential)
+          github-password (cadr credential))
+    (setq github-auth (concat github-user ":" github-password))
+    (setq mb-url-http-backend 'mb-url-http-curl
+          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
+                                      ;;"--max-time" "300"
+                                      ;;"-u" ,github-auth
+                                      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+                                      ))))
+
+(defun proxy-socks-show ()
+  "Show SOCKS proxy."
+  (interactive)
+  (when (fboundp 'cadddr)
+    (if (bound-and-true-p socks-noproxy)
+        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
+      (message "No SOCKS proxy"))))
+
+(defun proxy-socks-enable ()
+  "使用 socks 代理 url 访问请求。"
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'socks
+        socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
+        socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
+  (setenv "all_proxy" my/socks-proxy)
+  (setenv "ALL_PROXY" my/socks-proxy)
+  (setenv "HTTP_PROXY" nil)
+  (setenv "HTTPS_PROXY" nil)
+  (proxy-socks-show)
+  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
+  (advice-add 'url-http :around 'mb-url-http-around-advice))
+
+(defun proxy-socks-disable ()
+  "Disable SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (setq url-gateway-method 'native
+        socks-noproxy nil)
+  (setenv "all_proxy" "")
+  (setenv "ALL_PROXY" "")
+  (proxy-socks-show))
+
+(defun proxy-socks-toggle ()
+  "Toggle SOCKS proxy."
+  (interactive)
+  (require 'socks)
+  (if (bound-and-true-p socks-noproxy)
+      (proxy-socks-disable)
+    (proxy-socks-enable)))
+
+(proxy-socks-enable)
 #+end_src
 
 * tuning
@@ -232,7 +323,7 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 
 ;; 高亮光标移动到的行。
 (use-package pulsar
-  :straight (pulsar :host github :repo "protesilaos/pulsar")
+  ;;:straight (pulsar :host github :repo "protesilaos/pulsar")
   :config
   (setq pulsar-pulse t)
   (setq pulsar-delay 0.25)
@@ -271,7 +362,8 @@ doom-modeline 使用 nerd-icons 来在 modeline 上显示 icons。
 #+begin_src emacs-lisp
 ;; nerd-incos 默认使用 Symbols Nerd Fonts Mono，可以使用 M-x nerd-icons-install-fonts 来安装。
 (use-package nerd-icons
-    :straight (nerd-icons :host github :repo "rainstormstudio/nerd-icons.el" :files("*.el" "data")))
+  ;;:straight (nerd-icons :host github :repo "rainstormstudio/nerd-icons.el" :files("*.el" "data"))
+  )
 
 (use-package doom-modeline
   :hook (after-init . doom-modeline-mode)
@@ -403,7 +495,7 @@ doom-modeline 使用 nerd-icons 来在 modeline 上显示 icons。
   (load-theme 'zenburn t))
 
 (use-package ef-themes
-  :straight (ef-themes :host github :repo "protesilaos/ef-themes")
+  ;;:straight (ef-themes :host github :repo "protesilaos/ef-themes")
   :config
   (mapc #'disable-theme custom-enabled-themes)
   (setq ef-themes-variable-pitch-ui t)
@@ -436,6 +528,7 @@ doom-modeline 使用 nerd-icons 来在 modeline 上显示 icons。
             (pcase appearance
               ('light (my/load-light-theme))
               ('dark (my/load-dark-theme)))))
+(load-theme 'ef-elea-dark t)
 #+end_src
 
 ** tab-bar
@@ -443,7 +536,7 @@ doom-modeline 使用 nerd-icons 来在 modeline 上显示 icons。
 主要使用 tab-bar 的 history 切换功能，其它主要使用 sort-tab 的功能。
 #+begin_src emacs-lisp
 (use-package tab-bar
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :custom
   (tab-bar-close-button-show nil)
   (tab-bar-new-button-show nil)
@@ -486,7 +579,8 @@ doom-modeline 使用 nerd-icons 来在 modeline 上显示 icons。
 #+begin_src emacs-lisp
 (use-package sort-tab
   :demand
-  :straight (:repo "manateelazycat/sort-tab" :host github)
+  :vc (:fetcher github :repo manateelazycat/sort-tab)
+  ;;:straight (:repo "manateelazycat/sort-tab" :host github)
   ;; emacs 启动后再启用 sort-tab 防止显示异常。
   :hook (after-init . sort-tab-mode)
   :config
@@ -521,7 +615,7 @@ Emacs 补全的完全兼容命令和完成表。vertico 仅提供完成 UI，但
 
 #+begin_src emacs-lisp
   (use-package vertico
-    :straight (:repo "minad/vertico" :files ("*" "extensions/*.el" (:exclude ".git")))
+    ;;:straight (:repo "minad/vertico" :files ("*" "extensions/*.el" (:exclude ".git")))
     ;; :bind
     ;; (:map vertico-map
     ;; 	  ;; 关闭 minibuffer。
@@ -647,7 +741,7 @@ which rg || brew install ripgrep
 
 #+begin_src  emacs-lisp
   (use-package consult
-    :straight (consult :host github :repo "minad/consult")
+    ;;:straight (consult :host github :repo "minad/consult")
     :hook
     (completion-list-mode . consult-preview-at-point-mode)
     :init
@@ -766,7 +860,7 @@ which rg || brew install ripgrep
 
 #+begin_src emacs-lisp
 (use-package embark
-  :straight (embark :files ("*.el"))
+  ;;:straight (embark :files ("*.el"))
   :init
   ;; 使用 C-h 来显示 key preifx 绑定。
   (setq prefix-help-command #'embark-prefix-help-command)
@@ -820,8 +914,8 @@ which tac || brew install coreutils
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
 
-(use-package dired
-  :straight (:type built-in)
+(use-package emacs ;;dired
+  ;;:straight (:type built-in)
   :config
   (setq dired-kill-when-opening-new-dired-buffer t)
   (setq dired-dwim-target t)
@@ -1195,7 +1289,7 @@ which magick || brew install imagemagick
 
 #+begin_src emacs-lisp
 (use-package org
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :demand
   :config
   (setq org-ellipsis "..." ;; " ⭍"
@@ -1317,7 +1411,7 @@ which magick || brew install imagemagick
 (use-package org-modern
   :after (org)
   :demand
-  :straight (:host github :repo "minad/org-modern")
+  ;;:straight (:host github :repo "minad/org-modern")
   :config
   (with-eval-after-load 'org (global-org-modern-mode)))
 
@@ -1438,7 +1532,8 @@ which pngpaste || brew install pngpaste
    (css . t)))
 
 (use-package org-contrib
-  :straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib"))
+  ;;:straight (org-contrib :repo "https://git.sr.ht/~bzg/org-contrib")
+  )
 #+end_src
 
 ** tex
@@ -1459,7 +1554,7 @@ which pygmentize || brew install pygments
 #+begin_src emacs-lisp
 ;; engrave-faces 相比 minted 渲染速度更快。
 (use-package engrave-faces
-  :straight (:repo "tecosaur/engrave-faces")
+  ;;:straight (:repo "tecosaur/engrave-faces")
   :after ox-latex
   :config
   (require 'engrave-faces-latex)
@@ -1503,7 +1598,8 @@ which pygmentize || brew install pygments
 
 ;; org export html 格式时需要 htmlize.el 包来格式化代码。
 (use-package htmlize
-  :straight (htmlize :host github :repo "hniksic/emacs-htmlize"))
+  ;;:straight (htmlize :host github :repo "hniksic/emacs-htmlize")
+  )
 #+end_src
 + minted 包提供代码语法高亮的功能(TexLive 默认安装), 它依赖 pygements 。
 + 变量 =org-latex-minted-langs= 列出 Emacs Major-Mode 与 minted 语言类型（pygmentize -L lexers）的关系, 如果两者
@@ -1799,7 +1895,7 @@ magit 是全宇宙最强大、最好用的 git 客户端，没有之一！
 (setq vc-follow-symlinks t)
 
 (use-package magit
-  :straight (magit :repo "magit/magit" :files ("lisp/*.el"))
+  ;;:straight (magit :repo "magit/magit" :files ("lisp/*.el"))
   :custom
   ;; 在当前 window 中显示 magit buffer。
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
@@ -1840,14 +1936,14 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
 
 #+begin_src emacs-lisp
 (use-package diff-mode
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :init
   (setq diff-default-read-only t)
   (setq diff-advance-after-apply-hunk t)
   (setq diff-update-on-the-fly t))
 
 (use-package ediff
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :config
   (setq ediff-keep-variants nil)
   (setq ediff-split-window-function 'split-window-horizontally)
@@ -1894,7 +1990,7 @@ git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
 
 ;; 高亮匹配的括号。
 (use-package paren
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :hook (after-init . show-paren-mode)
   :init
   (setq show-paren-when-point-inside-paren t
@@ -2078,10 +2174,12 @@ which ipython || pip install ipython
       (setq python-shell-interpreter-args "-i"))))
 
 ;; 使用 yapf 格式化 python 代码。
-(use-package yapfify :straight (:host github :repo "JorisE/yapfify"))
+(use-package yapfify
+  ;;:straight (:host github :repo "JorisE/yapfify")
+  )
 
 (use-package python
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :init
   (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
   (if (not (file-exists-p pyright-directory))
@@ -2405,7 +2503,7 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
 使用 emacs 内置的 yaml-ts-mode。
 #+begin_src  emacs-lisp
 (use-package yaml-ts-mode
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :mode "\\.ya?ml\\'"
   :config
   (define-key yaml-ts-mode-map (kbd "\C-m") #'newline-and-indent))
@@ -2438,14 +2536,14 @@ shellcheck -V &>/dev/null || brew install shellcheck
 ** treesit
 
 #+begin_src emacs-lisp
-(use-package treesit
-  :straight (:type built-in)
-  )
+;; (use-package treesit
+;;   :straight (:type built-in)
+;;   )
 
   ;; treesit-auto 自动安装 grammer 和自动将 xx major-mode remap 到对应的
   ;; xx-ts-mode 上。具体参考变量：treesit-auto-recipe-list
   (use-package treesit-auto
-    :straight (treesit-auto :type git :host github :repo "renzmann/treesit-auto")
+    ;;:straight (treesit-auto :type git :host github :repo "renzmann/treesit-auto")
     :demand t
     :config
     (setq treesit-auto-install nil)
@@ -2500,7 +2598,7 @@ citre 是基于 TAGS 文件的代码浏览工具，支持[[https://github.com/un
 
 (use-package citre
   :defer t
-  :straight (:host github :repo "universal-ctags/citre")
+;;  :straight (:host github :repo "universal-ctags/citre")
   :init
   ;; 当打开一个文件时，如果可以找到对应的 TAGS 文件时则自动开启 citre-mode。开启了 citre-mode 后，会自动向
   ;; xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
@@ -2658,17 +2756,20 @@ Gtags scans that directory if needed."
 在 ~/.authinfo.gpg 文件中添加 api.openai.com 的 key，然后使用本地 socks5h 代理访问 API。
 #+begin_src emacs-lisp
 (use-package shell-maker
-  :straight (:host github :repo "xenodium/chatgpt-shell" :files ("shell-maker.el")))
+  ;;:straight (:host github :repo "xenodium/chatgpt-shell" :files ("shell-maker.el"))
+  )
 
 (use-package ob-chatgpt-shell
-  :straight (:host github :repo "xenodium/chatgpt-shell" :files ("ob-chatgpt-shell.el")))
+  ;;:straight (:host github :repo "xenodium/chatgpt-shell" :files ("ob-chatgpt-shell.el"))
+  )
 
 (use-package ob-dall-e-shell
-  :straight (:host github :repo "xenodium/chatgpt-shell" :files ("ob-dall-e-shell.el")))
+  ;;:straight (:host github :repo "xenodium/chatgpt-shell" :files ("ob-dall-e-shell.el"))
+  )
 
 (use-package chatgpt-shell
   :requires shell-maker
-  :straight (:host github :repo "xenodium/chatgpt-shell")
+  ;;:straight (:host github :repo "xenodium/chatgpt-shell")
   :config
   (setq chatgpt-shell-openai-key
         (auth-source-pick-first-password :host "ai.opsnull.com"))
@@ -2707,7 +2808,7 @@ Gtags scans that directory if needed."
 
 #+begin_src emacs-lisp
 (use-package cue-mode
-  :straight (:host github :repo "russell/cue-mode")
+  ;;:straight (:host github :repo "russell/cue-mode")
   :demand)
 #+end_src
 
@@ -2724,7 +2825,7 @@ eglot-send-changes-idle-time 时间后才显示 LSP 诊断消息，这样可以�
 + https://github.com/joaotavora/eglot/commit/2b87b06d9ef15e7c39d87fd5a4375b6deaa7e322
 #+begin_src emacs-lisp
 (use-package flymake
-  :straight (:type built-in)
+;;  :straight (:type built-in)
   :config
   (setq flymake-no-changes-timeout nil)
   (global-set-key (kbd "C-s-l") #'consult-flymake)
@@ -2741,7 +2842,7 @@ eldoc 是 echo area 显示当前 symbol 信息，如函数签名或参数类型�
 
 #+begin_src emacs-lisp
 (use-package eldoc
-  :straight (:type built-in)
+;;  :straight (:type built-in)
   :config
   ;; 打开或关闭 *eldoc* 函数帮助或 hover buffer。
   (global-set-key (kbd "M-`")
@@ -2760,7 +2861,7 @@ A minimal ui for completion-in-region。corfu 与 orderless 的匹配性更好�
 方式。但是 company-mode 与 orderless 的匹配性不好，不能使用空格，模糊匹配等特性。
 #+begin_src emacs-lisp
   (use-package corfu
-    :straight (:host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
+;;    :straight (:host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
     :init
     (global-corfu-mode 1) ;; 全局模式，eshell 等也会生效。
     ;;(corfu-echo-mode)
@@ -2819,7 +2920,7 @@ A minimal ui for completion-in-region。corfu 与 orderless 的匹配性更好�
     (setq tab-always-indent 'complete))
 
   (use-package kind-icon
-    :straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
+    ;;:straight '(kind-icon :host github :repo "jdtsmith/kind-icon")
     :after corfu
     :demand
     :custom
@@ -2832,7 +2933,7 @@ A minimal ui for completion-in-region。corfu 与 orderless 的匹配性更好�
 #+begin_src emacs-lisp
 ;; cape 补全融合
 (use-package cape
-  :straight (:host github :repo "minad/cape")
+  ;;:straight (:host github :repo "minad/cape")
   :demand
   ;; Bind dedicated completion commands
   ;; Alternative prefix keys: C-c p, M-p, M-+, ...
@@ -2913,7 +3014,8 @@ A minimal ui for completion-in-region。corfu 与 orderless 的匹配性更好�
   (add-hook #'eglot-managed-mode-hook 'tempel-setup-capf))
 
 (use-package tempel-collection
-  :straight (tempel-collection :host github :repo "Crandel/tempel-collection"))
+  ;;:straight (tempel-collection :host github :repo "Crandel/tempel-collection")
+  )
 #+end_src
 + 可以在变量 tempel-path 定义的文件中 =~/.emacs.d/templates= 添加自定义模板。
 
@@ -2929,7 +3031,7 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
 #+begin_src emacs-lisp
 (use-package eglot
   :demand
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :bind (:map eglot-mode-map
 	      ("C-c C-a" . eglot-code-actions)
 	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 命令来重新触发诊断。
@@ -2967,8 +3069,8 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
 	  ))
   
   ;; 加强高亮的 symbol 效果。
-  (set-face-attribute 'eglot-highlight-symbol-face nil
-                      :background "#b3d7ff")
+  ;; (set-face-attribute 'eglot-highlight-symbol-face nil
+  ;;                     :background "#b3d7ff")
 
   ;; ;; 在 eldoc bufer 中只显示帮助文档。
   ;; (defun my/eglot-managed-mode-initialize ()
@@ -3021,7 +3123,7 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
 consult-eglot 提供 consult-eglot-symbols 函数，可以选择 workspace 中的 symbol：
 #+begin_src emacs-lisp
 (use-package consult-eglot
-  :straight (:host github :repo "mohkale/consult-eglot")
+  ;;:straight (:host github :repo "mohkale/consult-eglot")
   :after (eglot consult))  
 #+end_src
 
@@ -3118,91 +3220,6 @@ consult-eglot 提供 consult-eglot-symbols 函数，可以选择 workspace 中�
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
 #+end_src
 
-* proxy
-
-全局 socks5 代理：
-+ Mac 自带的 curl 不支持 socks 代理, 需要安装 =brew install curl= 并设置
-   ~export PATH="/usr/local/opt/curl/bin:$PATH"~
-+ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
-+ 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
-
-#+begin_src bash :tangle  ~/.emacs.d/init.sh
-ls -l /usr/local/opt/curl/bin/curl || brew install curl
-export PATH="/usr/local/opt/curl/bin:$PATH"
-#+end_src
-
-#+begin_src emacs-lisp
-;; 将安装的 curl 二进制路径加入到 emacs 搜索路径中。
-(setq my-coreutils-path "/usr/local/opt/curl/bin")
-(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
-(setq exec-path (cons my-coreutils-path  exec-path))
-
-;; 添加环境变量 
-(setq my/socks-host "127.0.0.1")
-(setq my/socks-port 1080)
-;; socks5h 相比 socks5 会额外代理域名解析，解决域名投毒问题。
-(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
-
-(use-package mb-url-http
-  :demand
-  :straight (mb-url :repo "dochang/mb-url")
-  :commands (mb-url-http-around-advice)
-  :init
-  (require 'auth-source)
-  (let ((credential (auth-source-user-and-password "api.github.com")))
-    (setq github-user (car credential)
-          github-password (cadr credential))
-    (setq github-auth (concat github-user ":" github-password))
-    (setq mb-url-http-backend 'mb-url-http-curl
-          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-                                      ;;"--max-time" "300"
-                                      ;;"-u" ,github-auth
-                                      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-                                      ))))
-
-(defun proxy-socks-show ()
-  "Show SOCKS proxy."
-  (interactive)
-  (when (fboundp 'cadddr)
-    (if (bound-and-true-p socks-noproxy)
-        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
-      (message "No SOCKS proxy"))))
-
-(defun proxy-socks-enable ()
-  "使用 socks 代理 url 访问请求。"
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'socks
-        socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
-        socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-  (setenv "all_proxy" my/socks-proxy)
-  (setenv "ALL_PROXY" my/socks-proxy)
-  (setenv "HTTP_PROXY" nil)
-  (setenv "HTTPS_PROXY" nil)
-  (proxy-socks-show)
-  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
-  (advice-add 'url-http :around 'mb-url-http-around-advice))
-
-(defun proxy-socks-disable ()
-  "Disable SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'native
-        socks-noproxy nil)
-  (setenv "all_proxy" "")
-  (setenv "ALL_PROXY" "")
-  (proxy-socks-show))
-
-(defun proxy-socks-toggle ()
-  "Toggle SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (if (bound-and-true-p socks-noproxy)
-      (proxy-socks-disable)
-    (proxy-socks-enable)))
-#+end_src
-
 * terminal
 
 #+begin_src bash :tangle ~/.emacs.d/init.sh
@@ -3261,7 +3278,8 @@ which exiftran || brew install fxiftran
   (define-key vterm-copy-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
 (use-package vterm-extra
-  :straight (:host github :repo "Sbozzolo/vterm-extra")
+  :vc (:fetcher github :repo Sbozzolo/vterm-extra)
+  ;;:straight (:host github :repo "Sbozzolo/vterm-extra")
   :config
   ;;(advice-add #'vterm-extra-edit-done :after #'winner-undo)
   (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer))
@@ -3335,7 +3353,7 @@ eshell：
 #+begin_src emacs-lisp
 (use-package tramp
   ;;:straight (:type built-in)
-  :straight (tramp :files ("lisp/*"))
+  ;;:straight (tramp :files ("lisp/*"))
   :config
   ;; 使用远程主机自己的 PATH(默认是本地的 PATH)
   (setq tramp-remote-path '(tramp-default-remote-path "/bin" "/usr/bin" "/sbin" "/usr/sbin" "/usr/local/bin" "/usr/local/sbin"))
@@ -3400,7 +3418,8 @@ eshell：
               (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
 
 (use-package consult-tramp
-  :straight (:repo "Ladicle/consult-tramp" :host github)
+  :vc (:fetcher github :repo Ladicle/consult-tramp)
+  ;;:straight (:repo "Ladicle/consult-tramp" :host github)
   :custom
   ;; 默认为 scpx 模式，不支持 SSH 多跳 Jump。
   (consult-tramp-method "ssh")
@@ -3569,7 +3588,7 @@ which trash || brew install trash
 #+begin_src emacs-lisp
 ;;; Google 翻译
 (use-package google-translate
-  :straight (:host github :repo "atykhonov/google-translate")
+  ;;:straight (:host github :repo "atykhonov/google-translate")
   :config
   (setq max-mini-window-height 0.2)
   ;;(setq google-translate-output-destination 'popup)
@@ -3614,7 +3633,7 @@ which trash || brew install trash
 (add-hook 'find-file-hook 'my/large-file-hook)
 
 (use-package emacs
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :init
   ;; 粘贴于光标处, 而不是鼠标指针处。
   (setq mouse-yank-at-point t)
@@ -3638,7 +3657,7 @@ which trash || brew install trash
     (server-start)))
 
 (use-package ibuffer
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :config
   (setq ibuffer-expert t)
   (setq ibuffer-use-other-window nil)
@@ -3649,7 +3668,7 @@ which trash || brew install trash
   (global-set-key (kbd "C-x C-b") #'ibuffer))
 
 (use-package recentf
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :config
   (setq recentf-save-file "~/.emacs.d/recentf")
   ;; 不自动清理 recentf 记录。
@@ -3707,7 +3726,7 @@ which trash || brew install trash
 
 ;; minibuffer 历史记录。
 (use-package savehist
-  :straight (:type built-in)
+  ;;:straight (:type built-in)
   :hook (after-init . savehist-mode)
   :config
   (setq history-length 600)

@@ -3,6 +3,9 @@ brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-image
 brew link --overwrite emacs-plus@29
 ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 
+ls -l /usr/local/opt/curl/bin/curl || brew install curl
+export PATH="/usr/local/opt/curl/bin:$PATH"
+
 which rg || brew install ripgrep
 
 which tac || brew install coreutils
@@ -86,9 +89,6 @@ gtags --explain
 global -xr SetPrimary
 # definition
 global -x SetPrimary
-
-ls -l /usr/local/opt/curl/bin/curl || brew install curl
-export PATH="/usr/local/opt/curl/bin:$PATH"
 
 which cmake || brew install cmake
 which glibtool || brew install libtool
