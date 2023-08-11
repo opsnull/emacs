@@ -3835,7 +3835,6 @@ doom-themes:
     (proxy-socks-enable)))
 #+end_src
 
-
 * symbol-overlay
 
 #+begin_src emacs-lisp
@@ -5107,7 +5106,6 @@ company-search-map 2.
   (doom-themes-treemacs-config))
 #+end_src
 
-
 *  flymake
 
 eglot 使用 Emacs 内置的 flymake 而非 flycheck 来接收和显示 LSP Server 发送的 publishDiagnostics 事件。flymake
@@ -5349,7 +5347,6 @@ consult-eglot 提供 consult-eglot-symbols 函数，可以选择 workspace 中�
  'eglot-managed-mode-hook #'my/toggle-citre-eglot-capf)
 #+end_src
 
-
 * eshell
 #+begin_src emacs-lisp
   (defun tab-to-eshell ()
@@ -5518,6 +5515,30 @@ lsp-bridge 在开启了编译后，大概率会报错，故关闭：
 ((emacs-lisp-mode . ((no-byte-compile . t))))
 #+end_src
 
+修改 gopls 配置：
++ 添加 ~"verboseOutput": true~ 配置参数将打开 gopls 调试模式；
++ 去掉配置参数 ~"env": {"GOFLAGS": "-mod=mod"},~ 可以防止带有 vendor 目录的项目报错: go: inconsistent vendoring;
+  + 项目如果要使用 vendor, 则可以使用 .envrc 添加项目相关的环境变量："export GOFLAGS='-mod=vendor'"
++ usePlaceholders 依赖于 yasnippet, 使用时容易出错，故关闭。lsp-bridge 在 echo area 提供了 signature-help 的功
+  能，也能方便的看到函数签名。
++ json 配置必须保存到 straight/repos 目录下（而非 build 目录）下才生效。
+#+begin_src javascript :tangle ~/.emacs.d/straight/repos/lsp-bridge/langserver/gopls.json
+{
+  "name": "gopls",
+  "languageId": "go",
+  "command": ["gopls", "-remote=auto"],
+  "settings":{
+    "gopls": {
+      "usePlaceholders": false,
+      "completeUnimported": true,
+      "staticcheck": true,
+      "allowModfileModifications": true,
+      "allowImplicitNetworkAccess": true
+    }
+  }
+}
+#+end_src
+
 * sis
 #+begin_src emacs-lisp
 ;; brew tap laishulu/macism && brew install macism
@@ -5543,4 +5564,127 @@ lsp-bridge 在开启了编译后，大概率会报错，故关闭：
                (cons 'embark-act (lambda () 'other))))
 #+end_src
 
+* direnv
 
+
+目录变量是只对特定目录及子目录有效的 shell 环境变量，主要使用场景是根据目录变量来指定版本的 python 和 golang。
+
+先安装 direnv 命令 =brew install direnv=, 然后在 =~/.bashrc= 中添加:
+#+begin_src bash :tangle no
+eval "$(direnv hook bash)"
+#+end_src
+
+安装 emacs envrc 软件包，它调用 direnv 命令获取当前文件或目录的环境变量，然后更新 emacs 变量
+=process-environment= 和 =exec-path= ，这样 emacs 后续启动的命令就会继承这些环境变量（direnv 包是全局的，而 envrc
+是 buffer-local 的)：
+
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+which direnv || brew install direnv
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package envrc :hook (after-init . envrc-global-mode))
+#+end_src
++ C-c e a: envrc-allow
++ C-c e d: envrc-deny
++ C-c e r: envrc-reload
+
+使用步骤：
+1. 在对应目录创建 =.envrc= 文件;
+2. 向 .envrc 文件添加 shell 环境变量;
+3. 执行 =direnv allow .= 生效环境变量;
+
+如果某些变量未被 lsp 识别，则需要打开 .envrc 所在目录的文件后执行 =M-x lsp-workspace-restart= 来重启 lsp。
+
+* pyenv
+
+=pyenv= 和 =pyenv-virtualenv= 可以为项目或系统指定不同隔离的 python 或 venv 版本。
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+which pyenv || brew install --HEAD pyenv
+which pyenv-virtualenv || brew install --HEAD pyenv-virtualenv
+#+end_src
+
+为了在进入项目目录时自动切换到指定 pyenv 或 venv 版本，需要配置 =~/.bashrc= ：
+#+begin_src bash :results none
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+eval "$(jenv init -)"
+#+end_src
+
+pyenv 工作流：
+1. 列出可以安装的 python 版本： =pyenv install -l=
+2. 安装指定的 python 版本： =pyenv install <version>=
+3. 创建一个 pyenv virtualenv： =pyenv virtualenv [version] <virtualenv-name>=
+4. 为项目指定 python 版本或上一步创建的 virtualenv 名称：
+   + 在项目根目录执行 =pyenv local <version1> <version2>=
+5. 指定用户默认使用 3.9.0 python 版本:
+   + 在家目录执行命令: cd ~ && pyenv local 3.9.0
+   + 后续家目录下执行 pip 命令安装的包都是 3.x 版本。
+6. 如果虚拟环境中没有 pip 命令，安装： =python -m ensurepip=
+
+
+
+* ts-fold
+
+高性能的, 使用 tree-sitter 进行展开和隐藏。
++ 依赖于非内置的 elisp-tree-sitter, 暂时禁用。
+#+begin_src emacs-lisp
+(use-package ts-movement
+  :disabled
+  :straight (ts-movement :type git :host github :repo "haritkapadia/ts-movement")
+  :hook
+  (bash-ts-mode-hook . ts-movement-mode)
+  (c++-ts-mode-hook . ts-movement-mode)
+  (c-ts-mode-hook . ts-movement-mode)
+  (cmake-ts-mode-hook . ts-movement-mode)
+  (csharp-ts-mode-hook . ts-movement-mode)
+  (css-ts-mode-hook . ts-movement-mode)
+  (dockerfile-ts-mode-hook . ts-movement-mode)
+  (go-ts-mode-hook . ts-movement-mode)
+  (java-ts-mode-hook . ts-movement-mode)
+  (js-ts-mode-hook . ts-movement-mode)
+  (json-ts-mode-hook . ts-movement-mode)
+  (python-ts-mode-hook . ts-movement-mode)
+  (ruby-ts-mode-hook . ts-movement-mode)
+  (rust-ts-mode-hook . ts-movement-mode)
+  (toml-ts-mode-hook . ts-movement-mode)
+  (tsx-ts-mode-hook . ts-movement-mode)
+  (typescript-ts-mode-hook . ts-movement-mode)
+  (yaml-ts-mode-hook . ts-movement-mode))
+
+(use-package ts-fold
+  :straight (ts-fold :host github :repo "emacs-tree-sitter/ts-fold")
+  :disabled
+  :config
+  (global-ts-fold-mode)
+  (global-set-key (kbd "C-c C-<tab>") 'ts-fold-toggle)
+  ;; indicators 影响性能；
+  ;; (add-hook 'tree-sitter-after-on-hook #'ts-fold-indicators-mode)
+  )
+#+end_src
+
+* yasnippet
+
+#+begin_src emacs-lisp
+(use-package yasnippet
+  :init
+  (defvar snippet-directory "~/.emacs.d/snippets")
+  :hook
+  ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
+  :config
+  (add-to-list 'yas-snippet-dirs snippet-directory)
+  ;; 保留 snippet 的缩进。
+  (setq yas-indent-line 'fixed)
+  (yas-global-mode 1))
+
+(use-package consult-yasnippet
+  :after(consult yasnippet)
+  :config
+  (define-key yas-minor-mode-map (kbd "C-c y") #'consult-yasnippet))
+
+;; 避免报错：Symbol’s function definition is void: yasnippet-snippets--fixed-indent
+(use-package yasnippet-snippets :after(yasnippet))
+#+end_src
++ 完全输入 =snippet= 简写后，按 =TAB= 自动扩展。
++ 从 [[https://github.com/AndreaCrotti/yasnippet-snippets][yasnippet-snippets]] 获取 snippets, 然后放到 snippet-directory 目录下，这样更容易定制。
+  

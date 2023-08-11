@@ -1,7 +1,9 @@
 ;; (require 'package)
-;; (setq package-archives '(("gnu" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+;; (setq package-archives '(("elpa" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
+;; 			 ("elpa-devel" . "https://mirrors.ustc.edu.cn/elpa/gnu-devel/")
 ;;                          ("melpa" . "https://mirrors.ustc.edu.cn/elpa/melpa/")
-;;                          ("nongnu" . "https://mirrors.ustc.edu.cn/elpa/nongnu/")))
+;;                          ("nongnu" . "https://mirrors.ustc.edu.cn/elpa/nongnu/")
+;; 			 ("nongnu-devel" . "https://mirrors.ustc.edu.cn/elpa/nongnu-devel/")))
 ;; (package-initialize)
 ;; (when (not package-archive-contents)
 ;;   (package-refresh-contents))
@@ -12,10 +14,6 @@
 ;; 配置 use-package 使用 straight.el 安装包。
 (setq straight-use-package-by-default t)
 
-;; 只 clone 最近一次 commit 历史, 减少磁盘空间占用。
-(setq straight-vc-git-default-clone-depth 1)
-
-;; 安装 straight.el。
 (defvar bootstrap-version)
 (let ((bootstrap-file (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
@@ -41,16 +39,17 @@
 
 ;; 设置自定义环境变量。
 ;; 后续的 proxy 使用的 curl, 以及dired 使用的 ls 来住 GNU 版本。
-(setq my-bin-path '("/usr/local/opt/coreutils/libexec/gnubin"
-		    "/usr/local/opt/findutils/libexec/gnubin"
-		    "/usr/local/opt/curl/bin"
+(setq my-bin-path '(
+		    ;;"/usr/local/opt/coreutils/libexec/gnubin"
+		    ;;"/usr/local/opt/findutils/libexec/gnubin"
+		    ;;"/usr/local/opt/curl/bin"
 		    "/Users/zhangjun/go/bin"
 		    ))
 ;; 设置 PATH 环境变量，后续 Emacs 启动外部程序时会查找。
 (mapc (lambda (p) (setenv "PATH" (concat p ":" (getenv "PATH"))))
       my-bin-path)
 
-;; Emacs 自身使用 exed-path 而非PATH 来查找外部程序。
+;; Emacs 自身使用 exed-path 而非 PATH 来查找外部程序。
 (let ((paths my-bin-path))
   (dolist (path paths)
     (setq exec-path (cons path exec-path))))
@@ -80,7 +79,6 @@
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
-;; EasyPG 加密。
 (use-package epa
   :config
   ;; 缺省使用 email 地址加密。
@@ -88,30 +86,19 @@
   (setq-default epa-file-encrypt-to user-mail-address)
   ;; 使用 minibuffer 输入 GPG 密码。
   (setq-default epa-pinentry-mode 'loopback)
-  ;; 认证信息文件。
   (setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
-  ;; 认证不过期, 默认 7200。
   (setq auth-source-cache-expiry nil)
   ;;(setq auth-source-debug t)
-  ;; 缓存对称加密密码。
   (setq epa-file-cache-passphrase-for-symmetric-encryption t)
-  ;; gpg 文件。
   (require 'epa-file)
   (epa-file-enable))
 
 ;; 关闭容易误操作的按键。
-(global-unset-key (kbd "s-w"))
-(global-unset-key (kbd "C-z"))
-(global-unset-key (kbd "<mouse-2>"))
-(global-unset-key (kbd "s-k"))
-(global-unset-key (kbd "s-o"))
-(global-unset-key (kbd "s-t"))
-(global-unset-key (kbd "s-p"))
-(global-unset-key (kbd "s-n"))
-(global-unset-key (kbd "s-,"))
-(global-unset-key (kbd "s-."))
-(global-unset-key (kbd "C-<wheel-down>"))
-(global-unset-key (kbd "C-<wheel-up>"))
+(let ((keys '("s-w" "C-z" "<mouse-2>"
+	      "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
+	      "C-<wheel-down>" "C-<wheel-up>")))
+  (dolist (key keys)
+    (global-unset-key (kbd key))))
 
 ;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
@@ -124,38 +111,34 @@
   (setq use-file-dialog nil)
   (setq use-dialog-box nil))
 
-;; 向下翻另外的窗口。
+;; 向下/向上翻另外的窗口。
 (global-set-key (kbd "s-v") 'scroll-other-window)  
- ;; 向上翻另外的窗口。
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
 
 ;; 不显示 Title Bar（依赖编译时指定 --with-no-frame-refocus 参数。）
 (add-to-list 'default-frame-alist '(undecorated-round . t))
 
 ;; 高亮当前行。
-;;(global-hl-line-mode t)
+(global-hl-line-mode t)
 ;;(setq global-hl-line-sticky-flag t)
-
 
 ;; 显示行号。
 (global-display-line-numbers-mode t)
+
 ;; 指针闪动。
 ;;(blink-cursor-mode t)
 
 ;; 光标和字符宽度一致（如 TAB)
-(setq x-stretch-cursor nil)
+;;(setq x-stretch-cursor nil)
 
 ;; 不显示 window fringe, 显示多个 window 时更紧凑。
-(set-fringe-style 0)
+;;(set-fringe-style 0)
 
 ;; 增加行间距。
-(setq-default line-spacing 0.05)
+;;(setq-default line-spacing 0.05)
 
 ;; 30: 左右分屏, nil: 上下分屏。
-(setq split-width-threshold 30)
-
-;; 滚动一屏后显示 3 行上下文。
-(setq next-screen-context-lines 3)
+;;(setq split-width-threshold 30)
 
 ;; 像素平滑滚动。
 (if (boundp 'pixel-scroll-precision-mode)
@@ -177,21 +160,21 @@
 ;; 在 frame 底部显示窗口。
 (setq display-buffer-alist
       `((,(rx bos (or
-                   "*Apropos*"
-                   "*Help*"
-                   "*helpful"
-                   "*info*"
-                   "*Summary*"
-                   "*vterm"
-                   "*lsp-bridge"
-                   "*Org"
-                   "*Google Translate*"
-                   "*eldoc*"
-                   " *eglot"
-                   "Shell Command Output") (0+ not-newline))
-         (display-buffer-below-selected display-buffer-at-bottom)
-         (inhibit-same-window . t)
-         (window-height . 0.33))))
+		   "*Apropos*"
+		   "*Help*"
+		   "*helpful"
+		   "*info*"
+		   "*Summary*"
+		   "*vterm"
+		   "*lsp-bridge"
+		   "*Org"
+		   "*Google Translate*"
+		   "*eldoc*"
+		   " *eglot"
+		   "Shell Command Output") (0+ not-newline))
+	 (display-buffer-below-selected display-buffer-at-bottom)
+	 (inhibit-same-window . t)
+	 (window-height . 0.33))))
 
 ;; 透明背景。
 (defun my/toggle-transparency ()
@@ -199,6 +182,19 @@
   ;; 分别为 frame 获得焦点和失去焦点的不透明度。
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90)) 
   (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
+
+;; 调整窗口大小。
+(global-set-key (kbd "s-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "s-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "s-<down>") 'shrink-window)
+(global-set-key (kbd "s-<up>") 'enlarge-window)
+
+;; window 窗口选择。
+(global-set-key (kbd "s-o") #'other-window)
+
+;; 滚动显示。
+(global-set-key (kbd "s-j") (lambda () (interactive) (scroll-up 2)))
+(global-set-key (kbd "s-k") (lambda () (interactive) (scroll-down 2)))
 
 ;; 高亮光标移动到的行。
 (use-package pulsar
@@ -211,23 +207,12 @@
   (setq pulsar-highlight-face 'pulsar-yellow)
   (pulsar-global-mode 1)
   (add-hook 'next-error-hook #'pulsar-pulse-line-red)
-  (add-hook 'consult-after-jump-hook #'pulsar-recenter-top)
-  (add-hook 'consult-after-jump-hook #'pulsar-reveal-entry)
-  (add-hook 'imenu-after-jump-hook #'pulsar-recenter-top)
-  (add-hook 'imenu-after-jump-hook #'pulsar-reveal-entry))
-
-;; 调整窗口大小。
-(global-set-key (kbd "C-s-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "C-s-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "C-s-<down>") 'shrink-window)
-(global-set-key (kbd "C-s-<up>") 'enlarge-window)
-
-;; window 窗口选择。
-(global-set-key (kbd "s-o") #'other-window)
-
-;; 滚动显示。
-(global-set-key (kbd "C-s-j") (lambda () (interactive) (scroll-up 2)))
-(global-set-key (kbd "C-s-k") (lambda () (interactive) (scroll-down 2)))
+  ;; 2023.07.30 下面的内容与 consult 不兼容，会导致 consult 的 live-preivew 快捷键失效，故关闭。
+  ;; (add-hook 'consult-after-jump-hook #'pulsar-recenter-top)
+  ;; (add-hook 'consult-after-jump-hook #'pulsar-reveal-entry)
+  ;; (add-hook 'imenu-after-jump-hook #'pulsar-recenter-top)
+  ;; (add-hook 'imenu-after-jump-hook #'pulsar-reveal-entry)
+  )
 
 (use-package dashboard
   :config
@@ -241,22 +226,22 @@
   (setq dashboard-set-file-icons t)
   (setq dashboard-items '((recents . 15) (projects . 8) (agenda . 3))))
 
+;; nerd-incos 默认使用 Symbols Nerd Fonts Mono，可以使用 M-x nerd-icons-install-fonts 来安装。
+(use-package nerd-icons
+    :straight (nerd-icons :host github :repo "rainstormstudio/nerd-icons.el" :files("*.el" "data")))
+
 (use-package doom-modeline
   :hook (after-init . doom-modeline-mode)
   :custom
-  ;; 不显示换行和编码。
   (doom-modeline-buffer-encoding nil)
-  ;; 显示语言版本。
   (doom-modeline-env-version t)
-  ;; 不显示 go 版本。
   (doom-modeline-env-enable-go nil)
   (doom-modeline-buffer-file-name-style 'truncate-nil) ;; relative-from-project
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
-  (doom-modeline-height 1)
+  ;; (doom-modeline-height 2)
   (doom-modeline-time-icon nil)
   :config
-  ;; 电池和日期。
   (display-battery-mode 1)
   (column-number-mode t)
   (size-indication-mode t)
@@ -282,7 +267,6 @@
 ;; 中文字体和英文字体按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
 (setq face-font-rescale-alist '(("LXGW WenKai Screen" . 1))) ;; 1:1 缩放。
 (setq +font-size 14) ;; 偶数字号。
-
 
 ;; 设置缺省字体。
 (defun +load-base-font ()
@@ -338,44 +322,39 @@
 (when (display-graphic-p)
   (use-package all-the-icons :demand))
 
-  (use-package color-theme-sanityinc-tomorrow)
+(use-package color-theme-sanityinc-tomorrow)
 
-  ;; 低对比度主题。
-  (use-package zenburn-theme
-    :disabled
-    :init
-    (setq zenburn-use-variable-pitch t)
-    (setq zenburn-scale-org-headlines t)
-    (setq zenburn-scale-outline-headlines t)
-    :config
-    (load-theme 'zenburn t))
+;; 低对比度主题。
+(use-package zenburn-theme
+  :disabled
+  :init
+  (setq zenburn-use-variable-pitch t)
+  (setq zenburn-scale-org-headlines t)
+  (setq zenburn-scale-outline-headlines t)
+  :config
+  (load-theme 'zenburn t))
 
-  (use-package ef-themes
-    :straight (ef-themes :host github :repo "protesilaos/ef-themes")
-    :config
-    (mapc #'disable-theme custom-enabled-themes)
-    (setq ef-themes-variable-pitch-ui t)
-    ;; strictly spacing-sensitive constructs inherit from fixed-pitch (a monospaced font family) faces
-    ;; such as for Org tables, inline code, code blocks, and the like, are rendered in a monospaced font
-    ;; at all times
-    (setq ef-themes-mixed-fonts t)
-    ;; 调整 org-mode 等 header 的显示比例。
-    (setq ef-themes-headings
-	  '(
-	    ;; level 0 是文档 title，1-8 是普通的文档 headling。
-	    (0 . (variable-pitch semibold 1.6))
-	    (1 . (variable-pitch light 1.5))
-	    (2 . (variable-pitch regular 1.4))
-	    (3 . (variable-pitch regular 1.3))
-	    (4 . (variable-pitch regular 1.2))
-	    (5 . (variable-pitch 1.1)) ; absence of weight means `bold'
-	    (6 . (variable-pitch 1.1))
-	    (7 . (variable-pitch 1.1))
-	    (agenda-date . (semilight 1.5))
-	    (agenda-structure . (variable-pitch light 1.9))
-	    ;; default style for all unspecified levels
-	    (t . (variable-pitch 1.1))))
-    (setq ef-themes-region '(intense no-extend neutral)))
+(use-package ef-themes
+  :straight (ef-themes :host github :repo "protesilaos/ef-themes")
+  :config
+  (mapc #'disable-theme custom-enabled-themes)
+  (setq ef-themes-variable-pitch-ui t)
+  (setq ef-themes-mixed-fonts t)
+  (setq ef-themes-headings
+	'(
+	  ;; level 0 是文档 title，1-8 是普通的文档 headling。
+	  (0 . (variable-pitch semibold 1.6))
+	  (1 . (variable-pitch light 1.5))
+	  (2 . (variable-pitch regular 1.4))
+	  (3 . (variable-pitch regular 1.3))
+	  (4 . (variable-pitch regular 1.2))
+	  (5 . (variable-pitch 1.1)) ; absence of weight means `bold'
+	  (6 . (variable-pitch 1.1))
+	  (7 . (variable-pitch 1.1))
+	  (agenda-date . (semilight 1.5))
+	  (agenda-structure . (variable-pitch light 1.9))
+	  (t . (variable-pitch 1.1))))
+  (setq ef-themes-region '(intense no-extend neutral)))
 
 (defun my/load-light-theme () (interactive) (load-theme 'ef-elea-light t))
 (defun my/load-dark-theme () (interactive) (load-theme 'ef-elea-dark t)) 
@@ -393,7 +372,7 @@
   (tab-bar-history-limit 20)
   (tab-bar-new-tab-choice "*dashboard*")
   (tab-bar-show 1)
-  (tab-bar-tab-hints nil) ;; 不显示 tab 序号。
+  (tab-bar-tab-hints nil) 
   (tab-bar-select-tab-modifiers "super") ;; 使用 super + N 来切换 tab。
   :config
   ;; 去掉最左侧的 < 和 >
@@ -409,8 +388,8 @@
   (global-set-key (kbd "s-t") 'tab-bar-new-tab)
   (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
   (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
-  (keymap-global-set "s-r" 'tab-bar-switch-to-recent-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
+  ;;(keymap-global-set "s-r" 'tab-bar-switch-to-recent-tab)
   ;; (global-set-key (kbd "s-0") 'tab-bar-close-tab)
   ;; (global-set-key (kbd "s-1") 'tab-bar-select-tab)
   ;; (global-set-key (kbd "s-2") 'tab-bar-select-tab)
@@ -434,8 +413,8 @@
   (setq sort-tab-height 40)
   (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
   (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  ;;(global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
-  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
+  ;; (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
   (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
   (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
   (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
@@ -452,18 +431,18 @@
 
   (use-package vertico
     :straight (:repo "minad/vertico" :files ("*" "extensions/*.el" (:exclude ".git")))
-    :bind
-    (:map vertico-map
-	  ;; 关闭 minibuffer。
-	  ("<escape>" . #'abort-minibuffers))
-    :hook
+    ;; :bind
+    ;; (:map vertico-map
+    ;; 	  ;; 关闭 minibuffer。
+    ;; 	  ("<escape>" . #'abort-minibuffers))
+    ;;:hook
     ;; 在输入时清理文件路径。
-    (rfn-eshadow-update-overlay . vertico-directory-tidy)
+    ;;(rfn-eshadow-update-overlay . vertico-directory-tidy)
     :config
     (require 'vertico-directory) ;; 目录自动补全。
     ;; 显示的侯选者数量。
     (setq vertico-count 20)
-    (setq vertico-cycle nil)
+    ;;(setq vertico-cycle nil)
     (vertico-mode 1)
     ;; 文件路径操作。
     (define-key vertico-map (kbd "<backspace>") #'vertico-directory-delete-char)
@@ -479,62 +458,62 @@
     ;; 开启 minibuffer 递归编辑。
     (setq enable-recursive-minibuffers t))
 
-  (use-package orderless
-    :config
-    ;; https://github.com/minad/consult/wiki#minads-orderless-configuration
-    (defun +orderless--consult-suffix ()
-      "Regexp which matches the end of string with Consult tofu support."
-      (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
-	  (format "[%c-%c]*$"
-		  consult--tofu-char
-		  (+ consult--tofu-char consult--tofu-range -1))
-	"$"))
+(use-package orderless
+  :config
+  ;; https://github.com/minad/consult/wiki#minads-orderless-configuration
+  (defun +orderless--consult-suffix ()
+    "Regexp which matches the end of string with Consult tofu support."
+    (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
+	(format "[%c-%c]*$"
+		consult--tofu-char
+		(+ consult--tofu-char consult--tofu-range -1))
+      "$"))
 
-    ;; Recognizes the following patterns:
-    ;; * .ext (file extension)
-    ;; * regexp$ (regexp matching at end)
-    (defun +orderless-consult-dispatch (word _index _total)
-      (cond
-       ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
-       ((string-suffix-p "$" word)
-	`(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
-       ;; File extensions
-       ((and (or minibuffer-completing-file-name
-		 (derived-mode-p 'eshell-mode))
-	     (string-match-p "\\`\\.." word))
-	`(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
+  ;; Recognizes the following patterns:
+  ;; * .ext (file extension)
+  ;; * regexp$ (regexp matching at end)
+  (defun +orderless-consult-dispatch (word _index _total)
+    (cond
+     ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
+     ((string-suffix-p "$" word)
+      `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
+     ;; File extensions
+     ((and (or minibuffer-completing-file-name
+	       (derived-mode-p 'eshell-mode))
+	   (string-match-p "\\`\\.." word))
+      `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
 
-    ;; 在 orderless-affix-dispatch 的基础上添加上面支持文件名扩展和 正则表达式$ 的 dispatchers 。
-    (setq orderless-style-dispatchers (list #'+orderless-consult-dispatch
-					    #'orderless-affix-dispatch))
+  ;; 在 orderless-affix-dispatch 的基础上添加上面支持文件名扩展和正则表达式的 dispatchers 。
+  (setq orderless-style-dispatchers (list #'+orderless-consult-dispatch
+					  #'orderless-affix-dispatch))
 
-    ;; 自定义名为 +orderless-with-initialism 的 orderless 风格。
-    (orderless-define-completion-style +orderless-with-initialism
-      (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
+  ;; 自定义名为 +orderless-with-initialism 的 orderless 风格。
+  (orderless-define-completion-style +orderless-with-initialism
+    (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
   
-    ;; 使用 orderless 和 emacs 原生的 basic 补全风格， 但 orderless 的优先级更高。
-    (setq completion-styles '(orderless basic))
-    (setq completion-category-defaults nil)
-    ;; 进一步设置各 category 使用的补全风格。
-    (setq completion-category-overrides
-	  '(;; buffer name 补全
-	    (buffer (styles +orderless-with-initialism)) 
-	    ;; file path&name 补全, partial-completion 提供了 wildcard 支持。
-	    (file (styles basic partial-completion)) 
-	    ;; M-x Command 补全
-	    (command (styles +orderless-with-initialism)) 
-	    ;; variable 补全
-	    (variable (styles +orderless-with-initialism))
-	    ;; symbol 补全
-	    (symbol (styles +orderless-with-initialism))
-	    ;; eglot will change the completion-category-defaults to flex, BAD!
-	    ;; https://github.com/minad/corfu/issues/136#issuecomment-1052843656
-	    ;;(eglot (styles . (orderless flex)))
-	    ;; 使用 M-SPC 来分隔多个筛选条件。
-	    (eglot (styles +orderless-with-initialism))
-	    )) 
-    ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
-    (setq orderless-component-separator #'orderless-escapable-split-on-space))
+  ;; 使用 orderless 和 emacs 原生的 basic 补全风格， 但 orderless 的优先级更高。
+  (setq completion-styles '(orderless basic))
+  (setq completion-category-defaults nil)
+  ;; 进一步设置各 category 使用的补全风格。
+  (setq completion-category-overrides
+	'(;; buffer name 补全
+	  (buffer (styles +orderless-with-initialism)) 
+	  ;; file path&name 补全, partial-completion 提供了 wildcard 支持。
+	  (file (styles basic partial-completion)) 
+	  ;; M-x Command 补全
+	  (command (styles +orderless-with-initialism)) 
+	  ;; variable 补全
+	  (variable (styles +orderless-with-initialism))
+	  ;; symbol 补全
+	  (symbol (styles +orderless-with-initialism))
+	  ;; eglot will change the completion-category-defaults to flex, BAD!
+	  ;; https://github.com/minad/corfu/issues/136#issuecomment-1052843656
+	  ;;(eglot (styles . (orderless flex)))
+	  ;; 使用 M-SPC 来分隔多个筛选条件。
+	  (eglot (styles +orderless-with-initialism))
+	  )) 
+  ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
+  (setq orderless-component-separator #'orderless-escapable-split-on-space))
 
   (use-package consult
     :straight (consult :host github :repo "minad/consult")
@@ -685,38 +664,20 @@
   (setq marginalia-annotator-registry (assq-delete-all 'file marginalia-annotator-registry))
   (setq marginalia-annotator-registry (assq-delete-all 'project-file marginalia-annotator-registry)))
 
-(use-package yasnippet
-  :init
-  (defvar snippet-directory "~/.emacs.d/snippets")
-  :hook
-  ((prog-mode org-mode  vterm-mode) . yas-minor-mode)
-  :config
-  (add-to-list 'yas-snippet-dirs snippet-directory)
-  ;; 保留 snippet 的缩进。
-  (setq yas-indent-line 'fixed)
-  (yas-global-mode 1))
-
-(use-package consult-yasnippet
-  :after(consult yasnippet)
-  :config
-  (define-key yas-minor-mode-map (kbd "C-c y") #'consult-yasnippet))
-
-;; 避免报错：Symbol’s function definition is void: yasnippet-snippets--fixed-indent
-(use-package yasnippet-snippets :after(yasnippet))
+(setq my-coreutils-path "/usr/local/opt/coreutils/libexec/gnubin")
+(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+(setq exec-path (cons my-coreutils-path  exec-path))
 
 (use-package dired
   :straight (:type built-in)
   :config
-  ;; re-use dired buffer, available in Emacs 28, @see https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20598
   (setq dired-kill-when-opening-new-dired-buffer t)
-  ;; if another Dired buffer is visible in another window, use that directory as target for Rename/Copy
   (setq dired-dwim-target t)
   ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
   ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
   (setq dired-listing-switches "-laGh1v --group-directories-first")
   (put 'dired-find-alternate-file 'disabled nil))
 
-;; dired 显示高亮增强。
 (use-package diredfl :config (diredfl-global-mode))
 
 (use-package grep
@@ -764,7 +725,7 @@
 (setq isearch-lazy-count t)
 (setq isearch-lazy-highlight t)
 
-;; browser-url 使用 Firefox 浏览器。
+;; 使用 Firefox 浏览器打开链接。
 (setq browse-url-firefox-program "/Applications/Firefox.app/Contents/MacOS/firefox")
 (setq browse-url-browser-function 'browse-url-firefox) ;; browse-url-default-macosx-browser, xwidget-webkit-browse-url
 (setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
@@ -777,28 +738,6 @@
   ;;(setq engine/browser-function 'eww-browse-url)
   (defengine github "https://github.com/search?ref=simplesearch&q=%s" :keybinding "h")
   (defengine google "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s" :keybinding "g"))
-
-;; brew tap laishulu/macism && brew install macism
-(use-package sis
-  :disabled
-  :config
-  ;;执行 macism 命令查看输入法名称。
-  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  ;; 添加 emabark 前缀快捷键, 需要在打开 sis-global-xx-mode 之前设置才
-  ;; 生效。
-  (add-to-list 'sis-prefix-override-keys "C-;")
-  (add-to-list 'sis-prefix-override-keys "M-s")
-  (add-to-list 'sis-prefix-override-keys "M-g")
-  (sis-global-cursor-color-mode t)
-  (sis-global-respect-mode t)
-  (sis-global-context-mode t)
-  (sis-global-inline-mode t)
-  ;; 切换系统输入法。
-  (global-set-key (kbd "M-\\") 'sis-switch)
-  (global-set-key (kbd "C-\\") 'sis-switch)
-  ;; 为一些打开 minimibuffer 的命令设置英文输入法。
-  (add-to-list 'sis-respect-minibuffer-triggers
-               (cons 'embark-act (lambda () 'other))))
 
   (use-package rime
     ;;:ensure-system-package
@@ -866,7 +805,7 @@
 
 (use-package org
   :straight (:type built-in)
-  :ensure auctex
+  :demand
   :config
   (setq org-ellipsis "..." ;; " ⭍"
         ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符， M-x org-entities-help 查看所有特殊字符。
@@ -884,7 +823,7 @@
         ;;   ("~" org-code verbatim)
         ;;   ("+" (:strike-through t)))
 
-        ;; 隐藏 block
+        ;; 隐藏 block。
         org-hide-block-startup t
         org-hidden-keywords '(title)
         org-cycle-separator-lines 2
@@ -1031,7 +970,8 @@
 
 (use-package org-download
   :config
-  (setq-default org-download-image-dir "./images/")
+  ;; 保存路径包含 /static/ 时, ox-hugo 在导出时保留后面的目录层次.
+  (setq-default org-download-image-dir "./static/images/")
   (setq org-download-method 'directory
         org-download-display-inline-images 'posframe
         org-download-screenshot-method "pngpaste %s"
@@ -1056,9 +996,6 @@
 ;; 在当前窗口编辑 SRC Block.
 ;; 2023.04.05 设置为 current-window 后会导致 src window 不退出。
 ;;(setq org-src-window-setup 'current-window)
-
-;; export 输出类型。
-;;(setq org-export-backends '(go md gfm html latex man hugo))
 
 ;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，
 ;; 否则编辑 yaml src block 时提示找不到 yaml-mode。
@@ -1249,12 +1186,33 @@
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
 
 (use-package ox-hugo
-  :after ox
+  :demand
   :config
-  (setq org-hugo-base-dir "~/blog/blog.opsnull.com")
+  (setq org-hugo-base-dir (expand-file-name "~/blog/local.view"))
   (setq org-hugo-section "posts")
+  (setq org-hugo-front-matter-format "yaml")
   (setq org-hugo-export-with-section-numbers t)
+  ;; export 输出类型。
+  (setq org-export-backends '(go md gfm html latex man hugo))
   (setq org-hugo-auto-set-lastmod t))
+
+(defun my/hugo-newpost (slug title tags)
+  (interactive "sSlug: \nsTitle: \nsTags: \n")
+  (let* ((categories (choose-blog-categories))
+         (now (current-time))
+		 (basename (concat (format-time-string "%Y-%m-%d-" now)
+						   slug ".org"))
+		 (postdir (expand-file-name "content/post" (locate-dominating-file default-directory "config.toml")))
+		 (filename (expand-file-name basename postdir))
+         (create-date (my/iso-8601-date-string)))
+	(when (file-exists-p filename)
+      (error "%s already exists!" filename))
+	(find-file filename)
+	(insert
+	 (format "#+TITLE: %s\n#+DATE: %s\n#+LASTMOD: %s\n#+TAGS[]: %s\n#+CATEGORIES[]: %s\n"
+             title create-date create-date tags categories))
+	(goto-char (point-max))
+	(save-buffer)))
 
 (setq vc-follow-symlinks t)
 
@@ -1267,23 +1225,24 @@
   ;; 按照 word 展示 diff。
   (magit-diff-refine-hunk t)
   ;; magit-clone 缺省保存的目录。
-  (magit-clone-default-directory "~/go/src/gitlab.alibaba-inc.com/apsara_paas")
+  (magit-clone-default-directory "~/go/src/")
   :config
   ;; kill 所有 magit buffer。
-  (defun my-magit-kill-buffers (&rest _)
-    "Restore window configuration and kill all Magit buffers."
-    (interactive)
-    (magit-restore-window-configuration)
-    (let ((buffers (magit-mode-get-buffers)))
-      (when (eq major-mode 'magit-status-mode)
-        (mapc (lambda (buf)
-                (with-current-buffer buf
-                  (if (and magit-this-process
-                           (eq (process-status magit-this-process) 'run))
-                      (bury-buffer buf)
-                    (kill-buffer buf))))
-              buffers))))
-  (setq magit-bury-buffer-function #'my-magit-kill-buffers)
+  ;; (defun my-magit-kill-buffers (&rest _)
+  ;;   "Restore window configuration and kill all Magit buffers."
+  ;;   (interactive)
+  ;;   (magit-restore-window-configuration)
+  ;;   (let ((buffers (magit-mode-get-buffers)))
+  ;;     (when (eq major-mode 'magit-status-mode)
+  ;;       (mapc (lambda (buf)
+  ;;               (with-current-buffer buf
+  ;;                 (if (and magit-this-process
+  ;;                          (eq (process-status magit-this-process) 'run))
+  ;;                     (bury-buffer buf)
+  ;;                   (kill-buffer buf))))
+  ;;             buffers))))
+  ;; (setq magit-bury-buffer-function #'my-magit-kill-buffers)
+
   ;; diff org-mode 时展开内容。
   (add-hook 'magit-diff-visit-file-hook (lambda() (when (derived-mode-p 'org-mode)(org-fold-show-entry)))))
 
@@ -1330,30 +1289,28 @@
 (setq c-basic-offset 8)
 (setq c-electric-pound-behavior 'alignleft)
 
-  ;; 彩色括号。
-  (use-package rainbow-delimiters :hook (prog-mode . rainbow-delimiters-mode))
+;; 彩色括号。
+(use-package rainbow-delimiters :hook (prog-mode . rainbow-delimiters-mode))
 
-  ;; 高亮匹配的括号。
-  (use-package paren
-    :straight (:type built-in)
-    :hook (after-init . show-paren-mode)
-    :init
-    (setq show-paren-when-point-inside-paren t
-	  show-paren-when-point-in-periphery t)
-    ;; Highlight blocks of code in bold
-    (setq show-paren-style 'parenthesis) ;; parenthesis, expression
-    (set-face-attribute 'show-paren-match nil :weight 'extra-bold))
+;; 高亮匹配的括号。
+(use-package paren
+  :straight (:type built-in)
+  :hook (after-init . show-paren-mode)
+  :init
+  (setq show-paren-when-point-inside-paren t
+	show-paren-when-point-in-periphery t)
+  ;; Highlight blocks of code in bold
+  (setq show-paren-style 'parenthesis) ;; parenthesis, expression
+  (set-face-attribute 'show-paren-match nil :weight 'extra-bold))
 
-  ;; 智能括号。
-  (use-package smartparens
-    :config
-    (require 'smartparens-config)
-    (add-hook 'prog-mode-hook #'smartparens-mode)
-    ;; (smartparens-global-mode t)
-    ;; (show-smartparens-global-mode t)
-    )
-
-(use-package envrc :hook (after-init . envrc-global-mode))
+;; 智能括号。
+(use-package smartparens
+  :config
+  (require 'smartparens-config)
+  ;;(add-hook 'prog-mode-hook #'smartparens-mode)
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode t)
+  )
 
 (defun my/python-setup-shell (&rest args)
   (if (executable-find "ipython")
@@ -1556,39 +1513,6 @@ mermaid.initialize({
     (setq treesit-auto-install nil)
     (global-treesit-auto-mode))
 
-(use-package ts-movement
-  :disabled
-  :straight (ts-movement :type git :host github :repo "haritkapadia/ts-movement")
-  :hook
-  (bash-ts-mode-hook . ts-movement-mode)
-  (c++-ts-mode-hook . ts-movement-mode)
-  (c-ts-mode-hook . ts-movement-mode)
-  (cmake-ts-mode-hook . ts-movement-mode)
-  (csharp-ts-mode-hook . ts-movement-mode)
-  (css-ts-mode-hook . ts-movement-mode)
-  (dockerfile-ts-mode-hook . ts-movement-mode)
-  (go-ts-mode-hook . ts-movement-mode)
-  (java-ts-mode-hook . ts-movement-mode)
-  (js-ts-mode-hook . ts-movement-mode)
-  (json-ts-mode-hook . ts-movement-mode)
-  (python-ts-mode-hook . ts-movement-mode)
-  (ruby-ts-mode-hook . ts-movement-mode)
-  (rust-ts-mode-hook . ts-movement-mode)
-  (toml-ts-mode-hook . ts-movement-mode)
-  (tsx-ts-mode-hook . ts-movement-mode)
-  (typescript-ts-mode-hook . ts-movement-mode)
-  (yaml-ts-mode-hook . ts-movement-mode))
-
-(use-package ts-fold
-  :straight (ts-fold :host github :repo "emacs-tree-sitter/ts-fold")
-  :disabled
-  :config
-  (global-ts-fold-mode)
-  (global-set-key (kbd "C-c C-<tab>") 'ts-fold-toggle)
-  ;; indicators 影响性能；
-  ;; (add-hook 'tree-sitter-after-on-hook #'ts-fold-indicators-mode)
-  )
-
 ;; GNU Global gtags
 (setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
 ;; brew update 可能会更新 Global 版本，故这里使用 glob 匹配版本号。
@@ -1741,6 +1665,12 @@ Gtags scans that directory if needed."
 (use-package shell-maker
   :straight (:host github :repo "xenodium/chatgpt-shell" :files ("shell-maker.el")))
 
+(use-package ob-chatgpt-shell
+  :straight (:host github :repo "xenodium/chatgpt-shell" :files ("ob-chatgpt-shell.el")))
+
+(use-package ob-dall-e-shell
+  :straight (:host github :repo "xenodium/chatgpt-shell" :files ("ob-dall-e-shell.el")))
+
 (use-package chatgpt-shell
   :requires shell-maker
   :straight (:host github :repo "xenodium/chatgpt-shell")
@@ -1760,22 +1690,22 @@ Gtags scans that directory if needed."
   ;; (setq chatgpt-shell--url "http://127.0.0.1:1090/v1/chat/completions")
   )
 
-  ;; (setq chatgpt-shell-display-function #'my/chatgpt-shell-frame)
+;; (setq chatgpt-shell-display-function #'my/chatgpt-shell-frame)
 
-  ;; (defun my/chatgpt-shell-frame (bname)
-  ;;   (let ((cur-f (selected-frame))
-  ;;         (f (my/find-or-make-frame "chatgpt")))
-  ;;     (select-frame-by-name "chatgpt")
-  ;;     (pop-to-buffer-same-window bname)
-  ;;     (set-frame-position f (/ (display-pixel-width) 2) 0)
-  ;;     (set-frame-height f (frame-height cur-f))
-  ;;     (set-frame-width f  (frame-width cur-f) 1)))
+;; (defun my/chatgpt-shell-frame (bname)
+;;   (let ((cur-f (selected-frame))
+;;         (f (my/find-or-make-frame "chatgpt")))
+;;     (select-frame-by-name "chatgpt")
+;;     (pop-to-buffer-same-window bname)
+;;     (set-frame-position f (/ (display-pixel-width) 2) 0)
+;;     (set-frame-height f (frame-height cur-f))
+;;     (set-frame-width f  (frame-width cur-f) 1)))
 
-  ;; (defun my/find-or-make-frame (fname)
-  ;;   (condition-case
-  ;;       nil
-  ;;       (select-frame-by-name fname)
-  ;;     (error (make-frame `((name . ,fname))))))
+;; (defun my/find-or-make-frame (fname)
+;;   (condition-case
+;;       nil
+;;       (select-frame-by-name fname)
+;;     (error (make-frame `((name . ,fname))))))
 
 (use-package cue-mode
   :straight (:host github :repo "russell/cue-mode")
@@ -1869,114 +1799,8 @@ Gtags scans that directory if needed."
     :config
     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
-(use-package eglot
-  :demand
-  :straight (:type built-in)
-  :bind (:map eglot-mode-map
-	      ("C-c C-a" . eglot-code-actions)
-	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 命令来重新触发诊断。
-	      ("C-c C-c" . flymake-start)
-	      ("C-c C-d" . eldoc)
-	      ("C-c C-f" . eglot-format-buffer)
-	      ("C-c C-r" . eglot-rename))
-  :config
-  ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。
-  ;; 也不能设置的太大，否则可能影响性能。
-  (setq eglot-events-buffer-size 1000)
-  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显示 LSP 发送
-  ;; 的诊断消息。
-  (setq eglot-send-changes-idle-time 0.3)
-
-  ;; Shutdown server when last managed buffer is killed
-  (customize-set-variable 'eglot-autoshutdown t)
-  (customize-set-variable 'eglot-connect-timeout 60)   ;; default 30s
-  
-  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，
-  ;; eglot 报错。由于 treesit-auto 已经对 major-mode 做了 remap ，这里
-  ;; 需要对 xx-ts-mode-hook 添加 hook，而不是以前的 xx-mode-hook。
-  (add-hook 'c-ts-mode-hook #'eglot-ensure)
-  (add-hook 'go-ts-mode-hook #'eglot-ensure)
-  (add-hook 'bash-ts-mode-hook #'eglot-ensure)
-  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
-  (add-hook 'python-ts-mode-hook #'eglot-ensure)
-
-  ;; 忽略一些用不到，耗性能的能力。
-  (setq eglot-ignored-server-capabilities
-	'(
-	  ;;:hoverProvider ;; 显示光标出信息。
-      ;;:documentHighlightProvider ;; 高亮当前 symbol。
-	  :inlayHintProvider ;; 显示 inlay hint 提示。
-	  ))
-  
-  ;; 加强高亮的 symbol 效果。
-  (set-face-attribute 'eglot-highlight-symbol-face nil
-                      :background "#b3d7ff")
-
-  ;; ;; 在 eldoc bufer 中只显示帮助文档。
-  ;; (defun my/eglot-managed-mode-initialize ()
-  ;;   ;; 不显示 flymake 错误和函数签名，放置后续的 eldoc buffer 内容来回变。
-  ;;   (setq-local
-  ;;    eldoc-documentation-functions
-  ;;    (list
-  ;;     ;; 关闭自动在 eldoc 显示 flymake 的错误， 这样 eldoc 只显示函数签名或文档，后续 flymake 的错误单独在
-  ;;     ;; echo area 显示。      
-  ;;     ;;#'flymake-eldoc-function 
-  ;;     #'eglot-signature-eldoc-function ;; 关闭自动在 eldoc 自动显示函数签名，使用 M-x eldoc 手动显示函数帮助。
-  ;;     #'eglot-hover-eldoc-function))
-
-  ;;   ;; 在单独的 buffer 中显示 eldoc 而非 echo area。
-  ;;   (setq-local
-  ;;    eldoc-display-functions
-  ;;    (list
-  ;;     #'eldoc-display-in-echo-area
-  ;;     #'eldoc-display-in-buffer))
-  ;; (add-hook 'eglot-managed-mode-hook #'my/eglot-managed-mode-initialize))
-
-;; t: true, false: :json-false 而不是 nil。
-(setq-default eglot-workspace-configuration
-	      '((:gopls .
-			((staticcheck . t)
-			 (usePlaceholders . :json-false)
-			 (matcher . "CaseSensitive"))))))
-
-;; 由于 major-mode 开启 eglot-ensure 后，eglot 将
-;; xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其
-;; 它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动
-;; 关闭当前 major-mode 的 eglot，从而让 xref-backend-functions 恢复为
-;; 以前的值，如 dump-jump-xref-active。
-(defun toggle-eglot-with-hook ()
-  (interactive)
-  (let ((current-mode major-mode)
-        (hook (intern (concat (symbol-name major-mode) "-hook"))))
-    (if (bound-and-true-p eglot--managed-mode)
-        (progn
-          (eglot-shutdown-all)
-          (remove-hook hook 'eglot-ensure))
-      (progn
-        (add-hook hook 'eglot-ensure)
-        (eglot-ensure)))))
-(global-set-key (kbd "s-`") 'toggle-eglot-with-hook)
-
-(use-package consult-eglot
-  :straight (:host github :repo "mohkale/consult-eglot")
-  :after (eglot consult))
-
-;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比
-;; 使用 TAGS 的 citre（适合静态浏览）以及 lsp 方案，更通用和轻量。
-(use-package dumb-jump
-  :demand
-  :config
-  ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用
-  ;; etags 作为数据源。将 dump-jump 加到 xref 后端中，作为其它 backend，
-  ;; 如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
-  ;; dumb-jump 发现支持的语言和项目后，会自动生效。
-  ;;; 将 Go module 文件作为 project root 标识。
-  (add-to-list 'dumb-jump-project-denoters "go.mod"))
-
 ;; cape 补全融合
 (use-package cape
-  :disabled
   :straight (:host github :repo "minad/cape")
   :demand
   ;; Bind dedicated completion commands
@@ -2027,6 +1851,139 @@ Gtags scans that directory if needed."
   ;; (add-hook
   ;;  'eglot-managed-mode-hook #'my/toggle-citre-eglot-capf)
   )
+
+(use-package tempel
+  ;; 手动补全或插入 tempel 模板。
+  :bind (("M-+" . tempel-complete)
+         ("M-*" . tempel-insert))
+  :init
+
+  (defun tempel-setup-capf ()
+    ;; Add the Tempel Capf to `completion-at-point-functions'.
+    ;; `tempel-expand' only triggers on exact matches. Alternatively use
+    ;; `tempel-complete' if you want to see all matches, but then you
+    ;; should also configure `tempel-trigger-prefix', such that Tempel
+    ;; does not trigger too often when you don't expect it. NOTE: We add
+    ;; `tempel-expand' *before* the main programming mode Capf, such
+    ;; that it will be tried first.
+    (setq-local completion-at-point-functions
+                (cons #'tempel-expand
+                      completion-at-point-functions)))
+  (add-hook 'conf-mode-hook 'tempel-setup-capf)
+  (add-hook 'prog-mode-hook 'tempel-setup-capf)
+  (add-hook 'text-mode-hook 'tempel-setup-capf)
+  
+  ;; 确保 tempel-setup-capf 位于 eglot-managed-mode-hook 前，这样 corfu 才会显示 tempel 的自动补全。
+  ;; https://github.com/minad/tempel/issues/103#issuecomment-1543510550
+  (add-hook #'eglot-managed-mode-hook 'tempel-setup-capf))
+
+(use-package tempel-collection
+  :straight (tempel-collection :host github :repo "Crandel/tempel-collection"))
+
+(use-package eglot
+  :demand
+  :straight (:type built-in)
+  :bind (:map eglot-mode-map
+	      ("C-c C-a" . eglot-code-actions)
+	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 命令来重新触发诊断。
+	      ("C-c C-c" . flymake-start)
+	      ("C-c C-d" . eldoc)
+	      ("C-c C-f" . eglot-format-buffer)
+	      ("C-c C-r" . eglot-rename))
+  :config
+  ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。
+  ;; 也不能设置的太大，否则可能影响性能。
+  (setq eglot-events-buffer-size 1000)
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显示 LSP 发送
+  ;; 的诊断消息。
+  (setq eglot-send-changes-idle-time 0.3)
+
+  ;; Shutdown server when last managed buffer is killed
+  (customize-set-variable 'eglot-autoshutdown t)
+  (customize-set-variable 'eglot-connect-timeout 60)   ;; default 30s
+  
+  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，
+  ;; eglot 报错。由于 treesit-auto 已经对 major-mode 做了 remap ，这里
+  ;; 需要对 xx-ts-mode-hook 添加 hook，而不是以前的 xx-mode-hook。
+  (add-hook 'c-ts-mode-hook #'eglot-ensure)
+  (add-hook 'go-ts-mode-hook #'eglot-ensure)
+  (add-hook 'bash-ts-mode-hook #'eglot-ensure)
+  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
+  (add-hook 'python-ts-mode-hook #'eglot-ensure)
+
+  ;; 忽略一些用不到，耗性能的能力。
+  (setq eglot-ignored-server-capabilities
+	'(
+	  ;;:hoverProvider ;; 显示光标位置信息。
+      ;;:documentHighlightProvider ;; 高亮当前 symbol。
+	  :inlayHintProvider ;; 显示 inlay hint 提示。
+	  ))
+  
+  ;; 加强高亮的 symbol 效果。
+  (set-face-attribute 'eglot-highlight-symbol-face nil
+                      :background "#b3d7ff")
+
+  ;; ;; 在 eldoc bufer 中只显示帮助文档。
+  ;; (defun my/eglot-managed-mode-initialize ()
+  ;;   ;; 不显示 flymake 错误和函数签名，放置后续的 eldoc buffer 内容来回变。
+  ;;   (setq-local
+  ;;    eldoc-documentation-functions
+  ;;    (list
+  ;;     ;; 关闭自动在 eldoc 显示 flymake 的错误， 这样 eldoc 只显示函数签名或文档，后续 flymake 的错误单独在
+  ;;     ;; echo area 显示。      
+  ;;     ;;#'flymake-eldoc-function 
+  ;;     #'eglot-signature-eldoc-function ;; 关闭自动在 eldoc 自动显示函数签名，使用 M-x eldoc 手动显示函数帮助。
+  ;;     #'eglot-hover-eldoc-function))
+
+  ;;   ;; 在单独的 buffer 中显示 eldoc 而非 echo area。
+  ;;   (setq-local
+  ;;    eldoc-display-functions
+  ;;    (list
+  ;;     #'eldoc-display-in-echo-area
+  ;;     #'eldoc-display-in-buffer))
+  ;; (add-hook 'eglot-managed-mode-hook #'my/eglot-managed-mode-initialize))
+
+;; t: true, false: :json-false 而不是 nil。
+(setq-default eglot-workspace-configuration
+	      '((:gopls .
+			((staticcheck . t)
+			 (usePlaceholders . :json-false)
+			 (matcher . "CaseSensitive"))))))
+
+;; 由于 major-mode 开启 eglot-ensure 后，eglot 将
+;; xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其
+;; 它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动
+;; 关闭当前 major-mode 的 eglot，从而让 xref-backend-functions 恢复为
+;; 以前的值，如 dump-jump-xref-active。
+(defun my/toggle-eglot ()
+  (interactive)
+  (let ((current-mode major-mode)
+        (hook (intern (concat (symbol-name major-mode) "-hook"))))
+    (if (bound-and-true-p eglot--managed-mode)
+        (progn
+          (eglot-shutdown-all)
+          (remove-hook hook 'eglot-ensure))
+      (progn
+        (add-hook hook 'eglot-ensure)
+        (eglot-ensure)))))
+(global-set-key (kbd "s-`") 'my/toggle-eglot)
+
+(use-package consult-eglot
+  :straight (:host github :repo "mohkale/consult-eglot")
+  :after (eglot consult))
+
+;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比
+;; 使用 TAGS 的 citre（适合静态浏览）以及 lsp 方案，更通用和轻量。
+(use-package dumb-jump
+  :demand
+  :config
+  ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用
+  ;; etags 作为数据源。将 dump-jump 加到 xref 后端中，作为其它 backend，
+  ;; 如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  ;; dumb-jump 发现支持的语言和项目后，会自动生效。
+  ;;; 将 Go module 文件作为 project root 标识。
+  (add-to-list 'dumb-jump-project-denoters "go.mod"))
 
 (use-package project
   :custom
@@ -2099,6 +2056,11 @@ Gtags scans that directory if needed."
          (no-write (if remote? t no-write)))
     (funcall fn pr no-write)))
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
+
+;; 将安装的 curl 二进制路径加入到 emacs 搜索路径中。
+(setq my-coreutils-path "/usr/local/opt/curl/bin")
+(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+(setq exec-path (cons my-coreutils-path  exec-path))
 
 ;; 添加环境变量 
 (setq my/socks-host "127.0.0.1")

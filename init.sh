@@ -6,13 +6,24 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 which rg || brew install ripgrep
 
 which tac || brew install coreutils
-# Macos 在启动 GUI 程序时自动注入 /etc/paths.d 下的环境变量。
-zj-ali-pc:~ root# cat >/etc/paths.d/opsnull <<EOF
-> /usr/local/opt/coreutils/libexec/gnubin
-> /usr/local/opt/findutils/libexec/gnubin
-> /usr/local/opt/curl/bin
-> /Users/zhangjun/go/bin
-> EOF
+
+curl -L -O https://github.com/rime/librime/releases/download/1.8.5/rime-08dd95f-macOS.tar.bz2
+bunzip2 rime-08dd95f-macOS.tar.bz2
+mkdir ~/.emacs.d/librime
+mv rime-08dd95f-macOS/dist ~/.emacs.d/librime
+$ ls ~/.emacs.d/librime/dist/
+bin/  include/  lib/  share/
+rm -rf rime-08dd95f-macOS.tar.bz2
+# 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
+sudo spctl --master-disable
+# 后续再开启：sudo spctl --master-enable
+
+$ mv Rime Rime.bak.20230406
+$ cd
+$ mkdir ~/Library/Rime
+$ git clone https://github.com/iDvel/rime-ice --depth=1
+$ cp -r rime-ice/* ~/Library/Rime
+# 后续可以 git pull 更新 rime-ice。
 
 # org
 which watchexec || brew install watchexec
@@ -23,16 +34,22 @@ which pngpaste || brew install pngpaste
 
 which pygmentize || brew install pygments
 
-which direnv || brew install direnv
+$ brew install llvm
+$ export CPPFLAGS="-I/usr/local/opt/llvm/include"
+$ export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
+$ export PATH="/usr/local/opt/llvm/bin:$PATH"
+$ export LDFLAGS="-L/usr/local/opt/llvm/lib"
 
-which pyenv || brew install --HEAD pyenv
-which pyenv-virtualenv || brew install --HEAD pyenv-virtualenv
+brew install clang-format
+clang-format --dump-config
 
 which pylint || brew install pylint
 which flake8 || brew install flake8
 which pyright || npm update -g pyright
 which yapf || pip install yapf
 which ipython || pip install ipython
+
+git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins/pyenv-pyright
 
 which gopls || go install golang.org/x/tools/gopls@latest
 
