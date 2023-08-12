@@ -5688,3 +5688,272 @@ pyenv 工作流：
 + 完全输入 =snippet= 简写后，按 =TAB= 自动扩展。
 + 从 [[https://github.com/AndreaCrotti/yasnippet-snippets][yasnippet-snippets]] 获取 snippets, 然后放到 snippet-directory 目录下，这样更容易定制。
   
+* mac-link
+#+begin_src emacs-lisp
+;; 从各种 Mac 应用（如 finder/浏览器）获取 org-mode 链接。
+(use-package org-mac-link
+  :commands (org-mac-grab-link))
+#+end_src
+
+* org
+
+#+begin_src emacs-lisp
+;; 使用 font-lock 来隐藏中文前后的空格。
+;; https://emacs-china.org/t/org-mode/22313
+(font-lock-add-keywords 'org-mode
+                        '(("\\cc\\( \\)[/+*_=~][^a-zA-Z0-9/+*_=~\n]+?[/+*_=~]\\( \\)?\\cc?"
+                           (1 (prog1 () (compose-region (match-beginning 1) (match-end 1) ""))))
+                          ("\\cc?\\( \\)?[/+*_=~][^a-zA-Z0-9/+*_=~\n]+?[/+*_=~]\\( \\)\\cc"
+                           (2 (prog1 () (compose-region (match-beginning 2) (match-end 2) "")))))
+                        'append)
+;; 导出时删除空格。
+(with-eval-after-load 'ox
+  (defun eli-strip-ws-maybe (text _backend _info)
+    (let* ((text (replace-regexp-in-string
+                  "\\(\\cc\\) *\n *\\(\\cc\\)"
+                  "\\1\\2" text));; remove whitespace from line break
+           ;; remove whitespace from `org-emphasis-alist'
+           (text (replace-regexp-in-string "\\(\\cc\\) \\(.*?\\) \\(\\cc\\)"
+                                           "\\1\\2\\3" text))
+           ;; restore whitespace between English words and Chinese words
+           (text (replace-regexp-in-string "\\(\\cc\\)\\(\\(?:<[^>]+>\\)?[a-z0-9A-Z-]+\\(?:<[^>]+>\\)?\\)\\(\\cc\\)"
+                                           "\\1 \\2 \\3" text)))
+      text))
+  (add-to-list 'org-export-filter-paragraph-functions #'eli-strip-ws-maybe))
+
+;; 编辑时显示隐藏的标记。
+(use-package org-appear
+  :config
+  (add-hook 'org-mode-hook 'org-appear-mode)
+  ;; 删除  * 和 / 类型的标记。
+  ;; (setq org-appear-elements '(underline strike-through verbatim code))
+  )
+
+;; 为 #+begin_quote 和  #+begin_verse 添加特殊 face 。
+(setq org-fontify-quote-and-verse-blocks t)
+;; 不自动缩进。
+(setq org-src-preserve-indentation t)
+(setq org-edit-src-content-indentation 0)
+
+;; 在当前窗口编辑 SRC Block.
+;; 2023.04.05 设置为 current-window 后会导致 src window 不退出。
+;;(setq org-src-window-setup 'current-window)
+
+  ;; 修复报错： org-journal-display-entry: Symbol’s value as variable is void: displayed-month
+  ;; https://github.com/bastibe/org-journal/commit/1de9153f2120e92779d95d9e13f249e98ff1ad14
+  ;; (defun org-journal-display-entry (_arg &optional event)
+  ;;   "Display journal entry for selected date in another window."
+  ;;   (interactive
+  ;;    (list current-prefix-arg last-nonmenu-event))
+  ;;   (let* ((time (or (ignore-errors (org-journal-calendar-date->time (calendar-cursor-to-date t event)))
+  ;;                    (org-time-string-to-time (org-read-date nil nil nil "Date:")))))
+  ;;     ;; (let* ((time (org-journal--calendar-date->time
+  ;;     ;;               (calendar-cursor-to-date t event))))
+  ;;     (org-journal-read-or-display-entry time t)))
+
+
+#+end_src
+
+
+为 org-mode 和 org-journal-mode 设置关键字提示：
+#+begin_src emacs-lisp
+(dolist (m '(org-mode org-journal-mode))
+  (font-lock-add-keywords m                        ; A bit silly but my headers are now
+                          `(("^\\*+ \\(TODO\\) "   ; shorter, and that is nice canceled
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "⚑") nil)))
+                            ("^\\*+ \\(DOING\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "⚐") nil)))
+                            ("^\\*+ \\(CANCELED\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "✘") nil)))
+                            ("^\\*+ \\(BLOCKED\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "✋") nil)))
+                            ("^\\*+ \\(DONE\\) "
+                             (1 (progn (compose-region (match-beginning 1) (match-end 1) "✔") nil)))
+                            ;; Here is my approach for making the initial asterisks for listing items and
+                            ;; whatnot, appear as Unicode bullets ;; (without actually affecting the text
+                            ;; file or the behavior).
+                            ("^ +\\([-*]\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•")))))))
+ #+end_src
+
+** blog
+
+#+begin_src emacs-lisp
+(defun my/hugo-newpost (slug title tags)
+  (interactive "sSlug: \nsTitle: \nsTags: \n")
+  (let* ((categories (choose-blog-categories))
+         (now (current-time))
+		 (basename (concat (format-time-string "%Y-%m-%d-" now)
+						   slug ".org"))
+		 (postdir (expand-file-name "content/post" (locate-dominating-file default-directory "config.toml")))
+		 (filename (expand-file-name basename postdir))
+         (create-date (my/iso-8601-date-string)))
+	(when (file-exists-p filename)
+      (error "%s already exists!" filename))
+	(find-file filename)
+	(insert
+	 (format "#+TITLE: %s\n#+DATE: %s\n#+LASTMOD: %s\n#+TAGS[]: %s\n#+CATEGORIES[]: %s\n"
+             title create-date create-date tags categories))
+	(goto-char (point-max))
+	(save-buffer)))
+#+end_src
+
+** memacs
+
+#+begin_src shell
+(setq org-link-abbrev-alist
+'(
+        	("tsfile" . "/Users/zhangjun/org/memacs/filenametimestamps.org_archive::/\*.*%s/")
+	))
+#+end_src
+
+** magit
+
+#+begin_src emacs-lisp
+   ;; kill 所有 magit buffer。
+  ;; (defun my-magit-kill-buffers (&rest _)
+  ;;   "Restore window configuration and kill all Magit buffers."
+  ;;   (interactive)
+  ;;   (magit-restore-window-configuration)
+  ;;   (let ((buffers (magit-mode-get-buffers)))
+  ;;     (when (eq major-mode 'magit-status-mode)
+  ;;       (mapc (lambda (buf)
+  ;;               (with-current-buffer buf
+  ;;                 (if (and magit-this-process
+  ;;                          (eq (process-status magit-this-process) 'run))
+  ;;                     (bury-buffer buf)
+  ;;                   (kill-buffer buf))))
+  ;;             buffers))))
+  ;; (setq magit-bury-buffer-function #'my-magit-kill-buffers)
+
+#+end_src
+
+* marginalia
+
+#+begin_src  emacs-lisp
+(use-package marginalia
+  :init
+  ;; 显示绝对时间。
+  (setq marginalia-max-relative-age 0)
+  (marginalia-mode)
+  :config
+  ;; 文件不添加大小，修改时间等注释，防止 tramp 时卡住。
+  ;; (setq marginalia-annotator-registry (assq-delete-all 'file marginalia-annotator-registry))
+  ;; (setq marginalia-annotator-registry (assq-delete-all 'project-file marginalia-annotator-registry))
+  )
+#+end_src
+
+* gtags
+
+
+
+#+begin_src emacs-lisp
+;; https://github.com/redguardtoo/emacs.d/blob/master/lisp/init-gtags.el
+(defun my-gtags-produce-tags-if-needed (directory)
+  "Product gtags tags file (index file) from DIRECTORY."
+  (if (not (= 0 (call-process "global" nil nil nil " -p")))
+      (let ((default-directory directory))
+        (shell-command "gtags")
+        (message "Tag file was created by GNU Global."))
+    ;;  Tag file already exists; update it
+    (shell-command "global -u")
+    (message "Tag file was updated by GNU Global.")))
+
+;; @see http://emacs-fu.blogspot.com.au/2008/01/navigating-through-source-code-using.html
+(defun my-gtags-create-or-update ()
+  "Create or update the gnu global tag file."
+  (interactive)
+  (my-gtags-produce-tags-if-needed (read-directory-name
+                            "gtags: top of source tree:" default-directory)))
+
+(defun my-gtags-add-gtagslibpath (libdir)
+  "Add external library directory LIBDIR to gtags' environment variable.
+Gtags scans that directory if needed."
+  (interactive "DDirectory containing GTAGS:\nP")
+  (let (sl
+        (gtags-lib-path (getenv "GTAGSLIBPATH")))
+    (unless (file-exists-p (concat (file-name-as-directory libdir) "GTAGS"))
+      ;; create tags
+      (let ((default-directory libdir))
+        (shell-command "gtags")
+        (message "tag file is created by GNU Global")))
+
+    (setq libdir (directory-file-name libdir)) ;remove final slash
+    (setq sl (split-string (or gtags-lib-path "")  ":" t))
+    (setq sl (delete libdir sl))
+    (push libdir sl)
+    (setenv "GTAGSLIBPATH" (mapconcat 'identity sl ":"))))
+
+(defun my-gtags-print-gtagslibpath ()
+  "Print the gtags default library path (for debug purpose)."
+  (interactive)
+  (message "GTAGSLIBPATH=%s" (getenv "GTAGSLIBPATH")))
+#+end_src
+
+* large file
+
+#+begin_src emacs-lisp
+
+    ;; 创建名为 *tmp-<N>* 的临时 buffer;
+    (defun create-temp-buffer ()
+      "Create a new temporary buffer with a specific prefix."
+      (interactive)
+      (let ((temp-buffer-prefix "tmp-")
+            (buffer-counter 1))
+        (while (get-buffer (format "*%s%d*" temp-buffer-prefix buffer-counter))
+          (setq buffer-counter (1+ buffer-counter)))
+        (switch-to-buffer (format "*%s%d*" temp-buffer-prefix buffer-counter))))
+    (global-set-key (kbd "C-c t") 'create-temp-buffer)
+
+
+    ;; https://www.emacswiki.org/emacs/AsciiTable
+    (defun my/ascii-table ()
+      "Display basic ASCII table (0 thru 128).
+    https://ss64.com/ascii.html
+    https://www.emacswiki.org/emacs/ascii-table.el"
+      (interactive)
+      (switch-to-buffer "*ASCII*")
+      (erase-buffer)
+      (setq buffer-read-only nil)        ;; Not need to edit the content, just read mode (added)
+      (local-set-key "q" 'bury-buffer)   ;; Nice to have the option to bury the buffer (added)
+      (setq lower32 '("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel"
+                              "bs" "ht" "nl" "vt" "np" "cr" "so" "si"
+                              "dle" "dc1" "dc2" "dc3" "dc4" "nak" "syn" "etb"
+                              "can" "em" "sub" "esc" "fs" "gs" "rs" "us"
+                              ))
+      (save-excursion (let ((i -1))
+                        (insert "ASCII characters 0 thru 127.\n\n")
+                        (insert " Hex  Dec  Char|  Hex  Dec  Char|  Hex  Dec  Char|  Hex  Dec  Char\n")
+                        (while (< i 31)
+                          (insert (format "%4x %4d %4s | %4x %4d %4s | %4x %4d %4s | %4x %4d %4s\n"
+                                          (setq i (+ 1  i)) i (elt lower32 i)
+                                          (setq i (+ 32 i)) i (single-key-description i)
+                                          (setq i (+ 32 i)) i (single-key-description i)
+                                          (setq i (+ 32 i)) i (single-key-description i)))
+                          (setq i (- i 96))))))
+
+;; 使用 fundamental-mode 打开大文件。
+(defun my/large-file-hook ()
+  (when (or (string-equal (file-name-extension (buffer-file-name)) "json")
+            (string-equal (file-name-extension (buffer-file-name)) "yaml")
+            (string-equal (file-name-extension (buffer-file-name)) "yml")
+            (string-equal (file-name-extension (buffer-file-name)) "log"))
+    (setq buffer-read-only t)
+    (font-lock-mode -1)
+    ;;(yas-minor-mode -1)
+    (smartparens-mode -1)
+    (show-smartparens-mode -1)
+    (show-paren-mode -1)
+    (js2-minor-mode -1)
+    ;;(fira-code-mode -1)
+    (prettify-symbols-mode -1)
+    ;;(symbol-overlay-mode -1)
+    ;;(lsp-bridge-mode -1)
+    (display-line-numbers-mode -1)
+    (highlight-indent-guides-mode -1)
+    (visual-fill-column-mode -1)
+    (rainbow-delimiters-mode -1)))
+(add-hook 'find-file-hook 'my/large-file-hook)
+#+end_src
+
+

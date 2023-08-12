@@ -1,3 +1,5 @@
+\usepackage{wallpaper} % 显示封面图片或页面图片。
+
 \usepackage{color}
 \usepackage{xcolor}
 \definecolor{winered}{rgb}{0.5,0,0}
@@ -6,33 +8,18 @@
 \definecolor{commentcolor}{RGB}{0,100,0}
 \definecolor{frenchplum}{RGB}{190,20,83}
 
-% 安装荧光笔效果的强调宏包 breakfbox(https://blog.shimanoke.com/ja/posts/change-latex-emph/)
-% 1. 克隆 https://github.com/doraTeX/breakfbox 到 /usr/local/texlive/texmf-local/tex/latex
-% 2. 刷新数据库:  sudo mktexlsr
-
-% 黄色背景高亮强调（来源于 breakfbox)
-\usepackage{uline--}
-\renewcommand{\emph}[1]{
-  {\sffamily\bfseries\itshape
-    \uline[
-      background,
-      color={[rgb]{1,1,0.0}},
-      width=0.8em,position=1pt]{#1}}}
-
-% 代码高亮
-\usepackage{minted}
-\usemintedstyle{emacs}
-
 % 提示 title
 \usepackage[explicit]{titlesec}
 \usepackage{titling}
 \setlength{\droptitle}{-6em}
 
-% 超链接
+% 超链接和书签
 \usepackage[colorlinks]{hyperref}
 \hypersetup{
   pdfborder={0 0 0},
   colorlinks=true,
+  bookmarksopen=true,
+  bookmarksnumbered=true, % 书签目录显示编号。
   linkcolor={winered},
   urlcolor={winered},
   filecolor={winered},
@@ -52,7 +39,7 @@
 \XeTeXlinebreaklocale "zh"
 \XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt
 
-% 添加 email
+% 添加 email 命令。
 \newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
 
 % sidewaytable 依赖 rotfloat
@@ -67,7 +54,7 @@
 \rowcolors{1}{lightgrey}{}
 
 \usepackage{parskip}
-\setlength{\parskip}{1em}
+\setlength{\parskip}{0.5em}
 \setlength{\parindent}{0pt}
 
 \usepackage{etoolbox}
@@ -88,7 +75,7 @@
 \usepackage{abstract}
 \usepackage{hologo}
 
-\linespread{1.25}
+\linespread{1}
 \graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
 
 \usepackage[font=small,labelfont={bf}]{caption}

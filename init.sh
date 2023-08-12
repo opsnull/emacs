@@ -30,10 +30,9 @@ $ cp -r rime-ice/* ~/Library/Rime
 
 # org
 which watchexec || brew install watchexec
-which pygmentize || brew install pygments
-which magick || brew install imagemagick
 
 which pngpaste || brew install pngpaste
+which magick || brew install imagemagick
 
 which pygmentize || brew install pygments
 

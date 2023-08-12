@@ -7,26 +7,54 @@ fundamental-mode 适用于所有 Mode。
 org-mode ;; 空格分割的多个 Mode 名称。
 
 (my-org-file "#+TITLE: " (p "title") n
-	     "#+AUTHOR: opsnull" n 
+	     "#+AUTHOR: 张俊(zj@opsnull.com)" n
 	     "#+DATE: " (format-time-string "%Y-%m-%d %a") n
- 	     "#+STARTUP: overview nohideblocks" n
+ 	     "#+STARTUP: overview" n
 	     "#+OPTIONS: prop:t ^:nil" n
 	     "#+LANGUAGE: zh-CN" n)
 
-(my-log-file "#+HUGO_BASE_DIR: ~/blog/blog.opsnull.com" n
-	    "#+HUGO_SECTION: posts" n
-	    "#+HUGO_BUNDLE: " (p "artile bundle name") n
-	    "#+EXPORT_file_name: index" n
-	    "#+DATE: " (format-time-string "%Y-%m-%d %a") n
-	    "#+AUTHOR: opsnull" n
-	    "#+HUGO_AUTO_SET_LASTMOD: t" n
-	    "#+HUGO_TAGS: " (p "tag1 tag2") n
-	    "#+HUGO_CATEGORIES: " (p "catagory1 catagory2") n
-	    "#+HUGO_LOCALE: zh" n
-	    "#+HUGO_CUSTOM_FRONT_MATTER: :series "  "'(\"" (p "series name") "\") :series_order " (p "1") n)
+(my-bog-file "#+AUTHOR: 张俊(zj@opsnull.com)" n
+	     "#+DATE: " (format-time-string "%Y-%m-%d %a") n
+ 	     "#+HUGO_BASE_DIR: ~/blog/blog.opsnull.com" n
+	     "#+HUGO_SECTION: posts" n
+	     "#+HUGO_BUNDLE: " (p "artile bundle name") n
+	     "#+EXPORT_file_name: index" n
+ 	     "#+HUGO_AUTO_SET_LASTMOD: t" n
+	     "#+HUGO_TAGS: " (p "tag1 tag2") n
+	     "#+HUGO_CATEGORIES: " (p "catagory1 catagory2") n
+	     "#+HUGO_LOCALE: zh" n
+	     "#+HUGO_CUSTOM_FRONT_MATTER: :series "  "'(\"" (p "series name") "\") :series_order " (p "1") n)
 
-(my-latex "#+LATEX_COMPILER: xelatex" n
-	  "#+LATEX_CLASS: ctexart" n
-	  "#+LATEX_HEADER: \\usepackage{mystyle}" n
-	  "#+OPTIONS: prop:t ^:nil" n
-	  "#+LANGUAGE: zh-CN" n)
+(my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 
+	  "#+SUBTITLE: 内部资料，注意保密!
+#+AUTHOR: 张俊(zj@opsnull.com)
+#+LANGUAGE: zh-CN
+#+OPTIONS: prop:t title:nil num:2 toc:nil ^:nil
+#+LATEX_COMPILER: xelatex
+#+LATEX_CLASS: ctexart
+#+LATEX_HEADER: \\usepackage{mystyle}
+# 定制 PDF 封面和目录。
+#+begin_export latex
+% 封面页
+\\begin{titlepage}
+% 插入标题
+\\maketitle
+% 插入封面图
+%\\ThisCenterWallPaper{0.4}{/path/to/image.png}
+% 封面页不编号
+\\noindent\\fboxsep=0pt
+\\setcounter{page}{0}
+\\thispagestyle{empty}
+\\end{titlepage}
+
+% 摘要页
+\\begin{abstract}
+这是一个摘要。
+\\end{abstract}
+
+% 目录页
+\\newpage
+\\tableofcontents
+\\newpage
+#+end_export
+")
