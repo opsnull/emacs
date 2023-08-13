@@ -55,22 +55,24 @@
   (require 'auth-source)
   (let ((credential (auth-source-user-and-password "api.github.com")))
     (setq github-user (car credential)
-	  github-password (cadr credential))
+          github-password (cadr credential))
     (setq github-auth (concat github-user ":" github-password))
     (setq mb-url-http-backend 'mb-url-http-curl
-	  mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-	  mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-				      ;;"--max-time" "300"
-				      ;;"-u" ,github-auth
-				      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-				      ))))
+          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
+                                      ;;"--max-time" "300"
+                                      ;;"-u" ,github-auth
+                                      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+                                      ))))
 
 (defun proxy-socks-enable ()
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
-	socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
-	socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
+        socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8"
+                        "*cn" "*alibaba-inc.com" "*taobao.com"
+                        "*antfin-inc.com")
+        socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (setenv "ALL_PROXY" my/socks-proxy)
   (setenv "HTTP_PROXY" nil)
@@ -83,27 +85,13 @@
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'native
-	socks-noproxy nil)
+        socks-noproxy nil)
   (setenv "all_proxy" "")
   (setenv "ALL_PROXY" "")
   ;;(proxy-socks-show)
   )
 
 (proxy-socks-enable)
-
-;; 提升 io 性能。
-(setq process-adaptive-read-buffering nil)
-(setq read-process-output-max (* 1024 1024 10))
-
-;; Garbage Collector Magic Hack
-(use-package gcmh
-  :init
-  ;;(setq garbage-collection-messages t)
-  ;;(setq gcmh-verbose t)
-  (setq gcmh-idle-delay 5)
-  (setq gcmh-high-cons-threshold (* 100 1024 1024))
-  (gcmh-mode 1)
-  (gcmh-set-high-threshold))
 
 (use-package epa
   :config
@@ -145,7 +133,7 @@
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
 
 ;; 不显示 Title Bar（依赖编译时指定 --with-no-frame-refocus 参数。）
-;;(add-to-list 'default-frame-alist '(undecorated-round . t))
+(add-to-list 'default-frame-alist '(undecorated-round . t))
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(selected-frame) 'name nil)
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
@@ -217,16 +205,12 @@
 (global-set-key (kbd "s-j") (lambda () (interactive) (scroll-up 2)))
 (global-set-key (kbd "s-k") (lambda () (interactive) (scroll-down 2)))
 
-;; 高亮光标移动到的行。
-(use-package pulsar
+;; 内容居中显示。
+(use-package olivetti
   :config
-  (setq pulsar-pulse t)
-  (setq pulsar-delay 0.25)
-  (setq pulsar-iterations 15)
-  (setq pulsar-face 'pulsar-magenta)
-  (setq pulsar-highlight-face 'pulsar-yellow)
-  (pulsar-global-mode 1)
-  (add-hook 'next-error-hook #'pulsar-pulse-line-red))
+  ;; 内容区域宽度，超过后自动折行。
+  (setq olivetti-body-width 120)
+  (add-hook 'org-mode-hook 'olivetti-mode))
 
 (use-package dashboard
   :config
@@ -381,7 +365,6 @@
   (setq tab-bar-format '(tab-bar-format-tabs-groups
                          tab-bar-separator
                          tab-bar-format-add-tab ))
-
   ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
   (tab-bar-history-mode t)
   (global-set-key (kbd "s-f") 'tab-bar-history-forward)
@@ -390,44 +373,16 @@
   (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
   (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
-  ;; (global-set-key (kbd "s-0") 'tab-bar-close-tab)
-  ;; (global-set-key (kbd "s-1") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-2") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-3") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-4") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-5") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-6") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-7") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-8") 'tab-bar-select-tab)
-  ;; (global-set-key (kbd "s-9") 'tab-bar-select-tab)
-  )
-
-(use-package sort-tab
-  :demand
-  :vc (:fetcher github :repo manateelazycat/sort-tab)
-  ;; emacs 启动后再启用 sort-tab 防止显示异常。
-  :hook (after-init . sort-tab-mode)
-  :config
-  ;;(sort-tab-mode 1)
-  (setq sort-tab-show-index-number t)
-  (setq sort-tab-height 40)
-  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
-  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
-  ;; (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
-  ;; 设置 tab 颜色，M-x list-colors-display。
-  (set-face-foreground 'sort-tab-current-tab-face "peru")
-  ;; 不显示背景颜色。
-  (set-face-background 'sort-tab-current-tab-face nil))
+  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
+  (global-set-key (kbd "s-1") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-2") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-3") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-4") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-5") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-6") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-7") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-8") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 
 (use-package vertico
   :config
@@ -830,29 +785,11 @@
   (setq org-modern-table nil)
   (with-eval-after-load 'org (global-org-modern-mode)))
 
+;; 显示转义支字符。
 (use-package org-appear
   :custom
   (org-appear-autolinks t)
   :hook (org-mode . org-appear-mode))
-
-(defun my/org-mode-visual-fill (fill width)
-  ;; 使用 setq-default 来设置, 否则可能不生效。
-  (setq-default
-   ;; 自动换行的字符数。
-   fill-column fill
-   ;; 窗口可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏。
-   visual-fill-column-width width
-   visual-fill-column-fringes-outside-margins nil
-   visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
-
-(use-package visual-fill-column
-  :after (org)
-  :hook
-  (org-mode . (lambda () (my/org-mode-visual-fill 100 130)))
-  :config
-  ;; 文字缩放时自动调整 visual-fill-column-width 。
-  (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
 
 (use-package org-download
   :config

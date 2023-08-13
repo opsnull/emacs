@@ -5828,6 +5828,34 @@ pyenv 工作流：
 
 #+end_src
 
+** visual-fill-column
+
+使用更好的 olivetti mode 替换。
+
+内容居中显示:
+#+begin_src emacs-lisp
+  (defun my/org-mode-visual-fill (fill width)
+    ;; 使用 setq-default 来设置, 否则可能不生效。
+    (setq-default
+     ;; 自动换行的字符数。
+     fill-column fill
+     ;; 窗口可视化行宽度，值应该比 fill-column 大，否则超出的字符被隐藏。
+     visual-fill-column-width width
+     visual-fill-column-fringes-outside-margins nil
+     visual-fill-column-center-text t)
+    (visual-fill-column-mode 1))
+
+  (use-package visual-fill-column
+    :after (org)
+    :hook
+    (org-mode . (lambda () (my/org-mode-visual-fill 100 130)))
+    :config
+    ;; 文字缩放时自动调整 visual-fill-column-width 。
+    (advice-add 'text-scale-adjust :after #'visual-fill-column-adjust))
+#+end_src
++ 如果文字居中失效, 可以执行 =M-x redraw-display= 命令生效。
+
+
 * marginalia
 
 #+begin_src  emacs-lisp
@@ -5954,6 +5982,66 @@ Gtags scans that directory if needed."
     (visual-fill-column-mode -1)
     (rainbow-delimiters-mode -1)))
 (add-hook 'find-file-hook 'my/large-file-hook)
+#+end_src
+
+* sort-tab
+
+#+begin_src emacs-lisp
+(use-package sort-tab
+  :demand
+  :vc (:fetcher github :repo manateelazycat/sort-tab)
+  ;; emacs 启动后再启用 sort-tab 防止显示异常。
+  :hook (after-init . sort-tab-mode)
+  :config
+  ;;(sort-tab-mode 1)
+  (setq sort-tab-show-index-number t)
+  (setq sort-tab-height 40)
+  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
+  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
+  ;; (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
+  ;; 设置 tab 颜色，M-x list-colors-display。
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
+  ;; 不显示背景颜色。
+  (set-face-background 'sort-tab-current-tab-face nil))
+#+end_src
+
+* gcmh
+
+#+begin_src emacs-lisp
+  ;; Garbage Collector Magic Hack
+  (use-package gcmh
+    :init
+    ;;(setq garbage-collection-messages t)
+    ;;(setq gcmh-verbose t)
+    (setq gcmh-idle-delay 5)
+    (setq gcmh-high-cons-threshold (* 100 1024 1024))
+    (gcmh-mode 1)
+    (gcmh-set-high-threshold))
+
+#+end_src
+
+* pulsar
+#+begin_src emacs-lisp
+  ;; 高亮光标移动到的行。
+  (use-package pulsar
+    :config
+    (setq pulsar-pulse t)
+    (setq pulsar-delay 0.25)
+    (setq pulsar-iterations 15)
+    (setq pulsar-face 'pulsar-magenta)
+    (setq pulsar-highlight-face 'pulsar-yellow)
+    (pulsar-global-mode 1)
+    (add-hook 'next-error-hook #'pulsar-pulse-line-red))  
 #+end_src
 
 
