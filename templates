@@ -29,10 +29,12 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	  "#+SUBTITLE: 内部资料，注意保密!
 #+AUTHOR: 张俊(zj@opsnull.com)
 #+LANGUAGE: zh-CN
+# 不自动输出 titile 和 toc，后续定制输出。num 控制输出的目录级别。
 #+OPTIONS: prop:t title:nil num:2 toc:nil ^:nil
 #+LATEX_COMPILER: xelatex
 #+LATEX_CLASS: ctexart
 #+LATEX_HEADER: \\usepackage{mystyle}
+
 # 定制 PDF 封面和目录。
 #+begin_export latex
 % 封面页

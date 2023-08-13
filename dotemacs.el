@@ -95,15 +95,23 @@
 
 (use-package epa
   :config
-  ;; 缺省使用 email 地址加密。
-  (setq-default epa-file-select-keys nil)
-  (setq-default epa-file-encrypt-to user-mail-address)
-  ;; 使用 minibuffer 输入 GPG 密码。
-  (setq-default epa-pinentry-mode 'loopback)
-  (setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
-  (setq auth-source-cache-expiry nil)
-  ;;(setq auth-source-debug t)
-  (setq epa-file-cache-passphrase-for-symmetric-encryption t)
+  (setq-default
+   ;; 缺省使用 email 地址加密。
+   epa-file-select-keys nil
+   epa-file-encrypt-to user-mail-address
+   ;; 使用 minibuffer 输入 GPG 密码。
+   epa-pinentry-mode 'loopback
+   epa-file-cache-passphrase-for-symmetric-encryption t
+   )
+
+  (setq
+   user-full-name "zhangjun"
+   user-mail-address "geekard@qq.com"
+   auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth")
+   auth-source-cache-expiry nil
+   ;;auth-source-debug t
+   )
+  
   (require 'epa-file)
   (epa-file-enable))
 
@@ -139,7 +147,7 @@
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
 
 ;; 高亮当前行。
-(global-hl-line-mode t)
+;;(global-hl-line-mode t)
 ;;(setq global-hl-line-sticky-flag t)
 
 ;; 显示行号。
@@ -209,8 +217,10 @@
 (use-package olivetti
   :config
   ;; 内容区域宽度，超过后自动折行。
-  (setq olivetti-body-width 120)
+  (setq olivetti-body-width 115)
   (add-hook 'org-mode-hook 'olivetti-mode))
+;; 值要比 olivetti-body-width 小，这样才能正常折行。
+(setq-default fill-column 110)
 
 (use-package dashboard
   :config
@@ -247,77 +257,102 @@
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
-;; 缺省字体；
-(setq +font-family "Iosevka Comfy")
-(setq +modeline-font-family "Iosevka Comfy")
-(setq +fixed-pitch-family "Iosevka Comfy")
-(setq +variable-pitch-family "LXGW WenKai Screen")
-(setq +font-unicode-family "LXGW WenKai Screen")
-;; 中文字体和英文字体按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
-(setq face-font-rescale-alist '(("LXGW WenKai Screen" . 1))) ;; 1:1 缩放。
-(setq +font-size 14) ;; 偶数字号。
+(use-package fontaine
+  :config
+  (setq fontaine-latest-state-file
+	(locate-user-emacs-file "fontaine-latest-state.eld"))
 
-;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
-(defun +load-base-font ()
-  (let* ((font-spec (format "%s-%d" +font-family +font-size)))
-    (set-frame-parameter nil 'font font-spec)
-    (add-to-list 'default-frame-alist `(font . ,font-spec))))
+  ;; Iosevka Comfy is my highly customised build of Iosevka with
+  ;; monospaced and duospaced (quasi-proportional) variants as well as
+  ;; support or no support for ligatures:
+  ;; <https://git.sr.ht/~protesilaos/iosevka-comfy>.
+  ;;
+  ;; Iosevka Comfy            == monospaced, supports ligatures
+  ;; Iosevka Comfy Fixed      == monospaced, no ligatures
+  ;; Iosevka Comfy Duo        == quasi-proportional, supports ligatures
+  ;; Iosevka Comfy Wide       == like Iosevka Comfy, but wider
+  ;; Iosevka Comfy Wide Fixed == like Iosevka Comfy Fixed, but wider
+  (setq fontaine-presets
+	'((tiny
+           :default-family "Iosevka Comfy Wide Fixed"
+           :default-height 70)
+          (small
+           :default-family "Iosevka Comfy Fixed"
+           :default-height 90)
+          (regular
+           :default-height 140)
+          (medium
+           :default-height 110)
+          (large
+           :default-weight semilight
+           :default-height 140
+           :bold-weight extrabold)
+          (presentation
+           :default-weight semilight
+           :default-height 170
+           :bold-weight extrabold)
+          (jumbo
+           :default-weight semilight
+           :default-height 220
+           :bold-weight extrabold)
+          (t
+           ;; I keep all properties for didactic purposes, but most can be
+           ;; omitted.  See the fontaine manual for the technicalities:
+           ;; <https://protesilaos.com/emacs/fontaine>.
+           :default-family "Iosevka Comfy"
+           :default-weight regular
+           :default-height 100
+           :fixed-pitch-family nil ; falls back to :default-family
+           :fixed-pitch-weight nil ; falls back to :default-weight
+           :fixed-pitch-height 1.0
+           :fixed-pitch-serif-family nil ; falls back to :default-family
+           :fixed-pitch-serif-weight nil ; falls back to :default-weight
+           :fixed-pitch-serif-height 1.0
+           :variable-pitch-family "Iosevka Comfy Duo"
+           :variable-pitch-weight nil
+           :variable-pitch-height 1.0
+           :bold-family nil ; use whatever the underlying face has
+           :bold-weight bold
+           :italic-family nil
+           :italic-slant italic
+           :line-spacing nil)))
 
-;; 设置各特定 face 的字体。
-(defun +load-face-font (&optional frame)
-  (let ((font-spec (format "%s" +font-family))
-	(modeline-font-spec (format "%s" +modeline-font-family))
-	(variable-pitch-font-spec (format "%s" +variable-pitch-family))
-	(fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
-    (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec)
-    (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec)
-    (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec)
-    (set-face-attribute 'tab-bar frame :font font-spec)
-    (set-face-attribute 'mode-line frame :font modeline-font-spec)
-    (set-face-attribute 'mode-line-inactive frame :font modeline-font-spec)))
+  ;; Recover last preset or fall back to desired style from
+  ;; `fontaine-presets'.
+  (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))
 
-;; 设置中文字体。
-(defun +load-ext-font ()
-  (when window-system
-    (let ((font (frame-parameter nil 'font))
-	  (font-spec (font-spec :family +font-unicode-family)))
-      (dolist (charset '(kana han hangul cjk-misc bopomofo))
-	(set-fontset-font font charset font-spec)))))
+  ;; The other side of `fontaine-restore-latest-preset'.
+  (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset)
 
-;; 设置 Emoji 和 Symbol “字体。
-(defun +load-emoji-font ()
+  ;; fontaine does not define any key bindings.  This is just a sample that
+  ;; respects the key binding conventions.  Evaluate:
+  ;;
+  ;;     (info "(elisp) Key Binding Conventions")
+  (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
+  (define-key global-map (kbd "C-c F") #'fontaine-set-face-font))
+
+;; Persist font configurations while switching themes (doing it with
+;; my `modus-themes' and `ef-themes' via the hooks they provide).
+(dolist (hook '(modus-themes-after-load-theme-hook ef-themes-post-load-hook))
+  (add-hook hook #'fontaine-apply-current-preset))
+
+;; 设置 Emoji 和 Symbol 字体。
+(defun my/set-emoji-font ()
   (when window-system
     (setq use-default-font-for-symbols nil)
     (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
     (set-fontset-font t 'symbol (font-spec :family "Symbola")))) ;; Apple Symbols vs Symbola
 
-(add-hook 'after-make-frame-functions 
-	  ( lambda (f) 
-	    (+load-face-font)
-	    (+load-ext-font)
-	    (+load-emoji-font)))
-
-(defun +load-font ()
-  (+load-base-font)
-  (+load-face-font)
-  (+load-ext-font)
-  (+load-emoji-font))
-(+load-font)
-
-;; all-the-icons 只能在 GUI 模式下使用。
-(when (display-graphic-p)
-  (use-package all-the-icons :demand))
-
-;; 低对比度主题。
-(use-package color-theme-sanityinc-tomorrow)
-(use-package zenburn-theme
-  :disabled
-  :init
-  (setq zenburn-use-variable-pitch t)
-  (setq zenburn-scale-org-headlines t)
-  (setq zenburn-scale-outline-headlines t)
-  :config
-  (load-theme 'zenburn t))
+;; 设置中文字体。
+(setq +font-unicode-family "LXGW WenKai Screen")
+(defun my/set-chinese-font ()
+  (when window-system
+    (let ((font (frame-parameter nil 'font))
+	  (font-spec (font-spec :family +font-unicode-family)))
+      (dolist (charset '(kana han hangul cjk-misc bopomofo))
+	(set-fontset-font font charset font-spec)))))
+(add-hook 'fontaine-set-preset-hook 'my/set-chinese-font)
+(add-hook 'fontaine-set-preset-hook 'my/set-emoji-font)
 
 (use-package ef-themes
   :demand
@@ -328,14 +363,14 @@
   (setq ef-themes-headings
         '(
           ;; level 0 是文档 title，1-8 是普通的文档 headling。
-          (0 . (variable-pitch semibold 1.6))
-          (1 . (variable-pitch light 1.5))
-          (2 . (variable-pitch regular 1.4))
-          (3 . (variable-pitch regular 1.3))
-          (4 . (variable-pitch regular 1.2))
-          (5 . (variable-pitch 1.1))
-          (6 . (variable-pitch 1.1))
-          (7 . (variable-pitch 1.1))
+          (0 . (variable-pitch light 1.9))
+          (1 . (variable-pitch light 1.8))
+          (2 . (variable-pitch regular 1.7))
+          (3 . (variable-pitch regular 1.6))
+          (4 . (variable-pitch regular 1.5))
+          (5 . (variable-pitch 1.4))
+          (6 . (variable-pitch 1.3))
+          (7 . (variable-pitch 1.2))
           (agenda-date . (semilight 1.5))
           (agenda-structure . (variable-pitch light 1.9))
           (t . (variable-pitch 1.1))))
@@ -408,9 +443,9 @@
   (defun +orderless--consult-suffix ()
     "Regexp which matches the end of string with Consult tofu support."
     (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
-	(format "[%c-%c]*$"
-		consult--tofu-char
-		(+ consult--tofu-char consult--tofu-range -1))
+        (format "[%c-%c]*$"
+                consult--tofu-char
+                (+ consult--tofu-char consult--tofu-range -1))
       "$"))
 
   ;; Recognizes the following patterns:
@@ -423,39 +458,35 @@
       `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
      ;; File extensions
      ((and (or minibuffer-completing-file-name
-	       (derived-mode-p 'eshell-mode))
-	   (string-match-p "\\`\\.." word))
+               (derived-mode-p 'eshell-mode))
+           (string-match-p "\\`\\.." word))
       `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
 
   ;; 在 orderless-affix-dispatch 的基础上添加上面支持文件名扩展和正则表达式的 dispatchers 。
   (setq orderless-style-dispatchers (list #'+orderless-consult-dispatch
-					  #'orderless-affix-dispatch))
+                                          #'orderless-affix-dispatch))
 
   ;; 自定义名为 +orderless-with-initialism 的 orderless 风格。
   (orderless-define-completion-style +orderless-with-initialism
     (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
-  
+
   ;; 使用 orderless 和 emacs 原生的 basic 补全风格， 但 orderless 的优先级更高。
   (setq completion-styles '(orderless basic))
   (setq completion-category-defaults nil)
   ;; 进一步设置各 category 使用的补全风格。
   (setq completion-category-overrides
-	'(;; buffer name 补全
-	  (buffer (styles +orderless-with-initialism)) 
-	  ;; file path&name 补全, partial-completion 提供了 wildcard 支持。
-	  (file (styles basic partial-completion)) 
-	  ;; M-x Command 补全
-	  (command (styles +orderless-with-initialism)) 
-	  ;; variable 补全
-	  (variable (styles +orderless-with-initialism))
-	  ;; symbol 补全
-	  (symbol (styles +orderless-with-initialism))
-	  ;; eglot will change the completion-category-defaults to flex, BAD!
-	  ;; https://github.com/minad/corfu/issues/136#issuecomment-1052843656
-	  ;;(eglot (styles . (orderless flex)))
-	  ;; 使用 M-SPC 来分隔多个筛选条件。
-	  (eglot (styles +orderless-with-initialism))
-	  )) 
+        '(;; buffer name 补全
+          (buffer (styles +orderless-with-initialism)) 
+          ;; file path&name 补全, partial-completion 提供了 wildcard 支持。
+          (file (styles basic partial-completion)) 
+          (command (styles +orderless-with-initialism)) 
+          (variable (styles +orderless-with-initialism))
+          (symbol (styles +orderless-with-initialism))
+          ;; eglot will change the completion-category-defaults to flex, BAD!
+          ;; https://github.com/minad/corfu/issues/136#issuecomment-1052843656 (eglot (styles . (orderless
+          ;; flex)))使用 M-SPC 来分隔多个筛选条件。
+          (eglot (styles +orderless-with-initialism))
+          )) 
   ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
 
@@ -507,7 +538,7 @@
       (org-fold-show-entry))))
 (advice-add 'consult-line :around #'my/org-show-entry)
 
-;;; consult
+  ;;; consult
 (global-set-key (kbd "C-c M-x") #'consult-mode-command)
 (global-set-key (kbd "C-c i") #'consult-info)
 (global-set-key (kbd "C-c m") #'consult-man)
@@ -607,7 +638,7 @@
           ".cache"
           "vendor"
           "node_modules"
-        )
+          )
 	 grep-find-ignored-directories))
   (setq grep-find-ignored-files
 	(append
@@ -657,21 +688,21 @@
   :bind
   ( 
    :map rime-active-mode-map
-    ;; 在已经激活 Rime 候选菜单时，强制在中英文之间切换，直到按回车。
-    ("M-j" . 'rime-inline-ascii)
-    :map rime-mode-map
-    ;; 强制切换到中文模式. 
-    ("M-j" . 'rime-force-enable)
-    ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings 配置相匹配。
-    ;; 中英文切换
-    ("C-." . 'rime-send-keybinding)
-    ;; 输入法菜单
-    ("C-+" . 'rime-send-keybinding)
-    ;; 中英文标点切换
-    ("C-," . 'rime-send-keybinding)
-    ;; 全半角切换
-    ;; ("C-," . 'rime-send-keybinding)
-    )
+   ;; 在已经激活 Rime 候选菜单时，强制在中英文之间切换，直到按回车。
+   ("M-j" . 'rime-inline-ascii)
+   :map rime-mode-map
+   ;; 强制切换到中文模式. 
+   ("M-j" . 'rime-force-enable)
+   ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings 配置相匹配。
+   ;; 中英文切换
+   ("C-." . 'rime-send-keybinding)
+   ;; 输入法菜单
+   ("C-+" . 'rime-send-keybinding)
+   ;; 中英文标点切换
+   ("C-," . 'rime-send-keybinding)
+   ;; 全半角切换
+   ;; ("C-," . 'rime-send-keybinding)
+   )
   :config
   ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
   (setq mode-line-mule-info '((:eval (rime-lighter))))
@@ -750,7 +781,10 @@
         org-list-indent-offset 2
         ;; org-timer 到期时发送声音提示。
         org-clock-sound t)
-  ;; 不自动对齐 tag
+  ;; 不自动缩进。
+  (setq org-src-preserve-indentation t)
+  (setq org-edit-src-content-indentation 0)
+  ;; 不自动对齐 tag。
   (setq org-tags-column 0)
   (setq org-auto-align-tags nil)
   ;; 显示不可见的编辑。
@@ -781,11 +815,22 @@
 (use-package org-modern
   :after (org)
   :config
+  (setq org-modern-star '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"))
+  (setq org-modern-block-fringe nil)
+  (setq org-modern-block-name
+        '((t . t)
+          ("src" "»" "«")
+          ("SRC" "»" "«")
+          ("example" "»–" "–«")
+          ("quote" "❝" "❞")))
   ;; 缩放字体时表格边界不对齐，故不美化表格。
   (setq org-modern-table nil)
+  (setq org-modern-list '((43 . "🔘")
+                          (45 . "🔸")
+                          (42 . "")))
   (with-eval-after-load 'org (global-org-modern-mode)))
 
-;; 显示转义支字符。
+;; 显示转义字符。
 (use-package org-appear
   :custom
   (org-appear-autolinks t)
@@ -841,19 +886,11 @@
   :after ox-latex
   :config
   (require 'engrave-faces-latex)
-  ;; 使用默认 options, 否则生成 PDF 会报错。
-  ;; (setq org-latex-engraved-options
-  ;;       '(("commandchars" . "\\\\\\{\\}")
-  ;;         ("highlightcolor" . "white!95!black!80!blue")
-  ;;         ("breaklines" . "true")
-  ;;         ("breaksymbol" . "\\color{white!60!black}\\tiny\\ensuremath{\\hookrightarrow}")
-  ;;         ("frame" . "lines")
-  ;;         ("linenos" "true")
-  ;;         ("breaklines" "true")
-  ;;         ("numbersep" "2mm")
-  ;;         ("xleftmargin" "0.25in")
-  ;;         ))
-  (setq org-latex-src-block-backend 'engraved))
+  (setq org-latex-src-block-backend 'engraved)
+  ;; 代码块左侧添加行号。
+  (add-to-list 'org-latex-engraved-options '("numbers" . "left"))
+  ;; 代码块主题。
+  (setq org-latex-engraved-theme 'ef-light))
 
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
@@ -862,19 +899,22 @@
   ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
   ;; 保存 LaTeX 日志文件。
-  (setq org-latex-remove-logfiles nil)  
-  ;; 目录页前后分页。
-  (setq org-latex-toc-command "\\clearpage \\tableofcontents \\clearpage \n")
-  ;; 封面页，不添加页编号。
-  (setq org-latex-title-command "\\maketitle\n\\setcounter{page}{0}\n\\thispagestyle{empty}\n\\newpage \n")
+  (setq org-latex-remove-logfiles t)
+
+  ;; ;; 目录页前后分页。
+  ;; (setq org-latex-toc-command "\\clearpage \\tableofcontents \\clearpage \n")
+  ;; ;; 封面页，不添加页编号。
+  ;; (setq org-latex-title-command
+  ;; 	"\\maketitle\n\\setcounter{page}{0}\n\\thispagestyle{empty}\n\\newpage \n")
+
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   (add-to-list 'org-latex-classes
                '("ctexart"
                  "\\documentclass[lang=cn,11pt,a4paper,table]{ctexart}
-                 [NO-DEFAULT-PACKAGES]
-                 [PACKAGES]
-                 [EXTRA]"
+                    [NO-DEFAULT-PACKAGES]
+                    [PACKAGES]
+                    [EXTRA]"
                  ("\\section{%s}" . "\\section*{%s}")
                  ("\\subsection{%s}" . "\\subsection*{%s}")
                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
@@ -905,13 +945,12 @@
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header t)
-  (setq org-tree-slide-heading-emphasis t)
+  (setq org-tree-slide-heading-emphasis nil)
   (setq org-tree-slide-slide-in-effect t)
-  ;;(setq org-tree-slide-content-margin-top 0)
   (setq org-tree-slide-activate-message " ")
   (setq org-tree-slide-deactivate-message " ")
   (setq org-tree-slide-modeline-display t)
-  (setq org-tree-slide-breadcrumbs " 👉 ")
+  ;;(setq org-tree-slide-breadcrumbs " 👉 ")
   (define-key org-mode-map (kbd "<f8>") #'org-tree-slide-mode)
   (define-key org-tree-slide-mode-map (kbd "<f9>") #'org-tree-slide-content)
   (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
@@ -1393,7 +1432,7 @@ mermaid.initialize({
     (setq-local corfu-auto nil)
     (corfu-mode 1))
   (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)
-
+  
   ;; eshell 使用 pcomplete 来自动补全，eshell 自动补全。
   (add-hook 'eshell-mode-hook
             (lambda ()
@@ -1670,20 +1709,20 @@ mermaid.initialize({
   (let ((default-directory "~/")) (vterm)))
 
 (setq eshell-history-size 300)
-  (setq explicit-shell-file-name "/bin/bash")
-  (setq shell-file-name "/bin/bash")
-  (setq shell-command-prompt-show-cwd t)
-  (setq explicit-bash-args '("--noediting" "--login" "-i"))
-  ;; 提示符只读
-  (setq comint-prompt-read-only t)
-  ;; 命令补全
-  (setq shell-command-completion-mode t)
-  ;; 高亮模式
-  (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
-  (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
-  (setenv "SHELL" shell-file-name)
-  (setenv "ESHELL" "bash")
-  (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
+(setq explicit-shell-file-name "/bin/bash")
+(setq shell-file-name "/bin/bash")
+(setq shell-command-prompt-show-cwd t)
+(setq explicit-bash-args '("--noediting" "--login" "-i"))
+;; 提示符只读
+(setq comint-prompt-read-only t)
+;; 命令补全
+(setq shell-command-completion-mode t)
+;; 高亮模式
+(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
+(setenv "SHELL" shell-file-name)
+(setenv "ESHELL" "bash")
+(add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
 
 ;; 在当前窗口右侧拆分出两个子窗口并固定，分别为一个 eshell 和当前 buffer 。
 (defun my/split-windows()
@@ -1821,7 +1860,7 @@ mermaid.initialize({
 (use-package elfeed-dashboard
   :after (elfeed-org)
   :config
-  (global-set-key (kbd "C-c f") 'elfeed-dashboard)
+  ;;(global-set-key (kbd "C-c f") 'elfeed-dashboard)
   (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
   (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links)
   (defun my/reload-org-feeds ()
@@ -2030,9 +2069,6 @@ mermaid.initialize({
   (add-to-list 'savehist-additional-variables 'global-mark-ring)
   (add-to-list 'savehist-additional-variables 'extended-command-history))
 
-;; fill-column 的值应该小于 visual-fill-column-width，否则居中显示时行内容会过长而被隐藏。
-(setq-default fill-column 100)
-(setq-default comment-fill-column 0)
 (setq-default message-log-max t)
 (setq-default ad-redefinition-action 'accept)
 

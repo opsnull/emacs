@@ -6044,4 +6044,17 @@ Gtags scans that directory if needed."
     (add-hook 'next-error-hook #'pulsar-pulse-line-red))  
 #+end_src
 
+* theme
+#+begin_src emacs-lisp
+    ;; 低对比度主题。
+  (use-package color-theme-sanityinc-tomorrow)
+  (use-package zenburn-theme
+    :disabled
+    :init
+    (setq zenburn-use-variable-pitch t)
+    (setq zenburn-scale-org-headlines t)
+    (setq zenburn-scale-outline-headlines t)
+    :config
+    (load-theme 'zenburn t))
+#+end_src
 

@@ -28,13 +28,10 @@ $ git clone https://github.com/iDvel/rime-ice --depth=1
 $ cp -r rime-ice/* ~/Library/Rime
 # 后续可以 git pull 更新 rime-ice。
 
-# org
 which watchexec || brew install watchexec
 
 which pngpaste || brew install pngpaste
 which magick || brew install imagemagick
-
-which pygmentize || brew install pygments
 
 $ brew install llvm
 $ export CPPFLAGS="-I/usr/local/opt/llvm/include"

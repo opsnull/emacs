@@ -20,7 +20,3 @@
 ;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
-
-;; 个人信息。
-(setq user-full-name "zhangjun")
-(setq user-mail-address "geekard@qq.com")
