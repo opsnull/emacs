@@ -6030,20 +6030,6 @@ Gtags scans that directory if needed."
 
 #+end_src
 
-* pulsar
-#+begin_src emacs-lisp
-  ;; 高亮光标移动到的行。
-  (use-package pulsar
-    :config
-    (setq pulsar-pulse t)
-    (setq pulsar-delay 0.25)
-    (setq pulsar-iterations 15)
-    (setq pulsar-face 'pulsar-magenta)
-    (setq pulsar-highlight-face 'pulsar-yellow)
-    (pulsar-global-mode 1)
-    (add-hook 'next-error-hook #'pulsar-pulse-line-red))  
-#+end_src
-
 * theme
 #+begin_src emacs-lisp
     ;; 低对比度主题。
@@ -6057,4 +6043,69 @@ Gtags scans that directory if needed."
     :config
     (load-theme 'zenburn t))
 #+end_src
+
+* font
+#+begin_src emacs-lisp :tangle no
+;; 缺省字体；
+(setq +font-family "Iosevka Comfy")
+(setq +modeline-font-family "Iosevka Comfy")
+(setq +fixed-pitch-family "Iosevka Comfy")
+(setq +variable-pitch-family "LXGW WenKai Screen")
+(setq +font-unicode-family "LXGW WenKai Screen")
+;; 中文字体和英文字体按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
+(setq face-font-rescale-alist '(("LXGW WenKai Screen" . 1))) ;; 1:1 缩放。
+(setq +font-size 14) ;; 偶数字号。
+
+;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
+(defun +load-base-font ()
+  (let* ((font-spec (format "%s-%d" +font-family +font-size)))
+    (set-frame-parameter nil 'font font-spec)
+    (add-to-list 'default-frame-alist `(font . ,font-spec))))
+
+;; 设置各特定 face 的字体。
+(defun +load-face-font (&optional frame)
+  (let ((font-spec (format "%s" +font-family))
+	(modeline-font-spec (format "%s" +modeline-font-family))
+	(variable-pitch-font-spec (format "%s" +variable-pitch-family))
+	(fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
+    (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec)
+    (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec)
+    (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec)
+    (set-face-attribute 'tab-bar frame :font font-spec)
+    (set-face-attribute 'mode-line frame :font modeline-font-spec)
+    (set-face-attribute 'mode-line-inactive frame :font modeline-font-spec)))
+
+;; 设置中文字体。
+(defun +load-ext-font ()
+  (when window-system
+    (let ((font (frame-parameter nil 'font))
+	  (font-spec (font-spec :family +font-unicode-family)))
+      (dolist (charset '(kana han hangul cjk-misc bopomofo))
+	(set-fontset-font font charset font-spec)))))
+
+;; 设置 Emoji 和 Symbol “字体。
+(defun +load-emoji-font ()
+  (when window-system
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
+    (set-fontset-font t 'symbol (font-spec :family "Symbola")))) ;; Apple Symbols vs Symbola
+
+(add-hook 'after-make-frame-functions 
+	  ( lambda (f) 
+	    (+load-face-font)
+	    (+load-ext-font)
+	    (+load-emoji-font)))
+
+(defun +load-font ()
+  (+load-base-font)
+  (+load-face-font)
+  (+load-ext-font)
+  (+load-emoji-font))
+(+load-font)
+
+;; all-the-icons 只能在 GUI 模式下使用。
+(when (display-graphic-p)
+  (use-package all-the-icons :demand))
+  #+end_src
+
 

@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-13T22:08:57+0800
+#+LASTMOD: 2023-08-16T23:08:27+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -177,7 +177,7 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
    user-full-name "zhangjun"
    user-mail-address "geekard@qq.com"
    auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth")
-   auth-source-cache-expiry nil
+   auth-source-cache-expiry 300
    ;;auth-source-debug t
    )
   
@@ -198,7 +198,9 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 ;; fn 作为 Hyper 键。
 (setq ns-function-modifier 'hyper)
 #+end_src
-
++ 如果向 auth-source 文件添加了认证信息，但是手动执行，如 ~(auth-source-pick-first-password :host
+   "XXX")~ 返回 nil，可以清空 cache 再试： ~M-x auth-source-forget-all-cached~
++ 
 * face
 ** ui
 
@@ -229,6 +231,9 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 
 ;; 光标和字符宽度一致（如 TAB)
 (setq x-stretch-cursor nil)
+
+;; 30: 左右分屏, nil: 上下分屏。
+(setq split-width-threshold nil)
 
 ;; 像素平滑滚动。
 (if (boundp 'pixel-scroll-precision-mode)
@@ -291,12 +296,14 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 (use-package olivetti
   :config
   ;; 内容区域宽度，超过后自动折行。
-  (setq olivetti-body-width 115)
+  (setq-default olivetti-body-width 120)
   (add-hook 'org-mode-hook 'olivetti-mode))
 ;; 值要比 olivetti-body-width 小，这样才能正常折行。
-(setq-default fill-column 110) 
+(setq-default fill-column 100)
 #+end_src
 + 设置 olivetti body 宽度：C-c | (M-x olivetti-set-width).
++ olivetti-body-width 和 fill-column 都是 buffer local 变量，需要使用 setq-default 才能在所有
+   buffer 中生效。
 
 ** dashboard
 
@@ -353,72 +360,8 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 + Symbols 字体:  Noto Sans Symbols 和 Noto Sans Symbols2: https://fonts.google.com/noto
 + 花園明朝：HanaMinB：http://fonts.jp/hanazono/
 + Emacs 默认后备字体：Symbola: https://dn-works.com/ufas/
-  
-英文 Iosevka/Sarasa 字体和中文 LxgwWenKai 字体，按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
++ 英文 Iosevka/Sarasa 字体和中文 LxgwWenKai 字体，按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
 + https://github.com/LuciusChen/.emacs.d/blob/main/lisp/init-font.el
-#+begin_src emacs-lisp :tangle no
-;; 缺省字体；
-(setq +font-family "Iosevka Comfy")
-(setq +modeline-font-family "Iosevka Comfy")
-(setq +fixed-pitch-family "Iosevka Comfy")
-(setq +variable-pitch-family "LXGW WenKai Screen")
-(setq +font-unicode-family "LXGW WenKai Screen")
-;; 中文字体和英文字体按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高。
-(setq face-font-rescale-alist '(("LXGW WenKai Screen" . 1))) ;; 1:1 缩放。
-(setq +font-size 14) ;; 偶数字号。
-
-;; 只为缺省字体设置 size, 其它字体都通过 :height 动态伸缩。
-(defun +load-base-font ()
-  (let* ((font-spec (format "%s-%d" +font-family +font-size)))
-    (set-frame-parameter nil 'font font-spec)
-    (add-to-list 'default-frame-alist `(font . ,font-spec))))
-
-;; 设置各特定 face 的字体。
-(defun +load-face-font (&optional frame)
-  (let ((font-spec (format "%s" +font-family))
-	(modeline-font-spec (format "%s" +modeline-font-family))
-	(variable-pitch-font-spec (format "%s" +variable-pitch-family))
-	(fixed-pitch-font-spec (format "%s" +fixed-pitch-family)))
-    (set-face-attribute 'variable-pitch frame :font variable-pitch-font-spec)
-    (set-face-attribute 'fixed-pitch frame :font fixed-pitch-font-spec)
-    (set-face-attribute 'fixed-pitch-serif frame :font fixed-pitch-font-spec)
-    (set-face-attribute 'tab-bar frame :font font-spec)
-    (set-face-attribute 'mode-line frame :font modeline-font-spec)
-    (set-face-attribute 'mode-line-inactive frame :font modeline-font-spec)))
-
-;; 设置中文字体。
-(defun +load-ext-font ()
-  (when window-system
-    (let ((font (frame-parameter nil 'font))
-	  (font-spec (font-spec :family +font-unicode-family)))
-      (dolist (charset '(kana han hangul cjk-misc bopomofo))
-	(set-fontset-font font charset font-spec)))))
-
-;; 设置 Emoji 和 Symbol “字体。
-(defun +load-emoji-font ()
-  (when window-system
-    (setq use-default-font-for-symbols nil)
-    (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
-    (set-fontset-font t 'symbol (font-spec :family "Symbola")))) ;; Apple Symbols vs Symbola
-
-(add-hook 'after-make-frame-functions 
-	  ( lambda (f) 
-	    (+load-face-font)
-	    (+load-ext-font)
-	    (+load-emoji-font)))
-
-(defun +load-font ()
-  (+load-base-font)
-  (+load-face-font)
-  (+load-ext-font)
-  (+load-emoji-font))
-(+load-font)
-
-;; all-the-icons 只能在 GUI 模式下使用。
-(when (display-graphic-p)
-  (use-package all-the-icons :demand))
-  #+end_src
-
 + 查看 Emacs 支持的字体名称： =(print (font-family-list))=
 + 安装、更新 Icon 字体： =M-x all-the-icons-install-fonts=
 + 参考: https://github.com/DogLooksGood/dogEmacs/blob/master/elisp/init-font.el
@@ -447,7 +390,7 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
            :default-family "Iosevka Comfy Fixed"
            :default-height 90)
           (regular
-           :default-height 140)
+           :default-height 160) ;; 默认字体 16px。
           (medium
            :default-height 110)
           (large
@@ -491,10 +434,6 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
   ;; The other side of `fontaine-restore-latest-preset'.
   (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset)
 
-  ;; fontaine does not define any key bindings.  This is just a sample that
-  ;; respects the key binding conventions.  Evaluate:
-  ;;
-  ;;     (info "(elisp) Key Binding Conventions")
   (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
   (define-key global-map (kbd "C-c F") #'fontaine-set-face-font))
 
@@ -601,6 +540,20 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
   (global-set-key (kbd "s-7") 'tab-bar-select-tab)
   (global-set-key (kbd "s-8") 'tab-bar-select-tab)
   (global-set-key (kbd "s-9") 'tab-bar-select-tab))
+#+end_src
+
+** pulsar
+#+begin_src emacs-lisp
+;; 高亮光标移动到的行。
+(use-package pulsar
+  :config
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 0.25)
+  (setq pulsar-iterations 15)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+  (pulsar-global-mode 1)
+  (add-hook 'next-error-hook #'pulsar-pulse-line-red))  
 #+end_src
 
 * completion
@@ -1571,10 +1524,10 @@ which magick || brew install imagemagick
   :commands org-tree-slide-mode
   :hook
   ((org-tree-slide-play . (lambda ()
-                            (blink-cursor-mode +1)
                             (org-fold-hide-block-all)
                             (setq-default x-stretch-cursor -1)
                             (redraw-display)
+			        (blink-cursor-mode -1)
                             ;;(org-display-inline-images)
                             (hl-line-mode -1)
                             ;;(text-scale-increase 1)
@@ -1761,8 +1714,8 @@ which magick || brew install imagemagick
 (use-package smartparens
   :config
   (require 'smartparens-config)
-  ;;(add-hook 'prog-mode-hook #'smartparens-mode)
-  (smartparens-global-mode t)
+  (add-hook 'prog-mode-hook #'smartparens-mode)
+  ;;(smartparens-global-mode t)
   (show-smartparens-global-mode t))
 #+end_src
 
@@ -2446,16 +2399,23 @@ citre 是基于 TAGS 文件的代码浏览工具，支持[[https://github.com/un
   :requires shell-maker
   :config
   (setq chatgpt-shell-openai-key
-        (auth-source-pick-first-password :host "ai.opsnull.com"))
+        (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
   (setq chatgpt-shell-chatgpt-streaming t)
-  (setq chatgpt-shell-model-version "gpt-4") ;; gpt-3.5-turbo
+  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
   (setq chatgpt-shell-request-timeout 300)
   (setq chatgpt-shell-insert-queries-inline t)
   (require 'ob-chatgpt-shell)
   (ob-chatgpt-shell-setup)
   (require 'ob-dall-e-shell)
   (ob-dall-e-shell-setup)
-  (setq chatgpt-shell-api-url-base "http://127.0.0.1:1090"))
+  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2023-03-15-preview")
+	;;"/openai/deployments/gpt-4/chat/completions?api-version=2023-03-15-preview")
+  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
+  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
+  (setq chatgpt-shell-auth-header 
+	(lambda ()
+	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
 #+end_src
 
 ** cue

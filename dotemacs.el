@@ -108,7 +108,7 @@
    user-full-name "zhangjun"
    user-mail-address "geekard@qq.com"
    auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth")
-   auth-source-cache-expiry nil
+   auth-source-cache-expiry 300
    ;;auth-source-debug t
    )
   
@@ -155,6 +155,9 @@
 
 ;; 光标和字符宽度一致（如 TAB)
 (setq x-stretch-cursor nil)
+
+;; 30: 左右分屏, nil: 上下分屏。
+(setq split-width-threshold nil)
 
 ;; 像素平滑滚动。
 (if (boundp 'pixel-scroll-precision-mode)
@@ -217,10 +220,10 @@
 (use-package olivetti
   :config
   ;; 内容区域宽度，超过后自动折行。
-  (setq olivetti-body-width 115)
+  (setq-default olivetti-body-width 120)
   (add-hook 'org-mode-hook 'olivetti-mode))
 ;; 值要比 olivetti-body-width 小，这样才能正常折行。
-(setq-default fill-column 110)
+(setq-default fill-column 100)
 
 (use-package dashboard
   :config
@@ -280,7 +283,7 @@
            :default-family "Iosevka Comfy Fixed"
            :default-height 90)
           (regular
-           :default-height 140)
+           :default-height 160) ;; 默认字体 16px。
           (medium
            :default-height 110)
           (large
@@ -324,10 +327,6 @@
   ;; The other side of `fontaine-restore-latest-preset'.
   (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset)
 
-  ;; fontaine does not define any key bindings.  This is just a sample that
-  ;; respects the key binding conventions.  Evaluate:
-  ;;
-  ;;     (info "(elisp) Key Binding Conventions")
   (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
   (define-key global-map (kbd "C-c F") #'fontaine-set-face-font))
 
@@ -418,6 +417,17 @@
   (global-set-key (kbd "s-7") 'tab-bar-select-tab)
   (global-set-key (kbd "s-8") 'tab-bar-select-tab)
   (global-set-key (kbd "s-9") 'tab-bar-select-tab))
+
+;; 高亮光标移动到的行。
+(use-package pulsar
+  :config
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 0.25)
+  (setq pulsar-iterations 15)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+  (pulsar-global-mode 1)
+  (add-hook 'next-error-hook #'pulsar-pulse-line-red))
 
 (use-package vertico
   :config
@@ -929,10 +939,10 @@
   :commands org-tree-slide-mode
   :hook
   ((org-tree-slide-play . (lambda ()
-                            (blink-cursor-mode +1)
                             (org-fold-hide-block-all)
                             (setq-default x-stretch-cursor -1)
                             (redraw-display)
+			        (blink-cursor-mode -1)
                             ;;(org-display-inline-images)
                             (hl-line-mode -1)
                             ;;(text-scale-increase 1)
@@ -945,11 +955,12 @@
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header t)
+  (setq org-tree-slide-content-margin-top 0)
   (setq org-tree-slide-heading-emphasis nil)
   (setq org-tree-slide-slide-in-effect t)
   (setq org-tree-slide-activate-message " ")
   (setq org-tree-slide-deactivate-message " ")
-  (setq org-tree-slide-modeline-display t)
+  ;;(setq org-tree-slide-modeline-display t)
   ;;(setq org-tree-slide-breadcrumbs " 👉 ")
   (define-key org-mode-map (kbd "<f8>") #'org-tree-slide-mode)
   (define-key org-tree-slide-mode-map (kbd "<f9>") #'org-tree-slide-content)
@@ -1088,8 +1099,8 @@
 (use-package smartparens
   :config
   (require 'smartparens-config)
-  ;;(add-hook 'prog-mode-hook #'smartparens-mode)
-  (smartparens-global-mode t)
+  (add-hook 'prog-mode-hook #'smartparens-mode)
+  ;;(smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
 (defun my/python-setup-shell (&rest args)
@@ -1382,16 +1393,23 @@ mermaid.initialize({
   :requires shell-maker
   :config
   (setq chatgpt-shell-openai-key
-        (auth-source-pick-first-password :host "ai.opsnull.com"))
+        (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
   (setq chatgpt-shell-chatgpt-streaming t)
-  (setq chatgpt-shell-model-version "gpt-4") ;; gpt-3.5-turbo
+  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
   (setq chatgpt-shell-request-timeout 300)
   (setq chatgpt-shell-insert-queries-inline t)
   (require 'ob-chatgpt-shell)
   (ob-chatgpt-shell-setup)
   (require 'ob-dall-e-shell)
   (ob-dall-e-shell-setup)
-  (setq chatgpt-shell-api-url-base "http://127.0.0.1:1090"))
+  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2023-03-15-preview")
+	;;"/openai/deployments/gpt-4/chat/completions?api-version=2023-03-15-preview")
+  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
+  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
+  (setq chatgpt-shell-auth-header 
+	(lambda ()
+	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
 
 (use-package cue-mode)
 
