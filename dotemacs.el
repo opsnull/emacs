@@ -2196,3 +2196,4 @@ mermaid.initialize({
            filename
            (file-name-nondirectory new-name))))))))
 (global-set-key (kbd "C-x C-r") 'my/rename-this-buffer-and-file)
+(put 'dired-find-alternate-file 'disabled nil)

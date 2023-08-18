@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-16T23:08:27+0800
+#+LASTMOD: 2023-08-18T10:08:51+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -1332,46 +1332,45 @@ which magick || brew install imagemagick
 
 ** tex
 
-在 org 文档的头部添加参数：
-+ 关闭 headerline 编号，否则输出目录为空。
-#+begin_verse :tangle no
-#+SUBTITLE: 内部资料，注意保密!
-#+AUTHOR: 张俊(mingduo.zj@alibaba-inc.com)
-#+DATE: 2023-08-12
-#+LASTMOD: 2023-08-12T20:08:44+0800
+在 ~/.emacs.d/templates 中添加一个名为 my-latext 的 tempel 模板，内容如下：
+#+begin_example :tangle no
+(my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 
+	  "#+SUBTITLE: 内部资料，注意保密!
+#+AUTHOR: 张俊(zj@opsnull.com)
 #+LANGUAGE: zh-CN
-#+STARTUP: nonum
+# 不自动输出 titile 和 toc，后续定制输出。num 控制输出的目录级别。
+#+OPTIONS: prop:t title:nil num:2 toc:nil ^:nil
 #+LATEX_COMPILER: xelatex
 #+LATEX_CLASS: ctexart
-#+LATEX_HEADER: \usepackage{mystyle}\n
-# 不自动输出 titile 和 toc，后续定制输出。num 控制输出的目录级别。
-#+OPTIONS: title:nil num:2 toc:nil ^:nil 
+# 引用自定义 latext style 文件，需要去掉 .sty 后缀。
+#+LATEX_HEADER: \\usepackage{/Users/zhangjun/.emacs.d/mystyle}
 
 # 定制 PDF 封面和目录。
 #+begin_export latex
 % 封面页
-\begin{titlepage}
+\\begin{titlepage}
 % 插入标题
-\maketitle
+\\maketitle
 % 插入封面图
-%\ThisCenterWallPaper{0.4}{/path/to/image.png}
+%\\ThisCenterWallPaper{0.4}{/path/to/image.png}
 % 封面页不编号
-\noindent\fboxsep=0pt
-\setcounter{page}{0}
-\thispagestyle{empty}
-\end{titlepage}
+\\noindent\\fboxsep=0pt
+\\setcounter{page}{0}
+\\thispagestyle{empty}
+\\end{titlepage}
 
 % 摘要页
-\begin{abstract}
+\\begin{abstract}
 这是一个摘要。
-\end{abstract}
+\\end{abstract}
 
 % 目录页
-\newpage
-\tableofcontents
-\newpage
+\\newpage
+\\tableofcontents
+\\newpage
 #+end_export
-#+end_verse
+")
+#+end_example
 
 #+begin_src emacs-lisp
 ;; engrave-faces 相比 minted 渲染速度更快。
