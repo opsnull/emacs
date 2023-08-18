@@ -77,7 +77,6 @@
   (setenv "ALL_PROXY" my/socks-proxy)
   (setenv "HTTP_PROXY" nil)
   (setenv "HTTPS_PROXY" nil)
-  ;;(proxy-socks-show)
   ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
   (advice-add 'url-http :around 'mb-url-http-around-advice))
 
@@ -87,9 +86,7 @@
   (setq url-gateway-method 'native
         socks-noproxy nil)
   (setenv "all_proxy" "")
-  (setenv "ALL_PROXY" "")
-  ;;(proxy-socks-show)
-  )
+  (setenv "ALL_PROXY" ""))
 
 (proxy-socks-enable)
 
@@ -283,7 +280,7 @@
            :default-family "Iosevka Comfy Fixed"
            :default-height 90)
           (regular
-           :default-height 160) ;; 默认字体 16px。
+           :default-height 160) ;; 默认字体 16px, 需要是偶数才能实现等宽等高。
           (medium
            :default-height 110)
           (large
@@ -299,9 +296,6 @@
            :default-height 220
            :bold-weight extrabold)
           (t
-           ;; I keep all properties for didactic purposes, but most can be
-           ;; omitted.  See the fontaine manual for the technicalities:
-           ;; <https://protesilaos.com/emacs/fontaine>.
            :default-family "Iosevka Comfy"
            :default-weight regular
            :default-height 100
@@ -335,23 +329,20 @@
 (dolist (hook '(modus-themes-after-load-theme-hook ef-themes-post-load-hook))
   (add-hook hook #'fontaine-apply-current-preset))
 
-;; 设置 Emoji 和 Symbol 字体。
-(defun my/set-emoji-font ()
-  (when window-system
+(defun my/set-font ()
+  (when window-system    
+    ;; 设置 Emoji 和 Symbol 字体。
     (setq use-default-font-for-symbols nil)
     (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
-    (set-fontset-font t 'symbol (font-spec :family "Symbola")))) ;; Apple Symbols vs Symbola
-
-;; 设置中文字体。
-(setq +font-unicode-family "LXGW WenKai Screen")
-(defun my/set-chinese-font ()
-  (when window-system
+    (set-fontset-font t 'symbol (font-spec :family "Symbola")) ;; Apple Symbols, Symbola
+    ;; 设置中文字体。
     (let ((font (frame-parameter nil 'font))
-	  (font-spec (font-spec :family +font-unicode-family)))
+	  (font-spec (font-spec :family "LXGW WenKai Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
 	(set-fontset-font font charset font-spec)))))
-(add-hook 'fontaine-set-preset-hook 'my/set-chinese-font)
-(add-hook 'fontaine-set-preset-hook 'my/set-emoji-font)
+;; emacs 启动后或 fontaine preset 切换时设置字体。
+(add-hook 'after-init-hook 'my/set-font)
+(add-hook 'fontaine-set-preset-hook 'my/set-font)
 
 (use-package ef-themes
   :demand
@@ -375,14 +366,13 @@
           (t . (variable-pitch 1.1))))
   (setq ef-themes-region '(intense no-extend neutral)))
 
-(defun my/load-light-theme () (interactive) (load-theme 'ef-elea-light t))
-(defun my/load-dark-theme () (interactive) (load-theme 'ef-elea-dark t)) 
-(add-hook 'ns-system-appearance-change-functions
-          (lambda (appearance)
-            (pcase appearance
-              ('light (my/load-light-theme))
-              ('dark (my/load-dark-theme)))))
-(load-theme 'ef-elea-dark t)
+(defun my/load-theme (appearance)
+  (interactive)
+  (pcase appearance
+    ('light (load-theme 'ef-elea-light t))
+    ('dark (load-theme 'ef-elda-dart t))))
+(add-hook 'ns-system-appearance-change-functions 'my/load-theme)
+(add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
 (use-package tab-bar
   :custom
@@ -391,14 +381,11 @@
   (tab-bar-history-limit 20)
   (tab-bar-new-tab-choice "*dashboard*")
   (tab-bar-show 1)
-  (tab-bar-tab-hints nil) 
   ;; 使用 super + N 来切换 tab。
   (tab-bar-select-tab-modifiers "super") 
   :config
   ;; 去掉最左侧的 < 和 >
-  (setq tab-bar-format '(tab-bar-format-tabs-groups
-                         tab-bar-separator
-                         tab-bar-format-add-tab ))
+  (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
   ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
   (tab-bar-history-mode t)
   (global-set-key (kbd "s-f") 'tab-bar-history-forward)
@@ -408,6 +395,39 @@
   (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
   (global-set-key (kbd "s-0") 'tab-bar-close-tab)
+
+  ;; 为 tab 添加序号，便于快速切换。
+  ;; 参考：https://christiantietze.de/posts/2022/02/emacs-tab-bar-numbered-tabs/
+  (defvar ct/circle-numbers-alist
+    '((0 . "⓪")
+      (1 . "①")
+      (2 . "②")
+      (3 . "③")
+      (4 . "④")
+      (5 . "⑤")
+      (6 . "⑥")
+      (7 . "⑦")
+      (8 . "⑧")
+      (9 . "⑨"))
+    "Alist of integers to strings of circled unicode numbers.")
+  (setq tab-bar-tab-hints t)
+  (defun ct/tab-bar-tab-name-format-default (tab i)
+    (let ((current-p (eq (car tab) 'current-tab))
+          (tab-num (if (and tab-bar-tab-hints (< i 10))
+                       (alist-get i ct/circle-numbers-alist) "")))
+      (propertize
+       (concat tab-num
+               " "
+               (alist-get 'name tab)
+               (or (and tab-bar-close-button-show
+			(not (eq tab-bar-close-button-show
+				 (if current-p 'non-selected 'selected)))
+			tab-bar-close-button)
+                   "")
+               " ")
+       'face (funcall tab-bar-tab-face-function tab))))
+  (setq tab-bar-tab-name-format-function #'ct/tab-bar-tab-name-format-default)
+
   (global-set-key (kbd "s-1") 'tab-bar-select-tab)
   (global-set-key (kbd "s-2") 'tab-bar-select-tab)
   (global-set-key (kbd "s-3") 'tab-bar-select-tab)
@@ -416,7 +436,8 @@
   (global-set-key (kbd "s-6") 'tab-bar-select-tab)
   (global-set-key (kbd "s-7") 'tab-bar-select-tab)
   (global-set-key (kbd "s-8") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
+  (global-set-key (kbd "s-9") 'tab-bar-select-tab)
+  )
 
 ;; 高亮光标移动到的行。
 (use-package pulsar
@@ -2196,4 +2217,3 @@ mermaid.initialize({
            filename
            (file-name-nondirectory new-name))))))))
 (global-set-key (kbd "C-x C-r") 'my/rename-this-buffer-and-file)
-(put 'dired-find-alternate-file 'disabled nil)
