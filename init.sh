@@ -1,5 +1,5 @@
 # brew uninstall emacs-plus@29
-brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon # --with-native-comp
+brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon --with-native-comp --with-poll --HEAD
 brew link --overwrite emacs-plus@29
 ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 

@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-18T15:08:43+0800
+#+LASTMOD: 2023-08-20T11:08:11+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -11,7 +11,7 @@
 编译安装 Emacs 29:
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 # brew uninstall emacs-plus@29
-brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon # --with-native-comp
+brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon --with-native-comp --with-poll --HEAD
 brew link --overwrite emacs-plus@29
 ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 #+end_src
@@ -20,15 +20,15 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 
 =early-init.el= 是 =emacs= 启动时最开始执行的文件，执行复杂逻辑可能导致启动失败，所以该文件尽量以变量定义为主。
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
-;; (when (fboundp 'native-compile-async)
-;;   (setenv "LIBRARY_PATH"
-;;           (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/12:/usr/local/opt/gcc/lib/gcc/12/gcc/x86_64-apple-darwin21/12"))
-;;   (setq native-comp-speed 2)
-;;   (setq native-comp-async-jobs-number 4)
-;;   ;; Emacs 29;
-;;   ;;(setq inhibit-automatic-native-compilation t)
-;;   ;;(setq native-comp-async-report-warnings-errors 'silent)
-;;   )
+(when (fboundp 'native-compile-async)
+  (setenv "LIBRARY_PATH"
+          (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/current:/usr/local/opt/gcc/lib/gcc/current/gcc/x86_64-apple-darwin22/13"))
+  (setq native-comp-speed 4)
+  (setq native-comp-async-jobs-number 8)
+  ;; Emacs 29;
+  ;;(setq inhibit-automatic-native-compilation t)
+  (setq native-comp-async-report-warnings-errors 'silent)
+  )
 
 ;; 加载较新的 .el 文件。
 (setq-default load-prefer-newer t)

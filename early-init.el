@@ -1,12 +1,12 @@
-;; (when (fboundp 'native-compile-async)
-;;   (setenv "LIBRARY_PATH"
-;;           (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/12:/usr/local/opt/gcc/lib/gcc/12/gcc/x86_64-apple-darwin21/12"))
-;;   (setq native-comp-speed 2)
-;;   (setq native-comp-async-jobs-number 4)
-;;   ;; Emacs 29;
-;;   ;;(setq inhibit-automatic-native-compilation t)
-;;   ;;(setq native-comp-async-report-warnings-errors 'silent)
-;;   )
+(when (fboundp 'native-compile-async)
+  (setenv "LIBRARY_PATH"
+          (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/current:/usr/local/opt/gcc/lib/gcc/current/gcc/x86_64-apple-darwin22/13"))
+  (setq native-comp-speed 4)
+  (setq native-comp-async-jobs-number 8)
+  ;; Emacs 29;
+  ;;(setq inhibit-automatic-native-compilation t)
+  (setq native-comp-async-report-warnings-errors 'silent)
+  )
 
 ;; 加载较新的 .el 文件。
 (setq-default load-prefer-newer t)
