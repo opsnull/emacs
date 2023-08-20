@@ -23,6 +23,7 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	     "#+HUGO_TAGS: " (p "tag1 tag2") n
 	     "#+HUGO_CATEGORIES: " (p "catagory1 catagory2") n
 	     "#+HUGO_LOCALE: zh" n
+	     "#+OPTIONS: title:t" n 
 	     "#+HUGO_CUSTOM_FRONT_MATTER: :series "  "'(\"" (p "series name") "\") :series_order " (p "1") n)
 
 (my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 
