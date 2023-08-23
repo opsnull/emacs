@@ -1655,8 +1655,9 @@ mermaid.initialize({
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
   (catch 'ret
-    (let ((pr-flags '((".project")
-                      ("go.mod" "pom.xml" "package.json")
+    (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。
+		        ;; 所以，中间目录不能有 .project 等文件，否则判断 project root 失败。
+		      ("go.mod" "pom.xml" "package.json" ".project" )
                       ;; 以下文件容易导致 project root 判断失败, 故关闭。
                       ;; ("Makefile" "README.org" "README.md")
                       )))
@@ -1675,10 +1676,10 @@ mermaid.initialize({
   (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
       (when (file-directory-p file)
-          (message "dir %s" file)
-          ;; project-remember-projects-under 列出 file 下的目录, 分别加到 project-list-file 中。
-          (project-remember-projects-under file nil)
-          (message "added project %s" file)))))
+        (message "dir %s" file)
+        ;; project-remember-projects-under 列出 file 下的目录, 分别加到 project-list-file 中。
+        (project-remember-projects-under file nil)
+        (message "added project %s" file)))))
 
 ;; 不将 tramp 项目记录到 projects 文件中，防止 emacs-dashboard 启动时检查 project 卡住。
 (defun my/project-remember-advice (fn pr &optional no-write)

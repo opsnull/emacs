@@ -1,10 +1,23 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-20T11:08:11+0800
+#+LASTMOD: 2023-08-23T19:08:20+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
 #+LANGUAGE: zh-CN
+
+#+AUTHOR: 张俊(zj@opsnull.com)
+#+DATE: 2023-08-20 Sun
+#+HUGO_BASE_DIR: ~/blog/blog.opsnull.com
+#+HUGO_SECTION: emacs
+#+HUGO_BUNDLE: my-emacs-dotfile
+#+EXPORT_file_name: index
+#+HUGO_AUTO_SET_LASTMOD: t
+#+HUGO_TAGS: emacs
+#+HUGO_CATEGORIES: emacs
+#+HUGO_LOCALE: zh
+#+OPTIONS: title:t
+#+HUGO_CUSTOM_FRONT_MATTER: :series '("emacs") :series_order 1
 
 * install
 
@@ -2722,8 +2735,9 @@ consult-eglot 提供 consult-eglot-symbols 函数，可以选择 workspace 中�
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
   (catch 'ret
-    (let ((pr-flags '((".project")
-                      ("go.mod" "pom.xml" "package.json")
+    (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。
+		        ;; 所以，中间目录不能有 .project 等文件，否则判断 project root 失败。
+		      ("go.mod" "pom.xml" "package.json" ".project" )
                       ;; 以下文件容易导致 project root 判断失败, 故关闭。
                       ;; ("Makefile" "README.org" "README.md")
                       )))
@@ -2742,10 +2756,10 @@ consult-eglot 提供 consult-eglot-symbols 函数，可以选择 workspace 中�
   (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
       (when (file-directory-p file)
-          (message "dir %s" file)
-          ;; project-remember-projects-under 列出 file 下的目录, 分别加到 project-list-file 中。
-          (project-remember-projects-under file nil)
-          (message "added project %s" file)))))
+        (message "dir %s" file)
+        ;; project-remember-projects-under 列出 file 下的目录, 分别加到 project-list-file 中。
+        (project-remember-projects-under file nil)
+        (message "added project %s" file)))))
 
 ;; 不将 tramp 项目记录到 projects 文件中，防止 emacs-dashboard 启动时检查 project 卡住。
 (defun my/project-remember-advice (fn pr &optional no-write)
