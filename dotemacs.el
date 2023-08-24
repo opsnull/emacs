@@ -1099,11 +1099,6 @@
 (setq c-basic-offset 8)
 (setq c-electric-pound-behavior 'alignleft)
 
-(use-package aggressive-indent
-  :config
-  (global-aggressive-indent-mode 1)
-  (add-to-list 'aggressive-indent-excluded-modes 'html-mode))
-
 ;; 彩色括号。
 (use-package rainbow-delimiters :hook (prog-mode . rainbow-delimiters-mode))
 

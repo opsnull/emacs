@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-23T19:08:20+0800
+#+LASTMOD: 2023-08-24T18:08:24+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -1719,11 +1719,6 @@ which magick || brew install imagemagick
 (setq c-ts-common-indent-offset 8)
 (setq c-basic-offset 8)
 (setq c-electric-pound-behavior 'alignleft)
-
-(use-package aggressive-indent
-  :config
-  (global-aggressive-indent-mode 1)
-  (add-to-list 'aggressive-indent-excluded-modes 'html-mode))
 #+end_src
 
 ** paren

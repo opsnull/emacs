@@ -6108,4 +6108,13 @@ Gtags scans that directory if needed."
   (use-package all-the-icons :demand))
   #+end_src
 
+* aggressive-indent
+
+2023.08.24 常会导致写代码的途中提前缩进, 故关闭。
+#+begin_src emacs-lisp
+(use-package aggressive-indent
+  :config
+  (global-aggressive-indent-mode 1)
+  (add-to-list 'aggressive-indent-excluded-modes 'html-mode))
+#+end_src
 
