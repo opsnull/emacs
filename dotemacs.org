@@ -1,12 +1,11 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-24T21:08:52+0800
+#+LASTMOD: 2023-08-26T17:08:23+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
 #+LANGUAGE: zh-CN
 
-#+AUTHOR: 张俊(zj@opsnull.com)
 #+DATE: 2023-08-20 Sun
 #+HUGO_BASE_DIR: ~/blog/blog.opsnull.com
 #+HUGO_SECTION: emacs
@@ -802,10 +801,6 @@ which rg || brew install ripgrep
 ;;:map minibuffer-local-map)
 (define-key minibuffer-local-map (kbd "M-s") #'consult-history)
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
-;; eshell history 使用 consult-history。
-(load-library "em-hist.el")
-(keymap-set eshell-hist-mode-map "M-s" #'consult-history)
-(keymap-set eshell-hist-mode-map "M-r" #'consult-history)
 #+end_src
 + =consult-buffer= 显示的 File 列表来源于变量 =recentf-list=;
   
@@ -2885,6 +2880,14 @@ eshell：
 	       (display-buffer-below-selected display-buffer-at-bottom)
 	       (inhibit-same-window . t)
 	       (window-height . 0.33)))
+
+;; eshell history 使用 consult-history。
+(load-library "em-hist.el")
+(keymap-set eshell-hist-mode-map "C-s" #'consult-history)
+(keymap-set eshell-hist-mode-map "C-r" #'consult-history)
+;; 重置 M-r/s 快捷键，这样 consult-line 等可用。
+(define-key eshell-hist-mode-map (kbd "M-r") nil)
+(define-key eshell-hist-mode-map (kbd "M-s") nil)
 #+end_src
 
 * tramp 

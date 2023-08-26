@@ -534,6 +534,9 @@
   ;; 使用 consult 来预览 xref 的引用定义和跳转。
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
+  ;; 不搜索 go vendor 目录。
+  (setq consult-ripgrep-args
+	"rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip -g !vendor/")
   :config
   ;; 按 C-l 激活预览，否则 Buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key "C-l")
@@ -617,10 +620,6 @@
 ;;:map minibuffer-local-map)
 (define-key minibuffer-local-map (kbd "M-s") #'consult-history)
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
-;; eshell history 使用 consult-history。
-(load-library "em-hist.el")
-(keymap-set eshell-hist-mode-map "M-s" #'consult-history)
-(keymap-set eshell-hist-mode-map "M-r" #'consult-history)
 
 (use-package embark
   :init
@@ -1788,6 +1787,14 @@ mermaid.initialize({
 	       (display-buffer-below-selected display-buffer-at-bottom)
 	       (inhibit-same-window . t)
 	       (window-height . 0.33)))
+
+;; eshell history 使用 consult-history。
+(load-library "em-hist.el")
+(keymap-set eshell-hist-mode-map "C-s" #'consult-history)
+(keymap-set eshell-hist-mode-map "C-r" #'consult-history)
+;; 重置 M-r/s 快捷键，这样 consult-line 等可用。
+(define-key eshell-hist-mode-map (kbd "M-r") nil)
+(define-key eshell-hist-mode-map (kbd "M-s") nil)
 
 (use-package tramp
   :config
