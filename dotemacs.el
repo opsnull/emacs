@@ -531,9 +531,11 @@
   (setq consult-line-start-from-top t)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
+  
   ;; 使用 consult 来预览 xref 的引用定义和跳转。
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
+  
   ;; 不搜索 go vendor 目录。
   (setq consult-ripgrep-args
 	"rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip -g !vendor/")
@@ -1370,6 +1372,8 @@ mermaid.initialize({
 
 ;; xref 的 history 局限于当前窗口（默认全局）。
 (setq xref-history-storage 'xref-window-local-history)
+;; 快速在其他窗口查看定义。
+(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
 
 ;; 移动到行或代码的开头、结尾。
 (use-package mwim

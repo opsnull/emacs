@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-08-26T17:08:23+0800
+#+LASTMOD: 2023-08-30T09:08:31+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -712,9 +712,11 @@ which rg || brew install ripgrep
   (setq consult-line-start-from-top t)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
+  
   ;; 使用 consult 来预览 xref 的引用定义和跳转。
   (setq xref-show-xrefs-function #'consult-xref)
   (setq xref-show-definitions-function #'consult-xref)
+  
   ;; 不搜索 go vendor 目录。
   (setq consult-ripgrep-args
 	"rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip -g !vendor/")
@@ -2380,6 +2382,8 @@ citre 是基于 TAGS 文件的代码浏览工具，支持[[https://github.com/un
 #+begin_src emacs-lisp
 ;; xref 的 history 局限于当前窗口（默认全局）。
 (setq xref-history-storage 'xref-window-local-history)
+;; 快速在其他窗口查看定义。
+(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
 
 ;; 移动到行或代码的开头、结尾。
 (use-package mwim
