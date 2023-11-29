@@ -113,9 +113,8 @@
   (epa-file-enable))
 
 ;; 关闭容易误操作的按键。
-(let ((keys '("s-w" "C-z" "<mouse-2>"
-              "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
-              "C-<wheel-down>" "C-<wheel-up>")))
+(let ((keys '("s-w" "C-z" "<mouse-2>" "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
+              "C-<wheel-down>" "C-<wheel-up>" "<down-mouse-1>")))
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
@@ -144,8 +143,8 @@
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
 
 ;; 高亮当前行。
-;;(global-hl-line-mode t)
-;;(setq global-hl-line-sticky-flag t)
+(global-hl-line-mode t)
+(setq global-hl-line-sticky-flag t)
 
 ;; 显示行号。
 (global-display-line-numbers-mode t)
@@ -174,7 +173,7 @@
 ;; 手动刷行显示。
 (global-set-key (kbd "<f5>") #'redraw-display)
 
-;; 在 frame 底部显示窗口。
+;; 在 frame 底部显示的窗口列表。
 (setq display-buffer-alist
       `((,(rx bos (or
                    "*Apropos*"
@@ -219,7 +218,7 @@
   ;; 内容区域宽度，超过后自动折行。
   (setq-default olivetti-body-width 120)
   (add-hook 'org-mode-hook 'olivetti-mode))
-;; 值要比 olivetti-body-width 小，这样才能正常折行。
+;; fill-column 值要小于 olivetti-body-width 才能正常折行。
 (setq-default fill-column 100)
 
 (use-package dashboard
@@ -340,6 +339,7 @@
 	  (font-spec (font-spec :family "LXGW WenKai Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
 	(set-fontset-font font charset font-spec)))))
+
 ;; emacs 启动后或 fontaine preset 切换时设置字体。
 (add-hook 'after-init-hook 'my/set-font)
 (add-hook 'fontaine-set-preset-hook 'my/set-font)
@@ -352,7 +352,7 @@
   (setq ef-themes-mixed-fonts t)
   (setq ef-themes-headings
         '(
-          ;; level 0 是文档 title，1-8 是普通的文档 headling。
+          ;; level 0 是文档 title，1-8 是文档 header。
           (0 . (variable-pitch light 1.9))
           (1 . (variable-pitch light 1.8))
           (2 . (variable-pitch regular 1.7))
@@ -370,7 +370,7 @@
   (interactive)
   (pcase appearance
     ('light (load-theme 'ef-elea-light t))
-    ('dark (load-theme 'ef-elda-dart t))))
+    ('dark (load-theme 'ef-elea-dark t))))
 (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
 (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
@@ -382,7 +382,7 @@
   (tab-bar-new-tab-choice "*dashboard*")
   (tab-bar-show 1)
   ;; 使用 super + N 来切换 tab。
-  (tab-bar-select-tab-modifiers "super") 
+  (tab-bar-select-tab-modifiers "super")
   :config
   ;; 去掉最左侧的 < 和 >
   (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
@@ -444,7 +444,7 @@
   :config
   (setq pulsar-pulse t)
   (setq pulsar-delay 0.25)
-  (setq pulsar-iterations 15)
+  (setq pulsar-iterations 5)
   (setq pulsar-face 'pulsar-magenta)
   (setq pulsar-highlight-face 'pulsar-yellow)
   (pulsar-global-mode 1)
@@ -460,10 +460,10 @@
 
 (use-package emacs
   :init
-  ;; 在 minibuffer 中不显示光标。
+  ;; minibuffer 不显示光标。
   (setq minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-  ;; M-x 只显示当前 mode 支持的命令的命令。
+  ;; M-x 只显示当前 mode 支持的命令。
   (setq read-extended-command-predicate #'command-completion-default-include-p)
   ;; 开启 minibuffer 递归编辑。
   (setq enable-recursive-minibuffers t))
@@ -795,6 +795,8 @@
         org-image-actual-width '(300)
         org-cycle-inline-images-display nil
         org-html-validation-link nil
+	    ;; 关闭鼠标点击链接。
+	    org-mouse-1-follows-link nil
         org-export-with-broken-links t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
         org-link-file-path-type 'relative
@@ -884,7 +886,7 @@
 
 (setq org-confirm-babel-evaluate t)
 ;; 关闭 C-c C-c 触发 eval code.
-;;(setq org-babel-no-eval-on-ctrl-c-ctrl-c nil)
+(setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
 (setq org-src-fontify-natively t)
 ;; 使用各语言的 Major Mode 来编辑 src block。
 (setq org-src-tab-acts-natively t)
@@ -895,8 +897,9 @@
 (add-to-list 'org-src-lang-modes '("cue" . cue))
 
 (require 'org)
-;; org bable 完整支持的语言列表（ob- 开头的文件）：https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp
-;; 对于官方不支持的语言，可以通过 use-pacakge 来安装。
+;; org bable 完整支持的语言列表（ob- 开头的文件）：
+;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp对于官方不支持的语言，可以通过
+;; use-pacakge 来安装。
 (use-package ob-go) ;; golang 
 (use-package ox-reveal) ;; reveal.js
 (use-package ox-gfm) ;; github flavor markdown
@@ -966,14 +969,14 @@
                             (redraw-display)
 			        (blink-cursor-mode -1)
                             ;;(org-display-inline-images)
-                            (hl-line-mode -1)
+				;;(hl-line-mode -1)
                             ;;(text-scale-increase 1)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
                             ;;(text-scale-increase 0)
-                            (hl-line-mode 1)
+                            ;;(hl-line-mode 1)
                             (read-only-mode -1))))
   :config
   (setq org-tree-slide-header t)
@@ -1088,8 +1091,7 @@
   (add-hook 'js-ts-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; c/c++/go-mode indent 风格.
-;; 总是使用 table 而非空格.
+;; c/c++/go-mode indent 风格：总是使用 table 而非空格.
 (setq indent-tabs-mode t)
 ;; kernel 风格：table 和 offset 都是 tab 缩进，而且都是 8 字符。
 ;; https://www.kernel.org/doc/html/latest/process/coding-style.html
@@ -1317,8 +1319,8 @@ mermaid.initialize({
 (use-package citre
   :defer t
   :init
-  ;; 当打开一个文件时，如果可以找到对应的 TAGS 文件时则自动开启 citre-mode。开启了 citre-mode 后，会自动向
-  ;; xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
+  ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，会自动
+  ;; 向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
   (require 'citre-config)
   :config
   ;; 只使用 GNU Global tags。
@@ -1541,24 +1543,23 @@ mermaid.initialize({
 	      ("C-c C-f" . eglot-format-buffer)
 	      ("C-c C-r" . eglot-rename))
   :config
-  ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。
-  ;; 也不能设置的太大，否则可能影响性能。
+  ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
+  ;; 置的太大，否则可能影响性能。
   (setq eglot-events-buffer-size 1000)
-  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显示 LSP 发送
-  ;; 的诊断消息。
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显
+  ;; 示 LSP 发送的诊断消息。
   (setq eglot-send-changes-idle-time 0.3)
 
   ;; Shutdown server when last managed buffer is killed
   (customize-set-variable 'eglot-autoshutdown t)
   (customize-set-variable 'eglot-connect-timeout 60)   ;; default 30s
   
-  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，
-  ;; eglot 报错。由于 treesit-auto 已经对 major-mode 做了 remap ，这里
-  ;; 需要对 xx-ts-mode-hook 添加 hook，而不是以前的 xx-mode-hook。
+  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，eglot 报错。由于treesit-auto
+  ;; 已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的xx-mode-hook。
+  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
-  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
   (add-hook 'python-ts-mode-hook #'eglot-ensure)
 
   ;; 忽略一些用不到，耗性能的能力。
@@ -1600,11 +1601,9 @@ mermaid.initialize({
 			 (usePlaceholders . :json-false)
 			 (matcher . "CaseSensitive"))))))
 
-;; 由于 major-mode 开启 eglot-ensure 后，eglot 将
-;; xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其
-;; 它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动
-;; 关闭当前 major-mode 的 eglot，从而让 xref-backend-functions 恢复为
-;; 以前的值，如 dump-jump-xref-active。
+;; 由于 major-mode 开启 eglot-ensure 后，eglot 将xref-backend-functions 设置为 eglot-xref-backend，
+;; 而忽略已注册的其它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动关闭当前
+;; major-mode 的 eglot，从而让 xref-backend-functions 恢复为以前的值，如 dump-jump-xref-active。
 (defun my/toggle-eglot ()
   (interactive)
   (let ((current-mode major-mode)
@@ -1621,13 +1620,12 @@ mermaid.initialize({
 (use-package consult-eglot
   :after (eglot consult))
 
-;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比
-;; 使用 TAGS 的 citre（适合静态浏览）以及 lsp 方案，更通用和轻量。
+;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比使用 TAGS 的 citre（适合静态浏
+;; 览）以及 lsp 方案，更通用和轻量。
 (use-package dumb-jump
   :config
-  ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用
-  ;; etags 作为数据源。将 dump-jump 加到 xref 后端中，作为其它 backend，
-  ;; 如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
+  ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用 etags 作为数据源。将 dump-jump 加
+  ;; 到 xref 后端中，作为其它 backend，如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
   ;; dumb-jump 发现支持的语言和项目后，会自动生效。
   ;;; 将 Go module 文件作为 project root 标识。
@@ -1653,8 +1651,8 @@ mermaid.initialize({
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
   (catch 'ret
-    (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。
-		        ;; 所以，中间目录不能有 .project 等文件，否则判断 project root 失败。
+    (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有 .project 等文件，
+		        ;; 否则判断 project root 失败。
 		      ("go.mod" "pom.xml" "package.json" ".project" )
                       ;; 以下文件容易导致 project root 判断失败, 故关闭。
                       ;; ("Makefile" "README.org" "README.md")
@@ -1735,6 +1733,7 @@ mermaid.initialize({
   (define-key vterm-copy-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-copy-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
+;; vterm-extra 提供了 vterm buffer 命令行编辑的能力，结束后按 C-c C-c 自动粘贴到对应的 vterm 中。
 (use-package vterm-extra
   :vc (:fetcher github :repo Sbozzolo/vterm-extra)
   :config
