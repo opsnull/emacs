@@ -20,24 +20,6 @@
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
-(setq my-bin-path '(
-		    ;;"/usr/local/opt/findutils/libexec/gnubin"
-		    "/Users/zhangjun/go/bin"
-		    ))
-;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
-(mapc (lambda (p)
-	(setenv "PATH" (concat p ":" (getenv "PATH"))))
-      my-bin-path)
-(dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
-	       ("GOPROXY" "https://proxy.golang.org")
-	       ("GOPRIVATE" "*.alibaba-inc.com")))
-  (setenv (car env) (cadr env)))
-
-;; Emacs 查找外部程序时使用 exed-path 变量而非 PATH 变量，这里单独设置 exec-path。
-(let ((paths my-bin-path))
-  (dolist (path paths)
-    (setq exec-path (cons path exec-path))))
-
 ;; 将自己安装的 coreutils 添加到 PATH 环境变量和 exec-path 变量中。
 (setq my-coreutils-path "/usr/local/opt/curl/bin")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))

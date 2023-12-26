@@ -37,6 +37,24 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 ;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
+
+(setq my-bin-path '(
+		    ;;"/usr/local/opt/findutils/libexec/gnubin"
+		    "/Users/zhangjun/go/bin"
+		    ))
+;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
+(mapc (lambda (p)
+	(setenv "PATH" (concat p ":" (getenv "PATH"))))
+      my-bin-path)
+(dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
+	       ("GOPROXY" "https://proxy.golang.org")
+	       ("GOPRIVATE" "*.alibaba-inc.com")))
+  (setenv (car env) (cadr env)))
+
+;; Emacs 查找外部程序时使用 exec-path 变量而非 PATH 变量，这里单独设置 exec-path。
+(let ((paths my-bin-path))
+  (dolist (path paths)
+    (setq exec-path (cons path exec-path))))
 #+end_src
 
 * package
@@ -63,26 +81,8 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 ;; 安装 vc-use-package 使 use-package 支持使用 :vc 指令从 github 等安装软件包。
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
-
-(setq my-bin-path '(
-		    ;;"/usr/local/opt/findutils/libexec/gnubin"
-		    "/Users/zhangjun/go/bin"
-		    ))
-;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
-(mapc (lambda (p)
-	(setenv "PATH" (concat p ":" (getenv "PATH"))))
-      my-bin-path)
-(dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
-	       ("GOPROXY" "https://proxy.golang.org")
-	       ("GOPRIVATE" "*.alibaba-inc.com")))
-  (setenv (car env) (cadr env)))
-
-;; Emacs 查找外部程序时使用 exed-path 变量而非 PATH 变量，这里单独设置 exec-path。
-(let ((paths my-bin-path))
-  (dolist (path paths)
-    (setq exec-path (cons path exec-path))))
 #+end_src
-+ =M-x use-package-report= :: 查看 package 加载时间（按 S 排序）。
++ =M-x use-package-report= : 查看 package 加载时间（按 S 排序）。
 
 * proxy
 
@@ -1875,9 +1875,9 @@ javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURICo
    记被删除的情况下, 可能导致 Dashbard 显示 agenda 时 hang 。
 
 对于 org-mode 文件，在文件开头添加如下内容结间可避免每次打开时提示选择 gpg key:
-#+begin_verse :tangle no
+#+begin_example :tangle no
 # -*- mode:org; epa-file-encrypt-to: ("geekard@qq.com") -*-
-#+end_verse
+#+end_example
 
 ** hugo
 
