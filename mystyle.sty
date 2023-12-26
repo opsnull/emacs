@@ -45,7 +45,8 @@
 % sidewaytable 依赖 rotfloat
 \usepackage {rotfloat}
 
-% tabularx 的特殊 align 参数 X 用来对指定列内容自动换行，表格前需要加如下属性：
+% tabularx 的特殊 align 参数 X 用来对指定列内容自动换行，否则该列内容有可能被截断，
+% 解决办法是：在 org-mode 表格前需要加如下属性：
 % #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|X
 \usepackage{tabularx}
 % 美化表格显示效果

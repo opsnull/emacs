@@ -1,10 +1,15 @@
 ;; 参考：https://github.com/minad/tempel
 
-fundamental-mode 适用于所有 Mode。
+;;; fundamental-mode 
+fundamental-mode ;; 适用于所有 Mode。
 
 (today (format-time-string "%Y-%m-%d"))
 
+;;; org-mode
 org-mode ;; 空格分割的多个 Mode 名称。
+
+;; 插入自己的 GnuPG 加密 key。
+(my-gpg "# -*- mode:org; epa-file-encrypt-to: (\"geekard@qq.com\") -*-")
 
 (my-org-file "#+TITLE: " (p "title") n
 	     "#+AUTHOR: 张俊(zj@opsnull.com)" n
@@ -29,8 +34,10 @@ org-mode ;; 空格分割的多个 Mode 名称。
 (my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 
 	  "#+SUBTITLE: 内部资料，注意保密!
 #+AUTHOR: 张俊(zj@opsnull.com)
+# 中文语言环境（目录等用中文显示）。
 #+LANGUAGE: zh-CN
-# 不自动输出 titile 和 toc，后续定制输出。num 控制输出的目录级别。
+# 不自动输出 titile 和 toc，后续定制输出。
+# 但是需要明确设置 num 来控制输出的目录级别。
 #+OPTIONS: prop:t title:nil num:2 toc:nil ^:nil
 #+LATEX_COMPILER: xelatex
 #+LATEX_CLASS: ctexart

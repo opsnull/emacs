@@ -6118,3 +6118,11 @@ Gtags scans that directory if needed."
   (add-to-list 'aggressive-indent-excluded-modes 'html-mode))
 #+end_src
 
+* org-modern-indent
+
+#+begin_src emacs-lisp
+(use-package org-modern-indent
+  :vc (:fetcher github :repo jdtsmith/org-modern-indent)
+  :config
+  (add-hook 'org-mode-hook #'org-modern-indent-mode 90))
+#+end_src

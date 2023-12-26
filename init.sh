@@ -33,6 +33,8 @@ which watchexec || brew install watchexec
 which pngpaste || brew install pngpaste
 which magick || brew install imagemagick
 
+which terminal-notifier || brew install terminal-notifiler
+
 $ brew install llvm
 $ export CPPFLAGS="-I/usr/local/opt/llvm/include"
 $ export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"

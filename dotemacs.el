@@ -16,30 +16,29 @@
 ;; 可以升级内置包。
 ;;(setq package-install-upgrade-built-in t)
 
-;; package-vc-install 可以直接从 github 安装软件包。
-;; 这里安装 vc-use-package 使 use-package 支持 :vc 指令。
+;; 安装 vc-use-package 使 use-package 支持使用 :vc 指令从 github 等安装软件包。
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
-;; 设置自定义环境变量。
 (setq my-bin-path '(
 		    ;;"/usr/local/opt/findutils/libexec/gnubin"
 		    "/Users/zhangjun/go/bin"
 		    ))
-;; 设置 PATH 环境变量，后续 Emacs 启动外部程序时会查找。
-(mapc (lambda (p) (setenv "PATH" (concat p ":" (getenv "PATH"))))
+;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
+(mapc (lambda (p)
+	(setenv "PATH" (concat p ":" (getenv "PATH"))))
       my-bin-path)
-
-;; Emacs 自身使用 exed-path 而非 PATH 来查找外部程序。
-(let ((paths my-bin-path))
-  (dolist (path paths)
-    (setq exec-path (cons path exec-path))))
-
 (dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
 	       ("GOPROXY" "https://proxy.golang.org")
 	       ("GOPRIVATE" "*.alibaba-inc.com")))
   (setenv (car env) (cadr env)))
 
+;; Emacs 查找外部程序时使用 exed-path 变量而非 PATH 变量，这里单独设置 exec-path。
+(let ((paths my-bin-path))
+  (dolist (path paths)
+    (setq exec-path (cons path exec-path))))
+
+;; 将自己安装的 coreutils 添加到 PATH 环境变量和 exec-path 变量中。
 (setq my-coreutils-path "/usr/local/opt/curl/bin")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
@@ -49,7 +48,7 @@
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 (use-package mb-url-http
-  :demand
+  ;;:demand
   :vc (:fetcher github :repo dochang/mb-url)
   :init
   (require 'auth-source)
@@ -69,9 +68,8 @@
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
-        socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8"
-                        "*cn" "*alibaba-inc.com" "*taobao.com"
-                        "*antfin-inc.com")
+        socks-noproxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
+                        "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
   (setenv "all_proxy" my/socks-proxy)
   (setenv "ALL_PROXY" my/socks-proxy)
@@ -92,6 +90,13 @@
 
 (use-package epa
   :config
+  (setq
+   user-full-name "zhangjun"
+   user-mail-address "geekard@qq.com"
+   auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth")
+   auth-source-cache-expiry 300
+   ;;auth-source-debug t
+   )
   (setq-default
    ;; 缺省使用 email 地址加密。
    epa-file-select-keys nil
@@ -100,21 +105,15 @@
    epa-pinentry-mode 'loopback
    epa-file-cache-passphrase-for-symmetric-encryption t
    )
-
-  (setq
-   user-full-name "zhangjun"
-   user-mail-address "geekard@qq.com"
-   auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth")
-   auth-source-cache-expiry 300
-   ;;auth-source-debug t
-   )
-  
+  ;; 防止使用 gnupg 高版本如 2.4.3 来保存 gpg 文件卡住的问题。
+  ;; https://emacs-china.org/t/gpg/24595
+  (fset 'epg-wait-for-status 'ignore)
   (require 'epa-file)
   (epa-file-enable))
 
 ;; 关闭容易误操作的按键。
 (let ((keys '("s-w" "C-z" "<mouse-2>" "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
-              "C-<wheel-down>" "C-<wheel-up>" "<down-mouse-1>")))
+              "C-<wheel-down>" "C-<wheel-up>")))
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
@@ -124,6 +123,25 @@
 (setq mac-option-modifier 'super)
 ;; fn 作为 Hyper 键。
 (setq ns-function-modifier 'hyper)
+
+;; 提升 io 性能。
+(setq process-adaptive-read-buffering nil)
+(setq read-process-output-max (* 1024 1024 4)) ;; 4MB
+(setq inhibit-compacting-font-caches t)
+(setq-default message-log-max t)
+(setq-default ad-redefinition-action 'accept)
+
+;; Garbage Collector Magic Hack
+;; 能提升 vterm buffer、json 文件时响应性能。
+(use-package gcmh
+  :init
+  ;;(setq garbage-collection-messages t)
+  ;;(setq gcmh-verbose t)
+  (setq gcmh-idle-delay 'auto) ;; default is 15s
+  (setq gcmh-auto-idle-delay-factor 10)
+  (setq gcmh-high-cons-threshold (* 16 1024 1024))
+  (gcmh-mode 1)
+  (gcmh-set-high-threshold))
 
 (when (memq window-system '(mac ns x))
   (tool-bar-mode -1)
@@ -209,8 +227,8 @@
 (global-set-key (kbd "s-o") #'other-window)
 
 ;; 滚动显示。
-(global-set-key (kbd "s-j") (lambda () (interactive) (scroll-up 2)))
-(global-set-key (kbd "s-k") (lambda () (interactive) (scroll-down 2)))
+(global-set-key (kbd "s-j") (lambda () (interactive) (scroll-up 1)))
+(global-set-key (kbd "s-k") (lambda () (interactive) (scroll-down 1)))
 
 ;; 内容居中显示。
 (use-package olivetti
@@ -231,6 +249,7 @@
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-navigator t)
   (setq dashboard-set-file-icons t)
+  (setq dashboard-path-max-length 30)
   (setq dashboard-items '((recents . 15) (projects . 8) (agenda . 3))))
 
 (use-package nerd-icons)
@@ -245,14 +264,14 @@
   (doom-modeline-github nil)
   (doom-modeline-time-icon nil)
   :config
-  (display-battery-mode 1)
+  (display-battery-mode 0)
   (column-number-mode t)
   (size-indication-mode t)
   (display-time-mode t)
   (setq display-time-24hr-format t)
   (setq display-time-default-load-average nil)
   (setq display-time-load-average-threshold 10)
-  (setq display-time-format "%m/%d[%w]%H:%M ")
+  (setq display-time-format "%H:%M ") ;; "%m/%d[%w]%H:%M "
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
@@ -374,6 +393,13 @@
 (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
 (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
+(use-package nyan-mode
+  :config
+  (setq nyan-animate-nyancat t)
+  (setq nyan-wavy-trail nil)
+  (nyan-mode)
+  (nyan-start-animation))
+
 (use-package tab-bar
   :custom
   (tab-bar-close-button-show nil)
@@ -436,8 +462,7 @@
   (global-set-key (kbd "s-6") 'tab-bar-select-tab)
   (global-set-key (kbd "s-7") 'tab-bar-select-tab)
   (global-set-key (kbd "s-8") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-9") 'tab-bar-select-tab)
-  )
+  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 
 ;; 高亮光标移动到的行。
 (use-package pulsar
@@ -454,6 +479,8 @@
   :config
   (require 'vertico-directory) 
   (setq vertico-count 20)
+  ;; 默认不选中任何候选者，可以避免默认选中文件后当前 buffer 显示该文件内容。
+  (setq vertico-preselect 'prompt)
   (vertico-mode 1)
   (define-key vertico-map (kbd "<backspace>") #'vertico-directory-delete-char)
   (define-key vertico-map (kbd "RET") #'vertico-directory-enter))
@@ -574,7 +601,6 @@
       (org-fold-show-entry))))
 (advice-add 'consult-line :around #'my/org-show-entry)
 
-  ;;; consult
 (global-set-key (kbd "C-c M-x") #'consult-mode-command)
 (global-set-key (kbd "C-c i") #'consult-info)
 (global-set-key (kbd "C-c m") #'consult-man)
@@ -629,7 +655,7 @@
   (setq prefix-help-command #'embark-prefix-help-command)
   :config
   (setq embark-prompter 'embark-keymap-prompter)
-  (global-set-key (kbd "C-;") #'embark-act)
+  (global-set-key (kbd "C-;") #'embark-act) ;; embark-dwim
   ;; 描述当前 buffer 可以使用的快捷键。
   (define-key global-map [remap describe-bindings] #'embark-bindings))
 
@@ -639,7 +665,11 @@
   :hook  (embark-collect-mode . consult-preview-at-point-mode))
 
 ;; 编辑 grep buffers, 可以和 consult-grep 和 embark-export 联合使用。
-(use-package wgrep)
+(use-package wgrep
+  :config
+  ;; 执行 `wgre-finished-edit` 时自动保存所有 buffer。
+  (setq wgrep-auto-save-buffer t)
+  (setq wgrep-change-readonly-file t))
 
 (use-package marginalia
   :init
@@ -795,8 +825,8 @@
         org-image-actual-width '(300)
         org-cycle-inline-images-display nil
         org-html-validation-link nil
-	    ;; 关闭鼠标点击链接。
-	    org-mouse-1-follows-link nil
+        ;; 关闭鼠标点击链接。
+        org-mouse-1-follows-link nil
         org-export-with-broken-links t
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
         org-link-file-path-type 'relative
@@ -815,6 +845,7 @@
         org-list-indent-offset 2
         ;; org-timer 到期时发送声音提示。
         org-clock-sound t)
+  (setq  org-indirect-buffer-display 'current-window)
   ;; 不自动缩进。
   (setq org-src-preserve-indentation t)
   (setq org-edit-src-content-indentation 0)
@@ -830,7 +861,7 @@
   (setq org-id-link-to-org-use-id t)
   (setq org-M-RET-may-split-line nil)
   (setq org-todo-keywords '((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
-                            (sequence "BLOCKED(b@)" "|" "CANCELLED(c@)")))
+			        (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)")))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
@@ -849,7 +880,9 @@
 (use-package org-modern
   :after (org)
   :config
-  (setq org-modern-star '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"))
+  ;; 各种符号字体：https://github.com/rime/rime-prelude/blob/master/symbols.yaml
+  ;;(setq org-modern-star '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"))
+  (setq org-modern-star '("⚀" "⚁" "⚂" "⚃" "⚄" "⚅"))
   (setq org-modern-block-fringe nil)
   (setq org-modern-block-name
         '((t . t)
@@ -859,9 +892,10 @@
           ("quote" "❝" "❞")))
   ;; 缩放字体时表格边界不对齐，故不美化表格。
   (setq org-modern-table nil)
-  (setq org-modern-list '((43 . "🔘")
-                          (45 . "🔸")
-                          (42 . "")))
+  (setq org-modern-list '(
+			  (?* . "✤")
+			  (?+ . "▶")
+			  (?- . "◆")))
   (with-eval-after-load 'org (global-org-modern-mode)))
 
 ;; 显示转义字符。
@@ -869,6 +903,11 @@
   :custom
   (org-appear-autolinks t)
   :hook (org-mode . org-appear-mode))
+
+;; 建立 org 相关目录。
+(dolist (dir '("~/docs/org" "~/docs/org/journal"))
+  (unless (file-directory-p dir)
+    (make-directory dir)))
 
 (use-package org-download
   :config
@@ -898,11 +937,10 @@
 
 (require 'org)
 ;; org bable 完整支持的语言列表（ob- 开头的文件）：
-;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp对于官方不支持的语言，可以通过
+;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语言，可以通过
 ;; use-pacakge 来安装。
 (use-package ob-go) ;; golang 
-(use-package ox-reveal) ;; reveal.js
-(use-package ox-gfm) ;; github flavor markdown
+(use-package ob-rust)
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((shell . t)
@@ -910,11 +948,119 @@
    (makefile . t)
    (go . t)
    (emacs-lisp . t)
+   (rust . t)
    (python . t)
    (awk . t)
    (css . t)))
 
 (use-package org-contrib)
+
+(setq org-agenda-time-grid
+      (quote ((daily today require-timed)
+              (300 600 900 1200 1500 1800 2100 2400)
+              "......"
+              "-----------------------------------------------------"
+              )))
+
+;; org-agenda 展示的文件。
+(setq org-agenda-files
+      '("~/docs/org/todo.org"
+        "~/docs/org/capture.org"))
+(setq org-agenda-start-day "-7d")
+(setq org-agenda-span 21)
+(setq org-agenda-include-diary t)
+;; use org-journal
+;;(setq diary-file "~/docs/orgs/diary")
+;;(setq diary-mail-addr "geekard@qq.com")
+;; 获取经纬度：https://www.latlong.net/
+(setq calendar-latitude +39.904202)
+(setq calendar-longitude +116.407394)
+(setq calendar-location-name "北京")
+(setq calendar-remove-frame-by-deleting t)
+;; 每周第一天是周一。
+(setq calendar-week-start-day 1)
+;; 标记有记录的日期。
+(setq mark-diary-entries-in-calendar t)
+;; 标记节假日。
+(setq mark-holidays-in-calendar nil)
+;; 不显示节日列表。
+(setq view-calendar-holidays-initially nil)
+(setq org-agenda-include-diary t)
+
+;; 除去基督徒、希伯来和伊斯兰教的节日。
+(setq christian-holidays nil
+      hebrew-holidays nil
+      islamic-holidays nil
+      solar-holidays nil
+      bahai-holidays nil)
+
+(setq mark-diary-entries-in-calendar t
+      appt-issue-message nil
+      mark-holidays-in-calendar t
+      view-calendar-holidays-initially nil)
+
+(setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
+      calendar-date-display-form '(year "/" month "/" day)
+      calendar-time-display-form '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
+
+(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+
+(autoload 'chinese-year "cal-china" "Chinese year data" t)
+
+(setq calendar-load-hook '(lambda ()
+                            (set-face-foreground 'diary-face   "skyblue")
+                            (set-face-background 'holiday-face "slate blue")
+                            (set-face-foreground 'holiday-face "white")))
+
+(use-package org-super-agenda
+  :config
+  (setq org-super-agenda-groups
+	'(;; Each group has an implicit boolean OR operator between its selectors.
+          (:name "Today"  ; Optionally specify section name
+                 :time-grid t  ; Items that appear on the time grid
+                 :todo "TODAY")  ; Items that have this TODO keyword
+          (:name "Important"
+                 ;; Single arguments given alone
+                 :tag "bills"
+                 :priority "A")
+          ;; Set order of multiple groups at once
+          (:order-multi (2 (:name "Shopping in town"
+                                  ;; Boolean AND group matches items that match all subgroups
+                                  :and (:tag "shopping" :tag "@town"))
+                           (:name "Food-related"
+                                  ;; Multiple args given in list with implicit OR
+                                  :tag ("food" "dinner"))
+                           (:name "Personal"
+                                  :habit t
+                                  :tag "personal")
+                           (:name "Space-related (non-moon-or-planet-related)"
+                                  ;; Regexps match case-insensitively on the entire entry
+                                  :and (:regexp ("space" "NASA")
+						;; Boolean NOT also has implicit OR between selectors
+						:not (:regexp "moon" :tag "planet")))))
+          ;; Groups supply their own section names when none are given
+          (:todo "WAITING" :order 8)  ; Set order of this section
+          (:todo ("SOMEDAY" "TO-READ" "CHECK" "TO-WATCH" "WATCHING")
+                 ;; Show this group at the end of the agenda (since it has the
+                 ;; highest number). If you specified this group last, items
+                 ;; with these todo keywords that e.g. have priority A would be
+                 ;; displayed in that group instead, because items are grouped
+                 ;; out in the order the groups are listed.
+                 :order 9)
+          (:priority<= "B"
+                       ;; Show this section after "Today" and "Important", because
+                       ;; their order is unspecified, defaulting to 0. Sections
+                       ;; are displayed lowest-number-first.
+                       :order 1)
+          ;; After the last group, the agenda will display items that didn't
+          ;; match any of these groups, with the default order position of 99
+          ))
+(org-super-agenda-mode))
+
+;; 将安装的 tex 添加到 PATH 环境变量和 exec-path 变量中，后续 Emacs 查询 xelatex 命令使用。
+(setq my-tex-path "/Library/TeX/texbin")
+(setenv "PATH" (concat my-tex-path ":" (getenv "PATH")))
+(setq exec-path (cons my-tex-path  exec-path))
 
 ;; engrave-faces 相比 minted 渲染速度更快。
 (use-package engrave-faces
@@ -927,6 +1073,16 @@
   ;; 代码块主题。
   (setq org-latex-engraved-theme 'ef-light))
 
+(defun my/export-pdf (backend)
+	    (progn 
+	      ;;(setq org-export-with-toc nil)
+	      (setq org-export-headline-levels 2))
+)
+(add-hook 'org-export-before-processing-functions #'my/export-pdf)
+
+;; ox- 为对应的导出后端。
+(use-package ox-reveal) ;; reveal.js
+(use-package ox-gfm) ;; github flavor markdown
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
@@ -934,14 +1090,7 @@
   ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
   ;; 保存 LaTeX 日志文件。
-  (setq org-latex-remove-logfiles t)
-
-  ;; ;; 目录页前后分页。
-  ;; (setq org-latex-toc-command "\\clearpage \\tableofcontents \\clearpage \n")
-  ;; ;; 封面页，不添加页编号。
-  ;; (setq org-latex-title-command
-  ;; 	"\\maketitle\n\\setcounter{page}{0}\n\\thispagestyle{empty}\n\\newpage \n")
-
+  (setq org-latex-remove-logfiles nil)
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   (add-to-list 'org-latex-classes
@@ -992,12 +1141,22 @@
   (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
   (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
 
-;; 设置缺省 prefix key, 必须在加载 org-journal 前设置。
-(setq org-journal-prefix-key "C-c j")
+(require 'org-protocol)
+(require 'org-capture)
+
+(setq org-capture-templates
+      '(
+	("c" "Capture" entry (file+headline "~/docs/org/capture.org" "Capture")
+         "* %^{Title}\nDate: %U\nSource: %:annotation\nQuote:\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\n\n"
+         :empty-lines 1)
+        ("t" "Todo" entry (file+headline "~/docs/org/todo.org" "Tasks")
+         "* TODO %?\n %U %a\n %i" :empty-lines 1)))
 
 (use-package org-journal
   :commands org-journal-new-entry
+  :bind (("C-c j" . org-journal-new-entry))
   :init
+  (setq org-journal-prefix-key "C-c j")
   (defun org-journal-save-entry-and-exit()
     (interactive)
     (save-buffer)
@@ -1007,7 +1166,7 @@
   (define-key org-journal-mode-map (kbd "C-c C-j") #'org-journal-new-entry)
 
   (setq org-journal-file-type 'monthly)
-  (setq org-journal-dir "~/journal")
+  (setq org-journal-dir "~/docs/org/journal")
   (setq org-journal-find-file 'find-file)
 
   ;; 加密 journal 文件。
@@ -1036,6 +1195,24 @@
        (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
   (setq org-journal-file-header 'org-journal-file-header-func))
 
+  ;; org-agenda 集成。
+  ;; automatically adds the current and all future journal entries to the agenda
+  ;;(setq org-journal-enable-agenda-integration t)
+  ;; When org-journal-file-pattern has the default value, this would be the regex.
+  (setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
+  (add-to-list 'org-agenda-files org-journal-dir)
+
+  ;; org-capture 集成。
+  (defun org-journal-find-location ()
+    (org-journal-new-entry t)
+    (unless (eq org-journal-file-type 'daily)
+      (org-narrow-to-subtree))
+    (goto-char (point-max)))
+  (setq org-capture-templates
+        (cons '("j" "Journal" plain (function org-journal-find-location)
+                "** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
+                :jump-to-captured t :immediate-finish t) org-capture-templates))
+
 (use-package ox-hugo
   :demand
   :config
@@ -1045,6 +1222,23 @@
   (setq org-hugo-export-with-section-numbers t)
   (setq org-export-backends '(go md gfm html latex man hugo))
   (setq org-hugo-auto-set-lastmod t))
+
+(defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
+(defun terminal-notifier-notify (title message)
+  (start-process "terminal-notifier"
+                 "terminal-notifier"
+                 terminal-notifier-command
+                 "-title" title
+                 "-sound" "default"
+                 "-message" message
+                 "-activate" "org.gnu.Emacs"))
+
+(defun timed-notification (time msg)
+  (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
+  (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
+
+;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
+(setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
 
 (setq vc-follow-symlinks t)
 
@@ -1121,6 +1315,10 @@
   (add-hook 'prog-mode-hook #'smartparens-mode)
   ;;(smartparens-global-mode t)
   (show-smartparens-global-mode t))
+
+(setq my-llvm-path "/usr/local/opt/llvm/bin")
+(setenv "PATH" (concat my-llvm-path ":" (getenv "PATH")))
+(setq exec-path (cons my-llvm-path  exec-path))
 
 (defun my/python-setup-shell (&rest args)
   (if (executable-find "ipython")
@@ -1301,6 +1499,10 @@ mermaid.initialize({
 
 (setq sh-basic-offset 4)
 (setq sh-indentation 4)
+
+(use-package rainbow-csv
+  :vc (:fetcher github :repo emacs-vs/rainbow-csv)
+  )
 
 ;; treesit-auto 自动安装 grammer 和自动将 xx major-mode remap 到对应的
 ;; xx-ts-mode 上。具体参考变量：treesit-auto-recipe-list
@@ -1631,6 +1833,12 @@ mermaid.initialize({
   ;;; 将 Go module 文件作为 project root 标识。
   (add-to-list 'dumb-jump-project-denoters "go.mod"))
 
+(use-package anki-helper
+  :vc (:fetcher github :repo Elilif/emacs-anki-helper)
+  :config
+  (setq anki-helper-media-directory "~/Library/Application Support/Anki2/User 1/collection.media/")
+  )
+
 (use-package project
   :custom
   (project-switch-commands
@@ -1694,6 +1902,7 @@ mermaid.initialize({
   (setq vterm-set-bold-hightbright t)
   (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 100000)
+  (setq vterm-timer-delay 0.01)
   (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash"))
   ;; vterm buffer 名称，%s 为 shell 的 PROMPT_COMMAND 变量的输出。
   (setq vterm-buffer-name-string "*vt: %s")
@@ -2113,9 +2322,6 @@ mermaid.initialize({
   (add-to-list 'savehist-additional-variables 'mark-ring)
   (add-to-list 'savehist-additional-variables 'global-mark-ring)
   (add-to-list 'savehist-additional-variables 'extended-command-history))
-
-(setq-default message-log-max t)
-(setq-default ad-redefinition-action 'accept)
 
 ;; 使用系统剪贴板，实现与其它程序相互粘贴。
 (setq x-select-enable-clipboard t)
