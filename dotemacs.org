@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2023-12-26T18:12:38+0800
+#+LASTMOD: 2024-01-18T16:01:07+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -10,7 +10,7 @@
 
 编译安装 Emacs 29:
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-# brew uninstall emacs-plus@29
+brew uninstall emacs-plus@29
 brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon --with-native-comp --with-poll --HEAD
 brew unlink emacs-plus@29 && brew link emacs-plus@29
 ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
@@ -18,7 +18,8 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 
 * init
 
-=early-init.el= 是 =Emacs= 启动时最开始执行的文件，执行复杂逻辑可能导致启动失败，所以该文件尽量以变量定义为主。
+=early-init.el= 是 =Emacs= 启动时最开始执行的文件，执行复杂逻辑可能导致启动失败，所以该文件尽量以变量定
+义为主。
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 (when (fboundp 'native-compile-async)
   (setenv "LIBRARY_PATH"
@@ -154,13 +155,12 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 #+begin_src emacs-lisp
 (use-package epa
   :config
-  (setq
-   user-full-name "zhangjun"
-   user-mail-address "geekard@qq.com"
-   auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth")
-   auth-source-cache-expiry 300
-   ;;auth-source-debug t
-   )
+  (setq user-full-name "zhangjun")
+  (setq user-mail-address "geekard@qq.com")
+  (setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
+  (setq auth-source-cache-expiry 300)
+  ;;(setq auth-source-debug t)
+   
   (setq-default
    ;; 缺省使用 email 地址加密。
    epa-file-select-keys nil
@@ -169,8 +169,7 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
    epa-pinentry-mode 'loopback
    epa-file-cache-passphrase-for-symmetric-encryption t
    )
-  ;; 防止使用 gnupg 高版本如 2.4.3 来保存 gpg 文件卡住的问题。
-  ;; https://emacs-china.org/t/gpg/24595
+  ;; 解决使用高版本（如 2.4.3）GnuPG 来保存 gpg 文件卡住的问题。https://emacs-china.org/t/gpg/24595
   (fset 'epg-wait-for-status 'ignore)
   (require 'epa-file)
   (epa-file-enable))
@@ -190,10 +189,13 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 
 ;; 提升 io 性能。
 (setq process-adaptive-read-buffering nil)
-(setq read-process-output-max (* 1024 1024 4)) ;; 4MB
+(setq read-process-output-max (* 1024 1024 4))
 (setq inhibit-compacting-font-caches t)
 (setq-default message-log-max t)
 (setq-default ad-redefinition-action 'accept)
+(setq bidi-inhibit-bpa t)
+(setq bidi-paragraph-direction 'left-to-right)
+(setq-default bidi-display-reordering nil) 
 
 ;; Garbage Collector Magic Hack
 ;; 能提升 vterm buffer、json 文件时响应性能。
@@ -203,12 +205,12 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
   ;;(setq gcmh-verbose t)
   (setq gcmh-idle-delay 'auto) ;; default is 15s
   (setq gcmh-auto-idle-delay-factor 10)
-  (setq gcmh-high-cons-threshold (* 16 1024 1024))
+  (setq gcmh-high-cons-threshold (* 32 1024 1024))
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 #+end_src
 + 如果向 auth-source 文件添加了认证信息，但是手动执行，如 ~(auth-source-pick-first-password :host
-   "XXX")~ 返回 nil，可以清空 cache 再试： ~M-x auth-source-forget-all-cached~
+  "XXX")~ 返回 nil，可以清空 cache 再试： ~M-x auth-source-forget-all-cached~
 
 * face
 ** ui
@@ -354,17 +356,23 @@ doom-modeline 使用 nerd-icons 在 modeline 上显示 icons。nerd-incos 默认
   (display-time-mode t)
   (setq display-time-24hr-format t)
   (setq display-time-default-load-average nil)
-  (setq display-time-load-average-threshold 10)
+  (setq display-time-load-average-threshold 20)
   (setq display-time-format "%H:%M ") ;; "%m/%d[%w]%H:%M "
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
+
+;; 为 vterm-mode 定义简化的 modeline，提升性能。
+(doom-modeline-def-modeline 'my-term-modeline
+  '(buffer-info) ;; 左侧
+  '(misc-info minor-modes input-method)) ;; 右侧
+(add-to-list 'doom-modeline-mode-alist '(vterm-mode . my-term-modeline))
 #+end_src
 
 ** font
 
 + 英文字体：[[https://github.com/protesilaos/iosevka-comfy][Iosevka Comfy]];
 + 中文字体：霞鹜文楷屏幕阅读版 [[https://github.com/lxgw/LxgwWenKai-Screen/releases][LxgwWenKai-Screen]]，屏幕阅读版主要是对字体做了加粗，便于屏幕阅读;
-    + 另一种适用于终端显示的中文等宽字体：[[https://github.com/laishulu/Sarasa-Term-SC-Nerd][Sarasa-Term-SC-Nerd]]
+  + 另一种适用于终端显示的中文等宽字体：[[https://github.com/laishulu/Sarasa-Term-SC-Nerd][Sarasa-Term-SC-Nerd]]
 + 英文 Iosevka/Sarasa 字体和中文 LxgwWenKai 字体，按照 1:1 缩放，在偶数字号的情况下可以实现等宽等高;
 
 其他字体：
@@ -606,7 +614,7 @@ modeline 显示彩虹猫：
   (require 'vertico-directory) 
   (setq vertico-count 20)
   ;; 默认不选中任何候选者，可以避免默认选中文件后当前 buffer 显示该文件内容。
-  (setq vertico-preselect 'prompt)
+  ;;(setq vertico-preselect 'prompt)
   (vertico-mode 1)
   (define-key vertico-map (kbd "<backspace>") #'vertico-directory-delete-char)
   (define-key vertico-map (kbd "RET") #'vertico-directory-enter))
@@ -1232,46 +1240,53 @@ which watchexec || brew install watchexec
         org-highlight-latex-and-related '(latex)
         ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
         org-export-with-latex 'verbatim
-        org-hide-emphasis-markers t
-        org-hide-block-startup t
-        org-hidden-keywords '(title)
-        org-cycle-separator-lines 2
-        org-cycle-level-faces t
-        org-n-level-faces 4
-        ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
-        org-log-into-drawer t
-        ;; TODO 状态更新时记录 note.
-        org-log-done 'note ;; note, time
-        ;; 不在线显示图片，手动点击显示更容易控制大小。
-        org-startup-with-inline-images nil
-        ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
-        org-image-actual-width '(300)
-        org-cycle-inline-images-display nil
+        org-export-with-broken-links t
+        ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
+        org-export-with-sub-superscripts nil
+
+        ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
+        org-use-sub-superscripts nil
+        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
+        org-link-file-path-type 'relative
         org-html-validation-link nil
         ;; 关闭鼠标点击链接。
         org-mouse-1-follows-link nil
-        org-export-with-broken-links t
-        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
-        org-link-file-path-type 'relative
-        org-startup-folded 'content
-        ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
-        org-use-sub-superscripts nil
-        ;; 如果对 headline 编号，则 latext 输出时会导致 toc 缺失，故关闭。
-        org-startup-numerated nil
-        org-startup-indented t
-        ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
-        org-export-with-sub-superscripts nil
-        org-hide-leading-stars t
+        
+        org-hide-emphasis-markers t
+        org-hide-block-startup t
+        org-hidden-keywords '(title)
+	    org-hide-leading-stars t
+	    
+        org-cycle-separator-lines 2
+        org-cycle-level-faces t
+        org-n-level-faces 4
         org-indent-indentation-per-level 2
         ;; 内容缩进与对应 headerline 一致。
         org-adapt-indentation t
         org-list-indent-offset 2
+	    ;; 代码块不缩进。
+        org-src-preserve-indentation t
+        org-edit-src-content-indentation 0
+
+        ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
+        org-log-into-drawer t
+        ;; TODO 状态更新时记录 note.
+        org-log-done 'note ;; note, time
+
+        ;; 不在线显示图片，手动点击显示更容易控制大小。
+        org-startup-with-inline-images nil
+        org-startup-folded 'content
+        ;; 如果对 headline 编号则 latext 输出时会导致 toc 缺失，故关闭。
+        org-startup-numerated nil
+        org-startup-indented t
+
+        ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
+        org-image-actual-width '(300)
+        org-cycle-inline-images-display nil
+
         ;; org-timer 到期时发送声音提示。
         org-clock-sound t)
-  (setq  org-indirect-buffer-display 'current-window)
-  ;; 不自动缩进。
-  (setq org-src-preserve-indentation t)
-  (setq org-edit-src-content-indentation 0)
+
   ;; 不自动对齐 tag。
   (setq org-tags-column 0)
   (setq org-auto-align-tags nil)
@@ -1545,9 +1560,6 @@ which magick || brew install imagemagick
 ")
 #+end_example
 
-对于表格，如果列内容过宽则导出的 pdf 中该列的内容会被截断，可以为表格设置如下属性，将该列 align 设置
-为 X 来解决： =#+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|l|X=
-
 #+begin_src emacs-lisp
 ;; 将安装的 tex 添加到 PATH 环境变量和 exec-path 变量中，后续 Emacs 查询 xelatex 命令使用。
 (setq my-tex-path "/Library/TeX/texbin")
@@ -1581,8 +1593,8 @@ which magick || brew install imagemagick
   (setq org-latex-image-default-width "0.7\\linewidth")
   ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
-  ;; 保存 LaTeX 日志文件。
-  (setq org-latex-remove-logfiles nil)
+  ;; 不保存 LaTeX 日志文件（调试时打开）。
+  (setq org-latex-remove-logfiles t)
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   (add-to-list 'org-latex-classes
@@ -1601,7 +1613,10 @@ which magick || brew install imagemagick
 (use-package htmlize)
 #+end_src
 
-自定义样式 mystyle.sty:
+自定义样式 mystyle.sty: 对于表格，如果列内容过宽则导出的 pdf 中该列的内容会被截断，可以为表格设置如
+下属性，将该列 align 设置为 X 来解决： =#+ATTR_LATEX: :environment tabularx :booktabs t :width
+\linewidth :align l|l|X=
+
 #+begin_src latex :tangle  ~/.emacs.d/mystyle.sty
 \usepackage{wallpaper} % 显示封面图片或页面图片。
 
@@ -1789,12 +1804,12 @@ javascript:location.href='org-protocol://store-link?url='+encodeURIComponent(loc
 (require 'org-capture)
 
 (setq org-capture-templates
-      '(
-	("c" "Capture" entry (file+headline "~/docs/org/capture.org" "Capture")
+      '(("c" "Capture" entry (file+headline "~/docs/org/capture.org" "Capture")
          "* %^{Title}\nDate: %U\nSource: %:annotation\nQuote:\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\n\n"
-         :empty-lines 1)
+	 :empty-lines 1)
         ("t" "Todo" entry (file+headline "~/docs/org/todo.org" "Tasks")
-         "* TODO %?\n %U %a\n %i" :empty-lines 1)))
+         "* TODO %?\n %U %a\n %i"
+	 :empty-lines 1)))
 #+end_src
 
 新建一个浏览器书签，内容如下：
@@ -1938,7 +1953,23 @@ which terminal-notifier || brew install terminal-notifiler
   (add-hook 'magit-diff-visit-file-hook (lambda() (when (derived-mode-p 'org-mode)(org-fold-show-entry)))))
 
 ;; git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
-(use-package git-link :config (setq git-link-use-commit t))
+(use-package git-link
+  :config
+  (setq git-link-use-commit t)
+
+  ;; 重写 gitlab 的 format 字符串，以匹配公司的系统。
+  (defun git-link-commit-gitlab (hostname dirname commit)
+    (format "https://%s/%s/commit/%s" hostname dirname commit))
+  (defun git-link-gitlab (hostname dirname filename branch commit start end)
+    (format "https://%s/%s/blob/%s/%s" hostname dirname
+	    (or branch commit)
+            (concat filename
+                    (when start
+                      (concat "#"
+                              (if end
+                                  (format "L%s-%s" start end)
+				(format "L%s" start)))))))
+)
 #+end_src
 + =(setq auto-revert-check-vc-info t)= 自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU Profile 显示
    比较影响性能，故暂不开启。
@@ -2622,7 +2653,7 @@ hang，需要删除。
   (setq citre-tags-in-buffer-backends  '(global))
   (setq citre-auto-enable-citre-mode-backends '(global))
   ;; citre-config 的逻辑只对 prog-mode 的文件有效。
-  (setq citre-auto-enable-citre-mode-modes '(prog-mode))
+  (setq citre-auto-enable-citre-mode-modes '(go-ts-mode go-mode python-ts-mode python-mode))
   (setq citre-use-project-root-when-creating-tags t)
   (setq citre-peek-file-content-height 20)
   ;; 上面的 citre-config 会自动开启 citre-mode，然后下面在
@@ -2917,6 +2948,7 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
   (add-hook 'python-ts-mode-hook #'eglot-ensure)
+  (add-hook 'rust-ts-mode-hook #'eglot-ensure)
 
   ;; 忽略一些用不到，耗性能的能力。
   (setq eglot-ignored-server-capabilities
@@ -2982,6 +3014,21 @@ consult-eglot 提供 ~consult-eglot-symbols~ 函数，可以选择 workspace 中
   :after (eglot consult))  
 #+end_src
 
+** emacs-lsp-booster
+
+下载 [[https://github.com/blahgeek/emacs-lsp-booster][emacs-lsp-booster]] 可执行程序：
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+which emacs-lsp-booster || wget https://github.com/blahgeek/emacs-lsp-booster/releases/download/v0.2.0/emacs-lsp-booster_v0.2.0_x86_64-apple-darwin.zip
+#+end_src
+
+使用 emacs-lsp-booster 来加速 eglot 的响应性能：
+#+begin_src emacs-lisp
+(use-package eglot-booster
+  :vc (:fetcher github :repo jdtsmith/eglot-booster)
+	:after eglot
+	:config	(eglot-booster-mode))
+#+end_src
+
 ** dumb-jump
 
 #+begin_src emacs-lisp
@@ -2998,34 +3045,25 @@ consult-eglot 提供 ~consult-eglot-symbols~ 函数，可以选择 workspace 中
 #+end_src
 
 ** rust
-#+begin_src emacs-lisp :tangle no
+
+安装 rust lsp server rust-analyzer:
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+which rustc || brew install rust
+which rust-analyzer || brew install rust-analyzer
+#+end_src
+
+#+begin_src emacs-lisp
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
   :mode "\\.rs\\'"
   :bind (:map rust-mode-map
               ("M-n" . flymake-goto-next-error)
               ("M-p" . flymake-goto-prev-error)
-
               ("C-c C-c v" . (lambda ()
                                (interactive)
                                (shell-command "rustdocs std"))))
-  :hook (rust-mode . yas-minor-mode-on)
   :custom
-  (rust-format-on-save t)
-  :preface
-  (defun my-rust-project-find-function (dir)
-    (let ((root (locate-dominating-file dir "Cargo.toml")))
-      (and root (cons 'transient root))))
-  :init
-  (with-eval-after-load 'project
-    (add-to-list 'project-find-functions 'my-rust-project-find-function)))
-
-(use-package rust-mode-eglot
-  :no-require t
-  :after eglot
-  :hook (rust-mode . eglot-ensure)
-  :config
-  (add-to-list 'eglot-server-programs '(rust-mode "rust-analyzer")))
+  (rust-format-on-save t))
 
 (use-package cargo
   :commands cargo-minor-mode
@@ -3093,6 +3131,7 @@ consult-eglot 提供 ~consult-eglot-symbols~ 函数，可以选择 workspace 中
 :PROPERTIES:
 :ANKI_NOTE_HASH: ddecd24f60772acf8616cce396d072b4
 :ANKI_NOTE_ID: 1703514191896
+:ID:       6D6E9542-0E37-4C37-B6E7-9749472CE956
 :END:
 #+begin_src emacs-lisp
 (use-package anki-helper
@@ -3114,7 +3153,7 @@ consult-eglot 提供 ~consult-eglot-symbols~ 函数，可以选择 workspace 中
 生效）：
 + 在 org-paths 列表中添加 org-mode 文件的上层路径；
 + 系统安装 ripgrep 命令，搜索命令更好；
-+ 修正原始的 note_match 正则表达式；
++ 修正原始的 note_match 正则表达式(最新 anki-open-org-note 版本已修复)；
 + Emacs 需要以 server 启动，而且需要关闭 socks5 代理，否则报错 ‘anki-helper--curl-sentinel: End of
    file while parsing JSON’。
 #+begin_example
@@ -3206,6 +3245,10 @@ back side
 
 anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
 
+参考：
+1. [[https://yiufung.net/post/anki-org/][Power up Anki with Emacs, Org mode, anki-editor and more]]
+2. [[https://docs.ankiweb.net/intro.html][Introduction - Anki Manual]]
+
 * project
 
 #+begin_src emacs-lisp
@@ -3231,7 +3274,7 @@ anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
   (catch 'ret
     (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有 .project 等文件，
 		        ;; 否则判断 project root 失败。
-		      ("go.mod" "pom.xml" "package.json" ".project" )
+		      ("go.mod" "Cargo.toml" "pom.xml" "package.json" ".project" )
                       ;; 以下文件容易导致 project root 判断失败, 故关闭。
                       ;; ("Makefile" "README.org" "README.md")
                       )))
@@ -3264,6 +3307,7 @@ anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
 #+end_src
 
 * terminal
+** vterm
 
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 which cmake || brew install cmake
@@ -3274,25 +3318,25 @@ which exiftran || brew install fxiftran
 #+begin_src emacs-lisp
 (use-package vterm
   :hook
-  ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
   (vterm-mode . (lambda ()
-                  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
-                  (buffer-face-mode t)))
+		  ;; 关闭一些 mode，提升显示性能。
+		  (setf truncate-lines nil)
+		  (setq-local show-paren-mode nil)
+		  (setq-local global-hl-line-mode nil)
+	          (display-line-numbers-mode -1) ;; 不显示行号。
+		  (font-lock-mode -1) ;; 不显示字体颜色。
+		  ;;(yas-minor-mode -1)
+		  ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
+		  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
+		  (buffer-face-mode t)))
   :config
   (setq vterm-set-bold-hightbright t)
   (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 100000)
-  (setq vterm-timer-delay 0.01)
+  (setq vterm-timer-delay 0.01) ;; nil: no delay
   (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash"))
   ;; vterm buffer 名称，%s 为 shell 的 PROMPT_COMMAND 变量的输出。
   (setq vterm-buffer-name-string "*vt: %s")
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (setf truncate-lines nil)
-              (setq-local show-paren-mode nil)
-              (setq-local global-hl-line-mode nil)
-              ;;(yas-minor-mode -1)
-	      ))
   ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
   (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
   (define-key vterm-mode-map (kbd "C-l") nil)

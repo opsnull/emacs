@@ -72,13 +72,12 @@
 
 (use-package epa
   :config
-  (setq
-   user-full-name "zhangjun"
-   user-mail-address "geekard@qq.com"
-   auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth")
-   auth-source-cache-expiry 300
-   ;;auth-source-debug t
-   )
+  (setq user-full-name "zhangjun")
+  (setq user-mail-address "geekard@qq.com")
+  (setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
+  (setq auth-source-cache-expiry 300)
+  ;;(setq auth-source-debug t)
+   
   (setq-default
    ;; 缺省使用 email 地址加密。
    epa-file-select-keys nil
@@ -87,8 +86,7 @@
    epa-pinentry-mode 'loopback
    epa-file-cache-passphrase-for-symmetric-encryption t
    )
-  ;; 防止使用 gnupg 高版本如 2.4.3 来保存 gpg 文件卡住的问题。
-  ;; https://emacs-china.org/t/gpg/24595
+  ;; 解决使用高版本（如 2.4.3）GnuPG 来保存 gpg 文件卡住的问题。https://emacs-china.org/t/gpg/24595
   (fset 'epg-wait-for-status 'ignore)
   (require 'epa-file)
   (epa-file-enable))
@@ -108,10 +106,13 @@
 
 ;; 提升 io 性能。
 (setq process-adaptive-read-buffering nil)
-(setq read-process-output-max (* 1024 1024 4)) ;; 4MB
+(setq read-process-output-max (* 1024 1024 4))
 (setq inhibit-compacting-font-caches t)
 (setq-default message-log-max t)
 (setq-default ad-redefinition-action 'accept)
+(setq bidi-inhibit-bpa t)
+(setq bidi-paragraph-direction 'left-to-right)
+(setq-default bidi-display-reordering nil) 
 
 ;; Garbage Collector Magic Hack
 ;; 能提升 vterm buffer、json 文件时响应性能。
@@ -121,7 +122,7 @@
   ;;(setq gcmh-verbose t)
   (setq gcmh-idle-delay 'auto) ;; default is 15s
   (setq gcmh-auto-idle-delay-factor 10)
-  (setq gcmh-high-cons-threshold (* 16 1024 1024))
+  (setq gcmh-high-cons-threshold (* 32 1024 1024))
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
@@ -252,10 +253,16 @@
   (display-time-mode t)
   (setq display-time-24hr-format t)
   (setq display-time-default-load-average nil)
-  (setq display-time-load-average-threshold 10)
+  (setq display-time-load-average-threshold 20)
   (setq display-time-format "%H:%M ") ;; "%m/%d[%w]%H:%M "
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
+
+;; 为 vterm-mode 定义简化的 modeline，提升性能。
+(doom-modeline-def-modeline 'my-term-modeline
+  '(buffer-info) ;; 左侧
+  '(misc-info minor-modes input-method)) ;; 右侧
+(add-to-list 'doom-modeline-mode-alist '(vterm-mode . my-term-modeline))
 
 (use-package fontaine
   :config
@@ -462,7 +469,7 @@
   (require 'vertico-directory) 
   (setq vertico-count 20)
   ;; 默认不选中任何候选者，可以避免默认选中文件后当前 buffer 显示该文件内容。
-  (setq vertico-preselect 'prompt)
+  ;;(setq vertico-preselect 'prompt)
   (vertico-mode 1)
   (define-key vertico-map (kbd "<backspace>") #'vertico-directory-delete-char)
   (define-key vertico-map (kbd "RET") #'vertico-directory-enter))
@@ -791,46 +798,53 @@
         org-highlight-latex-and-related '(latex)
         ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
         org-export-with-latex 'verbatim
-        org-hide-emphasis-markers t
-        org-hide-block-startup t
-        org-hidden-keywords '(title)
-        org-cycle-separator-lines 2
-        org-cycle-level-faces t
-        org-n-level-faces 4
-        ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
-        org-log-into-drawer t
-        ;; TODO 状态更新时记录 note.
-        org-log-done 'note ;; note, time
-        ;; 不在线显示图片，手动点击显示更容易控制大小。
-        org-startup-with-inline-images nil
-        ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
-        org-image-actual-width '(300)
-        org-cycle-inline-images-display nil
+        org-export-with-broken-links t
+        ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
+        org-export-with-sub-superscripts nil
+
+        ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
+        org-use-sub-superscripts nil
+        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
+        org-link-file-path-type 'relative
         org-html-validation-link nil
         ;; 关闭鼠标点击链接。
         org-mouse-1-follows-link nil
-        org-export-with-broken-links t
-        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
-        org-link-file-path-type 'relative
-        org-startup-folded 'content
-        ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
-        org-use-sub-superscripts nil
-        ;; 如果对 headline 编号，则 latext 输出时会导致 toc 缺失，故关闭。
-        org-startup-numerated nil
-        org-startup-indented t
-        ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
-        org-export-with-sub-superscripts nil
-        org-hide-leading-stars t
+        
+        org-hide-emphasis-markers t
+        org-hide-block-startup t
+        org-hidden-keywords '(title)
+	    org-hide-leading-stars t
+	    
+        org-cycle-separator-lines 2
+        org-cycle-level-faces t
+        org-n-level-faces 4
         org-indent-indentation-per-level 2
         ;; 内容缩进与对应 headerline 一致。
         org-adapt-indentation t
         org-list-indent-offset 2
+	    ;; 代码块不缩进。
+        org-src-preserve-indentation t
+        org-edit-src-content-indentation 0
+
+        ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
+        org-log-into-drawer t
+        ;; TODO 状态更新时记录 note.
+        org-log-done 'note ;; note, time
+
+        ;; 不在线显示图片，手动点击显示更容易控制大小。
+        org-startup-with-inline-images nil
+        org-startup-folded 'content
+        ;; 如果对 headline 编号则 latext 输出时会导致 toc 缺失，故关闭。
+        org-startup-numerated nil
+        org-startup-indented t
+
+        ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
+        org-image-actual-width '(300)
+        org-cycle-inline-images-display nil
+
         ;; org-timer 到期时发送声音提示。
         org-clock-sound t)
-  (setq  org-indirect-buffer-display 'current-window)
-  ;; 不自动缩进。
-  (setq org-src-preserve-indentation t)
-  (setq org-edit-src-content-indentation 0)
+
   ;; 不自动对齐 tag。
   (setq org-tags-column 0)
   (setq org-auto-align-tags nil)
@@ -1071,8 +1085,8 @@
   (setq org-latex-image-default-width "0.7\\linewidth")
   ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
-  ;; 保存 LaTeX 日志文件。
-  (setq org-latex-remove-logfiles nil)
+  ;; 不保存 LaTeX 日志文件（调试时打开）。
+  (setq org-latex-remove-logfiles t)
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   (add-to-list 'org-latex-classes
@@ -1127,12 +1141,12 @@
 (require 'org-capture)
 
 (setq org-capture-templates
-      '(
-	("c" "Capture" entry (file+headline "~/docs/org/capture.org" "Capture")
+      '(("c" "Capture" entry (file+headline "~/docs/org/capture.org" "Capture")
          "* %^{Title}\nDate: %U\nSource: %:annotation\nQuote:\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\n\n"
-         :empty-lines 1)
+	 :empty-lines 1)
         ("t" "Todo" entry (file+headline "~/docs/org/todo.org" "Tasks")
-         "* TODO %?\n %U %a\n %i" :empty-lines 1)))
+         "* TODO %?\n %U %a\n %i"
+	 :empty-lines 1)))
 
 (use-package org-journal
   :commands org-journal-new-entry
@@ -1237,7 +1251,23 @@
   (add-hook 'magit-diff-visit-file-hook (lambda() (when (derived-mode-p 'org-mode)(org-fold-show-entry)))))
 
 ;; git-link 根据仓库地址、commit 等信息为光标位置生成 URL:
-(use-package git-link :config (setq git-link-use-commit t))
+(use-package git-link
+  :config
+  (setq git-link-use-commit t)
+
+  ;; 重写 gitlab 的 format 字符串，以匹配公司的系统。
+  (defun git-link-commit-gitlab (hostname dirname commit)
+    (format "https://%s/%s/commit/%s" hostname dirname commit))
+  (defun git-link-gitlab (hostname dirname filename branch commit start end)
+    (format "https://%s/%s/blob/%s/%s" hostname dirname
+	    (or branch commit)
+            (concat filename
+                    (when start
+                      (concat "#"
+                              (if end
+                                  (format "L%s-%s" start end)
+				(format "L%s" start)))))))
+)
 
 (use-package diff-mode
   :init
@@ -1514,7 +1544,7 @@ mermaid.initialize({
   (setq citre-tags-in-buffer-backends  '(global))
   (setq citre-auto-enable-citre-mode-backends '(global))
   ;; citre-config 的逻辑只对 prog-mode 的文件有效。
-  (setq citre-auto-enable-citre-mode-modes '(prog-mode))
+  (setq citre-auto-enable-citre-mode-modes '(go-ts-mode go-mode python-ts-mode python-mode))
   (setq citre-use-project-root-when-creating-tags t)
   (setq citre-peek-file-content-height 20)
   ;; 上面的 citre-config 会自动开启 citre-mode，然后下面在
@@ -1745,6 +1775,7 @@ mermaid.initialize({
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
   (add-hook 'python-ts-mode-hook #'eglot-ensure)
+  (add-hook 'rust-ts-mode-hook #'eglot-ensure)
 
   ;; 忽略一些用不到，耗性能的能力。
   (setq eglot-ignored-server-capabilities
@@ -1804,6 +1835,11 @@ mermaid.initialize({
 (use-package consult-eglot
   :after (eglot consult))
 
+(use-package eglot-booster
+  :vc (:fetcher github :repo jdtsmith/eglot-booster)
+	:after eglot
+	:config	(eglot-booster-mode))
+
 ;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比使用 TAGS 的 citre（适合静态浏
 ;; 览）以及 lsp 方案，更通用和轻量。
 (use-package dumb-jump
@@ -1814,6 +1850,79 @@ mermaid.initialize({
   ;; dumb-jump 发现支持的语言和项目后，会自动生效。
   ;;; 将 Go module 文件作为 project root 标识。
   (add-to-list 'dumb-jump-project-denoters "go.mod"))
+
+;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
+(use-package rust-mode
+  :mode "\\.rs\\'"
+  :bind (:map rust-mode-map
+              ("M-n" . flymake-goto-next-error)
+              ("M-p" . flymake-goto-prev-error)
+              ("C-c C-c v" . (lambda ()
+                               (interactive)
+                               (shell-command "rustdocs std"))))
+  :custom
+  (rust-format-on-save t))
+
+(use-package cargo
+  :commands cargo-minor-mode
+  :bind (:map cargo-mode-map
+              ("C-c C-c C-y" . cargo-process-clippy))
+  :hook (rust-mode . my-rust-mode-cargo-init)
+  :custom
+  (cargo-process--command-clippy "clippy")
+  :preface
+  (defun my-update-cargo-path (&rest _args)
+    (setq cargo-process--custom-path-to-bin
+          (executable-find "cargo")))
+
+  (defun my-cargo-target-dir (path)
+    (replace-regexp-in-string "kadena" "Products" path))
+
+  (defun my-update-cargo-args (ad-do-it name command &optional last-cmd opens-external)
+    (let* ((cmd (car (split-string command)))
+           (new-args
+            (if (member cmd '("build" "check" "clippy" "doc" "test"))
+                (let ((args
+                       (format "--target-dir=%s -j8"
+                               (my-cargo-target-dir
+                                (replace-regexp-in-string
+                                 "target" "target--custom"
+                                 (regexp-quote (getenv "CARGO_TARGET_DIR")))))))
+                  (if (member cmd '("build"))
+                      (concat "--message-format=short " args)
+                    args))
+              ""))
+           (cargo-process--command-flags
+            (pcase (split-string cargo-process--command-flags " -- ")
+              (`(,before ,after)
+               (concat before " " new-args " -- " after))
+              (_ (concat cargo-process--command-flags new-args)))))
+      (funcall ad-do-it name command last-cmd opens-external)))
+
+  (defun my-rust-mode-cargo-init ()
+    (advice-add 'direnv-update-directory-environment
+                :after #'my-update-cargo-path)
+    (advice-add 'cargo-process--start :around #'my-update-cargo-args)
+    (cargo-minor-mode 1))
+  :config
+  (defadvice cargo-process-clippy
+      (around my-cargo-process-clippy activate)
+    (let ((cargo-process--command-flags
+           (concat cargo-process--command-flags
+                   "--all-targets "
+                   "--all-features "
+                   "-- "
+                   "-D warnings "
+                   "-D clippy::all "
+                   "-D clippy::mem_forget "
+                   "-C debug-assertions=off")))
+      ad-do-it))
+
+  (defun cargo-fix ()
+    (interactive)
+    (async-shell-command
+     (concat "cargo fix"
+             " --clippy --tests --benches --allow-dirty --allow-staged"))))
 
 (use-package anki-helper
   :vc (:fetcher github :repo Elilif/emacs-anki-helper)
@@ -1843,7 +1952,7 @@ mermaid.initialize({
   (catch 'ret
     (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有 .project 等文件，
 		        ;; 否则判断 project root 失败。
-		      ("go.mod" "pom.xml" "package.json" ".project" )
+		      ("go.mod" "Cargo.toml" "pom.xml" "package.json" ".project" )
                       ;; 以下文件容易导致 project root 判断失败, 故关闭。
                       ;; ("Makefile" "README.org" "README.md")
                       )))
@@ -1876,25 +1985,25 @@ mermaid.initialize({
 
 (use-package vterm
   :hook
-  ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
   (vterm-mode . (lambda ()
-                  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
-                  (buffer-face-mode t)))
+		  ;; 关闭一些 mode，提升显示性能。
+		  (setf truncate-lines nil)
+		  (setq-local show-paren-mode nil)
+		  (setq-local global-hl-line-mode nil)
+	          (display-line-numbers-mode -1) ;; 不显示行号。
+		  (font-lock-mode -1) ;; 不显示字体颜色。
+		  ;;(yas-minor-mode -1)
+		  ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
+		  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
+		  (buffer-face-mode t)))
   :config
   (setq vterm-set-bold-hightbright t)
   (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 100000)
-  (setq vterm-timer-delay 0.01)
+  (setq vterm-timer-delay 0.01) ;; nil: no delay
   (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash"))
   ;; vterm buffer 名称，%s 为 shell 的 PROMPT_COMMAND 变量的输出。
   (setq vterm-buffer-name-string "*vt: %s")
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (setf truncate-lines nil)
-              (setq-local show-paren-mode nil)
-              (setq-local global-hl-line-mode nil)
-              ;;(yas-minor-mode -1)
-	      ))
   ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
   (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
   (define-key vterm-mode-map (kbd "C-l") nil)

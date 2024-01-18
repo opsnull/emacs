@@ -1,4 +1,4 @@
-# brew uninstall emacs-plus@29
+brew uninstall emacs-plus@29
 brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon --with-native-comp --with-poll --HEAD
 brew unlink emacs-plus@29 && brew link emacs-plus@29
 ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
@@ -87,6 +87,11 @@ gtags --explain
 global -xr SetPrimary
 # definition
 global -x SetPrimary
+
+which emacs-lsp-booster || wget https://github.com/blahgeek/emacs-lsp-booster/releases/download/v0.2.0/emacs-lsp-booster_v0.2.0_x86_64-apple-darwin.zip
+
+which rustc || brew install rust
+which rust-analyzer || brew install rust-analyzer
 
 which cmake || brew install cmake
 which glibtool || brew install libtool

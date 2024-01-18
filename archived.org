@@ -6126,3 +6126,23 @@ Gtags scans that directory if needed."
   :config
   (add-hook 'org-mode-hook #'org-modern-indent-mode 90))
 #+end_src
+
+* eat
+
+emacs-eat 是高性能的终端仿真器。
++ 如果提示错误：Error opening terminal: eat-truecolor.， 可以执行命令 =M-x eat-compile-terminfo= 后重
+  启 eat 来解决。
+#+begin_src emacs-lisp
+(use-package eat
+  :config
+  ;; eshell 集成，使 eshell 也能运行终端命令。
+  (add-hook 'eshell-load-hook #'eat-eshell-mode)
+  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
+#+end_src
+
+bash 集成：在 =~/.bashrc= 中添加如下内容：
+#+begin_src bash :tangle no
+[ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
+  source "$EAT_SHELL_INTEGRATION_DIR/bash"
+#+end_src
+
