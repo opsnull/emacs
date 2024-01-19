@@ -90,8 +90,26 @@ global -x SetPrimary
 
 which emacs-lsp-booster || wget https://github.com/blahgeek/emacs-lsp-booster/releases/download/v0.2.0/emacs-lsp-booster_v0.2.0_x86_64-apple-darwin.zip
 
-which rustc || brew install rust
-which rust-analyzer || brew install rust-analyzer
+# 清理旧环境
+mv ~/.cargo{,.bak}
+brew uninstall rust rust-analyzer
+
+brew install rustup-init
+echo 'export PATH=$HOME/.cargo/bin:$PATH' >>~/.bashrc
+
+rustup-init   # 下载 rust stable 工具链
+rustup component add rust-analyzer # 安装 rust lsp server
+rustup toolchain list   # 查看安装的工具链
+
+rustup toolchain install nightly # rust 仓库依赖 nightly 版本工具链
+rustup default nightly           # 将工具链切换到 nightly 版本
+rustup component add rust-analyzer # 安装 nightly 版本的 rust lsp server
+rustup component add rust-docs # 添加 rust 标准库文档
+
+# cd 到 rust github 仓库
+/Users/zhangjun/go/src/github.com/rust-lang/rust
+git submodule init
+git submodule update library/*  # clone 依赖的库
 
 which cmake || brew install cmake
 which glibtool || brew install libtool

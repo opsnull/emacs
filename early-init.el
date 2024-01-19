@@ -19,11 +19,13 @@
 (setq my-bin-path '(
 		    ;;"/usr/local/opt/findutils/libexec/gnubin"
 		    "/Users/zhangjun/go/bin"
+		    "/Users/zhangjun/.cargo/bin"
 		    ))
 ;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
 (mapc (lambda (p)
 	(setenv "PATH" (concat p ":" (getenv "PATH"))))
       my-bin-path)
+
 (dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
 	       ("GOPROXY" "https://proxy.golang.org")
 	       ("GOPRIVATE" "*.alibaba-inc.com")))

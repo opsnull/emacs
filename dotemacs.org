@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-01-18T16:01:07+0800
+#+LASTMOD: 2024-01-19T18:01:01+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -42,11 +42,13 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 (setq my-bin-path '(
 		    ;;"/usr/local/opt/findutils/libexec/gnubin"
 		    "/Users/zhangjun/go/bin"
+		    "/Users/zhangjun/.cargo/bin"
 		    ))
 ;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
 (mapc (lambda (p)
 	(setenv "PATH" (concat p ":" (getenv "PATH"))))
       my-bin-path)
+
 (dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
 	       ("GOPROXY" "https://proxy.golang.org")
 	       ("GOPRIVATE" "*.alibaba-inc.com")))
@@ -2916,9 +2918,9 @@ elgot 使用 Emacs 内置的 flymake（而非 flycheck）、xref、eldoc、proje
 
 前面打开 package-install-upgrade-built-in 后，就可以升级内置的eglot了。eglot 是通过向
 flymake-diagnostic-functions hook 添加'eglot-flymake-backend 来实现诊断的。eglot 启动后，将
-xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其它 backend，解决办法是使用 dir-local 文件关
-闭 eglot mode。
-
+xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其它 backend，解决办法是使用
+dir-local 文件关闭 eglot mode。
++ 查看 eglot 报错：在开启 eglot 的 buffer 执行命令 ~M-x eglot-stderr-buffer~
 #+begin_src emacs-lisp
 (use-package eglot
   :demand
@@ -2932,7 +2934,7 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
   :config
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
   ;; 置的太大，否则可能影响性能。
-  (setq eglot-events-buffer-size 1000)
+  (setq eglot-events-buffer-size 1024 * 1024 * 1)
   ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显
   ;; 示 LSP 发送的诊断消息。
   (setq eglot-send-changes-idle-time 0.3)
@@ -2941,9 +2943,9 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
   (customize-set-variable 'eglot-autoshutdown t)
   (customize-set-variable 'eglot-connect-timeout 60)   ;; default 30s
   
-  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，eglot 报错。由于treesit-auto
-  ;; 已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的xx-mode-hook。
-  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
+  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，eglot 报错。由于
+  ;; treesit-auto已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的
+  ;; xx-mode-hook。如果代码项目没有 .git 目录，则打开文件时可能会卡主。
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
@@ -2954,7 +2956,7 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
   (setq eglot-ignored-server-capabilities
 	'(
 	  ;;:hoverProvider ;; 显示光标位置信息。
-      ;;:documentHighlightProvider ;; 高亮当前 symbol。
+	  ;;:documentHighlightProvider ;; 高亮当前 symbol。
 	  :inlayHintProvider ;; 显示 inlay hint 提示。
 	  ))
   
@@ -2982,14 +2984,26 @@ xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其�
   ;;     #'eldoc-display-in-buffer))
   ;; (add-hook 'eglot-managed-mode-hook #'my/eglot-managed-mode-initialize))
 
-;; t: true, false: :json-false 而不是 nil。
-(setq-default eglot-workspace-configuration
-	      '((:gopls .
-			((staticcheck . t)
-			 (usePlaceholders . :json-false)
-			 (matcher . "CaseSensitive"))))))
+  ;; t: true, false: :json-false 而不是 nil。
+  (setq-default eglot-workspace-configuration
+		'((:gopls .
+			  ((staticcheck . t)
+			   (usePlaceholders . :json-false)
+			   (matcher . "CaseSensitive"))))))
 
-;; 由于 major-mode 开启 eglot-ensure 后，eglot 将xref-backend-functions 设置为 eglot-xref-backend，
+;; 具体参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
+(add-to-list 'eglot-server-programs
+             `((rust-ts-mode rust-mode) .
+	       ("rust-analyzer" :initializationOptions
+                ( :procMacro ( :attributes (:enable t)
+				   :enable t)
+                  :cargo ( :buildScripts (:enable t)
+                           :features "all"
+			       :cfgs (:tokio_unstable ""))
+	              :diagnostics (:disabled ["unresolved-proc-macro"
+                                           "unresolved-macro-call"])))))
+
+;; 由于 major-mode 开启 eglot-ensure 后，eglot 将 xref-backend-functions 设置为 eglot-xref-backend，
 ;; 而忽略已注册的其它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动关闭当前
 ;; major-mode 的 eglot，从而让 xref-backend-functions 恢复为以前的值，如 dump-jump-xref-active。
 (defun my/toggle-eglot ()
@@ -3046,13 +3060,49 @@ which emacs-lsp-booster || wget https://github.com/blahgeek/emacs-lsp-booster/re
 
 ** rust
 
-安装 rust lsp server rust-analyzer:
+安装 rust 工具链，这里使用 rustup 来管理工具链和版本：
++ rust-analyzer [[https://rust-analyzer.github.io/manual.html#rust-analyzer-language-server-binary][官方手册]]。
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-which rustc || brew install rust
-which rust-analyzer || brew install rust-analyzer
+# 清理旧环境
+mv ~/.cargo{,.bak}
+brew uninstall rust rust-analyzer
+
+brew install rustup-init
+echo 'export PATH=$HOME/.cargo/bin:$PATH' >>~/.bashrc
+
+rustup-init   # 下载 rust stable 工具链
+rustup component add rust-analyzer # 安装 rust lsp server
+rustup toolchain list   # 查看安装的工具链
+#+end_src
+
+如果要浏览 rust github 官方库，则需要进一步操作：
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+rustup toolchain install nightly # rust 仓库依赖 nightly 版本工具链
+rustup default nightly           # 将工具链切换到 nightly 版本
+rustup component add rust-analyzer # 安装 nightly 版本的 rust lsp server
+rustup component add rust-docs # 添加 rust 标准库文档
+
+# cd 到 rust github 仓库
+/Users/zhangjun/go/src/github.com/rust-lang/rust
+git submodule init
+git submodule update library/*  # clone 依赖的库
+#+end_src
+
+查看文档：
+#+begin_src bash :tangle no
+rustup component add rust-docs # 添加 rust 标准库文档
+rustup doc # 查看标准库文档
+rustup doc topic # 查看某个 topic 的帮助文档，如 core，fn，std:char 等。
+
+cargo doc --open # 查看当前项目和依赖的文档
 #+end_src
 
 #+begin_src emacs-lisp
+;; 将 brew rustup-init 安装的目录添加到 PATH 和 emacs exec-path 中。
+(setq my-cargo-path "/Users/zhangjun/.cargo/bin")
+(setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
+(setq exec-path (cons my-cargo-path  exec-path))
+
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
   :mode "\\.rs\\'"

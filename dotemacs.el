@@ -1759,7 +1759,7 @@ mermaid.initialize({
   :config
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
   ;; 置的太大，否则可能影响性能。
-  (setq eglot-events-buffer-size 1000)
+  (setq eglot-events-buffer-size 1024 * 1024 * 1)
   ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显
   ;; 示 LSP 发送的诊断消息。
   (setq eglot-send-changes-idle-time 0.3)
@@ -1768,9 +1768,9 @@ mermaid.initialize({
   (customize-set-variable 'eglot-autoshutdown t)
   (customize-set-variable 'eglot-connect-timeout 60)   ;; default 30s
   
-  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，eglot 报错。由于treesit-auto
-  ;; 已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的xx-mode-hook。
-  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
+  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，eglot 报错。由于
+  ;; treesit-auto已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的
+  ;; xx-mode-hook。如果代码项目没有 .git 目录，则打开文件时可能会卡主。
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
@@ -1781,7 +1781,7 @@ mermaid.initialize({
   (setq eglot-ignored-server-capabilities
 	'(
 	  ;;:hoverProvider ;; 显示光标位置信息。
-      ;;:documentHighlightProvider ;; 高亮当前 symbol。
+	  ;;:documentHighlightProvider ;; 高亮当前 symbol。
 	  :inlayHintProvider ;; 显示 inlay hint 提示。
 	  ))
   
@@ -1809,14 +1809,26 @@ mermaid.initialize({
   ;;     #'eldoc-display-in-buffer))
   ;; (add-hook 'eglot-managed-mode-hook #'my/eglot-managed-mode-initialize))
 
-;; t: true, false: :json-false 而不是 nil。
-(setq-default eglot-workspace-configuration
-	      '((:gopls .
-			((staticcheck . t)
-			 (usePlaceholders . :json-false)
-			 (matcher . "CaseSensitive"))))))
+  ;; t: true, false: :json-false 而不是 nil。
+  (setq-default eglot-workspace-configuration
+		'((:gopls .
+			  ((staticcheck . t)
+			   (usePlaceholders . :json-false)
+			   (matcher . "CaseSensitive"))))))
 
-;; 由于 major-mode 开启 eglot-ensure 后，eglot 将xref-backend-functions 设置为 eglot-xref-backend，
+;; 具体参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
+(add-to-list 'eglot-server-programs
+             `((rust-ts-mode rust-mode) .
+	       ("rust-analyzer" :initializationOptions
+                ( :procMacro ( :attributes (:enable t)
+				   :enable t)
+                  :cargo ( :buildScripts (:enable t)
+                           :features "all"
+			       :cfgs (:tokio_unstable ""))
+	              :diagnostics (:disabled ["unresolved-proc-macro"
+                                           "unresolved-macro-call"])))))
+
+;; 由于 major-mode 开启 eglot-ensure 后，eglot 将 xref-backend-functions 设置为 eglot-xref-backend，
 ;; 而忽略已注册的其它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动关闭当前
 ;; major-mode 的 eglot，从而让 xref-backend-functions 恢复为以前的值，如 dump-jump-xref-active。
 (defun my/toggle-eglot ()
@@ -1850,6 +1862,11 @@ mermaid.initialize({
   ;; dumb-jump 发现支持的语言和项目后，会自动生效。
   ;;; 将 Go module 文件作为 project root 标识。
   (add-to-list 'dumb-jump-project-denoters "go.mod"))
+
+;; 将 brew rustup-init 安装的目录添加到 PATH 和 emacs exec-path 中。
+(setq my-cargo-path "/Users/zhangjun/.cargo/bin")
+(setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
+(setq exec-path (cons my-cargo-path  exec-path))
 
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
