@@ -6146,3 +6146,67 @@ bash 集成：在 =~/.bashrc= 中添加如下内容：
   source "$EAT_SHELL_INTEGRATION_DIR/bash"
 #+end_src
 
+* cargo
+
+#+begin_src emacs-lisp
+;; (use-package cargo
+;;   :commands cargo-minor-mode
+;;   :bind (:map cargo-mode-map
+;;               ("C-c C-c C-y" . cargo-process-clippy))
+;;   :hook (rust-mode . my-rust-mode-cargo-init)
+;;   :custom
+;;   (cargo-process--command-clippy "clippy") ;; rust lints
+;;   :preface
+;;   (defun my-update-cargo-path (&rest _args)
+;;     (setq cargo-process--custom-path-to-bin
+;;           (executable-find "cargo")))
+
+;;   (defun my-cargo-target-dir (path)
+;;     (replace-regexp-in-string "kadena" "Products" path))
+
+;;   (defun my-update-cargo-args (ad-do-it name command &optional last-cmd opens-external)
+;;     (let* ((cmd (car (split-string command)))
+;;            (new-args
+;;             (if (member cmd '("build" "check" "clippy" "doc" "test"))
+;;                 (let ((args
+;;                        (format "--target-dir=%s -j8"
+;;                                (my-cargo-target-dir
+;;                                 (replace-regexp-in-string
+;;                                  "target" "target--custom"
+;;                                  (regexp-quote (getenv "CARGO_TARGET_DIR")))))))
+;;                   (if (member cmd '("build"))
+;;                       (concat "--message-format=short " args)
+;;                     args))
+;;               ""))
+;;            (cargo-process--command-flags
+;;             (pcase (split-string cargo-process--command-flags " -- ")
+;;               (`(,before ,after)
+;;                (concat before " " new-args " -- " after))
+;;               (_ (concat cargo-process--command-flags new-args)))))
+;;       (funcall ad-do-it name command last-cmd opens-external)))
+
+;;   (defun my-rust-mode-cargo-init ()
+;;     (advice-add 'direnv-update-directory-environment
+;;                 :after #'my-update-cargo-path)
+;;     (advice-add 'cargo-process--start :around #'my-update-cargo-args)
+;;     (cargo-minor-mode 1))
+;;   :config
+;;   (defadvice cargo-process-clippy
+;;       (around my-cargo-process-clippy activate)
+;;     (let ((cargo-process--command-flags
+;;            (concat cargo-process--command-flags
+;;                    "--all-targets "
+;;                    "--all-features "
+;;                    "-- "
+;;                    "-D warnings "
+;;                    "-D clippy::all "
+;;                    "-D clippy::mem_forget "
+;;                    "-C debug-assertions=off")))
+;;       ad-do-it))
+
+;;   (defun cargo-fix ()
+;;     (interactive)
+;;     (async-shell-command
+;;      (concat "cargo fix"
+;;              " --clippy --tests --benches --allow-dirty --allow-staged"))))
+#+end_src

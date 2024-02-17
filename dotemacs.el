@@ -86,8 +86,6 @@
    epa-pinentry-mode 'loopback
    epa-file-cache-passphrase-for-symmetric-encryption t
    )
-  ;; 解决使用高版本（如 2.4.3）GnuPG 来保存 gpg 文件卡住的问题。https://emacs-china.org/t/gpg/24595
-  (fset 'epg-wait-for-status 'ignore)
   (require 'epa-file)
   (epa-file-enable))
 
@@ -1338,7 +1336,8 @@
         (setq python-shell-interpreter "ipython")
         (setq python-shell-interpreter-args "--simple-prompt -i"))
     (progn
-      (setq python-shell-interpreter "python")
+      (setq python-shell-interpreter "python3.12")
+      (setq python-interpreter "python3.12")
       (setq python-shell-interpreter-args "-i"))))
 
 ;; 使用 yapf 格式化 python 代码。
@@ -1759,7 +1758,7 @@ mermaid.initialize({
   :config
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
   ;; 置的太大，否则可能影响性能。
-  (setq eglot-events-buffer-size 1024 * 1024 * 1)
+  (setq eglot-events-buffer-size (* 1024 1024 1))
   ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显
   ;; 示 LSP 发送的诊断消息。
   (setq eglot-send-changes-idle-time 0.3)
@@ -1818,15 +1817,23 @@ mermaid.initialize({
 
 ;; 具体参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
 (add-to-list 'eglot-server-programs
-             `((rust-ts-mode rust-mode) .
-	       ("rust-analyzer" :initializationOptions
-                ( :procMacro ( :attributes (:enable t)
-				   :enable t)
-                  :cargo ( :buildScripts (:enable t)
-                           :features "all"
-			       :cfgs (:tokio_unstable ""))
+             '((rust-ts-mode rust-mode) .
+               ("rust-analyzer" :initializationOptions
+                (
+		      :checkOnSave :json-false
+	              ;;:diagnostics (:enable :json-false)		      
+		      ;;:cachePriming (:enable :json-false)
+		      ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
+		      :check (:allTargets  :json-false)
+		      :procMacro ( :attributes (:enable t)
+		       		   :enable :json-false)
+                   :cargo ( :buildScripts (:enable :json-false)
+                            :features "all"
+		                :cfgs (:tokio_unstable "")
+				:autoreload :json-false)
 	              :diagnostics (:disabled ["unresolved-proc-macro"
-                                           "unresolved-macro-call"])))))
+                                           "unresolved-macro-call"]))
+	        )))
 
 ;; 由于 major-mode 开启 eglot-ensure 后，eglot 将 xref-backend-functions 设置为 eglot-xref-backend，
 ;; 而忽略已注册的其它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动关闭当前
@@ -1867,6 +1874,9 @@ mermaid.initialize({
 (setq my-cargo-path "/Users/zhangjun/.cargo/bin")
 (setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
 (setq exec-path (cons my-cargo-path  exec-path))
+;; https://github.com/mozilla/sccache?tab=readme-ov-file
+;; cargo install sccache --locked
+(setenv "RUSTC_WRAPPER" "/Users/zhangjun/.cargo/bin/sccache")
 
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
@@ -1880,66 +1890,18 @@ mermaid.initialize({
   :custom
   (rust-format-on-save t))
 
-(use-package cargo
-  :commands cargo-minor-mode
-  :bind (:map cargo-mode-map
-              ("C-c C-c C-y" . cargo-process-clippy))
-  :hook (rust-mode . my-rust-mode-cargo-init)
-  :custom
-  (cargo-process--command-clippy "clippy")
-  :preface
-  (defun my-update-cargo-path (&rest _args)
-    (setq cargo-process--custom-path-to-bin
-          (executable-find "cargo")))
-
-  (defun my-cargo-target-dir (path)
-    (replace-regexp-in-string "kadena" "Products" path))
-
-  (defun my-update-cargo-args (ad-do-it name command &optional last-cmd opens-external)
-    (let* ((cmd (car (split-string command)))
-           (new-args
-            (if (member cmd '("build" "check" "clippy" "doc" "test"))
-                (let ((args
-                       (format "--target-dir=%s -j8"
-                               (my-cargo-target-dir
-                                (replace-regexp-in-string
-                                 "target" "target--custom"
-                                 (regexp-quote (getenv "CARGO_TARGET_DIR")))))))
-                  (if (member cmd '("build"))
-                      (concat "--message-format=short " args)
-                    args))
-              ""))
-           (cargo-process--command-flags
-            (pcase (split-string cargo-process--command-flags " -- ")
-              (`(,before ,after)
-               (concat before " " new-args " -- " after))
-              (_ (concat cargo-process--command-flags new-args)))))
-      (funcall ad-do-it name command last-cmd opens-external)))
-
-  (defun my-rust-mode-cargo-init ()
-    (advice-add 'direnv-update-directory-environment
-                :after #'my-update-cargo-path)
-    (advice-add 'cargo-process--start :around #'my-update-cargo-args)
-    (cargo-minor-mode 1))
+(use-package dap-mode
+  :demand
   :config
-  (defadvice cargo-process-clippy
-      (around my-cargo-process-clippy activate)
-    (let ((cargo-process--command-flags
-           (concat cargo-process--command-flags
-                   "--all-targets "
-                   "--all-features "
-                   "-- "
-                   "-D warnings "
-                   "-D clippy::all "
-                   "-D clippy::mem_forget "
-                   "-C debug-assertions=off")))
-      ad-do-it))
-
-  (defun cargo-fix ()
-    (interactive)
-    (async-shell-command
-     (concat "cargo fix"
-             " --clippy --tests --benches --allow-dirty --allow-staged"))))
+  (dap-auto-configure-mode 1)
+  (dap-register-debug-template "Rust::GDB Run Configuration"
+                             (list :type "gdb"
+                                   :request "launch"
+                                   :name "GDB::Run"
+                           :gdbpath "rust-gdb"
+                                   :target nil
+                                   :cwd nil))
+)
 
 (use-package anki-helper
   :vc (:fetcher github :repo Elilif/emacs-anki-helper)

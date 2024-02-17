@@ -99,6 +99,7 @@ echo 'export PATH=$HOME/.cargo/bin:$PATH' >>~/.bashrc
 
 rustup-init   # 下载 rust stable 工具链
 rustup component add rust-analyzer # 安装 rust lsp server
+rustup component add clippy  # rust lints
 rustup toolchain list   # 查看安装的工具链
 
 rustup toolchain install nightly # rust 仓库依赖 nightly 版本工具链
