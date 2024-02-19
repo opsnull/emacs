@@ -1,9 +1,9 @@
 (require 'package)
-(setq package-archives '(("elpa" . "https://mirrors.ustc.edu.cn/elpa/gnu/")
-			 ("elpa-devel" . "https://mirrors.ustc.edu.cn/elpa/gnu-devel/")
-			 ("melpa" . "https://mirrors.ustc.edu.cn/elpa/melpa/")
-			 ("nongnu" . "https://mirrors.ustc.edu.cn/elpa/nongnu/")
-			 ("nongnu-devel" . "https://mirrors.ustc.edu.cn/elpa/nongnu-devel/")))
+(setq package-archives '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+			 ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
+			 ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+			 ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
+			 ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
 (package-initialize)
 (when (not package-archive-contents)
   (package-refresh-contents))
@@ -30,7 +30,7 @@
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 (use-package mb-url-http
-  ;;:demand
+  :demand
   :vc (:fetcher github :repo dochang/mb-url)
   :init
   (require 'auth-source)
@@ -41,9 +41,9 @@
     (setq mb-url-http-backend 'mb-url-http-curl
           mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
           mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-                                      ;;"--max-time" "300"
+                                      "--max-time" "300"
                                       ;;"-u" ,github-auth
-                                      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+                                      "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
                                       ))))
 
 (defun proxy-socks-enable ()
@@ -84,20 +84,19 @@
    epa-file-encrypt-to user-mail-address
    ;; 使用 minibuffer 输入 GPG 密码。
    epa-pinentry-mode 'loopback
-   epa-file-cache-passphrase-for-symmetric-encryption t
-   )
+   epa-file-cache-passphrase-for-symmetric-encryption t)
   (require 'epa-file)
   (epa-file-enable))
 
 ;; 关闭容易误操作的按键。
 (let ((keys '("s-w" "C-z" "<mouse-2>" "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
-              "C-<wheel-down>" "C-<wheel-up>")))
+	      "s--" "s-0" "s-+" "C-<wheel-down>" "C-<wheel-up>")))
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
-;; macOS 按键调整。
+;; macOS 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper。
 (setq mac-command-modifier 'meta)
-;; option 作为 Super 键(按键绑定时： s- 表示 Super，S- 表示 Shift, H- 表示 Hyper)。
+;; option 作为 Super 键。
 (setq mac-option-modifier 'super)
 ;; fn 作为 Hyper 键。
 (setq ns-function-modifier 'hyper)
@@ -113,7 +112,7 @@
 (setq-default bidi-display-reordering nil) 
 
 ;; Garbage Collector Magic Hack
-;; 能提升 vterm buffer、json 文件时响应性能。
+;; 提升 vterm buffer、json 文件响应性能。
 (use-package gcmh
   :init
   ;;(setq garbage-collection-messages t)
@@ -135,32 +134,12 @@
 (global-set-key (kbd "s-v") 'scroll-other-window)  
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
 
-;; 不显示 Title Bar（依赖编译时指定 --with-no-frame-refocus 参数。）
-(add-to-list 'default-frame-alist '(undecorated-round . t))
+;; 不显示 Title Bar。
+;; square corner: undecorated, round corner: undecorated-round
+(add-to-list 'default-frame-alist '(undecorated . t)) 
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(selected-frame) 'name nil)
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
-
-;; 高亮当前行。
-(global-hl-line-mode t)
-(setq global-hl-line-sticky-flag t)
-
-;; 显示行号。
-(global-display-line-numbers-mode t)
-
-;; 光标和字符宽度一致（如 TAB)
-(setq x-stretch-cursor nil)
-
-;; 30: 左右分屏, nil: 上下分屏。
-(setq split-width-threshold nil)
-
-;; 像素平滑滚动。
-(if (boundp 'pixel-scroll-precision-mode)
-    (pixel-scroll-precision-mode t))
-
-;; 加 t 参数让 togg-frame-XX 最后运行，这样最大化才生效。
-;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
-(add-hook 'window-setup-hook 'toggle-frame-maximized t)
 
 ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
 (setq ns-pop-up-frames nil)
@@ -168,9 +147,6 @@
 ;; 复用当前 frame。
 (setq display-buffer-reuse-frames t)
 (setq frame-resize-pixelwise t)
-
-;; 手动刷行显示。
-(global-set-key (kbd "<f5>") #'redraw-display)
 
 ;; 在 frame 底部显示的窗口列表。
 (setq display-buffer-alist
@@ -191,12 +167,37 @@
          (inhibit-same-window . t)
          (window-height . 0.33))))
 
+;; 高亮当前行。
+(global-hl-line-mode t)
+(setq global-hl-line-sticky-flag t)
+
+;; 显示行号。
+(global-display-line-numbers-mode t)
+
+;; 光标和字符宽度一致（如 TAB)
+(setq x-stretch-cursor nil)
+
+;; 30: 左右分屏, nil: 上下分屏。
+(setq split-width-threshold nil)
+
+;; 像素平滑滚动。
+(pixel-scroll-precision-mode t)
+
+;; 启动后最大化显示模式，加 t 参数让 togg-frame-XX 最后运行，这样最大化才生效。
+;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
+(add-hook 'window-setup-hook 'toggle-frame-maximized t)
+
+;; 刷行显示。
+(global-set-key (kbd "<f5>") #'redraw-display)
+
 ;; 透明背景。
 (defun my/toggle-transparency ()
   (interactive)
   ;; 分别为 frame 获得焦点和失去焦点的不透明度。
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90)) 
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90))))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+  (add-to-list 'default-frame-alist '(alpha-background . 90)) ;; Emacs 29
+  )
 
 ;; 调整窗口大小。
 (global-set-key (kbd "s-<left>") 'shrink-window-horizontally)
@@ -380,12 +381,16 @@
 (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
 (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
-(use-package nyan-mode
+;; 高亮光标移动到的行。
+(use-package pulsar
   :config
-  (setq nyan-animate-nyancat t)
-  (setq nyan-wavy-trail nil)
-  (nyan-mode)
-  (nyan-start-animation))
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 0.25)
+  (setq pulsar-iterations 5)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+  (pulsar-global-mode 1)
+  (add-hook 'next-error-hook #'pulsar-pulse-line-red))
 
 (use-package tab-bar
   :custom
@@ -407,60 +412,37 @@
   (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
   (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
-  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
+  (global-set-key (kbd "s-0") 'tab-bar-close-tab))
 
-  ;; 为 tab 添加序号，便于快速切换。
-  ;; 参考：https://christiantietze.de/posts/2022/02/emacs-tab-bar-numbered-tabs/
-  (defvar ct/circle-numbers-alist
-    '((0 . "⓪")
-      (1 . "①")
-      (2 . "②")
-      (3 . "③")
-      (4 . "④")
-      (5 . "⑤")
-      (6 . "⑥")
-      (7 . "⑦")
-      (8 . "⑧")
-      (9 . "⑨"))
-    "Alist of integers to strings of circled unicode numbers.")
-  (setq tab-bar-tab-hints t)
-  (defun ct/tab-bar-tab-name-format-default (tab i)
-    (let ((current-p (eq (car tab) 'current-tab))
-          (tab-num (if (and tab-bar-tab-hints (< i 10))
-                       (alist-get i ct/circle-numbers-alist) "")))
-      (propertize
-       (concat tab-num
-               " "
-               (alist-get 'name tab)
-               (or (and tab-bar-close-button-show
-			(not (eq tab-bar-close-button-show
-				 (if current-p 'non-selected 'selected)))
-			tab-bar-close-button)
-                   "")
-               " ")
-       'face (funcall tab-bar-tab-face-function tab))))
-  (setq tab-bar-tab-name-format-function #'ct/tab-bar-tab-name-format-default)
-
-  (global-set-key (kbd "s-1") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-2") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-3") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-4") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-5") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-6") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-7") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-8") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
-
-;; 高亮光标移动到的行。
-(use-package pulsar
+(use-package sort-tab
+  :demand
+  :vc (:fetcher github :repo manateelazycat/sort-tab)
+  ;; emacs 启动后再启用 sort-tab 防止显示异常。
+  :hook (after-init . sort-tab-mode)
   :config
-  (setq pulsar-pulse t)
-  (setq pulsar-delay 0.25)
-  (setq pulsar-iterations 5)
-  (setq pulsar-face 'pulsar-magenta)
-  (setq pulsar-highlight-face 'pulsar-yellow)
-  (pulsar-global-mode 1)
-  (add-hook 'next-error-hook #'pulsar-pulse-line-red))
+  ;;(sort-tab-mode 1)
+  (setq sort-tab-show-index-number t)
+  (setq sort-tab-height 40)
+  (setq sort-tab-name-max-length 15)
+  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
+  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
+  ;; (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
+  ;; 设置 tab 颜色，M-x list-colors-display。
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
+  ;; 不显示背景颜色。
+  (set-face-background 'sort-tab-current-tab-face nil)
+  ;; 忽略 treemacs-mode 的 buffer显示。
+  (setq sort-tab-hide-function '(lambda (buf) (with-current-buffer buf (derived-mode-p 'treemacs-mode)))))
 
 (use-package vertico
   :config
@@ -529,9 +511,8 @@
           (symbol (styles +orderless-with-initialism))
           ;; eglot will change the completion-category-defaults to flex, BAD!
           ;; https://github.com/minad/corfu/issues/136#issuecomment-1052843656 (eglot (styles . (orderless
-          ;; flex)))使用 M-SPC 来分隔多个筛选条件。
-          (eglot (styles +orderless-with-initialism))
-          )) 
+          ;; flex))) 使用 M-SPC 来分隔多个筛选条件。
+          (eglot (styles +orderless-with-initialism)))) 
   ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
 
@@ -663,69 +644,6 @@
   ;; 显示绝对时间。
   (setq marginalia-max-relative-age 0)
   (marginalia-mode))
-
-(setq my-coreutils-path "/usr/local/opt/coreutils/libexec/gnubin")
-(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
-(setq exec-path (cons my-coreutils-path  exec-path))
-
-(use-package emacs
-  :config
-  (setq dired-dwim-target t)
-  ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
-  ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
-  (setq dired-listing-switches "-laGh1v --group-directories-first"))
-
-(use-package diredfl :config (diredfl-global-mode))
-
-(use-package grep
-  :config
-  (setq grep-highlight-matches t)
-  (setq grep-find-ignored-directories
-	(append
-	 (list
-          ".git"
-          ".cache"
-          "vendor"
-          "node_modules"
-          )
-	 grep-find-ignored-directories))
-  (setq grep-find-ignored-files
-	(append
-	 (list
-          "*.blob"
-          "*.gz"
-          "TAGS"
-          "projectile.cache"
-          "GPATH"
-          "GRTAGS"
-          "GTAGS"
-          "TAGS"
-          ".project"
-          ".DS_Store"
-          )
-	 grep-find-ignored-files)))
-
-(global-set-key "\C-cn" 'find-dired)
-(global-set-key "\C-cN" 'grep-find)
-
-(setq isearch-allow-scroll 'unlimited)
-;; 显示当前和总的数量。
-(setq isearch-lazy-count t)
-(setq isearch-lazy-highlight t)
-
-;; 使用 Firefox 浏览器打开链接。
-(setq browse-url-firefox-program "/Applications/Firefox.app/Contents/MacOS/firefox")
-(setq browse-url-browser-function 'browse-url-firefox) ;; browse-url-default-macosx-browser, xwidget-webkit-browse-url
-(setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
-(setq xwidget-webkit-buffer-name-format "*webkit: %T")
-
-(use-package engine-mode
-  :config
-  (engine/set-keymap-prefix (kbd "C-c s"))
-  (engine-mode t)
-  ;;(setq engine/browser-function 'eww-browse-url)
-  (defengine github "https://github.com/search?ref=simplesearch&q=%s" :keybinding "h")
-  (defengine google "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s" :keybinding "g"))
 
 (use-package rime
   :custom
@@ -933,7 +851,7 @@
 ;; org bable 完整支持的语言列表（ob- 开头的文件）：
 ;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语言，可以通过
 ;; use-pacakge 来安装。
-(use-package ob-go) ;; golang 
+(use-package ob-go)
 (use-package ob-rust)
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -948,108 +866,6 @@
    (css . t)))
 
 (use-package org-contrib)
-
-(setq org-agenda-time-grid
-      (quote ((daily today require-timed)
-              (300 600 900 1200 1500 1800 2100 2400)
-              "......"
-              "-----------------------------------------------------"
-              )))
-
-;; org-agenda 展示的文件。
-(setq org-agenda-files
-      '("~/docs/org/todo.org"
-        "~/docs/org/capture.org"))
-(setq org-agenda-start-day "-7d")
-(setq org-agenda-span 21)
-(setq org-agenda-include-diary t)
-;; use org-journal
-;;(setq diary-file "~/docs/orgs/diary")
-;;(setq diary-mail-addr "geekard@qq.com")
-;; 获取经纬度：https://www.latlong.net/
-(setq calendar-latitude +39.904202)
-(setq calendar-longitude +116.407394)
-(setq calendar-location-name "北京")
-(setq calendar-remove-frame-by-deleting t)
-;; 每周第一天是周一。
-(setq calendar-week-start-day 1)
-;; 标记有记录的日期。
-(setq mark-diary-entries-in-calendar t)
-;; 标记节假日。
-(setq mark-holidays-in-calendar nil)
-;; 不显示节日列表。
-(setq view-calendar-holidays-initially nil)
-(setq org-agenda-include-diary t)
-
-;; 除去基督徒、希伯来和伊斯兰教的节日。
-(setq christian-holidays nil
-      hebrew-holidays nil
-      islamic-holidays nil
-      solar-holidays nil
-      bahai-holidays nil)
-
-(setq mark-diary-entries-in-calendar t
-      appt-issue-message nil
-      mark-holidays-in-calendar t
-      view-calendar-holidays-initially nil)
-
-(setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
-      calendar-date-display-form '(year "/" month "/" day)
-      calendar-time-display-form '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
-
-(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
-
-(autoload 'chinese-year "cal-china" "Chinese year data" t)
-
-(setq calendar-load-hook '(lambda ()
-                            (set-face-foreground 'diary-face   "skyblue")
-                            (set-face-background 'holiday-face "slate blue")
-                            (set-face-foreground 'holiday-face "white")))
-
-(use-package org-super-agenda
-  :config
-  (setq org-super-agenda-groups
-	'(;; Each group has an implicit boolean OR operator between its selectors.
-          (:name "Today"  ; Optionally specify section name
-                 :time-grid t  ; Items that appear on the time grid
-                 :todo "TODAY")  ; Items that have this TODO keyword
-          (:name "Important"
-                 ;; Single arguments given alone
-                 :tag "bills"
-                 :priority "A")
-          ;; Set order of multiple groups at once
-          (:order-multi (2 (:name "Shopping in town"
-                                  ;; Boolean AND group matches items that match all subgroups
-                                  :and (:tag "shopping" :tag "@town"))
-                           (:name "Food-related"
-                                  ;; Multiple args given in list with implicit OR
-                                  :tag ("food" "dinner"))
-                           (:name "Personal"
-                                  :habit t
-                                  :tag "personal")
-                           (:name "Space-related (non-moon-or-planet-related)"
-                                  ;; Regexps match case-insensitively on the entire entry
-                                  :and (:regexp ("space" "NASA")
-						;; Boolean NOT also has implicit OR between selectors
-						:not (:regexp "moon" :tag "planet")))))
-          ;; Groups supply their own section names when none are given
-          (:todo "WAITING" :order 8)  ; Set order of this section
-          (:todo ("SOMEDAY" "TO-READ" "CHECK" "TO-WATCH" "WATCHING")
-                 ;; Show this group at the end of the agenda (since it has the
-                 ;; highest number). If you specified this group last, items
-                 ;; with these todo keywords that e.g. have priority A would be
-                 ;; displayed in that group instead, because items are grouped
-                 ;; out in the order the groups are listed.
-                 :order 9)
-          (:priority<= "B"
-                       ;; Show this section after "Today" and "Important", because
-                       ;; their order is unspecified, defaulting to 0. Sections
-                       ;; are displayed lowest-number-first.
-                       :order 1)
-          ;; After the last group, the agenda will display items that didn't
-          ;; match any of these groups, with the default order position of 99
-          ))
-(org-super-agenda-mode))
 
 ;; 将安装的 tex 添加到 PATH 环境变量和 exec-path 变量中，后续 Emacs 查询 xelatex 命令使用。
 (setq my-tex-path "/Library/TeX/texbin")
@@ -1075,8 +891,8 @@
 (add-hook 'org-export-before-processing-functions #'my/export-pdf)
 
 ;; ox- 为对应的导出后端。
-(use-package ox-reveal) ;; reveal.js
-(use-package ox-gfm) ;; github flavor markdown
+;;(use-package ox-reveal) ;; reveal.js
+(use-package ox-gfm :defer t) ;; github flavor markdown
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
@@ -1217,23 +1033,6 @@
   (setq org-export-backends '(go md gfm html latex man hugo))
   (setq org-hugo-auto-set-lastmod t))
 
-(defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
-(defun terminal-notifier-notify (title message)
-  (start-process "terminal-notifier"
-                 "terminal-notifier"
-                 terminal-notifier-command
-                 "-title" title
-                 "-sound" "default"
-                 "-message" message
-                 "-activate" "org.gnu.Emacs"))
-
-(defun timed-notification (time msg)
-  (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
-  (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
-
-;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
-(setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
-
 (setq vc-follow-symlinks t)
 
 (use-package magit
@@ -1267,19 +1066,6 @@
 				(format "L%s" start)))))))
 )
 
-(use-package diff-mode
-  :init
-  (setq diff-default-read-only t)
-  (setq diff-advance-after-apply-hunk t)
-  (setq diff-update-on-the-fly t))
-
-(use-package ediff
-  :config
-  (setq ediff-keep-variants nil)
-  (setq ediff-split-window-function 'split-window-horizontally)
-  ;; 不创建新的 frame 来显示 Control-Panel。
-  (setq ediff-window-setup-function #'ediff-setup-windows-plain))
-
 ;; 显示缩进。
 (use-package highlight-indent-guides
   :custom
@@ -1295,7 +1081,7 @@
   (add-hook 'js-ts-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; c/c++/go-mode indent 风格：总是使用 table 而非空格.
+;; c/c++/go-mode indent 风格：总是使用 tab 而非空格.
 (setq indent-tabs-mode t)
 ;; kernel 风格：table 和 offset 都是 tab 缩进，而且都是 8 字符。
 ;; https://www.kernel.org/doc/html/latest/process/coding-style.html
@@ -1331,13 +1117,14 @@
 (setq exec-path (cons my-llvm-path  exec-path))
 
 (defun my/python-setup-shell (&rest args)
-  (if (executable-find "ipython")
+  (if (executable-find "ipython3")
       (progn
-        (setq python-shell-interpreter "ipython")
+        (setq python-shell-interpreter "ipython3")
         (setq python-shell-interpreter-args "--simple-prompt -i"))
     (progn
-      (setq python-shell-interpreter "python3.12")
-      (setq python-interpreter "python3.12")
+      ;; 2024.02.19: brew install python 安装的 python3.11 版本。
+      (setq python-shell-interpreter "python3")  
+      (setq python-interpreter "python3")
       (setq python-shell-interpreter-args "-i"))))
 
 ;; 使用 yapf 格式化 python 代码。
@@ -1458,62 +1245,8 @@ mermaid.initialize({
   :config
   (define-key markdown-mode-command-map (kbd "r") #'markdown-toc-generate-or-refresh-toc))
 
-;; for .ts/.tsx file
-;; (use-package typescript-mode
-;;   :mode "\\.tsx?\\'"
-;;   :config
-;;   (setq typescript-indent-level 2))
-(setq typescript-ts-mode-indent-offset 2)
-
-(use-package js2-mode
-  :init
-  (add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js-ts-mode))
-  :config
-  ;; 仍然使用 js-ts-mode 作为 .js/.jsx 的 marjor-mode, 但使用 js2-minor-mode 提供 AST 解析。
-  (add-hook 'js-ts-mode-hook 'js2-minor-mode)
-  ;; 将 js2-mode 作为 .js/.jsx 的 major-mode
-  ;;(add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js2-mode))
-  ;; 由于 lsp 已经提供了 diagnose 功能，故关闭 js2 自带的错误检查，防止干扰。
-  (setq js2-mode-show-strict-warnings nil)
-  (setq js2-mode-show-parse-errors nil)
-  ;; 缩进配置。
-  (setq javascript-indent-level 2)
-  (setq js-indent-level 2)
-  (setq js2-basic-offset 2)
-  (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
-
-(use-package web-mode
-  :mode "(\\.\\(jinja2\\|j2\\|css\\|vue\\|tmpl\\|gotmpl\\|html?\\|ejs\\)\\'"
-  :disabled ;; 使用内置的 TypeScript mode
-  :custom
-  (css-indent-offset 2)
-  (web-mode-attr-indent-offset 2)
-  (web-mode-attr-value-indent-offset 2)
-  (web-mode-code-indent-offset 2)
-  (web-mode-css-indent-offset 2)
-  (web-mode-markup-indent-offset 2)
-  (web-mode-sql-indent-offset 2)
-  (web-mode-enable-auto-pairing t)
-  (web-mode-enable-css-colorization t)
-  (web-mode-enable-auto-quoting nil)
-  (web-mode-enable-block-face t)
-  (web-mode-enable-current-element-highlight t)
-  :config
-  ;; Emmit.
-  (setq web-mode-tag-auto-close-style 2) ;; 2 mean auto-close with > and </.
-  (setq web-mode-markup-indent-offset 2))
-
-(use-package yaml-ts-mode
-  :mode "\\.ya?ml\\'"
-  :config
-  (define-key yaml-ts-mode-map (kbd "\C-m") #'newline-and-indent))
-
 (setq sh-basic-offset 4)
 (setq sh-indentation 4)
-
-(use-package rainbow-csv
-  :vc (:fetcher github :repo emacs-vs/rainbow-csv)
-  )
 
 ;; treesit-auto 自动安装 grammer 和自动将 xx major-mode remap 到对应的
 ;; xx-ts-mode 上。具体参考变量：treesit-auto-recipe-list
@@ -1530,7 +1263,6 @@ mermaid.initialize({
 (setenv "GTAGSLABEL" "pygments")
 
 (use-package citre
-  :defer t
   :init
   ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，会自动
   ;; 向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
@@ -1556,34 +1288,9 @@ mermaid.initialize({
   (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
   (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
   (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
-  (global-set-key (kbd "C-x c u") 'citre-global-update-database))
-
-;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
-(setq compilation-ask-about-save nil
-      compilation-always-kill t
-      compile-command "go build")
-;; Convert shell escapes to color
-(add-hook 'compilation-filter-hook
-          (lambda () (ansi-color-apply-on-region (point-min) (point-max))))
-
-;; Taken from https://emacs.stackexchange.com/questions/31493/print-elapsed-time-in-compilation-buffer/56130#56130
-(make-variable-buffer-local 'my-compilation-start-time)
-
-(add-hook 'compilation-start-hook #'my-compilation-start-hook)
-(defun my-compilation-start-hook (proc)
-  (setq my-compilation-start-time (current-time)))
-
-(add-hook 'compilation-finish-functions #'my-compilation-finish-function)
-(defun my-compilation-finish-function (buf why)
-  (let* ((elapsed  (time-subtract nil my-compilation-start-time))
-         (msg (format "Compilation took: %s" (format-time-string "%T.%N" elapsed t))))
-    (save-excursion (goto-char (point-max)) (insert msg))
-    (message "Compilation %s: %s" (string-trim-right why) msg)))
-
-(defun my/goto-compilation()
-  (interactive)
-  (switch-to-buffer
-   (get-buffer-create "*compilation*")))
+  (global-set-key (kbd "C-x c u") 'citre-global-update-database)
+  ;; 手动添加 citre-xref-backend，-100 表示添加到开头，这样 citre 的结果优先生效。
+  (add-hook 'xref-backend-functions #'citre-xref-backend -100))
 
 ;; xref 的 history 局限于当前窗口（默认全局）。
 (setq xref-history-storage 'xref-window-local-history)
@@ -1621,10 +1328,11 @@ mermaid.initialize({
   (global-set-key (kbd "C-=") #'er/expand-region))
 
 (use-package shell-maker)
-(use-package ob-chatgpt-shell)
-(use-package ob-dall-e-shell)
+(use-package ob-chatgpt-shell :defer t)
+(use-package ob-dall-e-shell :defer t)
 (use-package chatgpt-shell
   :requires shell-maker
+  :defer t
   :config
   (setq chatgpt-shell-openai-key
         (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
@@ -1644,8 +1352,6 @@ mermaid.initialize({
   (setq chatgpt-shell-auth-header 
 	(lambda ()
 	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
-
-(use-package cue-mode)
 
 (use-package flymake
   :config
@@ -1789,24 +1495,24 @@ mermaid.initialize({
   ;;                     :background "#b3d7ff")
 
   ;; ;; 在 eldoc bufer 中只显示帮助文档。
-  ;; (defun my/eglot-managed-mode-initialize ()
-  ;;   ;; 不显示 flymake 错误和函数签名，放置后续的 eldoc buffer 内容来回变。
-  ;;   (setq-local
-  ;;    eldoc-documentation-functions
-  ;;    (list
-  ;;     ;; 关闭自动在 eldoc 显示 flymake 的错误， 这样 eldoc 只显示函数签名或文档，后续 flymake 的错误单独在
-  ;;     ;; echo area 显示。      
-  ;;     ;;#'flymake-eldoc-function 
-  ;;     #'eglot-signature-eldoc-function ;; 关闭自动在 eldoc 自动显示函数签名，使用 M-x eldoc 手动显示函数帮助。
-  ;;     #'eglot-hover-eldoc-function))
+  (defun my/eglot-managed-mode-initialize ()
+    ;; ;; 不显示 flymake 错误和函数签名，放置后续的 eldoc buffer 内容来回变。
+    ;; (setq-local
+    ;;  eldoc-documentation-functions
+    ;;  (list
+    ;;   ;; 关闭自动在 eldoc 显示 flymake 的错误， 这样 eldoc 只显示函数签名或文档，后续 flymake 的错误单独在
+    ;;   ;; echo area 显示。      
+    ;;   ;;#'flymake-eldoc-function 
+    ;;   #'eglot-signature-eldoc-function ;; 关闭自动在 eldoc 自动显示函数签名，使用 M-x eldoc 手动显示函数帮助。
+    ;;   #'eglot-hover-eldoc-function))
 
-  ;;   ;; 在单独的 buffer 中显示 eldoc 而非 echo area。
-  ;;   (setq-local
-  ;;    eldoc-display-functions
-  ;;    (list
-  ;;     #'eldoc-display-in-echo-area
-  ;;     #'eldoc-display-in-buffer))
-  ;; (add-hook 'eglot-managed-mode-hook #'my/eglot-managed-mode-initialize))
+    ;; 在单独的 buffer 中显示 eldoc 而非 echo area。
+    (setq-local
+     eldoc-display-functions
+     (list
+      #'eldoc-display-in-echo-area
+      #'eldoc-display-in-buffer))
+  (add-hook 'eglot-managed-mode-hook #'my/eglot-managed-mode-initialize))
 
   ;; t: true, false: :json-false 而不是 nil。
   (setq-default eglot-workspace-configuration
@@ -1859,17 +1565,6 @@ mermaid.initialize({
 	:after eglot
 	:config	(eglot-booster-mode))
 
-;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比使用 TAGS 的 citre（适合静态浏
-;; 览）以及 lsp 方案，更通用和轻量。
-(use-package dumb-jump
-  :config
-  ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用 etags 作为数据源。将 dump-jump 加
-  ;; 到 xref 后端中，作为其它 backend，如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
-  ;; dumb-jump 发现支持的语言和项目后，会自动生效。
-  ;;; 将 Go module 文件作为 project root 标识。
-  (add-to-list 'dumb-jump-project-denoters "go.mod"))
-
 ;; 将 brew rustup-init 安装的目录添加到 PATH 和 emacs exec-path 中。
 (setq my-cargo-path "/Users/zhangjun/.cargo/bin")
 (setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
@@ -1890,18 +1585,49 @@ mermaid.initialize({
   :custom
   (rust-format-on-save t))
 
-(use-package dap-mode
-  :demand
+(use-package neotree
   :config
-  (dap-auto-configure-mode 1)
-  (dap-register-debug-template "Rust::GDB Run Configuration"
-                             (list :type "gdb"
-                                   :request "launch"
-                                   :name "GDB::Run"
-                           :gdbpath "rust-gdb"
-                                   :target nil
-                                   :cwd nil))
-)
+  (setq neo-smart-open t) ;; 自动跳转到当前打开的文件。
+  (setq neo-theme 'nerd) ;; nerd 更简洁。
+  (setq neo-vc-integration '(face))
+  (setq neo-window-width 30)
+  (setq neo-window-fixed-size nil)
+  (setq neo-theme (if (display-graphic-p) 'icons 'arrow))
+  :bind
+      (:map global-map
+	      ("s-0" . neotree-toggle)))
+(add-hook 'neotree-mode-hook (lambda () (display-line-numbers-mode 0)))
+
+;; 根据项目切换 neotree root 目录。
+(defun my-neotree-project-dir-toggle ()
+  "Open NeoTree using the project root, using projectile, find-file-in-project,
+or the current buffer directory."
+  (interactive)
+  (require 'neotree)
+  (let* ((filepath (buffer-file-name))
+         (project-dir
+          (with-demoted-errors "neotree-project-dir-toggle error: %S"
+              (cond
+               ((featurep 'projectile)
+                (projectile-project-root))
+               ((featurep 'find-file-in-project)
+                (ffip-project-root))
+               (t ;; Fall back to version control root.
+                (if filepath
+                    (vc-call-backend
+                     (vc-responsible-backend filepath) 'root filepath)
+                  nil)))))
+         (neo-smart-open t))
+
+    (if (and (fboundp 'neo-global--window-exists-p)
+             (neo-global--window-exists-p))
+        (neotree-hide)
+      (neotree-show)
+      (when project-dir
+        (neotree-dir project-dir))
+      (when filepath
+        (neotree-find filepath)))))
+(define-key global-map (kbd "M-e") 'my-neotree-project-dir-toggle)
 
 (use-package anki-helper
   :vc (:fetcher github :repo Elilif/emacs-anki-helper)
@@ -1924,7 +1650,8 @@ mermaid.initialize({
   :config
   ;; project-find-file 忽略的目录或文件列表。
   (add-to-list 'vc-directory-exclusion-list "vendor")
-  (add-to-list 'vc-directory-exclusion-list "node_modules"))
+  (add-to-list 'vc-directory-exclusion-list "node_modules")
+  (add-to-list 'vc-directory-exclusion-list "target"))
 
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
@@ -1970,7 +1697,7 @@ mermaid.initialize({
 		  (setq-local show-paren-mode nil)
 		  (setq-local global-hl-line-mode nil)
 	          (display-line-numbers-mode -1) ;; 不显示行号。
-		  (font-lock-mode -1) ;; 不显示字体颜色。
+		  ;;(font-lock-mode -1) ;; 不显示字体颜色。
 		  ;;(yas-minor-mode -1)
 		  ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
 		  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
@@ -2017,12 +1744,6 @@ mermaid.initialize({
   :vc (:fetcher github :repo Sbozzolo/vterm-extra)
   :config
   (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer))
-
-;; 在 $HOME 目录打开一个本地 vterm buffer.
-(defun my/vterm()
-  "my vterm buff."
-  (interactive)
-  (let ((default-directory "~/")) (vterm)))
 
 (setq eshell-history-size 300)
 (setq explicit-shell-file-name "/bin/bash")
@@ -2153,120 +1874,58 @@ mermaid.initialize({
   ;; 即使 ~/.ssh/config 正确 Include 了 hosts 文件，这里还是需要配置，因为 consult-tramp 不会解析 Include 配置。
   (consult-tramp-ssh-config "~/work/proxylist/hosts_config"))
 
-(use-package elfeed
-  :demand
+;;; dired
+(setq my-coreutils-path "/usr/local/opt/coreutils/libexec/gnubin")
+(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+(setq exec-path (cons my-coreutils-path  exec-path))
+(use-package emacs
   :config
-  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
-  (setq elfeed-show-entry-switch 'display-buffer)
-  (setq elfeed-curl-max-connections 32)
-  (setq elfeed-curl-timeout 60)
-  (setf url-queue-timeout 120)
-  (push "-k" elfeed-curl-extra-arguments)
-  (setq elfeed-search-filter "@1-months-ago +unread")
-  ;; 在同一个 buffer 中显示条目。
-  (setq elfeed-show-unique-buffers nil)
-  (setq elfeed-search-title-max-width 150)
-  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
-  (setq elfeed-log-level 'warn)
+  (setq dired-dwim-target t)
+  ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
+  ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
+  (setq dired-listing-switches "-laGh1v --group-directories-first"))
+(use-package diredfl :config (diredfl-global-mode))
 
-  ;; 支持收藏 feed, 参考：http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
-  (defalias 'elfeed-toggle-star (elfeed-expose #'elfeed-search-toggle-all 'star))
-  (eval-after-load 'elfeed-search '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
-  (defface elfeed-search-star-title-face '((t :foreground "#f77")) "Marks a starred Elfeed entry.")
-  (push '(star elfeed-search-star-title-face) elfeed-search-face-alist))
+;;; diff
+(use-package diff-mode
+  :init
+  (setq diff-default-read-only t)
+  (setq diff-advance-after-apply-hunk t)
+  (setq diff-update-on-the-fly t))
 
-(use-package elfeed-org
-  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
-  :hook
-  ((elfeed-dashboard-mode . elfeed-org)
-   (elfeed-show-mode . elfeed-org)))
-
-(use-package elfeed-dashboard
-  :after (elfeed-org)
+(use-package ediff
   :config
-  ;;(global-set-key (kbd "C-c f") 'elfeed-dashboard)
-  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
-  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links)
-  (defun my/reload-org-feeds ()
-    (interactive)
-    (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
-  (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds))
+  (setq ediff-keep-variants nil)
+  (setq ediff-split-window-function 'split-window-horizontally)
+  ;; 不创建新的 frame 来显示 Control-Panel。
+  (setq ediff-window-setup-function #'ediff-setup-windows-plain))
 
-(use-package elfeed-score
+(use-package grep
   :config
-  (progn
-    (elfeed-score-enable)
-    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+  (setq grep-highlight-matches t)
+  (setq grep-find-ignored-directories
+	(append (list ".git" ".cache" "vendor" "node_modules" "target")
+      	 grep-find-ignored-directories))
+  (setq grep-find-ignored-files
+	(append (list "*.blob" "*.gz" "TAGS" "projectile.cache" "GPATH" "GRTAGS" "GTAGS" "TAGS" ".project" )
+      	 grep-find-ignored-files)))
 
-(use-package elfeed-goodies
+(global-set-key "\C-cn" 'find-dired)
+(global-set-key "\C-cN" 'grep-find)
+
+(setq isearch-allow-scroll 'unlimited)
+;; 显示当前和总的数量。
+(setq isearch-lazy-count t)
+(setq isearch-lazy-highlight t)
+
+;;在线搜索, 可以先选中 region 再执行搜索。
+(use-package engine-mode
   :config
-  (setq elfeed-goodies/entry-pane-position 'bottom)
-  (setq elfeed-goodies/feed-source-column-width 30)
-  (setq elfeed-goodies/tag-column-width 30)
-  (setq elfeed-goodies/powerline-default-separator 'arrow)
-  (elfeed-goodies/setup))
-
-;; elfeed-goodies 显示日期栏
-;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
-(defun elfeed-goodies/search-header-draw ()
-  "Returns the string to be used as the Elfeed header."
-  (if (zerop (elfeed-db-last-update))
-      (elfeed-search--intro-header)
-    (let* ((separator-left (intern (format "powerline-%s-%s"
-                                           elfeed-goodies/powerline-default-separator
-                                           (car powerline-default-separator-dir))))
-           (separator-right (intern (format "powerline-%s-%s"
-                                            elfeed-goodies/powerline-default-separator
-                                            (cdr powerline-default-separator-dir))))
-           (db-time (seconds-to-time (elfeed-db-last-update)))
-           (stats (-elfeed/feed-stats))
-           (search-filter (cond
-                           (elfeed-search-filter-active
-                            "")
-                           (elfeed-search-filter
-                            elfeed-search-filter)
-                           (""))))
-      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
-          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
-        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
-
-(defun elfeed-goodies/entry-line-draw (entry)
-  "Print ENTRY to the buffer."
-  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
-         (date (elfeed-search-format-date (elfeed-entry-date entry)))
-         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
-         (feed (elfeed-entry-feed entry))
-         (feed-title
-          (when feed
-            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
-         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
-         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
-         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
-                         elfeed-goodies/tag-column-width 4))
-         (title-column (elfeed-format-column
-                        title (elfeed-clamp
-                               elfeed-search-title-min-width
-                               title-width
-                               title-width)
-                        :left))
-         (tag-column (elfeed-format-column
-                      tags-str (elfeed-clamp (length tags-str)
-                                             elfeed-goodies/tag-column-width
-                                             elfeed-goodies/tag-column-width)
-                      :left))
-         (feed-column (elfeed-format-column
-                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
-                                                elfeed-goodies/feed-source-column-width
-                                                elfeed-goodies/feed-source-column-width)
-                       :left)))
-
-    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
-        (progn
-          (insert (propertize date 'face 'elfeed-search-date-face) " ")
-          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
-          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
-          (insert (propertize title 'face title-faces 'kbd-help title)))
-      (insert (propertize title 'face title-faces 'kbd-help title)))))
+  (engine/set-keymap-prefix (kbd "C-c s"))
+  (engine-mode t)
+  ;;(setq engine/browser-function 'eww-browse-url)
+  (defengine github "https://github.com/search?ref=simplesearch&q=%s" :keybinding "h")
+  (defengine google "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s" :keybinding "g"))
 
 ;;; Google 翻译
 (use-package google-translate
@@ -2276,6 +1935,43 @@ mermaid.initialize({
   (setq google-translate-translation-directions-alist
         '(("en" . "zh-CN") ("zh-CN" . "en")))
   (global-set-key (kbd "C-c d t") #'google-translate-smooth-translate))
+
+;;; xwidget
+;;Emacs 29 的 xwidget-webkit 对 Mac 支持不好(
+;;[[https://github.com/d12frosted/homebrew-emacs-plus/issues/519][Better support for
+;;xwidget-webkit]]), 部分功能只支持GTK/X11 版本, 如: increase-search/webkit-history:
+(setq url-user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+(setq xwidget-webkit-buffer-name-format "*webkit* [%T] - %U")
+(setq xwidget-webkit-enable-plugins t)
+(setq browse-url-firefox-program "/Applications/Firefox.app/Contents/MacOS/firefox")
+(setq browse-url-browser-function 'xwidget-webkit-browse-url) ;; browse-url-firefox, browse-url-default-macosx-browser
+(setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
+
+(add-hook 'xwidget-webkit-mode-hook
+          (lambda ()
+            (setq kill-buffer-query-functions nil)
+            (setq header-line-format nil)
+            (display-line-numbers-mode 0)
+            (local-set-key "q" (lambda () (interactive) (kill-this-buffer)))
+            (local-set-key (kbd "C-t") (lambda () (interactive) (xwidget-webkit-browse-url "https://google.com" t)))))
+
+(defun my/browser-open-at-point (url)
+  (interactive
+   (list (let ((url (thing-at-point 'url)))
+           (if (equal major-mode 'xwidget-webkit-mode)
+               (read-string "url: " (xwidget-webkit-uri (xwidget-webkit-current-session)))
+             (read-string "url: " url)))))
+  (xwidget-webkit-browse-url url t))
+
+(defun my/browser-google (query)
+  (interactive "ssearch: ")
+  (xwidget-webkit-browse-url
+   (concat "https://google.com/search?q=" (string-replace " " "%20" query)) t))
+
+(define-prefix-command 'my-browser-prefix)
+(global-set-key (kbd "C-c o") 'my-browser-prefix)
+(define-key my-browser-prefix (kbd "o") 'my/browser-open-at-point)
+(define-key my-browser-prefix (kbd "g") 'my/browser-google)
 
 ;; 保存 Buffer 时自动更新 #+LASTMOD: 时间戳。
 (setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*")
@@ -2317,16 +2013,6 @@ mermaid.initialize({
   (setq ibuffer-use-header-line t)
   (add-hook 'ibuffer-mode-hook #'hl-line-mode)
   (global-set-key (kbd "C-x C-b") #'ibuffer))
-
-(use-package ibuffer-project
-  :config
-  (add-to-list 'ibuffer-project-root-functions '(file-remote-p . "Remote"))
-  (add-hook
-   'ibuffer-hook
-   (lambda ()
-     (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
-     (unless (eq ibuffer-sorting-mode 'project-file-relative)
-       (ibuffer-do-sort-by-project-file-relative)))))
 
 (use-package recentf
   :config
@@ -2437,7 +2123,7 @@ mermaid.initialize({
   (global-set-key (kbd "C-h C") #'helpful-command))
 
 ;; 在另一个 panel buffer 中展示按键。
-(use-package command-log-mode :commands command-log-mode)
+;;(use-package command-log-mode :commands command-log-mode)
 (use-package hydra :commands defhydra)
 
 ;; 以下自定义函数参考自：https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-edit.el

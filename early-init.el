@@ -17,11 +17,9 @@
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
 (setq my-bin-path '(
-		    ;;"/usr/local/opt/findutils/libexec/gnubin"
+		    "/usr/local/opt/findutils/libexec/gnubin"
 		    "/Users/zhangjun/go/bin"
 		    "/Users/zhangjun/.cargo/bin"
-		    "/usr/local/Cellar/pyenv-virtualenv/1.2.1/shims"
-		    "/Users/zhangjun/.pyenv/shims"
 		    ))
 ;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
 (mapc (lambda (p)

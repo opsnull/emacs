@@ -3572,26 +3572,8 @@ doom-themes:
   (setq awesome-tray-active-modules '("location" "buffer-read-only" "file-path" "mode-name" "input-method" "date")))
 #+end_src
 
-* sort-tab
-#+begin_src emacs-lisp
-(use-package sort-tab
-  :demand
-  :straight (:repo "manateelazycat/sort-tab" :host github)
-  :config
-  (sort-tab-mode 1)
-  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
-  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
-  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
-  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
-  ;; 设置 tab 颜色，M-x list-colors-display。
-  (set-face-foreground 'sort-tab-current-tab-face "peru")
-  ;; 不显示背景颜色。
-  (set-face-background 'sort-tab-current-tab-face nil))
-#+end_src
-
 * theme
+
 #+begin_src emacs-lisp
 (use-package ef-themes
   :disabled
@@ -3954,29 +3936,6 @@ doom-themes:
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
   
-#+end_src
-
-* sort-tab
-
-
-#+begin_src emacs-lisp
-(use-package sort-tab
-  :demand
-  :disabled
-  :straight (:repo "manateelazycat/sort-tab" :host github)
-  :config
-  (sort-tab-mode 1)
-  (setq sort-tab-height 40)
-  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
-  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-Q") 'sort-tab-close-all-tabs)
-  (global-set-key (kbd "s-q") 'sort-tab-close-mode-tabs)
-  (global-set-key (kbd "s-;") 'sort-tab-close-current-tab)
-  ;; 设置 tab 颜色，M-x list-colors-display。
-  (set-face-foreground 'sort-tab-current-tab-face "peru")
-  ;; 不显示背景颜色。
-  (set-face-background 'sort-tab-current-tab-face nil))
 #+end_src
 
 * awesome-tab
@@ -6210,3 +6169,639 @@ bash 集成：在 =~/.bashrc= 中添加如下内容：
 ;;      (concat "cargo fix"
 ;;              " --clippy --tests --benches --allow-dirty --allow-staged"))))
 #+end_src
+
+* elfeed
+
+#+begin_src emacs-lisp
+(use-package elfeed
+  :demand
+  :config
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  (setq elfeed-show-entry-switch 'display-buffer)
+  (setq elfeed-curl-max-connections 32)
+  (setq elfeed-curl-timeout 60)
+  (setf url-queue-timeout 120)
+  (push "-k" elfeed-curl-extra-arguments)
+  (setq elfeed-search-filter "@1-months-ago +unread")
+  ;; 在同一个 buffer 中显示条目。
+  (setq elfeed-show-unique-buffers nil)
+  (setq elfeed-search-title-max-width 150)
+  (setq elfeed-search-date-format '("%Y-%m-%d %H:%M" 20 :left))
+  (setq elfeed-log-level 'warn)
+
+  ;; 支持收藏 feed, 参考：http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/
+  (defalias 'elfeed-toggle-star (elfeed-expose #'elfeed-search-toggle-all 'star))
+  (eval-after-load 'elfeed-search '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
+  (defface elfeed-search-star-title-face '((t :foreground "#f77")) "Marks a starred Elfeed entry.")
+  (push '(star elfeed-search-star-title-face) elfeed-search-face-alist))
+
+(use-package elfeed-org
+  :custom ((rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+  :hook
+  ((elfeed-dashboard-mode . elfeed-org)
+   (elfeed-show-mode . elfeed-org)))
+
+(use-package elfeed-dashboard
+  :after (elfeed-org)
+  :config
+  ;;(global-set-key (kbd "C-c f") 'elfeed-dashboard)
+  (setq elfeed-dashboard-file "~/.emacs.d/elfeed-dashboard.org")
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links)
+  (defun my/reload-org-feeds ()
+    (interactive)
+    (rmh-elfeed-org-process rmh-elfeed-org-files rmh-elfeed-org-tree-id))
+  (advice-add 'elfeed-dashboard-update :before #'my/reload-org-feeds))
+
+(use-package elfeed-score
+  :config
+  (progn
+    (elfeed-score-enable)
+    (define-key elfeed-search-mode-map "=" elfeed-score-map)))
+
+(use-package elfeed-goodies
+  :config
+  (setq elfeed-goodies/entry-pane-position 'bottom)
+  (setq elfeed-goodies/feed-source-column-width 30)
+  (setq elfeed-goodies/tag-column-width 30)
+  (setq elfeed-goodies/powerline-default-separator 'arrow)
+  (elfeed-goodies/setup))
+
+;; elfeed-goodies 显示日期栏
+;;https://github.com/algernon/elfeed-goodies/issues/15#issuecomment-243358901
+(defun elfeed-goodies/search-header-draw ()
+  "Returns the string to be used as the Elfeed header."
+  (if (zerop (elfeed-db-last-update))
+      (elfeed-search--intro-header)
+    (let* ((separator-left (intern (format "powerline-%s-%s"
+                                           elfeed-goodies/powerline-default-separator
+                                           (car powerline-default-separator-dir))))
+           (separator-right (intern (format "powerline-%s-%s"
+                                            elfeed-goodies/powerline-default-separator
+                                            (cdr powerline-default-separator-dir))))
+           (db-time (seconds-to-time (elfeed-db-last-update)))
+           (stats (-elfeed/feed-stats))
+           (search-filter (cond
+                           (elfeed-search-filter-active
+                            "")
+                           (elfeed-search-filter
+                            elfeed-search-filter)
+                           (""))))
+      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
+        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
+
+(defun elfeed-goodies/entry-line-draw (entry)
+  "Print ENTRY to the buffer."
+  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (date (elfeed-search-format-date (elfeed-entry-date entry)))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+                         elfeed-goodies/tag-column-width 4))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               title-width)
+                        :left))
+         (tag-column (elfeed-format-column
+                      tags-str (elfeed-clamp (length tags-str)
+                                             elfeed-goodies/tag-column-width
+                                             elfeed-goodies/tag-column-width)
+                      :left))
+         (feed-column (elfeed-format-column
+                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width)
+                       :left)))
+
+    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+        (progn
+          (insert (propertize date 'face 'elfeed-search-date-face) " ")
+          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
+          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
+          (insert (propertize title 'face title-faces 'kbd-help title)))
+      (insert (propertize title 'face title-faces 'kbd-help title)))))
+#+end_src
+
+elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][语法参考]]):
+#+begin_src emacs-lisp :tangle ~/.emacs.d/elfeed.score
+;;; Elfeed score file                                     -*- lisp -*-
+(
+;; ("title"
+;;   (:text "opsnull" :value 250 :type S))
+;;  ("content"
+;;   (:text "type erasure" :value 500 :type s))
+ ("title-or-content"
+;;  (:text "emacs" :title-value 150 :content-value 100 :type s)
+  (:text "opsnull" :title-value 150 :content-value 100 :type w))
+ ("feed"
+  (:text "Irreal" :value 250 :type S :attr t)
+  (:text "Sacha Chua" :value 350 :type S :attr t :comment "Essential!"))
+;; ("authors"
+;;  (:text "opsnull" :value 500 :type s))
+;; ("tag"
+;;  (:tags (t . reddit-question)
+;;         :value 750
+;;         :comment "Add 750 points to any entry with a tag of reddit-question"))
+ (mark -2500))
+#+end_src
+
+* nyan-mode
+
+modeline 显示彩虹猫：
+#+begin_src emacs-lisp
+(use-package nyan-mode
+  :config
+  (setq nyan-animate-nyancat t)
+  (setq nyan-wavy-trail nil)
+  (nyan-mode)
+  (nyan-start-animation))
+#+end_src
+
+* org
+
+** agenda
+#+begin_src emacs-lisp
+(setq org-agenda-time-grid
+      (quote ((daily today require-timed)
+              (300 600 900 1200 1500 1800 2100 2400)
+              "......"
+              "-----------------------------------------------------"
+              )))
+
+;; org-agenda 展示的文件。
+(setq org-agenda-files
+      '("~/docs/org/todo.org"
+        "~/docs/org/capture.org"))
+(setq org-agenda-start-day "-7d")
+(setq org-agenda-span 21)
+(setq org-agenda-include-diary t)
+;; use org-journal
+;;(setq diary-file "~/docs/orgs/diary")
+;;(setq diary-mail-addr "geekard@qq.com")
+;; 获取经纬度：https://www.latlong.net/
+(setq calendar-latitude +39.904202)
+(setq calendar-longitude +116.407394)
+(setq calendar-location-name "北京")
+(setq calendar-remove-frame-by-deleting t)
+;; 每周第一天是周一。
+(setq calendar-week-start-day 1)
+;; 标记有记录的日期。
+(setq mark-diary-entries-in-calendar t)
+;; 标记节假日。
+(setq mark-holidays-in-calendar nil)
+;; 不显示节日列表。
+(setq view-calendar-holidays-initially nil)
+(setq org-agenda-include-diary t)
+
+;; 除去基督徒、希伯来和伊斯兰教的节日。
+(setq christian-holidays nil
+      hebrew-holidays nil
+      islamic-holidays nil
+      solar-holidays nil
+      bahai-holidays nil)
+
+(setq mark-diary-entries-in-calendar t
+      appt-issue-message nil
+      mark-holidays-in-calendar t
+      view-calendar-holidays-initially nil)
+
+(setq diary-date-forms '((year "/" month "/" day "[^/0-9]"))
+      calendar-date-display-form '(year "/" month "/" day)
+      calendar-time-display-form '(24-hours ":" minutes (if time-zone " (") time-zone (if time-zone ")")))
+
+(add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+
+(autoload 'chinese-year "cal-china" "Chinese year data" t)
+
+(setq calendar-load-hook '(lambda ()
+                            (set-face-foreground 'diary-face   "skyblue")
+                            (set-face-background 'holiday-face "slate blue")
+                            (set-face-foreground 'holiday-face "white")))
+
+(use-package org-super-agenda
+  :config
+  (setq org-super-agenda-groups
+	'(;; Each group has an implicit boolean OR operator between its selectors.
+          (:name "Today"  ; Optionally specify section name
+                 :time-grid t  ; Items that appear on the time grid
+                 :todo "TODAY")  ; Items that have this TODO keyword
+          (:name "Important"
+                 ;; Single arguments given alone
+                 :tag "bills"
+                 :priority "A")
+          ;; Set order of multiple groups at once
+          (:order-multi (2 (:name "Shopping in town"
+                                  ;; Boolean AND group matches items that match all subgroups
+                                  :and (:tag "shopping" :tag "@town"))
+                           (:name "Food-related"
+                                  ;; Multiple args given in list with implicit OR
+                                  :tag ("food" "dinner"))
+                           (:name "Personal"
+                                  :habit t
+                                  :tag "personal")
+                           (:name "Space-related (non-moon-or-planet-related)"
+                                  ;; Regexps match case-insensitively on the entire entry
+                                  :and (:regexp ("space" "NASA")
+						;; Boolean NOT also has implicit OR between selectors
+						:not (:regexp "moon" :tag "planet")))))
+          ;; Groups supply their own section names when none are given
+          (:todo "WAITING" :order 8)  ; Set order of this section
+          (:todo ("SOMEDAY" "TO-READ" "CHECK" "TO-WATCH" "WATCHING")
+                 ;; Show this group at the end of the agenda (since it has the
+                 ;; highest number). If you specified this group last, items
+                 ;; with these todo keywords that e.g. have priority A would be
+                 ;; displayed in that group instead, because items are grouped
+                 ;; out in the order the groups are listed.
+                 :order 9)
+          (:priority<= "B"
+                       ;; Show this section after "Today" and "Important", because
+                       ;; their order is unspecified, defaulting to 0. Sections
+                       ;; are displayed lowest-number-first.
+                       :order 1)
+          ;; After the last group, the agenda will display items that didn't
+          ;; match any of these groups, with the default order position of 99
+          ))
+(org-super-agenda-mode))
+#+end_src
+
+** notify
+
+安装终端提示工具：
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+which terminal-notifier || brew install terminal-notifiler
+#+end_src
+
+倒计时结束通知:
+#+BEGIN_SRC  emacs-lisp
+(defvar terminal-notifier-command (executable-find "terminal-notifier") "The path to terminal-notifier.")
+(defun terminal-notifier-notify (title message)
+  (start-process "terminal-notifier"
+                 "terminal-notifier"
+                 terminal-notifier-command
+                 "-title" title
+                 "-sound" "default"
+                 "-message" message
+                 "-activate" "org.gnu.Emacs"))
+
+(defun timed-notification (time msg)
+  (interactive "sNotification when (e.g: 2 minutes, 60 seconds, 3 days): \nsMessage: ")
+  (run-at-time time nil (lambda (msg) (terminal-notifier-notify "Emacs" msg)) msg))
+
+;;(terminal-notifier-notify "Emacs notification" "Something amusing happened")
+(setq org-show-notification-handler (lambda (msg) (timed-notification nil msg)))
+#+end_src
+
+* web
+
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+which tsc || npm install -g typescript
+which typescript-language-server  || npm install -g typescript-language-server
+which eslint || npm install -g eslint babel-eslint eslint-plugin-react
+which prettier || npm install -g prettier
+which importjs || npm install -g import-js
+which yaml-language-server || npm install -g yaml-language-server
+which vscode-css-language-server &>/dev/null || npm i -g vscode-langservers-extracted
+#+end_src
+
+*** typescript
+
+使用 Emacs 内置的 typescript-ts-mode 为 typescript 文件（扩展名为 .ts 和 .tsx) 提供编辑支持（major-mode)。
+js-mode/js2-mode 则为 .js/.jsx 文件提供编辑支持。
+#+begin_src emacs-lisp
+;; for .ts/.tsx file
+;; (use-package typescript-mode
+;;   :mode "\\.tsx?\\'"
+;;   :config
+;;   (setq typescript-indent-level 2))
+(setq typescript-ts-mode-indent-offset 2)
+#+end_src
+
+在安装 typescript-mode 包的同时，确保已安装 typescript 和 typescript-language-server 包：
++ =npm install -g typescript=: 提供 tsc 和 tsserver 命令。
++ =npm install -g typescript-language-server=: 基于 typescript 的 tsserver 实现的语言服务器, 支持以下三种语言的补全：
+  + typescript: 扩展名 .ts/.tsx
+  + javascript: 扩展名 .js/.jsx
+  + 其中 .tsx/.jsx 是 React 的语法格式。
+
+eslint:
++ 安装 eslint npm 包后，安装语言服务器 =M-x lsp-install-server RET eslint RET= 。
++ 创建 .eslintrc.js: =M-x lsp-eslint-create-default-configuration= , 回答一些问题后自动创建配置文件并安装
+   eslint plugin。
+
+prettier 提供了 javascript/typescript 的格式化的功能。import-js 则提供了 import 功能。
+
+*** js
+
+Emacs 内置的 js-ts-mode 完整支持 .js/.jsx 文件的编辑, [[https://github.com/mooz/js2-mode#react-and-jsx][官方建议]]将 js2 作为 js-ts-mode 的 minor-mode 来一起用，
+这样 js2 为 js-ts-mode 提供了更好的 AST 和 JavaScript linting 支持能力。
+
+#+begin_src emacs-lisp
+(use-package js2-mode
+  :disabled
+  :init
+  (add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js-ts-mode))
+  :config
+  ;; 仍然使用 js-ts-mode 作为 .js/.jsx 的 marjor-mode, 但使用 js2-minor-mode 提供 AST 解析。
+  (add-hook 'js-ts-mode-hook 'js2-minor-mode)
+  ;; 将 js2-mode 作为 .js/.jsx 的 major-mode
+  ;;(add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js2-mode))
+  ;; 由于 lsp 已经提供了 diagnose 功能，故关闭 js2 自带的错误检查，防止干扰。
+  (setq js2-mode-show-strict-warnings nil)
+  (setq js2-mode-show-parse-errors nil)
+  ;; 缩进配置。
+  (setq javascript-indent-level 2)
+  (setq js-indent-level 2)
+  (setq js2-basic-offset 2)
+  (add-to-list 'interpreter-mode-alist '("node" . js2-mode)))
+#+end_src
+
+*** web-mode
+
+web-mode 用于编辑 html/css/jinja2/gotmpl/tmpl 等模板文件，不用于编辑 js/jsx/ts/tsx 等类型文件。
+#+begin_src  emacs-lisp
+(use-package web-mode
+  :mode "(\\.\\(jinja2\\|j2\\|css\\|vue\\|tmpl\\|gotmpl\\|html?\\|ejs\\)\\'"
+  :disabled ;; 使用内置的 TypeScript mode
+  :custom
+  (css-indent-offset 2)
+  (web-mode-attr-indent-offset 2)
+  (web-mode-attr-value-indent-offset 2)
+  (web-mode-code-indent-offset 2)
+  (web-mode-css-indent-offset 2)
+  (web-mode-markup-indent-offset 2)
+  (web-mode-sql-indent-offset 2)
+  (web-mode-enable-auto-pairing t)
+  (web-mode-enable-css-colorization t)
+  (web-mode-enable-auto-quoting nil)
+  (web-mode-enable-block-face t)
+  (web-mode-enable-current-element-highlight t)
+  :config
+  ;; Emmit.
+  (setq web-mode-tag-auto-close-style 2) ;; 2 mean auto-close with > and </.
+  (setq web-mode-markup-indent-offset 2))
+#+end_src
+
+*** css
+
+vscode-langservers-extracted 提供了如下三个 web 开发相关的 lsp server:
++ vscode-html-language-server
++ vscode-css-language-server
++ vscode-json-language-server
++ vscode-eslint-language-server
+
+lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
++ 各语言使用的 language server 参考变量: lsp-bridge-lang-server-mode-list
+  
+* dumb-jump
+
+#+begin_src emacs-lisp
+;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比使用 TAGS 的 citre（适合静态浏
+;; 览）以及 lsp 方案，更通用和轻量。
+(use-package dumb-jump
+  :config
+  ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用 etags 作为数据源。将 dump-jump 加
+  ;; 到 xref 后端中，作为其它 backend，如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
+  ;; 100 表示加到最后，优先级低于 citre。
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate 100)
+  ;; dumb-jump 发现支持的语言和项目后，会自动生效。
+  ;;; 将 Go module 文件作为 project root 标识。
+  (add-to-list 'dumb-jump-project-denoters "go.mod"))  
+#+end_src
+
+* csv
+
+#+begin_src emacs-lisp
+(use-package rainbow-csv
+  :vc (:fetcher github :repo emacs-vs/rainbow-csv)
+  )
+#+end_src
++ 切换模式： =M-x rainbow-csv-mode=
+
+* yaml
+
+使用 emacs 内置的 yaml-ts-mode。
+#+begin_src  emacs-lisp
+(use-package yaml-ts-mode
+  :mode "\\.ya?ml\\'"
+  :config
+  (define-key yaml-ts-mode-map (kbd "\C-m") #'newline-and-indent))
+#+end_src
+
+* compile
+
+#+begin_src emacs-lisp
+;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
+(setq compilation-ask-about-save nil
+      compilation-always-kill t
+      compile-command "go build")
+;; Convert shell escapes to color
+(add-hook 'compilation-filter-hook
+          (lambda () (ansi-color-apply-on-region (point-min) (point-max))))
+
+;; Taken from https://emacs.stackexchange.com/questions/31493/print-elapsed-time-in-compilation-buffer/56130#56130
+(make-variable-buffer-local 'my-compilation-start-time)
+
+(add-hook 'compilation-start-hook #'my-compilation-start-hook)
+(defun my-compilation-start-hook (proc)
+  (setq my-compilation-start-time (current-time)))
+
+(add-hook 'compilation-finish-functions #'my-compilation-finish-function)
+(defun my-compilation-finish-function (buf why)
+  (let* ((elapsed  (time-subtract nil my-compilation-start-time))
+         (msg (format "Compilation took: %s" (format-time-string "%T.%N" elapsed t))))
+    (save-excursion (goto-char (point-max)) (insert msg))
+    (message "Compilation %s: %s" (string-trim-right why) msg)))
+
+(defun my/goto-compilation()
+  (interactive)
+  (switch-to-buffer
+   (get-buffer-create "*compilation*")))
+#+end_src
+
+* ibuffer-project
+
+#+begin_src emacs-lisp
+;; (use-package ibuffer-project
+;;   :config
+;;   (add-to-list 'ibuffer-project-root-functions '(file-remote-p . "Remote"))
+;;   (add-hook
+;;    'ibuffer-hook
+;;    (lambda ()
+;;      (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+;;      (unless (eq ibuffer-sorting-mode 'project-file-relative)
+;;        (ibuffer-do-sort-by-project-file-relative)))))
+
+#+end_src
+
+* tab-bar
+
+#+begin_src emacs-lisp
+(use-package tab-bar
+  :custom
+  (tab-bar-close-button-show nil)
+  (tab-bar-new-button-show nil)
+  (tab-bar-history-limit 20)
+  (tab-bar-new-tab-choice "*dashboard*")
+  (tab-bar-show 1)
+  ;; 使用 super + N 来切换 tab。
+  (tab-bar-select-tab-modifiers "super")
+  :config
+  ;; 去掉最左侧的 < 和 >
+  (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
+  ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
+  (tab-bar-history-mode t)
+  (global-set-key (kbd "s-f") 'tab-bar-history-forward)
+  (global-set-key (kbd "s-b") 'tab-bar-history-back)
+  (global-set-key (kbd "s-t") 'tab-bar-new-tab)
+  (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
+  (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
+  (keymap-global-set "s-w" 'tab-bar-close-tab)
+  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
+
+  ;; 为 tab 添加序号，便于快速切换。
+  ;; 参考：https://christiantietze.de/posts/2022/02/emacs-tab-bar-numbered-tabs/
+  (defvar ct/circle-numbers-alist
+    '((0 . "⓪")
+      (1 . "①")
+      (2 . "②")
+      (3 . "③")
+      (4 . "④")
+      (5 . "⑤")
+      (6 . "⑥")
+      (7 . "⑦")
+      (8 . "⑧")
+      (9 . "⑨"))
+    "Alist of integers to strings of circled unicode numbers.")
+  (setq tab-bar-tab-hints t)
+  (defun ct/tab-bar-tab-name-format-default (tab i)
+    (let ((current-p (eq (car tab) 'current-tab))
+          (tab-num (if (and tab-bar-tab-hints (< i 10))
+                       (alist-get i ct/circle-numbers-alist) "")))
+      (propertize
+       (concat tab-num
+               " "
+               (alist-get 'name tab)
+               (or (and tab-bar-close-button-show
+			(not (eq tab-bar-close-button-show
+				 (if current-p 'non-selected 'selected)))
+			tab-bar-close-button)
+                   "")
+               " ")
+       'face (funcall tab-bar-tab-face-function tab))))
+  (setq tab-bar-tab-name-format-function #'ct/tab-bar-tab-name-format-default)
+
+  (global-set-key (kbd "s-1") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-2") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-3") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-4") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-5") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-6") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-7") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-8") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
+#+end_src
+
+* treemacs
+
+使用更简洁的 neotree 包：
+#+begin_src emacs-lisp
+  (use-package treemacs
+    :init
+    (with-eval-after-load 'winum (define-key winum-keymap (kbd "s-0") #'treemacs-select-window))
+    :config
+    (setq
+     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
+     treemacs-deferred-git-apply-delay      0.5
+     treemacs-display-in-side-window        t
+     treemacs-eldoc-display                 'simple
+     treemacs-file-event-delay              2000
+     treemacs-file-follow-delay             0.1
+     treemacs-follow-after-init             t
+     treemacs-expand-after-init             t
+     treemacs-git-command-pipe              ""
+     treemacs-goto-tag-strategy             'refetch-index
+     treemacs-indentation                   1
+     treemacs-indentation-string            " "
+     treemacs-is-never-other-window         t
+     treemacs-max-git-entries               100
+     treemacs-missing-project-action        'ask
+     treemacs-no-png-images                 nil ;; 是否显示图标
+     treemacs-no-delete-other-windows       t
+     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+     treemacs-position                      'left
+     treemacs-read-string-input             'from-minibuffer
+     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
+     treemacs-recenter-after-file-follow    'on-distance
+     treemacs-recenter-after-tag-follow     'on-distance
+     treemacs-recenter-after-project-jump   'always
+     treemacs-recenter-after-project-expand 'on-distance
+     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
+     treemacs-shownn-cursor                 t
+     treemacs-show-hidden-files             t
+     treemacs-silent-filewatch              nil
+     treemacs-silent-refresh                nil
+     treemacs-sorting                       'alphabetic-asc
+     treemacs-select-when-already-in-treemacs 'stay
+     treemacs-space-between-root-nodes      nil
+     treemacs-tag-follow-cleanup            t
+     treemacs-tag-follow-delay              0.5
+     treemacs-width                         35
+     treemacs-width-increment               5
+     treemacs-width-is-initially-locked     nil
+     treemacs-project-follow-cleanup        t
+     treemacs-git-commit-diff-mode          t
+     treemacs-indent-guide-style  'block
+     imenu-auto-rescan                      t)
+    (treemacs-resize-icons 11)
+    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
+    (treemacs-follow-mode t)
+    ;;(treemacs-tag-follow-mode t)
+    ;;(treemacs-project-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-indent-guide-mode -1)
+    (treemacs-git-mode 'deferred)
+    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
+    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+    (add-hook 'buffer-list-update-hook
+	      (lambda ()
+		(when (file-remote-p default-directory)
+		  (require 'treemacs)
+		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		      (delete-window (treemacs-get-local-window))))))
+    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+    (add-hook 'ediff-before-setup-hook
+	      (lambda ()
+		(require 'treemacs)
+		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		    (delete-window (treemacs-get-local-window)) ) ))
+    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
+    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
+    ;;(require 'treemacs-magit)
+    ;;(require 'treemacs-tar-bar)
+    ;;(treemacs-set-scope-type 'Tabs)
+    :bind
+    (:map global-map
+	      ("s-0" . treemacs-select-window)))
+
+;; (use-package treemacs-all-the-icons
+;;   :after (treemacs magit)
+;;   :config
+;;   (treemacs-load-theme "all-the-icons"))
+
+(use-package treemacs-magit  
+  :after (treemacs magit)
+  :ensure t)
+
+  (use-package deadgrep
+    :ensure-system-package (rg . ripgrep)
+    :bind ("<f5>" . deadgrep))
+#+end_src
+

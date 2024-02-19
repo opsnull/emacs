@@ -8,8 +8,6 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 
 which rg || brew install ripgrep
 
-which tac || brew install coreutils
-
 curl -L -O https://github.com/rime/librime/releases/download/1.8.5/rime-08dd95f-macOS.tar.bz2
 bunzip2 rime-08dd95f-macOS.tar.bz2
 mkdir ~/.emacs.d/librime
@@ -33,43 +31,31 @@ which watchexec || brew install watchexec
 which pngpaste || brew install pngpaste
 which magick || brew install imagemagick
 
-which terminal-notifier || brew install terminal-notifiler
-
 $ brew install llvm
 $ export CPPFLAGS="-I/usr/local/opt/llvm/include"
 $ export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
 $ export PATH="/usr/local/opt/llvm/bin:$PATH"
 $ export LDFLAGS="-L/usr/local/opt/llvm/lib"
 
-brew install clang-format
-clang-format --dump-config
+brew install python # 2024.02.19 安装的是  python3.11 版本.
+brew install python-tk@3.11  python-gdbm@3.11
 
 which pylint || brew install pylint
 which flake8 || brew install flake8
 which pyright || npm update -g pyright
-which yapf || pip install yapf
-which ipython || pip install ipython
+which yapf || pip3 install yapf
+which ipython || pip3 install ipython
 
 git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins/pyenv-pyright
 
 which gopls || go install golang.org/x/tools/gopls@latest
 
 which multimarkdown || brew install multimarkdown
-which grip || pip install grip
-
-which tsc || npm install -g typescript
-which typescript-language-server  || npm install -g typescript-language-server
-which eslint || npm install -g eslint babel-eslint eslint-plugin-react
-which prettier || npm install -g prettier
-which importjs || npm install -g import-js
-which yaml-language-server || npm install -g yaml-language-server
-which vscode-css-language-server &>/dev/null || npm i -g vscode-langservers-extracted
+which grip || pip3 install grip
 
 bash-language-server -v &>/dev/null || npm i -g bash-language-server
 
-pip install pygments
-python -m pygments -h # gtags 使用 pygments 支持跟多语言
-brew install global # 提供 global、gtags 命令
+brew install global pygments # 提供 global、gtags 命令, gtags 使用 pygments 支持跟多语言
 
 # 在 ~/.bashrc 中添加如下配置：
 # 统一的 tags 文件目录
@@ -100,6 +86,8 @@ echo 'export PATH=$HOME/.cargo/bin:$PATH' >>~/.bashrc
 rustup-init   # 下载 rust stable 工具链
 rustup component add rust-analyzer # 安装 rust lsp server
 rustup component add clippy  # rust lints
+rustup component add rust-src
+rustup component add rust-docs # 添加 rust 标准库文档
 rustup toolchain list   # 查看安装的工具链
 
 rustup toolchain install nightly # rust 仓库依赖 nightly 版本工具链
@@ -116,4 +104,6 @@ which cmake || brew install cmake
 which glibtool || brew install libtool
 which exiftran || brew install fxiftran
 
+# 使用 GNU 系列替换 MacOS 自带的 BSD 风格核心二进制：
+which tac || brew install coreutils
 which trash || brew install trash
