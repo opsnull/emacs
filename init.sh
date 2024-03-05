@@ -8,13 +8,11 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 
 which rg || brew install ripgrep
 
-curl -L -O https://github.com/rime/librime/releases/download/1.8.5/rime-08dd95f-macOS.tar.bz2
-bunzip2 rime-08dd95f-macOS.tar.bz2
-mkdir ~/.emacs.d/librime
-mv rime-08dd95f-macOS/dist ~/.emacs.d/librime
-$ ls ~/.emacs.d/librime/dist/
-bin/  include/  lib/  share/
-rm -rf rime-08dd95f-macOS.tar.bz2
+curl -L -O https://github.com/rime/librime/releases/download/1.10.0/rime-295cb2a-macOS.tar.bz2
+tar -xvf rime-295cb2a-macOS.tar.bz2
+mkdir ~/.emacs.d/librime/dist
+mv ~/.emacs.d/librime/dist{,.bak}
+mv dist ~/.emacs.d/librime
 # 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
 sudo spctl --master-disable
 # 后续再开启：sudo spctl --master-enable
@@ -67,7 +65,7 @@ export GTAGSLABEL=pygments
 
 # 测试项目
 cd go/src/github.com/docker/swarm/
-# 生成 TAGS 文件
+# 生成 GTAGS 文件
 gtags --explain
 # reference
 global -xr SetPrimary

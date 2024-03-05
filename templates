@@ -18,7 +18,7 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	     "#+OPTIONS: prop:t ^:nil" n
 	     "#+LANGUAGE: zh-CN" n)
 
-(my-bog-file "#+AUTHOR: 张俊(zj@opsnull.com)" n
+(my-blog-file "#+AUTHOR: 张俊(zj@opsnull.com)" n
 	     "#+DATE: " (format-time-string "%Y-%m-%d %a") n
  	     "#+HUGO_BASE_DIR: ~/blog/blog.opsnull.com" n
 	     "#+HUGO_SECTION: posts" n

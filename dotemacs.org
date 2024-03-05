@@ -1,10 +1,22 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-02-19T19:02:34+0800
+#+LASTMOD: 2024-03-05T16:03:20+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
 #+LANGUAGE: zh-CN
+
+#+DATE: 2023-08-20 Sun
+#+HUGO_BASE_DIR: ~/blog/blog.opsnull.com
+#+HUGO_SECTION: emacs
+#+HUGO_BUNDLE: my-emacs-dotfile
+#+EXPORT_file_name: index
+#+HUGO_AUTO_SET_LASTMOD: t
+#+HUGO_TAGS: emacs
+#+HUGO_CATEGORIES: emacs
+#+HUGO_LOCALE: zh
+#+OPTIONS: title:t
+#+HUGO_CUSTOM_FRONT_MATTER: :series '("emacs") :series_order 1
 
 * install
 
@@ -857,13 +869,11 @@ Mac 系统安装 RIME 输入法：
 
 下载 [[https://github.com/rime/librime/releases][librime]] 库, emacs-rime 使用它与系统的 RIME 交互：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-curl -L -O https://github.com/rime/librime/releases/download/1.8.5/rime-08dd95f-macOS.tar.bz2
-bunzip2 rime-08dd95f-macOS.tar.bz2
-mkdir ~/.emacs.d/librime
-mv rime-08dd95f-macOS/dist ~/.emacs.d/librime
-$ ls ~/.emacs.d/librime/dist/
-bin/  include/  lib/  share/
-rm -rf rime-08dd95f-macOS.tar.bz2
+curl -L -O https://github.com/rime/librime/releases/download/1.10.0/rime-295cb2a-macOS.tar.bz2
+tar -xvf rime-295cb2a-macOS.tar.bz2
+mkdir ~/.emacs.d/librime/dist
+mv ~/.emacs.d/librime/dist{,.bak}
+mv dist ~/.emacs.d/librime
 # 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
 sudo spctl --master-disable
 # 后续再开启：sudo spctl --master-enable
@@ -912,6 +922,7 @@ patch:
   - F4
   - "Control+plus" # 按 C-Shit-+ 调出方案选单。
   switcher/fold_options: false # 呼出时不折叠。
+  switcher/abbreviate_options: false # 折叠时是否缩写选项
   key_binder/bindings:
   - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
   - { when: paging, accept: minus, send: Page_Up }                 # 上一页
@@ -942,6 +953,8 @@ patch:
 + 注意：对于列表类型的 patch, 必须列出修改后的整个列表值，不支持不分列表。
 #+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml 
 patch:
+  translator/spelling_hints: 0 
+  translator/always_show_comments: false #是否强制显示全拼双拼的拼音
   # 模糊拼音
   "speller/algebra":
     ### 模糊音
@@ -2118,7 +2131,7 @@ export GTAGSLABEL=pygments
 
 # 测试项目
 cd go/src/github.com/docker/swarm/
-# 生成 TAGS 文件
+# 生成 GTAGS 文件
 gtags --explain
 # reference
 global -xr SetPrimary
@@ -2126,17 +2139,7 @@ global -xr SetPrimary
 global -x SetPrimary
 #+end_src
 
-citre 是基于 TAGS 文件的代码浏览工具，支持[[https://github.com/universal-ctags/citre/blob/master/docs/user-manual/citre-global.md][集成使用 GNU global TAGS 文件]]，创建和更新 global tag 文件：
-+ M-x citre-global-create-database
-+ M-x citre-global-update-database
-
-注意以下两个命令创建的是 ctags 文件（非 global tag 文件），不支持 references，不建议使用：
-+ M-x citre-create-tags-file
-+ M-x citre-update-tags-file
-
-如果误使用了上面的命令创建 ctags 文件（项目目录中有 .tags 目录），则后续使用 xref-find-references 会
-hang，需要删除。
-
+配置 citre：
 #+begin_src emacs-lisp
 ;; GNU Global gtags
 (setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
@@ -2465,19 +2468,19 @@ eglot 启动后，将 xref-backend-functions 设置为 eglot-xref-backend，而�
              '((rust-ts-mode rust-mode) .
                ("rust-analyzer" :initializationOptions
                 (
-		      :checkOnSave :json-false
-	              ;;:diagnostics (:enable :json-false)		      
+		      ;;:checkOnSave :json-false
 		      ;;:cachePriming (:enable :json-false)
 		      ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
-		      :check (:allTargets  :json-false)
-		      :procMacro ( :attributes (:enable t)
-		       		   :enable :json-false)
-                   :cargo ( :buildScripts (:enable :json-false)
-                            :features "all"
-		                :cfgs (:tokio_unstable "")
-				:autoreload :json-false)
-	              :diagnostics (:disabled ["unresolved-proc-macro"
-                                           "unresolved-macro-call"]))
+		      :check (:allTargets :json-false)
+		      :procMacro (:attributes (:enable t)
+		       		  :enable :json-false)
+                  :cargo ( :buildScripts (:enable :json-false)
+                           ;;:features "all"
+			       :noDefaultFeatures t
+		               :cfgs (:tokio_unstable "")
+		               :autoreload :json-false)
+	              :diagnostics ( ;;:enable :json-false
+                                 :disabled ["unresolved-proc-macro" "unresolved-macro-call"]))
 	        )))
 
 ;; 由于 major-mode 开启 eglot-ensure 后，eglot 将 xref-backend-functions 设置为 eglot-xref-backend，

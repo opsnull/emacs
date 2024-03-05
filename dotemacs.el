@@ -1526,19 +1526,19 @@ mermaid.initialize({
              '((rust-ts-mode rust-mode) .
                ("rust-analyzer" :initializationOptions
                 (
-		      :checkOnSave :json-false
-	              ;;:diagnostics (:enable :json-false)		      
+		      ;;:checkOnSave :json-false
 		      ;;:cachePriming (:enable :json-false)
 		      ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
-		      :check (:allTargets  :json-false)
-		      :procMacro ( :attributes (:enable t)
-		       		   :enable :json-false)
-                   :cargo ( :buildScripts (:enable :json-false)
-                            :features "all"
-		                :cfgs (:tokio_unstable "")
-				:autoreload :json-false)
-	              :diagnostics (:disabled ["unresolved-proc-macro"
-                                           "unresolved-macro-call"]))
+		      :check (:allTargets :json-false)
+		      :procMacro (:attributes (:enable t)
+		       		  :enable :json-false)
+                  :cargo ( :buildScripts (:enable :json-false)
+                           ;;:features "all"
+			       :noDefaultFeatures t
+		               :cfgs (:tokio_unstable "")
+		               :autoreload :json-false)
+	              :diagnostics ( ;;:enable :json-false
+                                 :disabled ["unresolved-proc-macro" "unresolved-macro-call"]))
 	        )))
 
 ;; 由于 major-mode 开启 eglot-ensure 后，eglot 将 xref-backend-functions 设置为 eglot-xref-backend，

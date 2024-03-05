@@ -6565,6 +6565,7 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
 ;; dump-jump 使用 ag、rg 来实时搜索当前项目文件来进行定位和跳转，相比使用 TAGS 的 citre（适合静态浏
 ;; 览）以及 lsp 方案，更通用和轻量。
 (use-package dumb-jump
+  :after (citre)
   :config
   ;; xref 默认将 elisp--xref-backend 加到 backend 的最后面，它使用 etags 作为数据源。将 dump-jump 加
   ;; 到 xref 后端中，作为其它 backend，如 citre 的后备。加到 xref 后端后，可以使用 M-. 和 M-? 来跳转。
