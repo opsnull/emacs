@@ -268,72 +268,44 @@
   (setq fontaine-latest-state-file
 	(locate-user-emacs-file "fontaine-latest-state.eld"))
 
-  ;; Iosevka Comfy is my highly customised build of Iosevka with
-  ;; monospaced and duospaced (quasi-proportional) variants as well as
-  ;; support or no support for ligatures:
-  ;; <https://git.sr.ht/~protesilaos/iosevka-comfy>.
-  ;;
-  ;; Iosevka Comfy            == monospaced, supports ligatures
-  ;; Iosevka Comfy Fixed      == monospaced, no ligatures
-  ;; Iosevka Comfy Duo        == quasi-proportional, supports ligatures
-  ;; Iosevka Comfy Wide       == like Iosevka Comfy, but wider
-  ;; Iosevka Comfy Wide Fixed == like Iosevka Comfy Fixed, but wider
   (setq fontaine-presets
-	'((tiny
-           :default-family "Iosevka Comfy Wide Fixed"
-           :default-height 70)
-          (small
-           :default-family "Iosevka Comfy Fixed"
-           :default-height 90)
-          (regular
-           :default-height 160) ;; 默认字体 16px, 需要是偶数才能实现等宽等高。
+	'((small
+           :default-family "Iosevka Comfy Motion"
+           :default-height 80
+           :variable-pitch-family "Iosevka Comfy Fixed")
+          (regular) ;; 全部使用缺省配置。
           (medium
-           :default-height 110)
+           :default-weight semilight
+           :default-height 115
+           :bold-weight extrabold)
           (large
-           :default-weight semilight
-           :default-height 140
-           :bold-weight extrabold)
+           :inherit medium
+           :default-height 150)
           (presentation
-           :default-weight semilight
-           :default-height 170
-           :bold-weight extrabold)
-          (jumbo
-           :default-weight semilight
-           :default-height 220
-           :bold-weight extrabold)
+           :default-height 180)
           (t
            :default-family "Iosevka Comfy"
            :default-weight regular
-           :default-height 100
-           :fixed-pitch-family nil ; falls back to :default-family
-           :fixed-pitch-weight nil ; falls back to :default-weight
+           :default-height 160 ;; 默认字体 16px, 需要是偶数才能实现等宽等高。
+           :fixed-pitch-family "Iosevka Comfy"
+           :fixed-pitch-weight nil
            :fixed-pitch-height 1.0
-           :fixed-pitch-serif-family nil ; falls back to :default-family
-           :fixed-pitch-serif-weight nil ; falls back to :default-weight
+           :fixed-pitch-serif-family "Iosevka Comfy"
+           :fixed-pitch-serif-weight nil
            :fixed-pitch-serif-height 1.0
            :variable-pitch-family "Iosevka Comfy Duo"
            :variable-pitch-weight nil
            :variable-pitch-height 1.0
-           :bold-family nil ; use whatever the underlying face has
-           :bold-weight bold
-           :italic-family nil
-           :italic-slant italic
            :line-spacing nil)))
+  (fontaine-mode 1)
+  (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
+  (add-hook 'enable-theme-functions #'fontaine-apply-current-preset)
 
-  ;; Recover last preset or fall back to desired style from
-  ;; `fontaine-presets'.
+  ;; Recover last preset or fall back to desired style from `fontaine-presets'.
   (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))
 
   ;; The other side of `fontaine-restore-latest-preset'.
-  (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset)
-
-  (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
-  (define-key global-map (kbd "C-c F") #'fontaine-set-face-font))
-
-;; Persist font configurations while switching themes (doing it with
-;; my `modus-themes' and `ef-themes' via the hooks they provide).
-(dolist (hook '(modus-themes-after-load-theme-hook ef-themes-post-load-hook))
-  (add-hook hook #'fontaine-apply-current-preset))
+  (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset))
 
 (defun my/set-font ()
   (when window-system    
@@ -1345,8 +1317,7 @@ mermaid.initialize({
   (require 'ob-dall-e-shell)
   (ob-dall-e-shell-setup)
   ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2023-03-15-preview")
-	;;"/openai/deployments/gpt-4/chat/completions?api-version=2023-03-15-preview")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
   (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
   ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
   (setq chatgpt-shell-auth-header 
@@ -1467,7 +1438,7 @@ mermaid.initialize({
   (setq eglot-events-buffer-size (* 1024 1024 1))
   ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 在保存 buffer 内容后，经过 idle time 才会显
   ;; 示 LSP 发送的诊断消息。
-  (setq eglot-send-changes-idle-time 0.3)
+  (setq eglot-send-changes-idle-time 0.2)
 
   ;; Shutdown server when last managed buffer is killed
   (customize-set-variable 'eglot-autoshutdown t)
@@ -1529,14 +1500,16 @@ mermaid.initialize({
 		      ;;:checkOnSave :json-false
 		      ;;:cachePriming (:enable :json-false)
 		      ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
-		      :check (:allTargets :json-false)
+		      ;;:check (:allTargets :json-false)
 		      :procMacro (:attributes (:enable t)
-		       		  :enable :json-false)
+		       		  ;;:enable :json-false
+				  )
                   :cargo ( :buildScripts (:enable :json-false)
                            ;;:features "all"
-			       :noDefaultFeatures t
+			       ;;:noDefaultFeatures t
 		               :cfgs (:tokio_unstable "")
-		               :autoreload :json-false)
+		               ;;:autoreload :json-false
+			       )
 	              :diagnostics ( ;;:enable :json-false
                                  :disabled ["unresolved-proc-macro" "unresolved-macro-call"]))
 	        )))
@@ -1584,6 +1557,48 @@ mermaid.initialize({
                                (shell-command "rustdocs std"))))
   :custom
   (rust-format-on-save t))
+
+(use-package dape
+  :disabled
+  ;; By default dape shares the same keybinding prefix as `gud'
+  ;; If you do not want to use any prefix, set it to nil.
+  ;; :preface
+  ;; (setq dape-key-prefix "\C-x\C-a")
+  ;;
+  ;; May also need to set/change gud (gdb-mi) key prefix
+  ;; (setq gud-key-prefix "\C-x\C-a")
+
+  :hook
+  ;; Save breakpoints on quit
+  (kill-emacs . dape-breakpoint-save)
+  ;; Load breakpoints on startup
+  ;; (after-init . dape-breakpoint-load))
+
+  :init
+  ;; To use window configuration like gud (gdb-mi)
+  (setq dape-buffer-window-arrangement 'gud)
+
+  :config
+  ;; Info buffers to the right
+   (setq dape-buffer-window-arrangement 'right)
+
+  ;; To not display info and/or buffers on startup
+  ;; (remove-hook 'dape-on-start-hooks 'dape-info)
+  ;; (remove-hook 'dape-on-start-hooks 'dape-repl)
+
+  ;; To display info and/or repl buffers on stopped
+  ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
+  ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
+
+  ;; Kill compile buffer on build success
+  ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+
+  ;; Save buffers on startup, useful for interpreted languages
+  ;; (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t)))
+
+  ;; Projectile users
+  ;; (setq dape-cwd-fn 'projectile-project-root)
+  )
 
 (use-package neotree
   :config
