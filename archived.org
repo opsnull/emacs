@@ -6806,3 +6806,38 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
     :bind ("<f5>" . deadgrep))
 #+end_src
 
+
+* sort-tab
+
+#+begin_src emacs-lisp
+(use-package sort-tab
+  :demand
+  :vc (:fetcher github :repo manateelazycat/sort-tab)
+  ;; emacs 启动后再启用 sort-tab 防止显示异常。
+  :hook (after-init . sort-tab-mode)
+  :config
+  ;;(sort-tab-mode 1)
+  (setq sort-tab-show-index-number t)
+  (setq sort-tab-height 40)
+  (setq sort-tab-name-max-length 15)
+  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
+  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
+  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
+  ;; (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
+  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
+  ;; 设置 tab 颜色，M-x list-colors-display。
+  (set-face-foreground 'sort-tab-current-tab-face "peru")
+  ;; 不显示背景颜色。
+  (set-face-background 'sort-tab-current-tab-face nil)
+  ;; 忽略 treemacs-mode 的 buffer显示。
+  (setq sort-tab-hide-function '(lambda (buf) (with-current-buffer buf (derived-mode-p 'treemacs-mode)))))
+#+end_src
+

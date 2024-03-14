@@ -273,7 +273,7 @@
            :default-family "Iosevka Comfy Motion"
            :default-height 80
            :variable-pitch-family "Iosevka Comfy Fixed")
-          (regular) ;; 全部使用缺省配置。
+          (regular) ;; 使用缺省配置。
           (medium
            :default-weight semilight
            :default-height 115
@@ -384,37 +384,49 @@
   (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
   (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
-  (global-set-key (kbd "s-0") 'tab-bar-close-tab))
+  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
 
-(use-package sort-tab
-  :demand
-  :vc (:fetcher github :repo manateelazycat/sort-tab)
-  ;; emacs 启动后再启用 sort-tab 防止显示异常。
-  :hook (after-init . sort-tab-mode)
-  :config
-  ;;(sort-tab-mode 1)
-  (setq sort-tab-show-index-number t)
-  (setq sort-tab-height 40)
-  (setq sort-tab-name-max-length 15)
-  (global-set-key (kbd "s-n") 'sort-tab-select-next-tab)
-  (global-set-key (kbd "s-p") 'sort-tab-select-prev-tab)
-  (global-set-key (kbd "s-w") 'sort-tab-close-current-tab)
-  ;; (global-set-key (kbd "s-0") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-1") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-2") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-3") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-4") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-5") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-6") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-7") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-8") 'sort-tab-select-visible-tab)
-  (global-set-key (kbd "s-9") 'sort-tab-select-visible-tab)
-  ;; 设置 tab 颜色，M-x list-colors-display。
-  (set-face-foreground 'sort-tab-current-tab-face "peru")
-  ;; 不显示背景颜色。
-  (set-face-background 'sort-tab-current-tab-face nil)
-  ;; 忽略 treemacs-mode 的 buffer显示。
-  (setq sort-tab-hide-function '(lambda (buf) (with-current-buffer buf (derived-mode-p 'treemacs-mode)))))
+  ;; 为 tab 添加序号，便于快速切换。
+  ;; 参考：https://christiantietze.de/posts/2022/02/emacs-tab-bar-numbered-tabs/
+  (defvar ct/circle-numbers-alist
+    '((0 . "⓪")
+      (1 . "①")
+      (2 . "②")
+      (3 . "③")
+      (4 . "④")
+      (5 . "⑤")
+      (6 . "⑥")
+      (7 . "⑦")
+      (8 . "⑧")
+      (9 . "⑨"))
+    "Alist of integers to strings of circled unicode numbers.")
+  (setq tab-bar-tab-hints t)
+  (defun ct/tab-bar-tab-name-format-default (tab i)
+    (let ((current-p (eq (car tab) 'current-tab))
+          (tab-num (if (and tab-bar-tab-hints (< i 10))
+                       (alist-get i ct/circle-numbers-alist) "")))
+      (propertize
+       (concat tab-num
+               " "
+               (alist-get 'name tab)
+               (or (and tab-bar-close-button-show
+			(not (eq tab-bar-close-button-show
+				 (if current-p 'non-selected 'selected)))
+			tab-bar-close-button)
+                   "")
+               " ")
+       'face (funcall tab-bar-tab-face-function tab))))
+  (setq tab-bar-tab-name-format-function #'ct/tab-bar-tab-name-format-default)
+
+  (global-set-key (kbd "s-1") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-2") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-3") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-4") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-5") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-6") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-7") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-8") 'tab-bar-select-tab)
+  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 
 (use-package vertico
   :config
@@ -1462,8 +1474,7 @@ mermaid.initialize({
 	  ))
   
   ;; 加强高亮的 symbol 效果。
-  ;; (set-face-attribute 'eglot-highlight-symbol-face nil
-  ;;                     :background "#b3d7ff")
+   (set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
 
   ;; ;; 在 eldoc bufer 中只显示帮助文档。
   (defun my/eglot-managed-mode-initialize ()
