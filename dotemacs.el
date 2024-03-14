@@ -1345,6 +1345,9 @@ mermaid.initialize({
 
 (use-package eldoc
   :config
+  (setq eldoc-idle-delay 0.2)
+  ;; 在打开 eldoc-buffer 的情况下, 关闭 echo-area 的显示, 同时也会在 buffer 实时显示函数的参数签名.
+  (setq eldoc-echo-area-prefer-doc-buffer t)
   ;; 打开或关闭 *eldoc* 函数帮助或 hover buffer。
   (global-set-key (kbd "M-`")
                   (
@@ -1353,6 +1356,19 @@ mermaid.initialize({
                    (if (get-buffer-window "*eldoc*")
                        (delete-window (get-buffer-window "*eldoc*"))
                      (display-buffer "*eldoc*")))))
+
+;; minibuffer 窗口最大高度.
+;;(setq max-mini-window-height 3)
+;;(setq eldoc-echo-area-use-multiline-p nil)
+
+;; eldoc-box 在 frame 右上角显示 eldoc-doc-buffer 该显示的内容. 依赖 markdown-mode 来格式化显示文档
+;; 的内容, 但是不能点击其中的链接, https://github.com/joaotavora/eglot/discussions/1238
+(use-package eldoc-box
+  :config
+  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
+  ;; eldoc-box-hover-at-point-mode 有性能问题,显示延迟大, 故不使用.
+  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t) 
+  )
 
 (use-package corfu
   :init
@@ -1364,6 +1380,8 @@ mermaid.initialize({
   (corfu-separator ?\s)          ;; Orderless field separator
   (corfu-preselect 'prompt)      ;; Preselect the prompt
   (corfu-scroll-margin 5)        ;; Use scroll margin
+  (corfu-auto-delay 0.1)
+  (corfu-popupinfo-delay '(1.0 . 0.5))
   :config
   ;; Enable `corfu-history-mode' to sort candidates by their history position.
   (savehist-mode 1)
@@ -1442,6 +1460,7 @@ mermaid.initialize({
 	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 命令来重新触发诊断。
 	      ("C-c C-c" . flymake-start)
 	      ("C-c C-d" . eldoc)
+	      ("C-c C-p" . eldoc-box-help-at-point) ;; 显示光标处的帮助信息.
 	      ("C-c C-f" . eglot-format-buffer)
 	      ("C-c C-r" . eglot-rename))
   :config
@@ -1470,31 +1489,11 @@ mermaid.initialize({
 	'(
 	  ;;:hoverProvider ;; 显示光标位置信息。
 	  ;;:documentHighlightProvider ;; 高亮当前 symbol。
-	  :inlayHintProvider ;; 显示 inlay hint 提示。
+	  ;;:inlayHintProvider ;; 显示 inlay hint 提示。
 	  ))
   
   ;; 加强高亮的 symbol 效果。
-   (set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
-
-  ;; ;; 在 eldoc bufer 中只显示帮助文档。
-  (defun my/eglot-managed-mode-initialize ()
-    ;; ;; 不显示 flymake 错误和函数签名，放置后续的 eldoc buffer 内容来回变。
-    ;; (setq-local
-    ;;  eldoc-documentation-functions
-    ;;  (list
-    ;;   ;; 关闭自动在 eldoc 显示 flymake 的错误， 这样 eldoc 只显示函数签名或文档，后续 flymake 的错误单独在
-    ;;   ;; echo area 显示。      
-    ;;   ;;#'flymake-eldoc-function 
-    ;;   #'eglot-signature-eldoc-function ;; 关闭自动在 eldoc 自动显示函数签名，使用 M-x eldoc 手动显示函数帮助。
-    ;;   #'eglot-hover-eldoc-function))
-
-    ;; 在单独的 buffer 中显示 eldoc 而非 echo area。
-    (setq-local
-     eldoc-display-functions
-     (list
-      #'eldoc-display-in-echo-area
-      #'eldoc-display-in-buffer))
-  (add-hook 'eglot-managed-mode-hook #'my/eglot-managed-mode-initialize))
+  ;; (set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
 
   ;; t: true, false: :json-false 而不是 nil。
   (setq-default eglot-workspace-configuration
