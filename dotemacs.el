@@ -1346,8 +1346,20 @@ mermaid.initialize({
 (use-package eldoc
   :config
   (setq eldoc-idle-delay 0.2)
+  ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
+  ;; Ready 的内容.
+  (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
   ;; 在打开 eldoc-buffer 的情况下, 关闭 echo-area 的显示, 同时也会在 buffer 实时显示函数的参数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
+  ;;(eldoc-add-command-completions "paredit-")
+
+  ;; (add-to-list 'display-buffer-alist
+  ;;                '("^\\*eldoc.*\\*"
+  ;;                 (display-buffer-reuse-window display-buffer-in-side-window)
+  ;;                 (dedicated . t)
+  ;;                 (side . right)
+  ;;                 (inhibit-same-window . t)))
+
   ;; 打开或关闭 *eldoc* 函数帮助或 hover buffer。
   (global-set-key (kbd "M-`")
                   (
@@ -1359,7 +1371,7 @@ mermaid.initialize({
 
 ;; minibuffer 窗口最大高度.
 ;;(setq max-mini-window-height 3)
-;;(setq eldoc-echo-area-use-multiline-p nil)
+(setq eldoc-echo-area-use-multiline-p nil)  ;; nil: 只单行显示 eldoc 信息.
 
 ;; eldoc-box 在 frame 右上角显示 eldoc-doc-buffer 该显示的内容. 依赖 markdown-mode 来格式化显示文档
 ;; 的内容, 但是不能点击其中的链接, https://github.com/joaotavora/eglot/discussions/1238
@@ -1455,9 +1467,17 @@ mermaid.initialize({
 
 (use-package eglot
   :demand
+  :preface
+  (defun mp-eglot-eldoc ()
+      ;; eldoc 首先显示 flymake 诊断信息.
+      (setq eldoc-documentation-functions
+            (cons #'flymake-eldoc-function
+                (remove #'flymake-eldoc-function eldoc-documentation-functions)))
+     (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly))
+  :hook ((eglot-managed-mode . mp-eglot-eldoc))
   :bind (:map eglot-mode-map
 	      ("C-c C-a" . eglot-code-actions)
-	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 命令来重新触发诊断。
+	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 来重新触发诊断。
 	      ("C-c C-c" . flymake-start)
 	      ("C-c C-d" . eldoc)
 	      ("C-c C-p" . eldoc-box-help-at-point) ;; 显示光标处的帮助信息.
@@ -1475,16 +1495,15 @@ mermaid.initialize({
   (customize-set-variable 'eglot-autoshutdown t)
   (customize-set-variable 'eglot-connect-timeout 60)   ;; default 30s
   
-  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，eglot 报错。由于
-  ;; treesit-auto已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的
-  ;; xx-mode-hook。如果代码项目没有 .git 目录，则打开文件时可能会卡主。
+  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server 时 eglot 报错。由于treesit-auto
+  ;; 已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的xx-mode-hook。
+  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
   (add-hook 'python-ts-mode-hook #'eglot-ensure)
   (add-hook 'rust-ts-mode-hook #'eglot-ensure)
 
-  ;; 忽略一些用不到，耗性能的能力。
   (setq eglot-ignored-server-capabilities
 	'(
 	  ;;:hoverProvider ;; 显示光标位置信息。
@@ -1495,34 +1514,33 @@ mermaid.initialize({
   ;; 加强高亮的 symbol 效果。
   ;; (set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
 
+  ;; 具体参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
+  (add-to-list 'eglot-server-programs
+               '((rust-ts-mode rust-mode) .
+		 ("rust-analyzer" :initializationOptions
+                  (
+		   ;;:checkOnSave :json-false
+		   ;;:cachePriming (:enable :json-false)
+		   ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
+		   ;;:check (:allTargets :json-false)
+		   :procMacro (:attributes (:enable t)
+		       			   ;;:enable :json-false
+					   )
+                   :cargo ( :buildScripts (:enable :json-false)
+                            ;;:features "all"
+			        ;;:noDefaultFeatures t
+     	                :cfgs (:tokio_unstable "")
+		                ;;:autoreload :json-false
+			    )
+	           :diagnostics ( ;;:enable :json-false
+                              :disabled ["unresolved-proc-macro" "unresolved-macro-call"]))
+	          )))
   ;; t: true, false: :json-false 而不是 nil。
   (setq-default eglot-workspace-configuration
 		'((:gopls .
 			  ((staticcheck . t)
 			   (usePlaceholders . :json-false)
 			   (matcher . "CaseSensitive"))))))
-
-;; 具体参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
-(add-to-list 'eglot-server-programs
-             '((rust-ts-mode rust-mode) .
-               ("rust-analyzer" :initializationOptions
-                (
-		      ;;:checkOnSave :json-false
-		      ;;:cachePriming (:enable :json-false)
-		      ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
-		      ;;:check (:allTargets :json-false)
-		      :procMacro (:attributes (:enable t)
-		       		  ;;:enable :json-false
-				  )
-                  :cargo ( :buildScripts (:enable :json-false)
-                           ;;:features "all"
-			       ;;:noDefaultFeatures t
-		               :cfgs (:tokio_unstable "")
-		               ;;:autoreload :json-false
-			       )
-	              :diagnostics ( ;;:enable :json-false
-                                 :disabled ["unresolved-proc-macro" "unresolved-macro-call"]))
-	        )))
 
 ;; 由于 major-mode 开启 eglot-ensure 后，eglot 将 xref-backend-functions 设置为 eglot-xref-backend，
 ;; 而忽略已注册的其它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动关闭当前
@@ -1568,8 +1586,11 @@ mermaid.initialize({
   :custom
   (rust-format-on-save t))
 
+;; 快速 rust 开发测试.
+;; BUGFIX: https://github.com/grafov/rust-playground/pull/11/files
+(use-package rust-playground)
+
 (use-package dape
-  :disabled
   ;; By default dape shares the same keybinding prefix as `gud'
   ;; If you do not want to use any prefix, set it to nil.
   ;; :preface
@@ -1584,13 +1605,8 @@ mermaid.initialize({
   ;; Load breakpoints on startup
   ;; (after-init . dape-breakpoint-load))
 
-  :init
-  ;; To use window configuration like gud (gdb-mi)
-  (setq dape-buffer-window-arrangement 'gud)
-
   :config
-  ;; Info buffers to the right
-   (setq dape-buffer-window-arrangement 'right)
+   (setq dape-buffer-window-arrangement 'right) ;; 'gud
 
   ;; To not display info and/or buffers on startup
   ;; (remove-hook 'dape-on-start-hooks 'dape-info)
@@ -1605,9 +1621,6 @@ mermaid.initialize({
 
   ;; Save buffers on startup, useful for interpreted languages
   ;; (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t)))
-
-  ;; Projectile users
-  ;; (setq dape-cwd-fn 'projectile-project-root)
   )
 
 (use-package neotree

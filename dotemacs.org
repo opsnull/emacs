@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-14T22:03:57+0800
+#+LASTMOD: 2024-03-15T20:03:20+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -891,7 +891,7 @@ sync_dir: /Users/zhangjun/.emacs.d/sync/rime
 #+end_src
 
 RIME 输入法自定义缺省配置中文：
-+ 注意：对于列表类型的 patch, 必须列出修改后的整个列表值，不支持不分列表。
++ 注意：对于列表类型的 patch, 必须列出修改后的整个列表值，不支持部分列表。
 + 详细参考：https://github.com/iDvel/rime-ice/blob/main/default.yaml
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
 patch:
@@ -903,15 +903,16 @@ patch:
   - F4
   - "Control+plus" # 按 C-Shit-+ 调出方案选单。
   switcher/fold_options: false # 呼出时不折叠。
-  switcher/abbreviate_options: false # 折叠时是否缩写选项
+  switcher/abbreviate_options: false # 折叠时不缩写选项
   key_binder/bindings:
   - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
   - { when: paging, accept: minus, send: Page_Up }                 # 上一页
-  - { when: always, accept: "Control+period", toggle: ascii_mode}   # 中英文切换, Control+equal
-  - { when: always, accept: "Control+comma", toggle: ascii_punct} # 中英文标点切换
+  - { when: always, accept: "Control+period", toggle: ascii_mode}  # 中英文切换, Control+equal
+  - { when: always, accept: "Control+comma", toggle: ascii_punct}  # 中英文标点切换
   #- { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
-  # emacs_editing， 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。
-  # 需要将这些按键加到 rime-translate-keybindings 变量里后才会生效。
+  
+  # emacs_editing， 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。需要将这些按键加到
+  # rime-translate-keybindings 变量里后才会生效。
   - { When: composing, accept: Control+p, send: Up }
   - { when: composing, accept: Control+n, send: Down }
   - { when: composing, accept: Control+b, send: Left }
@@ -935,10 +936,9 @@ patch:
 #+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml 
 patch:
   translator/spelling_hints: 0 
-  translator/always_show_comments: false #是否强制显示全拼双拼的拼音
+  translator/always_show_comments: false #不显示候选者的拼音。
   # 模糊拼音
   "speller/algebra":
-    ### 模糊音
     # 声母
     - derive/^([zcs])h/$1/          # z c s → zh ch sh
     - derive/^([zcs])([^h])/$1h$2/  # zh ch sh → z c s
@@ -949,14 +949,6 @@ patch:
     # 韵母
     - derive/in/ing/
     - derive/ing/in/
-
-    ### 超级简拼
-    - erase/^hm$/ # 响应超级简拼，取消「噷 hm」的独占
-    - erase/^m$/  # 响应超级简拼，取消「呣 m」的独占
-    - erase/^n$/  # 响应超级简拼，取消「嗯 n」的独占
-    - erase/^ng$/ # 响应超级简拼，取消「嗯 ng」的独占
-    - abbrev/^([a-z]).+$/$1/   # 超级简拼
-    - abbrev/^([zcs]h).+$/$1/  # 超级简拼中，zh ch sh 视为整体（ch'sh → 城市），而不是像这样分开（c'h's'h → 吃好睡好）。
 
     ### v u 转换，增加对词库中「nue/nve」「qu/qv」等不同注音的支持
     - derive/^([nl])ue$/$1ve/
@@ -1010,7 +1002,6 @@ patch:
     - derive/([qjlxnm])iu$/$1ui/
     # ian
     - derive/([qtpdjlxbnm])ian$/$1ain/
-    # - derive/([qtpdjlxbnm])ian$/$1ina/ # 和「李娜、蒂娜、缉拿」等常用词有冲突
     # in
     - derive/([qypjlxbnm])in$/$1ni/
     # iang
@@ -1023,7 +1014,6 @@ patch:
     - derive/([g|h|k|zh|ch|sh])uai$/$1uia/
     # uan
     - derive/([qrtysdghjklzxcn])uan$/$1aun/
-    # - derive/([qrtysdghjklzxcn])uan$/$1una/ # 和「去哪、露娜」等常用词有冲突
     # un
     - derive/([qrtysdghjklzxc])un$/$1nu/
     # ue
@@ -1045,7 +1035,7 @@ patch:
     - derive/([qwrtypsdfghjklzxcbnm])([aeio])ng$/$1ng/ # lng → lang、leng、ling、long
 #+end_src
 
-配置 Emacs:
+配置 Emacs: 
 #+begin_src emacs-lisp
 (use-package rime
   :custom
@@ -1110,7 +1100,7 @@ patch:
 #+end_src
 + 使用 [[https://github.com/itsuhane/SwitchKey][SwitchKey]] 将 Emacs 的默认系统输入法设置为英文，防止搜狗输入法干扰 RIME。
 + 后续如果修改 ~/Library/Rime 目录下的内容， 则需要执行命令 =M-x rime-deploy= 命令生效。
-+ [[https://github.com/iDvel/rime-ice][雾凇拼音]] 主页有一些输入用例， 如果你打同样的拼音可以补全相同的中文候选词就证明已经成功用上了雾凇拼音。
++ [[https://github.com/iDvel/rime-ice][雾凇拼音]] 主页有一些输入用例， 如果打同样的拼音可以补全相同的中文候选词就证明已经成功用上了雾凇拼音。
 + 以词定字：[: 上屏当前词句的第一个字，]: 上屏当前词句的最后一个字。
 
 * org
@@ -2233,7 +2223,7 @@ global -x SetPrimary
 eglot 使用 Emacs 内置的 flymake 而非 flycheck 来接收和显示 LSP Server 发送的 publishDiagnostics 事件。
 flymake 默认在三种情况下检查 buffer 错误：
 1. 执行 ~M-x flymake-start~ 命令；
-2. flymake-no-changes-timeout 时间以后，默认为 0.5， 设置为 nil 后表示无限长。
+2. flymake-no-changes-timeout 时间以后，默认为 0.5，设置为 nil 后表示无限长。
 3. 保存 buffer 时。
 
 将 flymake-no-changes-timeout 设置为 nil 后，eglot 不会显示实时的诊断消息，而是当保存 buffer 时，经
@@ -2252,16 +2242,28 @@ flymake 默认在三种情况下检查 buffer 错误：
 
 ** eldoc
 
-Eglot 不指示 ElDoc 在 echo-area 显示结构化成员(field) 或函数签名信息, 但是 M-x eldoc-doc-buffer 命令
-显示的 eldoc buffer 中会显示这些信息.
+eglot 不指示 eldoc 在 echo-area 显示结构化成员(field) 或函数签名信息, 但是 M-x eldoc-doc-buffer(或快
+捷键 C-h-.)  在单独的 eldoc buffer 中会显示这些信息.
 + [[https://codeberg.org/mekeor/emacs-eglot-signature-eldoc-talkative][eglot-signature-eldoc-talkative]] 项目提供的函数可以让 Eglot 指示 eldoc 在 echo-area 显示函数签名.
 
 #+begin_src emacs-lisp
 (use-package eldoc
   :config
   (setq eldoc-idle-delay 0.2)
+  ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
+  ;; Ready 的内容.
+  (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
   ;; 在打开 eldoc-buffer 的情况下, 关闭 echo-area 的显示, 同时也会在 buffer 实时显示函数的参数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
+  ;;(eldoc-add-command-completions "paredit-")
+
+  ;; (add-to-list 'display-buffer-alist
+  ;;                '("^\\*eldoc.*\\*"
+  ;;                 (display-buffer-reuse-window display-buffer-in-side-window)
+  ;;                 (dedicated . t)
+  ;;                 (side . right)
+  ;;                 (inhibit-same-window . t)))
+
   ;; 打开或关闭 *eldoc* 函数帮助或 hover buffer。
   (global-set-key (kbd "M-`")
                   (
@@ -2273,7 +2275,7 @@ Eglot 不指示 ElDoc 在 echo-area 显示结构化成员(field) 或函数签名
 
 ;; minibuffer 窗口最大高度.
 ;;(setq max-mini-window-height 3)
-;;(setq eldoc-echo-area-use-multiline-p nil)
+(setq eldoc-echo-area-use-multiline-p nil)  ;; nil: 只单行显示 eldoc 信息.
 
 ;; eldoc-box 在 frame 右上角显示 eldoc-doc-buffer 该显示的内容. 依赖 markdown-mode 来格式化显示文档
 ;; 的内容, 但是不能点击其中的链接, https://github.com/joaotavora/eglot/discussions/1238
@@ -2284,7 +2286,6 @@ Eglot 不指示 ElDoc 在 echo-area 显示结构化成员(field) 或函数签名
   ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t) 
   )
 #+end_src
-+ M-x eldoc 或 C-h .(eldoc-doc-buffer): 在独立的 buffer *eldoc* 中显示 eldoc 文档；
   
 ** corfu
 
@@ -2396,9 +2397,17 @@ eglot 启动后，将 xref-backend-functions 设置为 eglot-xref-backend，而�
 #+begin_src emacs-lisp
 (use-package eglot
   :demand
+  :preface
+  (defun mp-eglot-eldoc ()
+      ;; eldoc 首先显示 flymake 诊断信息.
+      (setq eldoc-documentation-functions
+            (cons #'flymake-eldoc-function
+                (remove #'flymake-eldoc-function eldoc-documentation-functions)))
+     (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly))
+  :hook ((eglot-managed-mode . mp-eglot-eldoc))
   :bind (:map eglot-mode-map
 	      ("C-c C-a" . eglot-code-actions)
-	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 命令来重新触发诊断。
+	      ;; 如果 buffer 出现错误的诊断消息，可以执行 flymake-start 来重新触发诊断。
 	      ("C-c C-c" . flymake-start)
 	      ("C-c C-d" . eldoc)
 	      ("C-c C-p" . eldoc-box-help-at-point) ;; 显示光标处的帮助信息.
@@ -2416,16 +2425,15 @@ eglot 启动后，将 xref-backend-functions 设置为 eglot-xref-backend，而�
   (customize-set-variable 'eglot-autoshutdown t)
   (customize-set-variable 'eglot-connect-timeout 60)   ;; default 30s
   
-  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server时，eglot 报错。由于
-  ;; treesit-auto已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的
-  ;; xx-mode-hook。如果代码项目没有 .git 目录，则打开文件时可能会卡主。
+  ;; 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server 时 eglot 报错。由于treesit-auto
+  ;; 已经对 major-mode 做了 remap ，这里需要对 xx-ts-mode-hook 添加 hook，而不是以前的xx-mode-hook。
+  ;; 如果代码项目没有 .git 目录，则打开文件时可能会卡主。
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
   (add-hook 'python-ts-mode-hook #'eglot-ensure)
   (add-hook 'rust-ts-mode-hook #'eglot-ensure)
 
-  ;; 忽略一些用不到，耗性能的能力。
   (setq eglot-ignored-server-capabilities
 	'(
 	  ;;:hoverProvider ;; 显示光标位置信息。
@@ -2436,34 +2444,33 @@ eglot 启动后，将 xref-backend-functions 设置为 eglot-xref-backend，而�
   ;; 加强高亮的 symbol 效果。
   ;; (set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
 
+  ;; 具体参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
+  (add-to-list 'eglot-server-programs
+               '((rust-ts-mode rust-mode) .
+		 ("rust-analyzer" :initializationOptions
+                  (
+		   ;;:checkOnSave :json-false
+		   ;;:cachePriming (:enable :json-false)
+		   ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
+		   ;;:check (:allTargets :json-false)
+		   :procMacro (:attributes (:enable t)
+		       			   ;;:enable :json-false
+					   )
+                   :cargo ( :buildScripts (:enable :json-false)
+                            ;;:features "all"
+			        ;;:noDefaultFeatures t
+     	                :cfgs (:tokio_unstable "")
+		                ;;:autoreload :json-false
+			    )
+	           :diagnostics ( ;;:enable :json-false
+                              :disabled ["unresolved-proc-macro" "unresolved-macro-call"]))
+	          )))
   ;; t: true, false: :json-false 而不是 nil。
   (setq-default eglot-workspace-configuration
 		'((:gopls .
 			  ((staticcheck . t)
 			   (usePlaceholders . :json-false)
 			   (matcher . "CaseSensitive"))))))
-
-;; 具体参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
-(add-to-list 'eglot-server-programs
-             '((rust-ts-mode rust-mode) .
-               ("rust-analyzer" :initializationOptions
-                (
-		      ;;:checkOnSave :json-false
-		      ;;:cachePriming (:enable :json-false)
-		      ;; https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
-		      ;;:check (:allTargets :json-false)
-		      :procMacro (:attributes (:enable t)
-		       		  ;;:enable :json-false
-				  )
-                  :cargo ( :buildScripts (:enable :json-false)
-                           ;;:features "all"
-			       ;;:noDefaultFeatures t
-		               :cfgs (:tokio_unstable "")
-		               ;;:autoreload :json-false
-			       )
-	              :diagnostics ( ;;:enable :json-false
-                                 :disabled ["unresolved-proc-macro" "unresolved-macro-call"]))
-	        )))
 
 ;; 由于 major-mode 开启 eglot-ensure 后，eglot 将 xref-backend-functions 设置为 eglot-xref-backend，
 ;; 而忽略已注册的其它 backend。这里定义一个一键切换函数，在 lsp 失效的情况下，可以手动关闭当前
@@ -2482,7 +2489,6 @@ eglot 启动后，将 xref-backend-functions 设置为 eglot-xref-backend，而�
 (global-set-key (kbd "s-`") 'my/toggle-eglot)
 #+end_src
 + 更新内置的 elgot： M-x eglot-upgrade-eglot。
-+ eldoc，eldoc-doc-buffer： C-h-.
 
 consult-eglot 提供 ~consult-eglot-symbols~ 函数，可以选择 workspace 中的 symbol：
 #+begin_src emacs-lisp
@@ -2569,13 +2575,49 @@ cargo doc --open # 查看当前项目和依赖的文档
                                (shell-command "rustdocs std"))))
   :custom
   (rust-format-on-save t))
+
+;; 快速 rust 开发测试.
+;; BUGFIX: https://github.com/grafov/rust-playground/pull/11/files
+(use-package rust-playground)
 #+end_src
 
 ** dape
 
+C/C++/Rust 语言调试: 
++ llvm 项目提供了名为 lldb-vscode(新版被重命名为 lldb-dap) 的 debug adapter, 但相比 codelldb 功能较
+  弱而且和 dape 不兼容(执行失败), 会报类似错误: failed to load objfile
+  ...lib/rustlib/x86_64-apple-darwin/lib/libcore-ef02792cbce15279.rlib, 所以需要使用 codelldb 来代替.
+#+begin_src shell :tangle no
+$ # 确保安装了 cmake 和 llvm 包且 /usr/local/opt/llvm/bin 位于 PATH 中, 参考前面的 clang 配置.
+
+$ # 从 https://github.com/vadimcn/codelldb/releases 下载最新的 vsix 包
+$ mkdir -p ~/.emacs.d/debug-adapters
+$ unzip codelldb-<platform>-<os>.vsix -d ~/.emacs.d/debug-adapters/codelldb
+$ # dape 后续使用安装的 codelldb 命令来进行调试(debug-adapters/codelldb/extension/adapter/codelldb)
+$ ln -s ~/.emacs.d/debug-adapters/codelldb/extension/adapter/codelldb /usr/local/bin/codelldb
+
+$ # 移除 codelldb 自带的 debugserver 而是使用 xcode-select --install 提供的版本, 否则会导致调试失败
+  # 报错: Process exited with code -1. 参考:
+  # https://github.com/eecs280staff/tutorials/issues/177#issue-2151798211
+$ mv debug-adapters/codelldb/extension/lldb/bin/debugserver /tmp
+#+end_src
+
+Go 语言调试: 
+#+begin_src shell :tangle no
+# https://github.com/go-delve/delve/tree/master/Documentation/installation
+go install github.com/go-delve/delve/cmd/dlv@latest
+sudo /usr/sbin/DevToolsSecurity -enable
+sudo dscl . append /Groups/_developer GroupMembership $(whoami)
+#+end_src
+
+Python 语言调试:
+#+begin_src shell :tangle no
+pip install debugpy
+#+end_src
+
+配置 emacs dape:
 #+begin_src emacs-lisp
 (use-package dape
-  :disabled
   ;; By default dape shares the same keybinding prefix as `gud'
   ;; If you do not want to use any prefix, set it to nil.
   ;; :preface
@@ -2590,13 +2632,8 @@ cargo doc --open # 查看当前项目和依赖的文档
   ;; Load breakpoints on startup
   ;; (after-init . dape-breakpoint-load))
 
-  :init
-  ;; To use window configuration like gud (gdb-mi)
-  (setq dape-buffer-window-arrangement 'gud)
-
   :config
-  ;; Info buffers to the right
-   (setq dape-buffer-window-arrangement 'right)
+   (setq dape-buffer-window-arrangement 'right) ;; 'gud
 
   ;; To not display info and/or buffers on startup
   ;; (remove-hook 'dape-on-start-hooks 'dape-info)
@@ -2611,11 +2648,98 @@ cargo doc --open # 查看当前项目和依赖的文档
 
   ;; Save buffers on startup, useful for interpreted languages
   ;; (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t)))
-
-  ;; Projectile users
-  ;; (setq dape-cwd-fn 'projectile-project-root)
   )
 #+end_src
+
+查看和设置 dape-configs 变量: 例如 rust-ts-mode 使用的 codelldb-rust 配置如下:
++ 各参数可以使用 :key value 的形式来配置, 具体参数列表参考: [[https://github.com/vadimcn/codelldb/blob/master/MANUAL.md][codelldb/MANUAL.md]]
++ :request "launch" 表示 Launching a New Process, 支持的参数也在上面的 MANUAL.md 中有说明.
++ 通用配置参数:program/cargo/args/cwd/env/envFile/stdio/terminal/stopOnEntry;      
+#+begin_src emacs-lisp :tangle no
+(codelldb-rust
+            modes (rust-mode rust-ts-mode)
+		ensure dape-ensure-command
+		command-cwd dape-command-cwd
+		command "~/.emacs.d/debug-adapters/codelldb/extension/adapter/codelldb"  ;;以前安装的 codelldb 位置.
+		command-args ("--port" :autoport "--settings" "{\"sourceLanguages\":[\"rust\"]}")
+		port :autoport
+		:type "lldb"
+		:request "launch"
+		:cwd "."
+		:program (lambda nil ;; 要调试的二进制可执行程序
+		  (file-name-concat "target" "debug"
+				    (thread-first
+				      (dape-cwd)
+				      (directory-file-name)
+				      (file-name-split)
+				      (last)
+				      (car))))
+		:args [] ;; 传给可执行程序的参数列表
+		:stopOnEntry nil)
+#+end_src
+
+其他配置:
++ 参考:  [[https://www.snamellit.com/blog/dape/][Emacs Debugging with Dape]]
+#+begin_src emacs-lisp :tangle no
+(add-to-list 'dape-configs
+    '(dlv
+      modes (go-mode go-ts-mode)
+      ensure dape-ensure-command
+      command "dlv"
+      command-args ("dap" "--listen" "127.0.0.1:5678")
+      command-cwd dape-cwd-fn
+      port 5678
+      :request "launch"
+      :type "debug"
+      :cwd dape-cwd-fn
+      :program dape-cwd-fn))
+
+(setq dape-configs
+    '((lldb-vscode modes (c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode)
+                   command "lldb-vscode"
+                   compile "make -j10"
+                   :type "lldb-vscode" ensure dape-ensure-command
+                   :cwd "xxx/build-dbg/xxx/src/"
+                   :program "/usr/bin/python3"
+                   :args ["EdgeCondTests.py"]
+                   :MIMode "lldb" 
+                   :setupCommands [
+                                   (
+                                    :description "Enable pretty-printing for gdb"
+                                    :text "-enable-pretty-printing"
+                                    :ignoreFailures t
+                                    )
+                                   ]
+                   )))
+#+end_src
+
+
+dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
+#+begin_src emacs-lisp :tangle no
+;;; Directory Local Variables            -*- no-byte-compile: t -*-
+;;; For more information see (info "(emacs) Directory Variables")
+
+((c++-mode . ((dape-command . (codelldb-cc
+			       command-cwd "~/C++/test/"
+			       :program "main"
+			       :args ["1"]
+			       compile "g++ -g -o main main.cpp"))))) ;; 需要加 -g 来添加 debug flags
+#+end_src
+
+调试 dape: 设置 (setq dape-debug t), 然后查看 *dape-repl*, *dape-connection events*  buffer 的内容.
+
+调试程序:
+1. 在源码设置断点: M-x dape-breakpoint-toggle;
+2. 调试: M-x dape, Run adapter 后面输入调试命令:
+     1. dape-configs 变量配置了各语言可以使用的 debug adapter 以及安装到的目录.
+     2. 各语言的 debug adapter 默认别安装到 =~/.emacs.d/debug-adapters= 目录下, 且需要和 dape-configs 配
+        置的一致.
+     3. 按 TAB 自动补全当前源码可以使用的 debug adapter, 同时显示对应的参数提示, 按 TAB 会自动补全, 例
+        如调试 Rust 程序:
+        : codelldb-rust command-cwd "/Users/zhangjun/codes/rust/mydemo/" :program "target/debug/stream" :args ["1", "2"]
+     4. 在 dape-repl 中输入 lldb 命令时需要加 ` 前缀, 比如 `help, `breakpoint list 等, lldb 命令参
+        考: [[https://lldb.llvm.org/use/tutorial.html][Tutorial;]]
+3. 结束调试: M-x dape-quit, 自动关闭 dape buffer 窗口.
 
 * neotree
 
