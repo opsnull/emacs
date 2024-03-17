@@ -6841,3 +6841,67 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
   (setq sort-tab-hide-function '(lambda (buf) (with-current-buffer buf (derived-mode-p 'treemacs-mode)))))
 #+end_src
 
+
+* eaf
+
+安装:
+#+begin_src shell :tangle no
+npm config set registry=https://registry.npmmirror.com
+yarn config set registry https://registry.npmmirror.com
+
+  npm config set fetch-timeout 600000 
+  npm config set fetch-retry-maxtimeout 600000 
+  npm config set fetch-retry-mintimeout 100000
+  brew upgrade node
+  node version
+
+  git clone --depth=1 -b master https://github.com/emacs-eaf/emacs-application-framework.git ~/.emacs.d/site-lisp/emacs-application-framework/
+  ./install-eaf.py 
+  ./install-eaf.py -i terminal -f 
+  cd app/terminal/
+
+  npm install -g npm-check-updates  --registry=https://registry.npmmirror.com --disturl=https://npmmirror.com/mirrors/node
+  npm-check-updates -u
+  npm install  --registry=https://registry.npmmirror.com --disturl=https://npmmirror.com/mirrors/node
+
+# 报错: 解决办法: 注释掉 /Users/zhangjun/Library/Caches/node-gyp/21.7.1/include/node/v8-local-handle.h:253
+  npm ERR! /Users/zhangjun/Library/Caches/node-gyp/21.7.1/include/node/v8-local-handle.h:253:5: error: static assertion failed due to requirement 'std::is_base_of<v8::Value, v8::Data>::value': type check
+npm ERR!     static_assert(std::is_base_of<T, S>::value, "type check");
+npm ERR!     ^             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+npm ERR! ../../nan/nan_callbacks_12_inl.h:175:20: note: in instantiation of function template specialization 'v8::Local<v8::Value>::Local<v8::Data>' requested here
+npm ERR!       cbinfo(info, obj->GetInternalField(kDataIndex));
+npm ERR!                    ^
+npm ERR! 1 error generated.
+
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package eaf
+    :load-path "~/.emacs.d/site-lisp/emacs-application-framework"
+    :custom
+    ; See https://github.com/emacs-eaf/emacs-application-framework/wiki/Customization
+    (eaf-browser-continue-where-left-off t)
+    (eaf-browser-enable-adblocker t)
+    (browse-url-browser-function 'eaf-open-browser)
+    :config
+    (defalias 'browse-web #'eaf-open-browser)
+
+(require 'eaf-demo)
+(require 'eaf-js-video-player)
+(require 'eaf-rss-reader)
+(require 'eaf-terminal)
+(require 'eaf-image-viewer)
+(require 'eaf-vue-demo)
+(require 'eaf-pdf-viewer)
+(require 'eaf-browser)
+(require 'eaf-markdown-previewer)
+(require 'eaf-vue-tailwindcss)
+(require 'eaf-video-player)
+(require 'eaf-pyqterminal)
+
+    (eaf-bind-key scroll_up "C-n" eaf-pdf-viewer-keybinding)
+    (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
+    ;;(eaf-bind-key take_photo "p" eaf-camera-keybinding)
+    (eaf-bind-key nil "M-q" eaf-browser-keybinding)) ;; unbind, see more in the Wiki
+#+end_src
+

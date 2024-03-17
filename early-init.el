@@ -17,18 +17,18 @@
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
 (setq my-bin-path '(
-		    "/usr/local/opt/findutils/libexec/gnubin"
-		    "/Users/zhangjun/go/bin"
-		    "/Users/zhangjun/.cargo/bin"
-		    ))
+                    "/usr/local/opt/findutils/libexec/gnubin"
+                    "/Users/zhangjun/go/bin"
+                    "/Users/zhangjun/.cargo/bin"
+                    ))
 ;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
 (mapc (lambda (p)
-	(setenv "PATH" (concat p ":" (getenv "PATH"))))
+        (setenv "PATH" (concat p ":" (getenv "PATH"))))
       my-bin-path)
 
 (dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
-	       ("GOPROXY" "https://proxy.golang.org")
-	       ("GOPRIVATE" "*.alibaba-inc.com")))
+               ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
+               ("GOPRIVATE" "*.alibaba-inc.com")))
   (setenv (car env) (cadr env)))
 
 ;; Emacs 查找外部程序时使用 exec-path 变量而非 PATH 变量，这里单独设置 exec-path。
