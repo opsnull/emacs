@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-17T16:03:26+0800
+#+LASTMOD: 2024-03-17T19:03:13+0800
 #+STARTUP: overview nohideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -112,55 +112,63 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 #+end_src
 
 #+begin_src emacs-lisp
-;; 将自己安装的 coreutils 添加到 PATH 环境变量和 exec-path 变量中。
-(setq my-coreutils-path "/usr/local/opt/curl/bin")
-(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
-(setq exec-path (cons my-coreutils-path  exec-path))
+  ;; 将自己安装的 coreutils 添加到 PATH 环境变量和 exec-path 变量中。
+  (setq my-coreutils-path "/usr/local/opt/curl/bin")
+  (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+  (setq exec-path (cons my-coreutils-path  exec-path))
 
-(setq my/socks-host "127.0.0.1")
-(setq my/socks-port 1080)
-(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+  (setq my/socks-host "127.0.0.1")
+  (setq my/socks-port 1080)
+  (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+  ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
+  ;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
+  ;; 所以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
+  (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
+                      ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
+                      ".openai.azure.com" ".baidu.com"))
+  (setq my/user-agent
+        "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+  (use-package mb-url-http
+    :demand
+    :vc (:fetcher github :repo dochang/mb-url)
+    :init
+    (require 'auth-source)
+    (let ((credential (auth-source-user-and-password "api.github.com")))
+      (setq github-user (car credential)
+            github-password (cadr credential))
+      (setq github-auth (concat github-user ":" github-password))
+      (setq mb-url-http-backend 'mb-url-http-curl
+            mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+            mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
+                                        "--max-time" "300"
+                                        ;;"-u" ,github-auth
+                                        "--user-agent" ,my/user-agent
+                                        ))))
+  (defun proxy-socks-enable ()
+    (interactive)
+    (require 'socks)
+    (setq url-gateway-method 'socks
+          socks-noproxy my/no-proxy
+          socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
+    ;; curl/wget/ruby/python/go 都感知 no_proxy 变量: https://superuser.com/a/1690537
+    (let ((no-proxy (mapconcat 'identity my/no-proxy ",")))
+      (setenv "no_proxy" no-proxy))
+    (setenv "ALL_PROXY" my/socks-proxy)
+    (setenv "ALL_PROXY" my/socks-proxy)
+    (setenv "HTTP_PROXY" nil)
+    (setenv "HTTPS_PROXY" nil)
+    ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
+    (advice-add 'url-http :around 'mb-url-http-around-advice))
 
-(use-package mb-url-http
-  :demand
-  :vc (:fetcher github :repo dochang/mb-url)
-  :init
-  (require 'auth-source)
-  (let ((credential (auth-source-user-and-password "api.github.com")))
-    (setq github-user (car credential)
-          github-password (cadr credential))
-    (setq github-auth (concat github-user ":" github-password))
-    (setq mb-url-http-backend 'mb-url-http-curl
-          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-                                      "--max-time" "300"
-                                      ;;"-u" ,github-auth
-                                      "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-                                      ))))
+  (defun proxy-socks-disable ()
+    (interactive)
+    (require 'socks)
+    (setq url-gateway-method 'native
+          socks-noproxy nil)
+    (setenv "all_proxy" "")
+    (setenv "ALL_PROXY" ""))
 
-(defun proxy-socks-enable ()
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'socks
-        socks-noproxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
-                        "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
-        socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-  (setenv "all_proxy" my/socks-proxy)
-  (setenv "ALL_PROXY" my/socks-proxy)
-  (setenv "HTTP_PROXY" nil)
-  (setenv "HTTPS_PROXY" nil)
-  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
-  (advice-add 'url-http :around 'mb-url-http-around-advice))
-
-(defun proxy-socks-disable ()
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'native
-        socks-noproxy nil)
-  (setenv "all_proxy" "")
-  (setenv "ALL_PROXY" ""))
-
-(proxy-socks-enable)
+  (proxy-socks-enable)
 #+end_src
 
 * tuning

@@ -28,7 +28,14 @@
 (setq my/socks-host "127.0.0.1")
 (setq my/socks-port 1080)
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
-
+;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
+;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
+;; 所以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
+(setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
+                    ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
+                    ".openai.azure.com" ".baidu.com"))
+(setq my/user-agent
+      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
 (use-package mb-url-http
   :demand
   :vc (:fetcher github :repo dochang/mb-url)
@@ -43,17 +50,18 @@
           mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
                                       "--max-time" "300"
                                       ;;"-u" ,github-auth
-                                      "--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+                                      "--user-agent" ,my/user-agent
                                       ))))
-
 (defun proxy-socks-enable ()
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
-        socks-noproxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
-                        "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
+        socks-noproxy my/no-proxy
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-  (setenv "all_proxy" my/socks-proxy)
+  ;; curl/wget/ruby/python/go 都感知 no_proxy 变量: https://superuser.com/a/1690537
+  (let ((no-proxy (mapconcat 'identity my/no-proxy ",")))
+    (setenv "no_proxy" no-proxy))
+  (setenv "ALL_PROXY" my/socks-proxy)
   (setenv "ALL_PROXY" my/socks-proxy)
   (setenv "HTTP_PROXY" nil)
   (setenv "HTTPS_PROXY" nil)
