@@ -26,11 +26,6 @@
         (setenv "PATH" (concat p ":" (getenv "PATH"))))
       my-bin-path)
 
-(dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
-               ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
-               ("GOPRIVATE" "*.alibaba-inc.com")))
-  (setenv (car env) (cadr env)))
-
 ;; Emacs 查找外部程序时使用 exec-path 变量而非 PATH 变量，这里单独设置 exec-path。
 (let ((paths my-bin-path))
   (dolist (path paths)

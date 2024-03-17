@@ -1188,266 +1188,12 @@
   ;;(smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
-(setq my-llvm-path "/usr/local/opt/llvm/bin")
-(setenv "PATH" (concat my-llvm-path ":" (getenv "PATH")))
-(setq exec-path (cons my-llvm-path  exec-path))
-
-(defun my/python-setup-shell (&rest args)
-  (if (executable-find "ipython3")
-      (progn
-        (setq python-shell-interpreter "ipython3")
-        (setq python-shell-interpreter-args "--simple-prompt -i"))
-    (progn
-      ;; 2024.02.19: brew install python 安装的 python3.11 版本。
-      (setq python-shell-interpreter "python3")  
-      (setq python-interpreter "python3")
-      (setq python-shell-interpreter-args "-i"))))
-
-;; 使用 yapf 格式化 python 代码。
-(use-package yapfify)
-
-(use-package python
-  :init
-  (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
-  (if (not (file-exists-p pyright-directory))
-      (make-directory pyright-directory t))
-  ;;(setq python-indent-guess-indent-offset t)  
-  ;;(setq python-indent-guess-indent-offset-verbose nil)
-  ;;(setq python-indent-offset 2)
-  ;;(with-eval-after-load 'exec-path-from-shell (exec-path-from-shell-copy-env "PYTHONPATH"))
-  :hook
-  (python-mode . (lambda ()
-                   (my/python-setup-shell)
-                   (yapf-mode))))
-
-(require 'go-ts-mode)
-;; 查看光标处符号的本地文档.
-(define-key go-ts-mode-map (kbd "C-c d .") #'godoc-at-point) 
-
-;; 在线 pkg.go.dev 搜索文档.
-(defun my/browser-pkggo (query)
-  (interactive "ssearch: ")
-  (xwidget-webkit-browse-url
-   (concat "https://pkg.go.dev/search?q=" (string-replace " " "%20" query)) t))
-(define-key go-ts-mode-map (kbd "C-c d o") 'my/browser-pkggo) ;; 助记: o -> online
-
-(require 'go-ts-mode)
-;; go 使用 TAB 缩进.
-(add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
-
-(defvar go--tools '("golang.org/x/tools/gopls"
-                    "golang.org/x/tools/cmd/goimports"
-                    "honnef.co/go/tools/cmd/staticcheck"
-                    "github.com/go-delve/delve/cmd/dlv"
-                    "github.com/zmb3/gogetdoc"
-                    "github.com/josharian/impl"
-                    "github.com/cweill/gotests/..."
-                    "github.com/fatih/gomodifytags"
-                    "github.com/davidrjenni/reftools/cmd/fillstruct"))
-
-(defun go-update-tools ()
-  (interactive)
-  (unless (executable-find "go")
-    (user-error "Unable to find `go' in `exec-path'!"))
-  (message "Installing go tools...")
-  (dolist (pkg go--tools)
-    (set-process-sentinel
-     (start-process "go-tools" "*Go Tools*" "go" "install" "-v" "-x" (concat pkg "@latest"))
-     (lambda (proc _)))))
-
-(use-package go-fill-struct)
-
-(use-package go-impl)
-
-(use-package go-tag
-  :init
-  (setq go-tag-args (list "-transform" "camelcase"))
-  :config
-  (require 'go-ts-mode)
-  (define-key go-ts-mode-map (kbd "C-c t a") #'go-tag-add)
-  (define-key go-ts-mode-map (kbd "C-c t r") #'go-tag-remove))
-
-(use-package go-playground
-  :commands (go-playground-mode)
-  :config
-  (setq go-playground-init-command "go mod init"))
-
-(use-package markdown-mode
-  :commands (markdown-mode gfm-mode)
-  :mode
-  (("README\\.md\\'" . gfm-mode)
-   ("\\.md\\'" . markdown-mode)
-   ("\\.markdown\\'" . markdown-mode))
-  :init
-  (when (executable-find "multimarkdown")
-    (setq markdown-command "multimarkdown"))
-  (setq markdown-enable-wiki-links t)
-  (setq markdown-italic-underscore t)
-  (setq markdown-asymmetric-header t)
-  (setq markdown-make-gfm-checkboxes-buttons t)
-  (setq markdown-gfm-uppercase-checkbox t)
-  (setq markdown-fontify-code-blocks-natively t)
-  (setq markdown-gfm-additional-languages "Mermaid")
-  (setq markdown-content-type "application/xhtml+xml")
-  (setq markdown-css-paths '("https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css"
-                             "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github.min.css"))
-  (setq markdown-xhtml-header-content "
-<meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
-<style>
-body {
-  box-sizing: border-box;
-  max-width: 740px;
-  width: 100%;
-  margin: 40px auto;
-  padding: 0 10px;
-}
-</style>
-<link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/default.min.css'>
-<script src='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js'></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.body.classList.add('markdown-body');
-  document.querySelectorAll('pre code').forEach((code) => {
-    if (code.className != 'mermaid') {
-      hljs.highlightBlock(code);
-    }
-  });
-});
-</script>
-<script src='https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js'></script>
-<script>
-mermaid.initialize({
-  theme: 'default',  // default, forest, dark, neutral
-  startOnLoad: true
-});
-</script>
-"))
-
-(use-package grip-mode
-  :defer
-  :after (markdown-mode)
-  :config
-  (setq grip-preview-use-webkit nil)
-  (setq grip-preview-host "127.0.0.1")
-  ;; 保存文件时才更新预览。
-  (setq grip-update-after-change nil)
-  ;; 从 ~/.authinfo 文件获取认证信息。
-  (require 'auth-source)
-  (let ((credential (auth-source-user-and-password "api.github.com")))
-    (setq grip-github-user (car credential)
-          grip-github-password (cadr credential)))
-  (define-key markdown-mode-command-map (kbd "g") #'grip-mode))
-
-(use-package markdown-toc
-  :after(markdown-mode)
-  :config
-  (define-key markdown-mode-command-map (kbd "r") #'markdown-toc-generate-or-refresh-toc))
-
-(setq sh-basic-offset 4)
-(setq sh-indentation 4)
-
-;; treesit-auto 自动安装 grammer 和自动将 xx major-mode remap 到对应的xx-ts-mode 上。具体参考变量：
-;; treesit-auto-recipe-list
 (use-package treesit-auto
   :demand t
   :config
   (setq treesit-auto-install nil)
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
-
-;; GNU Global gtags
-(setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
-;; brew update 可能会更新 Global 版本，故这里使用 glob 匹配版本号。
-(setenv "GTAGSCONF" (car (file-expand-wildcards "/usr/local/Cellar/global/*/share/gtags/gtags.conf")))
-(setenv "GTAGSLABEL" "pygments")
-
-(use-package citre
-  :init
-  ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，会自动
-  ;; 向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
-  (require 'citre-config)
-  :config
-  ;; 只使用支持 reference 的 GNU Global tags。
-  (setq citre-completion-backends '(global))
-  (setq citre-find-definition-backends '(global))
-  (setq citre-find-reference-backends '(global))
-  (setq citre-tags-in-buffer-backends  '(global))
-  (setq citre-auto-enable-citre-mode-backends '(global))
-  ;; citre-config 的逻辑只对 prog-mode 的文件有效。
-  (setq citre-auto-enable-citre-mode-modes '(go-ts-mode go-mode python-ts-mode python-mode rust-ts-mode rust-mode))
-  (setq citre-use-project-root-when-creating-tags t)
-  (setq citre-peek-file-content-height 20)
-  ;; citre-config 自动开启 citre-mode 后，下面 citre-mode-map 快捷键才生效。
-  (define-key citre-mode-map (kbd "s-.") 'citre-jump)
-  (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
-  (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
-  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
-  (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
-  (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
-  (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
-  (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
-  (global-set-key (kbd "C-x c u") 'citre-global-update-database)
-  ;; 手动添加 citre-xref-backend，-100 表示添加到开头，这样 citre 的结果优先生效。
-  (add-hook 'xref-backend-functions #'citre-xref-backend -100))
-
-;; xref 的 history 局限于当前窗口（默认全局）。
-(setq xref-history-storage 'xref-window-local-history)
-;; 快速在其他窗口查看定义。
-(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
-
-;; 移动到行或代码的开头、结尾。
-(use-package mwim
-  :config
-  (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
-  (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))
-
-;; 开发文档。
-(use-package dash-at-point
-  :config
-  ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
-  (global-set-key (kbd "C-c d .") #'dash-at-point)
-  ;; 提示选择 docset;
-  (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
-  ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
-  (add-to-list 'dash-at-point-docsets "go")
-  (add-to-list 'dash-at-point-docsets "viper")
-  (add-to-list 'dash-at-point-docsets "cobra")
-  (add-to-list 'dash-at-point-docsets "pflag")
-  (add-to-list 'dash-at-point-docsets "k8s/api")
-  (add-to-list 'dash-at-point-docsets "k8s/apimachineary")
-  (add-to-list 'dash-at-point-docsets "k8s/client-go")
-  (add-to-list 'dash-at-point-docsets "klog")  
-  (add-to-list 'dash-at-point-docsets "k8s/controller-runtime")
-  (add-to-list 'dash-at-point-docsets "k8s/componet-base")
-  (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))
-
-(use-package expand-region
-  :config
-  (global-set-key (kbd "C-=") #'er/expand-region))
-
-(use-package shell-maker)
-(use-package ob-chatgpt-shell :defer t)
-(use-package ob-dall-e-shell :defer t)
-(use-package chatgpt-shell
-  :requires shell-maker
-  :defer t
-  :config
-  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
-  (setq chatgpt-shell-chatgpt-streaming t)
-  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
-  (setq chatgpt-shell-request-timeout 300)
-  (setq chatgpt-shell-insert-queries-inline t)
-  (require 'ob-chatgpt-shell)
-  (ob-chatgpt-shell-setup)
-  (require 'ob-dall-e-shell)
-  (ob-dall-e-shell-setup)
-  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
-  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
-  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
-  (setq chatgpt-shell-auth-header 
-	(lambda ()
-	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
 
 (use-package flymake
   :config
@@ -1512,26 +1258,10 @@ mermaid.initialize({
   ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t) 
   )
 
-(use-package tempel
-  :bind
-  (("M-+" . tempel-complete)
-   ("M-*" . tempel-insert))
-  :init
-  (defun tempel-setup-capf ()
-    (setq-local completion-at-point-functions (cons #'tempel-expand completion-at-point-functions)))
-  (add-hook 'conf-mode-hook 'tempel-setup-capf)
-  (add-hook 'prog-mode-hook 'tempel-setup-capf)
-  (add-hook 'text-mode-hook 'tempel-setup-capf)
-  ;; 确保 tempel-setup-capf 位于 eglot-managed-mode-hook 前，这样 corfu 才会显示 tempel 的自动补全。
-  ;; https://github.com/minad/tempel/issues/103#issuecomment-1543510550
-  (add-hook #'eglot-managed-mode-hook 'tempel-setup-capf))
-
-(use-package tempel-collection)
-
 (use-package eglot
   :demand
   :preface
-  (defun mp-eglot-eldoc ()
+  (defun my/eglot-eldoc ()
     (setq completion-category-defaults nil)
     ;; eldoc buffer 首先显示 flymake 诊断信息.
     (setq eldoc-documentation-functions
@@ -1539,7 +1269,7 @@ mermaid.initialize({
                 (remove #'flymake-eldoc-function eldoc-documentation-functions)))
     ;; (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
     )
-  :hook ((eglot-managed-mode . mp-eglot-eldoc))
+  :hook ((eglot-managed-mode . my/eglot-eldoc))
   :bind
   (:map eglot-mode-map
         ("C-c C-a" . eglot-code-actions)
@@ -1610,6 +1340,136 @@ mermaid.initialize({
   :vc (:fetcher github :repo jdtsmith/eglot-booster)
   :after eglot
   :config (eglot-booster-mode))
+
+;; GNU Global gtags
+(setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
+;; brew update 可能会更新 Global 版本，故这里使用 glob 匹配版本号。
+(setenv "GTAGSCONF" (car (file-expand-wildcards "/usr/local/Cellar/global/*/share/gtags/gtags.conf")))
+(setenv "GTAGSLABEL" "pygments")
+
+(use-package citre
+  :init
+  ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，会自动
+  ;; 向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
+  (require 'citre-config)
+  :config
+  ;; 只使用支持 reference 的 GNU Global tags。
+  (setq citre-completion-backends '(global))
+  (setq citre-find-definition-backends '(global))
+  (setq citre-find-reference-backends '(global))
+  (setq citre-tags-in-buffer-backends  '(global))
+  (setq citre-auto-enable-citre-mode-backends '(global))
+  ;; citre-config 的逻辑只对 prog-mode 的文件有效。
+  (setq citre-auto-enable-citre-mode-modes '(go-ts-mode go-mode python-ts-mode python-mode rust-ts-mode rust-mode))
+  (setq citre-use-project-root-when-creating-tags t)
+  (setq citre-peek-file-content-height 20)
+  ;; citre-config 自动开启 citre-mode 后，下面 citre-mode-map 快捷键才生效。
+  (define-key citre-mode-map (kbd "s-.") 'citre-jump)
+  (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
+  (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
+  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
+  (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
+  (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
+  (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
+  (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
+  (global-set-key (kbd "C-x c u") 'citre-global-update-database)
+  ;; 手动添加 citre-xref-backend，-100 表示添加到开头，这样 citre 的结果优先生效。
+  (add-hook 'xref-backend-functions #'citre-xref-backend -100))
+
+;; 将 venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
+(setq my-venv-path "/Users/zhangjun/py/venv/bin/")
+(setenv "PATH" (concat my-venv-path ":" (getenv "PATH")))
+(setq exec-path (cons my-venv-path  exec-path))
+
+;; 使用虚拟环境的 python:
+(setq python-shell-virtualenv-root "/Users/zhangjun/py/venv")
+
+(defun my/python-setup-shell (&rest args)
+  (if (executable-find "ipython3")
+      (progn
+        (setq python-shell-interpreter "ipython3")
+        (setq python-shell-interpreter-args "--simple-prompt -i"))
+    (progn
+      ;; 查找  python-shell-virtualenv-root 中的解释器.
+      (setq python-shell-interpreter "python3")  
+      (setq python-interpreter "python3")
+      (setq python-shell-interpreter-args "-i"))))
+
+;; 使用 yapf 格式化 python 代码。
+(use-package yapfify)
+
+;; 使用内置的 python mode.
+(use-package python
+  :init
+  (defvar pyright-directory "~/.emacs.d/.cache/lsp/npm/pyright/lib")
+  (if (not (file-exists-p pyright-directory))
+      (make-directory pyright-directory t))
+  ;;(setq python-indent-guess-indent-offset t)  
+  ;;(setq python-indent-guess-indent-offset-verbose nil)
+  ;;(setq python-indent-offset 2)
+  ;;(with-eval-after-load 'exec-path-from-shell (exec-path-from-shell-copy-env "PYTHONPATH"))
+  :hook
+  (python-mode . (lambda ()
+                   (my/python-setup-shell)
+                   (yapf-mode))))
+
+(dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
+               ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
+               ("GOPRIVATE" "*.alibaba-inc.com")))
+  (setenv (car env) (cadr env)))
+
+(require 'go-ts-mode)
+;; 查看光标处符号的本地文档.
+(define-key go-ts-mode-map (kbd "C-c d .") #'godoc-at-point) 
+
+;; 在线 pkg.go.dev 搜索文档.
+(defun my/browser-pkggo (query)
+  (interactive "ssearch: ")
+  (xwidget-webkit-browse-url
+   (concat "https://pkg.go.dev/search?q=" (string-replace " " "%20" query)) t))
+(define-key go-ts-mode-map (kbd "C-c d o") 'my/browser-pkggo) ;; 助记: o -> online
+
+(require 'go-ts-mode)
+;; go 使用 TAB 缩进.
+(add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
+
+(defvar go--tools '("golang.org/x/tools/gopls"
+                    "golang.org/x/tools/cmd/goimports"
+                    "honnef.co/go/tools/cmd/staticcheck"
+                    "github.com/go-delve/delve/cmd/dlv"
+                    "github.com/zmb3/gogetdoc"
+                    "github.com/josharian/impl"
+                    "github.com/cweill/gotests/..."
+                    "github.com/fatih/gomodifytags"
+                    "github.com/davidrjenni/reftools/cmd/fillstruct"))
+
+(defun go-update-tools ()
+  (interactive)
+  (unless (executable-find "go")
+    (user-error "Unable to find `go' in `exec-path'!"))
+  (message "Installing go tools...")
+  (dolist (pkg go--tools)
+    (set-process-sentinel
+     (start-process "go-tools" "*Go Tools*" "go" "install" "-v" "-x" (concat pkg "@latest"))
+     (lambda (proc _)))))
+
+(use-package go-fill-struct)
+
+(use-package go-impl)
+
+;; 自动为 struct field 添加 json tag.
+(use-package go-tag
+  :init
+  (setq go-tag-args (list "-transform" "camelcase"))
+  :config
+  (require 'go-ts-mode)
+  (define-key go-ts-mode-map (kbd "C-c t a") #'go-tag-add)
+  (define-key go-ts-mode-map (kbd "C-c t r") #'go-tag-remove))
+
+(use-package go-playground
+  :commands (go-playground-mode)
+  :config
+  (setq go-playground-init-command "go mod init"))
 
 (setq my-cargo-path "/Users/zhangjun/.cargo/bin")
 (setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
@@ -1691,6 +1551,124 @@ mermaid.initialize({
   ;; 自动滚动显示 compilation buffer 内容.
   (setq compilation-scroll-output t))
 
+(use-package markdown-mode
+  :commands (markdown-mode gfm-mode)
+  :mode
+  (("README\\.md\\'" . gfm-mode)
+   ("\\.md\\'" . markdown-mode)
+   ("\\.markdown\\'" . markdown-mode))
+  :init
+  (when (executable-find "multimarkdown")
+    (setq markdown-command "multimarkdown"))
+  (setq markdown-enable-wiki-links t)
+  (setq markdown-italic-underscore t)
+  (setq markdown-asymmetric-header t)
+  (setq markdown-make-gfm-checkboxes-buttons t)
+  (setq markdown-gfm-uppercase-checkbox t)
+  (setq markdown-fontify-code-blocks-natively t)
+  (setq markdown-gfm-additional-languages "Mermaid")
+  (setq markdown-content-type "application/xhtml+xml")
+  (setq markdown-css-paths '("https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css"
+                             "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github.min.css"))
+  (setq markdown-xhtml-header-content "
+<meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+<style>
+body {
+  box-sizing: border-box;
+  max-width: 740px;
+  width: 100%;
+  margin: 40px auto;
+  padding: 0 10px;
+}
+</style>
+<link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/default.min.css'>
+<script src='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('markdown-body');
+  document.querySelectorAll('pre code').forEach((code) => {
+    if (code.className != 'mermaid') {
+      hljs.highlightBlock(code);
+    }
+  });
+});
+</script>
+<script src='https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js'></script>
+<script>
+mermaid.initialize({
+  theme: 'default',  // default, forest, dark, neutral
+  startOnLoad: true
+});
+</script>
+"))
+
+(use-package grip-mode
+  :defer
+  :after (markdown-mode)
+  :config
+  (setq grip-preview-use-webkit nil)
+  (setq grip-preview-host "127.0.0.1")
+  ;; 保存文件时才更新预览。
+  (setq grip-update-after-change nil)
+  ;; 从 ~/.authinfo 文件获取认证信息。
+  (require 'auth-source)
+  (let ((credential (auth-source-user-and-password "api.github.com")))
+    (setq grip-github-user (car credential)
+          grip-github-password (cadr credential)))
+  (define-key markdown-mode-command-map (kbd "g") #'grip-mode))
+
+(use-package markdown-toc
+  :after(markdown-mode)
+  :config
+  (define-key markdown-mode-command-map (kbd "r") #'markdown-toc-generate-or-refresh-toc))
+
+(setq sh-basic-offset 4)
+(setq sh-indentation 4)
+
+(setq my-llvm-path "/usr/local/opt/llvm/bin")
+(setenv "PATH" (concat my-llvm-path ":" (getenv "PATH")))
+(setq exec-path (cons my-llvm-path  exec-path))
+
+(use-package shell-maker)
+(use-package ob-chatgpt-shell :defer t)
+(use-package ob-dall-e-shell :defer t)
+(use-package chatgpt-shell
+  :requires shell-maker
+  :defer t
+  :config
+  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
+  (setq chatgpt-shell-chatgpt-streaming t)
+  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
+  (setq chatgpt-shell-request-timeout 300)
+  (setq chatgpt-shell-insert-queries-inline t)
+  (require 'ob-chatgpt-shell)
+  (ob-chatgpt-shell-setup)
+  (require 'ob-dall-e-shell)
+  (ob-dall-e-shell-setup)
+  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
+  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
+  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
+  (setq chatgpt-shell-auth-header 
+	(lambda ()
+	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
+
+(use-package tempel
+  :bind
+  (("M-+" . tempel-complete)
+   ("M-*" . tempel-insert))
+  :init
+  (defun tempel-setup-capf ()
+    (setq-local completion-at-point-functions (cons #'tempel-expand completion-at-point-functions)))
+  (add-hook 'conf-mode-hook 'tempel-setup-capf)
+  (add-hook 'prog-mode-hook 'tempel-setup-capf)
+  (add-hook 'text-mode-hook 'tempel-setup-capf)
+  ;; 确保 tempel-setup-capf 位于 eglot-managed-mode-hook 前，这样 corfu 才会显示 tempel 的自动补全。
+  ;; https://github.com/minad/tempel/issues/103#issuecomment-1543510550
+  (add-hook #'eglot-managed-mode-hook 'tempel-setup-capf))
+
+(use-package tempel-collection)
+
 (use-package dape
   ;; By default dape shares the same keybinding prefix as `gud'
   ;; If you do not want to use any prefix, set it to nil.
@@ -1736,6 +1714,41 @@ mermaid.initialize({
 
 ;; 编译结束时自动切换到 compilation buffer;
 (add-hook 'compilation-finish-functions 'switch-to-buffer-other-window 'compilation)
+
+;; xref 的 history 局限于当前窗口（默认全局）。
+(setq xref-history-storage 'xref-window-local-history)
+;; 快速在其他窗口查看定义。
+(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
+
+;; 移动到行或代码的开头、结尾。
+(use-package mwim
+  :config
+  (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
+  (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))
+
+;; 开发文档。
+(use-package dash-at-point
+  :config
+  ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
+  (global-set-key (kbd "C-c d .") #'dash-at-point)
+  ;; 提示选择 docset;
+  (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
+  ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
+  (add-to-list 'dash-at-point-docsets "go")
+  (add-to-list 'dash-at-point-docsets "viper")
+  (add-to-list 'dash-at-point-docsets "cobra")
+  (add-to-list 'dash-at-point-docsets "pflag")
+  (add-to-list 'dash-at-point-docsets "k8s/api")
+  (add-to-list 'dash-at-point-docsets "k8s/apimachineary")
+  (add-to-list 'dash-at-point-docsets "k8s/client-go")
+  (add-to-list 'dash-at-point-docsets "klog")  
+  (add-to-list 'dash-at-point-docsets "k8s/controller-runtime")
+  (add-to-list 'dash-at-point-docsets "k8s/componet-base")
+  (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))
+
+(use-package expand-region
+  :config
+  (global-set-key (kbd "C-=") #'er/expand-region))
 
 (use-package neotree
   :config

@@ -29,29 +29,7 @@ which watchexec || brew install watchexec
 which pngpaste || brew install pngpaste
 which magick || brew install imagemagick
 
-$ brew install llvm
-$ export CPPFLAGS="-I/usr/local/opt/llvm/include"
-$ export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
-$ export PATH="/usr/local/opt/llvm/bin:$PATH"
-$ export LDFLAGS="-L/usr/local/opt/llvm/lib"
-
-brew install python # 2024.02.19 安装的是  python3.11 版本.
-brew install python-tk@3.11  python-gdbm@3.11
-
-which pylint || brew install pylint
-which flake8 || brew install flake8
-which pyright || npm update -g pyright
-which yapf || pip3 install yapf
-which ipython || pip3 install ipython
-
-git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins/pyenv-pyright
-
-which gopls || go install golang.org/x/tools/gopls@latest
-
-which multimarkdown || brew install multimarkdown
-which grip || pip3 install grip
-
-bash-language-server -v &>/dev/null || npm i -g bash-language-server
+which emacs-lsp-booster || wget https://github.com/blahgeek/emacs-lsp-booster/releases/download/v0.2.0/emacs-lsp-booster_v0.2.0_x86_64-apple-darwin.zip
 
 brew install global pygments # 提供 global、gtags 命令, gtags 使用 pygments 支持跟多语言
 
@@ -72,7 +50,9 @@ global -xr SetPrimary
 # definition
 global -x SetPrimary
 
-which emacs-lsp-booster || wget https://github.com/blahgeek/emacs-lsp-booster/releases/download/v0.2.0/emacs-lsp-booster_v0.2.0_x86_64-apple-darwin.zip
+git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins/pyenv-pyright
+
+which gopls || go install golang.org/x/tools/gopls@latest
 
 # 清理旧环境
 mv ~/.cargo{,.bak}
@@ -97,6 +77,17 @@ rustup component add rust-docs # 添加 rust 标准库文档
 /Users/zhangjun/go/src/github.com/rust-lang/rust
 git submodule init
 git submodule update library/*  # clone 依赖的库
+
+which multimarkdown || brew install multimarkdown
+which grip || pip3 install grip
+
+bash-language-server -v &>/dev/null || npm i -g bash-language-server
+
+$ brew install llvm
+$ export CPPFLAGS="-I/usr/local/opt/llvm/include"
+$ export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
+$ export PATH="/usr/local/opt/llvm/bin:$PATH"
+$ export LDFLAGS="-L/usr/local/opt/llvm/lib"
 
 which cmake || brew install cmake
 which glibtool || brew install libtool
