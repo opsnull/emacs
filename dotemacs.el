@@ -48,7 +48,11 @@
     (setq mb-url-http-backend 'mb-url-http-curl
           mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
           mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
+                                      "--keepalive-time" "60"
+                                      "--keepalive"
                                       "--max-time" "300"
+                                       ;;防止 POST 超过 1024Bytes 时发送 Expect: 100-continue 导致 1s 延迟.
+                                      "-H" "Expect: ''"
                                       ;;"-u" ,github-auth
                                       "--user-agent" ,my/user-agent
                                       ))))
@@ -758,7 +762,7 @@
           rime-predicate-current-uppercase-letter-p
           rime-predicate-after-alphabet-char-p
           rime-predicate-prog-in-code-p
-          rime-predicate-in-code-string-p
+          ;; rime-predicate-in-code-string-p ;; 会导致不能输入中文字符串
           ))
   ;; (setq rime-inline-predicates
   ;;       '(rime-predicate-space-after-cc-p ; 中文接一个空格的后面
@@ -1191,8 +1195,7 @@
 (use-package treesit-auto
   :demand t
   :config
-  (setq treesit-auto-install nil)
-  (treesit-auto-add-to-auto-mode-alist 'all)
+  (setq treesit-auto-install 'prompt)
   (global-treesit-auto-mode))
 
 (use-package flymake
@@ -1294,6 +1297,7 @@
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
+  (add-hook 'python-mode-hook #'eglot-ensure)
   (add-hook 'python-ts-mode-hook #'eglot-ensure)
   (add-hook 'rust-ts-mode-hook #'eglot-ensure)
   (add-hook 'rust-mode-hook #'eglot-ensure)
@@ -1387,8 +1391,9 @@
 (defun my/python-setup-shell (&rest args)
   (if (executable-find "ipython3")
       (progn
+        ;; 使用 ipython3 作为 python shell.
         (setq python-shell-interpreter "ipython3")
-        (setq python-shell-interpreter-args "--simple-prompt -i"))
+        (setq python-shell-interpreter-args "--simple-prompt -i --InteractiveShell.display_page=True"))
     (progn
       ;; 查找  python-shell-virtualenv-root 中的解释器.
       (setq python-shell-interpreter "python3")  
@@ -1407,7 +1412,6 @@
   ;;(setq python-indent-guess-indent-offset t)  
   ;;(setq python-indent-guess-indent-offset-verbose nil)
   ;;(setq python-indent-offset 2)
-  ;;(with-eval-after-load 'exec-path-from-shell (exec-path-from-shell-copy-env "PYTHONPATH"))
   :hook
   (python-mode . (lambda ()
                    (my/python-setup-shell)
