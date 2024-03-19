@@ -482,9 +482,9 @@
         '(rime-predicate-ace-window-p
           rime-predicate-hydra-p
           rime-predicate-current-uppercase-letter-p
-          rime-predicate-after-alphabet-char-p
-          ;;rime-predicate-prog-in-code-p
+          ;;rime-predicate-after-alphabet-char-p ;; 会导致不能输入中文字符串
           ;;rime-predicate-in-code-string-p ;; 会导致不能输入中文字符串
+          rime-predicate-prog-in-code-p ;; 代码块内不能输入中文, 但是注释和字符串不受影响.
           ))
   ;; (setq rime-inline-predicates
   ;;       '(rime-predicate-space-after-cc-p ; 中文接一个空格的后面
