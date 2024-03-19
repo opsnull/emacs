@@ -6,8 +6,6 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 ls -l /usr/local/opt/curl/bin/curl || brew install curl
 export PATH="/usr/local/opt/curl/bin:$PATH"
 
-which rg || brew install ripgrep
-
 curl -L -O https://github.com/rime/librime/releases/download/1.10.0/rime-295cb2a-macOS.tar.bz2
 tar -xvf rime-295cb2a-macOS.tar.bz2
 mkdir ~/.emacs.d/librime/dist
@@ -23,6 +21,8 @@ $ mkdir ~/Library/Rime
 $ git clone https://github.com/iDvel/rime-ice --depth=1
 $ cp -r rime-ice/* ~/Library/Rime
 # 后续可以 git pull 更新 rime-ice。
+
+which rg || brew install ripgrep
 
 which watchexec || brew install watchexec
 
@@ -93,6 +93,5 @@ which cmake || brew install cmake
 which glibtool || brew install libtool
 which exiftran || brew install fxiftran
 
-# 使用 GNU 系列替换 MacOS 自带的 BSD 风格核心二进制：
 which tac || brew install coreutils
 which trash || brew install trash

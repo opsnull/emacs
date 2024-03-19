@@ -1,9 +1,9 @@
 (require 'package)
 (setq package-archives '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-			 ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
-			 ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-			 ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
-			 ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
+                         ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
+                         ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+                         ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
+                         ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
 (package-initialize)
 (when (not package-archive-contents)
   (package-refresh-contents))
@@ -174,6 +174,7 @@
                    "*Google Translate*"
                    "*eldoc*"
                    " *eglot"
+                   "*compilation*"
                    "Shell Command Output") (0+ not-newline))
          (display-buffer-below-selected display-buffer-at-bottom)
          (inhibit-same-window . t)
@@ -190,7 +191,7 @@
 (setq x-stretch-cursor nil)
 
 ;; 30: 左右分屏, nil: 上下分屏。
-(setq split-width-threshold nil)
+(setq split-width-threshold 30)
 
 ;; 像素平滑滚动。
 (pixel-scroll-precision-mode t)
@@ -440,6 +441,71 @@
   (global-set-key (kbd "s-8") 'tab-bar-select-tab)
   (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 
+(use-package rime
+  :custom
+  (rime-user-data-dir "~/Library/Rime/")
+  (rime-librime-root "~/.emacs.d/librime/dist")
+  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@29/include")
+  :hook
+  (emacs-startup . (lambda () (setq default-input-method "rime")))
+  :bind
+  ( 
+   :map rime-active-mode-map
+   ;; 在已经激活 Rime 候选菜单时，强制在中英文之间切换，直到按回车。
+   ("M-j" . 'rime-inline-ascii)
+   :map rime-mode-map
+   ;; 强制切换到中文模式. 
+   ("M-j" . 'rime-force-enable)
+   ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings 配置相匹配。
+   ;; 中英文切换
+   ("C-." . 'rime-send-keybinding)
+   ;; 输入法菜单
+   ("C-+" . 'rime-send-keybinding)
+   ;; 中英文标点切换
+   ("C-," . 'rime-send-keybinding)
+   ;; 全半角切换
+   ;; ("C-," . 'rime-send-keybinding)
+   )
+  :config
+  ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
+  (setq mode-line-mule-info '((:eval (rime-lighter))))
+  ;; 将如下快捷键发送给 rime，同时需要在 rime 的 key_binder/bindings 的部分配置才会生效。
+  (add-to-list 'rime-translate-keybindings "C-h") ;; 删除拼音字符
+  (add-to-list 'rime-translate-keybindings "C-d")
+  (add-to-list 'rime-translate-keybindings "C-k") 
+  (add-to-list 'rime-translate-keybindings "C-a") ;; 跳转到第一个拼音字符
+  (add-to-list 'rime-translate-keybindings "C-e") ;; 跳转到最后一个拼音字符
+  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
+  (setq rime-inline-ascii-trigger 'shift-l)
+  ;; 临时英文模式, 该列表中任何一个断言值非 nil 时自动切换到英文.    
+  (setq rime-disable-predicates
+        '(rime-predicate-ace-window-p
+          rime-predicate-hydra-p
+          rime-predicate-current-uppercase-letter-p
+          rime-predicate-after-alphabet-char-p
+          ;;rime-predicate-prog-in-code-p
+          ;;rime-predicate-in-code-string-p ;; 会导致不能输入中文字符串
+          ))
+  ;; (setq rime-inline-predicates
+  ;;       '(rime-predicate-space-after-cc-p ; 中文接一个空格的后面
+  ;;         rime-predicate-current-uppercase-letter-p)) ; 当前输入是大写字母的时候
+  (setq rime-show-candidate 'posframe)
+  (setq default-input-method "rime")
+
+  (setq rime-posframe-properties
+        (list :background-color "#333333"
+              :foreground-color "#dcdccc"
+              :internal-border-width 2))
+
+  ;; 部分 major-mode 关闭 RIME 输入法。
+  (defadvice switch-to-buffer (after activate-input-method activate)
+    (if (or (string-match "vterm-mode" (symbol-name major-mode))
+            (string-match "dired-mode" (symbol-name major-mode))
+            (string-match "image-mode" (symbol-name major-mode))
+            (string-match "minibuffer-mode" (symbol-name major-mode)))
+        (activate-input-method nil)
+      (activate-input-method "rime"))))
+
 (use-package vertico
   :config
   (require 'vertico-directory) 
@@ -482,9 +548,6 @@
   (corfu-popupinfo-max-width 140)
   (corfu-popupinfo-max-height 30)
   :config
-  (savehist-mode 1)
-  (add-to-list 'savehist-additional-variables 'corfu-history)
-
   (defun corfu-enable-always-in-minibuffer ()
     (setq-local corfu-auto nil)
     (corfu-mode 1))
@@ -497,6 +560,21 @@
               (corfu-mode)))
   )
 
+  ;; 保存 corfu 自动补全历史，后续可以按照高频排序。
+  (savehist-mode 1)
+  (add-to-list 'savehist-additional-variables #'corfu-history)
+
+;; minibuffer 历史记录。
+(use-package savehist
+  :hook (after-init . savehist-mode)
+  :config
+  (setq history-length 600)
+  (setq savehist-save-minibuffer-history t)
+  (setq savehist-autosave-interval 300)
+  (add-to-list 'savehist-additional-variables 'mark-ring)
+  (add-to-list 'savehist-additional-variables 'global-mark-ring)
+  (add-to-list 'savehist-additional-variables 'extended-command-history))
+
 (use-package emacs
   :init
   ;; 总是在弹出菜单中显示候选者。 TAB cycle if there are only few candidates
@@ -504,13 +582,13 @@
   ;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
   (setq tab-always-indent 'complete))
 
-(use-package kind-icon
-  :after corfu
-  :demand
-  :custom
-  (kind-icon-default-face 'corfu-default)
-  :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+;; (use-package kind-icon
+;;   :after corfu
+;;   :demand
+;;   :custom
+;;   (kind-icon-default-face 'corfu-default)
+;;   :config
+;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (use-package orderless
   :demand t
@@ -552,7 +630,7 @@
   ;; 进一步设置各 category 使用的补全风格。
   (setq completion-category-overrides
         '(;; buffer name 补全
-          (buffer (styles +orderless-with-initialism)) 
+          ;;(buffer (styles +orderless-with-initialism)) 
           ;; 文件名和路径补全, partial-completion 提供了 wildcard 支持。
           (file (styles partial-completion)) 
           (command (styles +orderless-with-initialism)) 
@@ -566,7 +644,6 @@
   ;; 使用 SPACE 来分割过滤字符串, SPACE 可以用 \ 转义。
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
 
-;; cape 补全融合
 (use-package cape
   :init
   ;; completion-at-point 使用的函数列表，注意顺序。
@@ -587,7 +664,11 @@
         dabbrev-check-all-buffers nil
         cape-dabbrev-min-length 3)
   ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
-  (cape-wrap-prefix-length #'cape-dabbrev 3))
+  (cape-wrap-prefix-length #'cape-dabbrev 3)
+  ;; 持续刷新候选者(适用于 eglot server 一次没有返回所有候选者情况).
+  ;; profiling 显示影响性能，展示关闭。
+  ;;(advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
+  )
 
 (use-package consult
   :hook
@@ -719,71 +800,6 @@
   (setq marginalia-max-relative-age 0)
   (marginalia-mode))
 
-(use-package rime
-  :custom
-  (rime-user-data-dir "~/Library/Rime/")
-  (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@29/include")
-  :hook
-  (emacs-startup . (lambda () (setq default-input-method "rime")))
-  :bind
-  ( 
-   :map rime-active-mode-map
-   ;; 在已经激活 Rime 候选菜单时，强制在中英文之间切换，直到按回车。
-   ("M-j" . 'rime-inline-ascii)
-   :map rime-mode-map
-   ;; 强制切换到中文模式. 
-   ("M-j" . 'rime-force-enable)
-   ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings 配置相匹配。
-   ;; 中英文切换
-   ("C-." . 'rime-send-keybinding)
-   ;; 输入法菜单
-   ("C-+" . 'rime-send-keybinding)
-   ;; 中英文标点切换
-   ("C-," . 'rime-send-keybinding)
-   ;; 全半角切换
-   ;; ("C-," . 'rime-send-keybinding)
-   )
-  :config
-  ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
-  (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; 将如下快捷键发送给 rime，同时需要在 rime 的 key_binder/bindings 的部分配置才会生效。
-  (add-to-list 'rime-translate-keybindings "C-h") ;; 删除拼音字符
-  (add-to-list 'rime-translate-keybindings "C-d")
-  (add-to-list 'rime-translate-keybindings "C-k") 
-  (add-to-list 'rime-translate-keybindings "C-a") ;; 跳转到第一个拼音字符
-  (add-to-list 'rime-translate-keybindings "C-e") ;; 跳转到最后一个拼音字符
-  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
-  (setq rime-inline-ascii-trigger 'shift-l)
-  ;; 临时英文模式, 该列表中任何一个断言值非 nil 时自动切换到英文.    
-  (setq rime-disable-predicates
-        '(rime-predicate-ace-window-p
-          rime-predicate-hydra-p
-          rime-predicate-current-uppercase-letter-p
-          rime-predicate-after-alphabet-char-p
-          rime-predicate-prog-in-code-p
-          ;; rime-predicate-in-code-string-p ;; 会导致不能输入中文字符串
-          ))
-  ;; (setq rime-inline-predicates
-  ;;       '(rime-predicate-space-after-cc-p ; 中文接一个空格的后面
-  ;;         rime-predicate-current-uppercase-letter-p)) ; 当前输入是大写字母的时候
-  (setq rime-show-candidate 'posframe)
-  (setq default-input-method "rime")
-
-  (setq rime-posframe-properties
-        (list :background-color "#333333"
-              :foreground-color "#dcdccc"
-              :internal-border-width 2))
-
-  ;; 部分 major-mode 关闭 RIME 输入法。
-  (defadvice switch-to-buffer (after activate-input-method activate)
-    (if (or (string-match "vterm-mode" (symbol-name major-mode))
-            (string-match "dired-mode" (symbol-name major-mode))
-            (string-match "image-mode" (symbol-name major-mode))
-            (string-match "minibuffer-mode" (symbol-name major-mode)))
-        (activate-input-method nil)
-      (activate-input-method "rime"))))
-
 (use-package org
   :config
   (setq org-ellipsis "..." ;; " ⭍"
@@ -803,12 +819,12 @@
         org-html-validation-link nil
         ;; 关闭鼠标点击链接。
         org-mouse-1-follows-link nil
-        
+
         org-hide-emphasis-markers t
         org-hide-block-startup t
         org-hidden-keywords '(title)
-	    org-hide-leading-stars t
-	    
+        org-hide-leading-stars t
+
         org-cycle-separator-lines 2
         org-cycle-level-faces t
         org-n-level-faces 4
@@ -816,7 +832,7 @@
         ;; 内容缩进与对应 headerline 一致。
         org-adapt-indentation t
         org-list-indent-offset 2
-	    ;; 代码块不缩进。
+        ;; 代码块不缩进。
         ;;org-src-preserve-indentation t
         ;;org-edit-src-content-indentation 0
 
@@ -851,11 +867,11 @@
   (setq org-id-link-to-org-use-id t)
   (setq org-M-RET-may-split-line nil)
   (setq org-todo-keywords '((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
-			        (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)")))
+                            (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)")))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
-;; 关闭与 pyim 冲突的 C-, 快捷键。
+;; 关闭与 sis 冲突的 C-, 快捷键。
 (define-key org-mode-map (kbd "C-,") nil)
 (define-key org-mode-map (kbd "C-'") nil)
 
@@ -866,6 +882,23 @@
 
 ;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
 (setq org-element-use-cache nil)
+
+;; 光标位于 src block 中执行 C-c C-f 时自动格式化 block 中代码。
+(defun my/format-src-block ()
+  "Formats the code in the current src block."
+  (interactive)
+  (org-edit-special)
+  (indent-region (point-min) (point-max))
+  (org-edit-src-exit))
+
+(defun my/org-mode-keys ()
+  "Modify keymaps used in org-mode."
+  (let ((map (if (org-in-src-block-p)
+                 org-src-mode-map
+               org-mode-map)))
+    (define-key map (kbd "C-c C-f") 'my/format-src-block)))
+
+(add-hook 'org-mode-hook 'my/org-mode-keys)
 
 (use-package org-modern
   :after (org)
@@ -883,9 +916,9 @@
   ;; 缩放字体时表格边界不对齐，故不美化表格。
   (setq org-modern-table nil)
   (setq org-modern-list '(
-			  (?* . "✤")
-			  (?+ . "▶")
-			  (?- . "◆")))
+                          (?* . "✤")
+                          (?+ . "▶")
+                          (?- . "◆")))
   (with-eval-after-load 'org (global-org-modern-mode)))
 
 ;; 显示转义字符。
@@ -1426,6 +1459,12 @@
 ;; 查看光标处符号的本地文档.
 (define-key go-ts-mode-map (kbd "C-c d .") #'godoc-at-point) 
 
+;; 查看 go std 文档;
+(defun my/browser-gostd ()
+  (interactive)
+  (xwidget-webkit-browse-url "https://pkg.go.dev/std"))
+(define-key go-ts-mode-map (kbd "C-c d s") 'my/browser-gostd)
+
 ;; 在线 pkg.go.dev 搜索文档.
 (defun my/browser-pkggo (query)
   (interactive "ssearch: ")
@@ -1536,6 +1575,12 @@
 (with-eval-after-load 'rust-ts-mode
   ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档.
   (define-key rust-ts-mode-map (kbd "C-c d .") #'eglot-x-open-external-documentation)
+
+  ;; 查看本地 rust std 文档;
+  (defun my/browser-ruststd ()
+    (interactive)
+    (xwidget-webkit-browse-url "file:///Users/zhangjun/.rustup/toolchains/nightly-x86_64-apple-darwin/share/doc/rust/html/std/index.html"  t))
+  (define-key rust-ts-mode-map (kbd "C-c d s") 'my/browser-ruststd)
 
   ;; 在线 https:://docs.rs/ 搜索文档.
   (defun my/browser-docsrs (query)
@@ -1709,15 +1754,22 @@ mermaid.initialize({
 ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
 (setq compilation-ask-about-save nil
       compilation-always-kill t
-      ;; 自动滚动显示 compilation buffer 内容.
-      compilation-scroll-output t
+      compilation-scroll-output t ;; 滚动显示 compilation buffer 内容.
 )
-;; Convert shell escapes to color
+
+;; 显示 shell 转义字符的颜色.
 (add-hook 'compilation-filter-hook
           (lambda () (ansi-color-apply-on-region (point-min) (point-max))))
 
-;; 编译结束时自动切换到 compilation buffer;
-(add-hook 'compilation-finish-functions 'switch-to-buffer-other-window 'compilation)
+;; 编译结束且失败时自动切换到 compilation buffer.
+(setq compilation-finish-functions
+      (lambda (buf str)
+        (if (null (string-match ".*exited abnormally.*" str))
+            ;; 没有错误, 什么也不做.
+            nil ;; 
+          ;; 有错误时切换到 compilation buffer.
+          (switch-to-buffer-other-window buf)
+          (end-of-buffer))))
 
 ;; xref 的 history 局限于当前窗口（默认全局）。
 (setq xref-history-storage 'xref-window-local-history)
@@ -1754,49 +1806,24 @@ mermaid.initialize({
   :config
   (global-set-key (kbd "C-=") #'er/expand-region))
 
-(use-package neotree
+(use-package dired-sidebar
+  :bind (("s-0" . dired-sidebar-toggle-sidebar))
+  :ensure t
+  :commands (dired-sidebar-toggle-sidebar)
+  :init
+  (add-hook 'dired-sidebar-mode-hook
+            (lambda ()
+              (unless (file-remote-p default-directory)
+                (auto-revert-mode))))
   :config
-  (setq neo-smart-open t) ;; 自动跳转到当前打开的文件。
-  (setq neo-theme 'nerd) ;; nerd 更简洁。
-  (setq neo-vc-integration '(face))
-  (setq neo-window-width 30)
-  (setq neo-window-fixed-size nil)
-  (setq neo-theme (if (display-graphic-p) 'icons 'arrow))
-  :bind
-      (:map global-map
-	      ("s-0" . neotree-toggle)))
-(add-hook 'neotree-mode-hook (lambda () (display-line-numbers-mode 0)))
-
-;; 根据项目切换 neotree root 目录。
-(defun my-neotree-project-dir-toggle ()
-  "Open NeoTree using the project root, using projectile, find-file-in-project,
-or the current buffer directory."
-  (interactive)
-  (require 'neotree)
-  (let* ((filepath (buffer-file-name))
-         (project-dir
-          (with-demoted-errors "neotree-project-dir-toggle error: %S"
-              (cond
-               ((featurep 'projectile)
-                (projectile-project-root))
-               ((featurep 'find-file-in-project)
-                (ffip-project-root))
-               (t ;; Fall back to version control root.
-                (if filepath
-                    (vc-call-backend
-                     (vc-responsible-backend filepath) 'root filepath)
-                  nil)))))
-         (neo-smart-open t))
-
-    (if (and (fboundp 'neo-global--window-exists-p)
-             (neo-global--window-exists-p))
-        (neotree-hide)
-      (neotree-show)
-      (when project-dir
-        (neotree-dir project-dir))
-      (when filepath
-        (neotree-find filepath)))))
-(define-key global-map (kbd "M-e") 'my-neotree-project-dir-toggle)
+  (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
+  (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
+  (setq dired-sidebar-subtree-line-prefix "-")
+  (setq dired-sidebar-theme 'ascii) ;;'icons 有问题, 不能显示.
+  (setq dired-sidebar-use-term-integration t)
+  (setq dired-sidebar-use-one-instance t)
+  ;;(setq dired-sidebar-use-custom-font t)
+  )
 
 (use-package anki-helper
   :vc (:fetcher github :repo Elilif/emacs-anki-helper)
@@ -1908,7 +1935,6 @@ or the current buffer directory."
   (define-key vterm-copy-mode-map (kbd "s-n") 'vterm-toggle-forward)
   (define-key vterm-copy-mode-map (kbd "s-p") 'vterm-toggle-backward))
 
-;; vterm-extra 提供了 vterm buffer 命令行编辑的能力，结束后按 C-c C-c 自动粘贴到对应的 vterm 中。
 (use-package vterm-extra
   :vc (:fetcher github :repo Sbozzolo/vterm-extra)
   :config
@@ -2050,114 +2076,13 @@ or the current buffer directory."
 (setq undo-strong-limit 12000000)
 (setq undo-outer-limit 120000000)
 
-;;; dired
-(setq my-coreutils-path "/usr/local/opt/coreutils/libexec/gnubin")
-(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
-(setq exec-path (cons my-coreutils-path  exec-path))
-(use-package emacs
-  :config
-  (setq dired-dwim-target t)
-  ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
-  ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
-  (setq dired-listing-switches "-laGh1v --group-directories-first"))
-(use-package diredfl :config (diredfl-global-mode))
+(global-auto-revert-mode 1)
+(setq revert-without-query (list "\\.png$" "\\.svg$")
+      auto-revert-verbose nil)
 
-    ;;; diff
-(use-package diff-mode
-  :init
-  (setq diff-default-read-only t)
-  (setq diff-advance-after-apply-hunk t)
-  (setq diff-update-on-the-fly t))
-
-(use-package ediff
-  :config
-  (setq ediff-keep-variants nil)
-  (setq ediff-split-window-function 'split-window-horizontally)
-  ;; 不创建新的 frame 来显示 Control-Panel。
-  (setq ediff-window-setup-function #'ediff-setup-windows-plain))
-
-(use-package grep
-  :config
-  (setq grep-highlight-matches t)
-  (setq grep-find-ignored-directories
-        (append (list ".git" ".cache" "vendor" "node_modules" "target")
-                grep-find-ignored-directories))
-  (setq grep-find-ignored-files
-        (append (list "*.blob" "*.gz" "TAGS" "projectile.cache" "GPATH" "GRTAGS" "GTAGS" "TAGS" ".project" )
-                grep-find-ignored-files)))
-
-(global-set-key "\C-cn" 'find-dired)
-(global-set-key "\C-cN" 'grep-find)
-
-(setq isearch-allow-scroll 'unlimited)
-;; 显示当前和总的数量。
-(setq isearch-lazy-count t)
-(setq isearch-lazy-highlight t)
-
-;;在线搜索, 可以先选中 region 再执行搜索。
-(use-package engine-mode
-  :config
-  (engine/set-keymap-prefix (kbd "C-c s"))
-  (engine-mode t)
-  ;;(setq engine/browser-function 'eww-browse-url)
-  (setq engine/browser-function 'xwidget-webkit-browse-url)
-  (defengine github "https://github.com/search?ref=simplesearch&q=%s" :keybinding "h")
-  (defengine google "https://google.com/search?q=%s" :keybinding "g"))
-
-    ;;; Google 翻译
-(use-package google-translate
-  :config
-  (setq max-mini-window-height 0.2)
-  ;; C-n/p 切换翻译类型。
-  (setq google-translate-translation-directions-alist
-        '(("en" . "zh-CN") ("zh-CN" . "en")))
-  (global-set-key (kbd "C-c d t") #'google-translate-smooth-translate))
-
-    ;;; xwidget
-;;Emacs 29 的 xwidget-webkit 对 Mac 支持不好(
-;;[[https://github.com/d12frosted/homebrew-emacs-plus/issues/519][Better support for
-;;xwidget-webkit]]), 部分功能只支持 GTK/X11 版本, 如: increase-search/webkit-history:
-(setq url-user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
-(setq xwidget-webkit-buffer-name-format "*webkit* [%T] - %U")
-(setq xwidget-webkit-enable-plugins t)
-(setq browse-url-firefox-program "/Applications/Firefox.app/Contents/MacOS/firefox")
-;; browse-url-firefox, browse-url-default-macosx-browser
-(setq browse-url-browser-function 'xwidget-webkit-browse-url) 
-(setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
-
-(add-hook 'xwidget-webkit-mode-hook
-          (lambda ()
-            (setq kill-buffer-query-functions nil)
-            (setq header-line-format nil)
-            (display-line-numbers-mode 0)
-            (local-set-key "q" (lambda () (interactive) (kill-this-buffer)))
-            (local-set-key (kbd "C-t") (lambda () (interactive) (xwidget-webkit-browse-url "https://google.com" t)))))
-
-(defun my/browser-open-at-point (url)
-  (interactive
-   (list (let ((url (thing-at-point 'url)))
-           (if (equal major-mode 'xwidget-webkit-mode)
-               (read-string "url: " (xwidget-webkit-uri (xwidget-webkit-current-session)))
-             (read-string "url: " url)))))
-  (xwidget-webkit-browse-url url t))
-
-(defun my/browser-google (query)
-  (interactive "ssearch: ")
-  (xwidget-webkit-browse-url
-   (concat "https://google.com/search?q=" (string-replace " " "%20" query)) t))
-
-(define-prefix-command 'my-browser-prefix)
-(global-set-key (kbd "C-c o") 'my-browser-prefix)
-(define-key my-browser-prefix (kbd "o") 'my/browser-open-at-point)
-(define-key my-browser-prefix (kbd "s") 'my/browser-google)
-
-;; 保存 Buffer 时自动更新 #+LASTMOD: 时间戳。
-(setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*")
-(setq time-stamp-end "$")
-(setq time-stamp-format "%Y-%m-%dT%02H:%02m:%02S%5z")
-;; #+LASTMOD: 必须位于文件开头的 line-limit 行内, 否则自动更新不生效。
-(setq time-stamp-line-limit 30)
-(add-hook 'before-save-hook 'time-stamp t)
+(setq global-mark-ring-max 600)
+(setq mark-ring-max 600)
+(setq kill-ring-max 600)
 
 (use-package emacs
   :init
@@ -2182,15 +2107,10 @@ or the current buffer directory."
                (server-running-p))
     (server-start)))
 
-(use-package ibuffer
-  :config
-  (setq ibuffer-expert t)
-  (setq ibuffer-use-other-window nil)
-  (setq ibuffer-movement-cycle nil)
-  (setq ibuffer-default-sorting-mode 'recency)
-  (setq ibuffer-use-header-line t)
-  (add-hook 'ibuffer-mode-hook #'hl-line-mode)
-  (global-set-key (kbd "C-x C-b") #'ibuffer))
+;; 在另一个 panel buffer 中展示按键。
+(use-package command-log-mode :commands command-log-mode)
+
+(use-package hydra :commands defhydra)
 
 (use-package recentf
   :config
@@ -2215,47 +2135,50 @@ or the current buffer directory."
                           ,(concat package-user-dir "/.*-autoloads\\.egl\\'")))
   (recentf-mode +1))
 
-(defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
-(if (not (file-exists-p backup-dir))
-    (make-directory backup-dir t))
-;; 文件第一次保存时备份。
-(setq make-backup-files t)
-(setq backup-by-copying t)
-;; 不备份 tramp 文件，其它文件都保存到 backup-dir, https://stackoverflow.com/a/22077775
-(setq backup-directory-alist `((,tramp-file-name-regexp . nil) (".*" . ,backup-dir)))
-;; 备份文件时使用版本号。
-(setq version-control t)
-;; 删除过多的版本。
-(setq delete-old-versions t)
-(setq kept-new-versions 6)
-(setq kept-old-versions 2)
-
-(defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
-(if (not (file-exists-p autosave-dir))
-    (make-directory autosave-dir t))
-;; auto-save 访问的文件。
-(setq auto-save-default t)
-(setq auto-save-list-file-prefix autosave-dir)
-(setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
-
-(global-auto-revert-mode 1)
-(setq revert-without-query (list "\\.png$" "\\.svg$")
-      auto-revert-verbose nil)
-
-(setq global-mark-ring-max 100)
-(setq mark-ring-max 100 )
-(setq kill-ring-max 100)
-
-;; minibuffer 历史记录。
-(use-package savehist
-  :hook (after-init . savehist-mode)
+;; dired
+(setq my-coreutils-path "/usr/local/opt/coreutils/libexec/gnubin")
+(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+(setq exec-path (cons my-coreutils-path  exec-path))
+(use-package emacs
   :config
-  (setq history-length 600)
-  (setq savehist-save-minibuffer-history t)
-  (setq savehist-autosave-interval 200)
-  (add-to-list 'savehist-additional-variables 'mark-ring)
-  (add-to-list 'savehist-additional-variables 'global-mark-ring)
-  (add-to-list 'savehist-additional-variables 'extended-command-history))
+  (setq dired-dwim-target t)
+  ;; @see https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
+  ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
+  (setq dired-listing-switches "-laGh1v --group-directories-first"))
+
+(use-package diredfl :config (diredfl-global-mode))
+
+(use-package grep
+  :config
+  (setq grep-highlight-matches t)
+  (setq grep-find-ignored-directories
+        (append (list ".git" ".cache" "vendor" "node_modules" "target")
+                grep-find-ignored-directories))
+  (setq grep-find-ignored-files
+        (append (list "*.blob" "*.gz" "TAGS" "projectile.cache" "GPATH" "GRTAGS" "GTAGS" "TAGS" ".project" )
+                grep-find-ignored-files)))
+
+(global-set-key "\C-cn" 'find-dired)
+(global-set-key "\C-cN" 'grep-find)
+
+(setq isearch-allow-scroll 'unlimited)
+;; 显示当前和总的数量。
+(setq isearch-lazy-count t)
+(setq isearch-lazy-highlight t)
+
+;; diff
+(use-package diff-mode
+  :init
+  (setq diff-default-read-only t)
+  (setq diff-advance-after-apply-hunk t)
+  (setq diff-update-on-the-fly t))
+
+(use-package ediff
+  :config
+  (setq ediff-keep-variants nil)
+  (setq ediff-split-window-function 'split-window-horizontally)
+  ;; 不创建新的 frame 来显示 Control-Panel。
+  (setq ediff-window-setup-function #'ediff-setup-windows-plain))
 
 ;; 使用系统剪贴板，实现与其它程序相互粘贴。
 (setq x-select-enable-clipboard t)
@@ -2269,40 +2192,27 @@ or the current buffer directory."
       default-buffer-file-coding-system 'utf-8)
 (set-buffer-file-coding-system 'utf-8)
 (set-language-environment "UTF-8")
-(set-default buffer-file-coding-system 'utf8)
+(setq-default buffer-file-coding-system 'utf8)
 (set-default-coding-systems 'utf-8)
 (setenv "LC_ALL" "zh_CN.UTF-8")
 
-;; 删除文件时, 将文件移动到回收站。
-(use-package osx-trash
+(use-package ibuffer
   :config
-  (when (eq system-type 'darwin)
-    (osx-trash-setup))
-  (setq-default delete-by-moving-to-trash t))
+  (setq ibuffer-expert t)
+  (setq ibuffer-use-other-window nil)
+  (setq ibuffer-movement-cycle nil)
+  (setq ibuffer-default-sorting-mode 'recency)
+  (setq ibuffer-use-header-line t)
+  (add-hook 'ibuffer-mode-hook #'hl-line-mode)
+  (global-set-key (kbd "C-x C-b") #'ibuffer))
 
-;; 在 Finder 中打开当前文件。
-(use-package reveal-in-osx-finder
-  :commands (reveal-in-osx-finder))
-
-;; 在帮助文档底部显示 lisp demo.
-(use-package elisp-demos
-  :config
-  (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
-  (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
-
-;; 相比 Emacs 内置 Help, 提供更多上下文信息。
-(use-package helpful
-  :config
-  (global-set-key (kbd "C-h f") #'helpful-callable)
-  (global-set-key (kbd "C-h v") #'helpful-variable)
-  (global-set-key (kbd "C-h k") #'helpful-key)
-  (global-set-key (kbd "C-c C-d") #'helpful-at-point)
-  (global-set-key (kbd "C-h F") #'helpful-function)
-  (global-set-key (kbd "C-h C") #'helpful-command))
-
-;; 在另一个 panel buffer 中展示按键。
-;;(use-package command-log-mode :commands command-log-mode)
-(use-package hydra :commands defhydra)
+;; 保存 Buffer 时自动更新 #+LASTMOD: 时间戳。
+(setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*")
+(setq time-stamp-end "$")
+(setq time-stamp-format "%Y-%m-%dT%02H:%02m:%02S%5z")
+;; #+LASTMOD: 必须位于文件开头的 line-limit 行内, 否则自动更新不生效。
+(setq time-stamp-line-limit 30)
+(add-hook 'before-save-hook 'time-stamp t)
 
 ;; 以下自定义函数参考自：https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-edit.el
 (defun my/json-format ()
@@ -2363,3 +2273,106 @@ or the current buffer directory."
            filename
            (file-name-nondirectory new-name))))))))
 (global-set-key (kbd "C-x C-r") 'my/rename-this-buffer-and-file)
+
+(defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
+(if (not (file-exists-p backup-dir))
+    (make-directory backup-dir t))
+;; 文件第一次保存时备份。
+(setq make-backup-files t)
+(setq backup-by-copying t)
+;; 不备份 tramp 文件，其它文件都保存到 backup-dir, https://stackoverflow.com/a/22077775
+(setq backup-directory-alist `((,tramp-file-name-regexp . nil) (".*" . ,backup-dir)))
+;; 备份文件时使用版本号。
+(setq version-control t)
+;; 删除过多的版本。
+(setq delete-old-versions t)
+(setq kept-new-versions 6)
+(setq kept-old-versions 2)
+
+(defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
+(if (not (file-exists-p autosave-dir))
+    (make-directory autosave-dir t))
+;; auto-save 访问的文件。
+(setq auto-save-default t)
+(setq auto-save-list-file-prefix autosave-dir)
+(setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+
+(setq url-user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+(setq xwidget-webkit-buffer-name-format "*webkit* [%T] - %U")
+(setq xwidget-webkit-enable-plugins t)
+(setq browse-url-firefox-program "/Applications/Firefox.app/Contents/MacOS/firefox")
+;; browse-url-firefox, browse-url-default-macosx-browser
+(setq browse-url-browser-function 'xwidget-webkit-browse-url) 
+(setq xwidget-webkit-cookie-file "~/.emacs.d/cookie.txt")
+
+(add-hook 'xwidget-webkit-mode-hook
+          (lambda ()
+            (setq kill-buffer-query-functions nil)
+            (setq header-line-format nil)
+            (display-line-numbers-mode 0)
+            (local-set-key "q" (lambda () (interactive) (kill-this-buffer)))
+            (local-set-key (kbd "C-t") (lambda () (interactive) (xwidget-webkit-browse-url "https://google.com" t)))))
+
+(defun my/browser-open-at-point (url)
+  (interactive
+   (list (let ((url (thing-at-point 'url)))
+           (if (equal major-mode 'xwidget-webkit-mode)
+               (read-string "url: " (xwidget-webkit-uri (xwidget-webkit-current-session)))
+             (read-string "url: " url)))))
+  (xwidget-webkit-browse-url url t))
+
+(defun my/browser-google (query)
+  (interactive "ssearch: ")
+  (xwidget-webkit-browse-url
+   (concat "https://google.com/search?q=" (string-replace " " "%20" query)) t))
+
+(define-prefix-command 'my-browser-prefix)
+(global-set-key (kbd "C-c o") 'my-browser-prefix)
+(define-key my-browser-prefix (kbd "o") 'my/browser-open-at-point)
+(define-key my-browser-prefix (kbd "s") 'my/browser-google)
+
+;;在线搜索, 可以先选中 region 再执行搜索。
+(use-package engine-mode
+  :config
+  (engine/set-keymap-prefix (kbd "C-c s"))
+  (engine-mode t)
+  ;;(setq engine/browser-function 'eww-browse-url)
+  (setq engine/browser-function 'xwidget-webkit-browse-url)
+  (defengine github "https://github.com/search?ref=simplesearch&q=%s" :keybinding "h")
+  (defengine google "https://google.com/search?q=%s" :keybinding "g"))
+
+;; Google 翻译
+(use-package google-translate
+  :config
+  (setq max-mini-window-height 0.2)
+  ;; C-n/p 切换翻译类型。
+  (setq google-translate-translation-directions-alist
+        '(("en" . "zh-CN") ("zh-CN" . "en")))
+  (global-set-key (kbd "C-c d t") #'google-translate-smooth-translate))
+
+;; 删除文件时, 将文件移动到回收站。
+(use-package osx-trash
+  :config
+  (when (eq system-type 'darwin)
+    (osx-trash-setup))
+  (setq-default delete-by-moving-to-trash t))
+
+;; 在 Finder 中打开当前文件。
+(use-package reveal-in-osx-finder
+  :commands (reveal-in-osx-finder))
+
+;; 在帮助文档底部显示 lisp demo.
+(use-package elisp-demos
+  :config
+  (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
+  (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
+
+;; 相比 Emacs 内置 Help, 提供更多上下文信息。
+(use-package helpful
+  :config
+  (global-set-key (kbd "C-h f") #'helpful-callable)
+  (global-set-key (kbd "C-h v") #'helpful-variable)
+  (global-set-key (kbd "C-h k") #'helpful-key)
+  (global-set-key (kbd "C-c C-d") #'helpful-at-point)
+  (global-set-key (kbd "C-h F") #'helpful-function)
+  (global-set-key (kbd "C-h C") #'helpful-command))

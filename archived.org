@@ -1,5 +1,5 @@
-* programming
-** prettier
+#+STARTUP: overview hideblocks
+* prettier
 
 保存文件时自动格式化, 支持 html/java/js/js2/typescript/json/yaml/python/sh 等语言, 详情参考变量
 prettier-major-mode-parsers:
@@ -13,7 +13,7 @@ prettier-major-mode-parsers:
   :init (setq prettier-mode-sync-config-flag nil))
 #+end_src
 
-** java
+* java
 
 默认将 lsp java server 安装到 ~/.emacs.d/.cache/lsp/eclipse.jdt.ls 目录。
 
@@ -45,7 +45,8 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   (use-package dap-java :disabled t))
 #+end_src
 
-** other
+
+* symbol-overlay
 
 符号高亮和跳转, 已被 ctrlf 替代：
 #+begin_src emacs-lisp
@@ -85,6 +86,8 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay))
 #+end_src
 
+* devdocs
+
 离线查询 devdocs 文档（已被 dash 替代）:
 #+begin_src emacs-lisp
 (use-package devdocs
@@ -96,6 +99,8 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 #+end_src
 + 安装文档: M-x devdocs-install
 + 更新当前使用的文档目录: C-u M-x dovdocs-lookup
+
+* isearch-mb
 
 #+begin_src emacs-lisp :tangle no
 (setq rime-show-candidate 'posfram)
@@ -259,6 +264,13 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 (add-to-list 'org-structure-template-alist '("yaml" . "src yaml"))
 (add-to-list 'org-structure-template-alist '("json" . "src json"))
 
+
+
+#+end_src
+
+* grammatical-edit
+
+#+begin_src emacs-lisp
 (use-package grammatical-edit
   :demand
   :straight (grammatical-edit :host github :repo "manateelazycat/grammatical-edit")
@@ -319,9 +331,10 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   (define-key grammatical-edit-mode-map (kbd "M-p") 'grammatical-edit-jump-right)
   (define-key grammatical-edit-mode-map (kbd "M-n") 'grammatical-edit-jump-left)
   (define-key grammatical-edit-mode-map (kbd "M-:") 'grammatical-edit-jump-out-pair-and-newline)
-  )
-
+  )  
 #+end_src
+
+* ebuku 
 
 书签管理器:
 #+begin_src emacs-lisp
@@ -333,6 +346,8 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 #+end_src
 + =buku --ai= 导入 Firefox/Chrome 书签;
 + =M-x ebuku= : 浏览和编辑导入的书签, 点击 URL 使用 Mac 浏览器打开。
+
+* shackle 
 
 #+begin_src emacs-lisp :tangle no
 (use-package shackle
@@ -384,7 +399,15 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 
 ;; 高亮当前行。由于容易与候选者背景混淆, 所以不开启。
 (global-hl-line-mode t)
+#+end_src
 
+project 配置参考：
+1. [[https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-basic.el][jiacai2050/dotfiles]]
+2. [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/prot-lisp/prot-project.el][protesilaos/dotfiles]]
+
+* company
+
+#+begin_src emacs-lisp
 (use-package company
   :bind
   (:map company-mode-map
@@ -445,6 +468,11 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   (company-emoji-init)
   (add-to-list 'company-backends 'company-emoji))
 
+(use-package company-ansible
+  :after (ansible)
+  :config
+  (add-hook 'ansible-hook (lambda() (add-to-list 'company-backends 'company-ansible))))
+
 (use-package restclient
   :mode ("\\.http\\'" . restclient-mode)
   :config
@@ -455,35 +483,18 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
       :defines company-backends
       :init (add-to-list 'company-backends 'company-restclient))))
 
-(use-package company-ansible
-  :after (ansible)
-  :config
-  (add-hook 'ansible-hook (lambda() (add-to-list 'company-backends 'company-ansible))))
+;;company-box 为候选者显示图标和帮助文档, 会导致 RIME 输入法提示时卡住, 故关闭。
+(use-package company-box
+  :after (company all-the-icons)
+  :init
+  ;;(setq company-box-doc-enable nil)
+  (setq company-box-doc-delay 0.1)
+  :hook (company-mode . company-box-mode))
 #+end_src
 
-project 配置参考：
-1. [[https://github.com/jiacai2050/dotfiles/blob/master/.config/emacs/i-basic.el][jiacai2050/dotfiles]]
-2. [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/prot-lisp/prot-project.el][protesilaos/dotfiles]]
+* affe
 
-#+begin_src emacs-lisp :tangle no
-;; 第一个 frame 规格
-(setq initial-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
-;; 后续 frame 规格
-(setq default-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
-
-(use-package pdf-continuous-scroll-mode
-  :straight (:host github :repo  "dalanicolai/pdf-continuous-scroll-mode.el")
-  :demand
-  :after (pdf-tools)
-  :config
-  (add-hook 'pdf-view-mode-hook 'pdf-continuous-scroll-mode))
-
-(use-package find-file-in-project
-  :config
-  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy slow on TRAMP buffers.
-  ;; https://github.com/mpereira/.emacs.d/#find-file-in-project
-  (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
-
+#+begin_src emacs-lisp
 ;;类似于 consult-grep 和 consult-find, 但前后端都异步且支持 fuzzy 搜索。
 (use-package affe
   :after (orderless)
@@ -504,6 +515,10 @@ project 配置参考：
   ;; Manual preview key for `affe-grep'
   (consult-customize affe-grep :preview-key (kbd "M-.")))
 
+#+end_src
+
+* project
+#+begin_src emacs-lisp
 (use-package project
   :after (vterm)
   :config
@@ -566,7 +581,136 @@ DIR must include a .project file to be considered a project."
            (dir (completing-read "REMOVE project: " projects nil t)))
       (setq project--list (delete (assoc dir projects) projects))
       (project--write-project-list)))
-  )
+  )  
+#+end_src
+
+* origami
+
+#+begin_src emacs-lisp
+(use-package origami
+  :straight (origami :host github :repo "elp-revive/origami.el")
+  :demand t
+  :config
+  (define-prefix-command 'origami-mode-map)
+  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
+  (global-origami-mode)
+  :bind
+  (:map origami-mode-map
+        ("o" . origami-open-node)
+        ("O" . origami-open-node-recursively)
+        ("c" . origami-close-node)
+        ("C" . origami-close-node-recursively)
+        ("a" . origami-toggle-node)
+        ("A" . origami-recursively-toggle-node)
+        ("R" . origami-open-all-nodes)
+        ("M" . origami-close-all-nodes)
+        ("v" . origami-show-only-node)
+        ("k" . origami-previous-fold)
+        ("j" . origami-forward-fold)
+        ("x" . origami-reset)))
+
+(use-package lsp-origami
+  :after (lsp origami)
+  :demand t
+  :config
+  (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))  
+#+end_src
+
+版本 2：
+#+begin_src emacs-lisp
+;;origami 提供代码折叠功能，最新版本[[https://github.com/elp-revive/origami.el/issues/1][从 celpa 源安装]]：
+;; 由于可以使用 consult-line 和 occur 来替代，所以不再使用。
+(use-package origami
+  :config
+  (define-prefix-command 'origami-mode-map)
+  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
+  (global-origami-mode)
+  :bind
+  (:map origami-mode-map
+        ("o" . origami-open-node)
+        ("O" . origami-open-node-recursively)
+        ("c" . origami-close-node)
+        ("C" . origami-close-node-recursively)
+        ("a" . origami-toggle-node)
+        ("A" . origami-recursively-toggle-node)
+        ("R" . origami-open-all-nodes)
+        ("M" . origami-close-all-nodes)
+        ("v" . origami-show-only-node)
+        ("k" . origami-previous-fold)
+        ("j" . origami-forward-fold)
+        ("x" . origami-reset)))
+#+end_src
+
+* mini-frame
+
+#+begin_src emacs-lisp
+(use-package mini-frame
+  :disabled
+  :config
+  (setq x-gtk-resize-child-frames 'resize-mode)
+  ;; 光标位置显示 minibuffer
+  (setq mini-frame-show-parameters
+        (lambda ()
+          (let* ((info (posframe-poshandler-argbuilder))
+                 (posn (posframe-poshandler-point-bottom-left-corner info))
+                 (left (car posn))
+                 (top (cdr posn)))
+            `((left . ,left)
+              (top . ,top)))))
+  ;; 固定在 frame 顶部显式。
+  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)  (height . 10))))
+  (mini-frame-mode))  
+#+end_src
+
+* mini-popup
+
+#+begin_src emacs-lisp
+;; https://github.com/minad/mini-popup
+;; https://raw.githubusercontent.com/minad/mini-popup/main/mini-popup.el
+(use-package mini-popup
+  :ensure nil
+  :load-path "/Users/zhangjun/.emacs.d/site-lisp"
+  :config
+  ;; Configure a height function (Example for Vertico)
+  (defun mini-popup-height-resize ()
+    (* (1+ (min vertico--total vertico-count)) (default-line-height)))
+  (defun mini-popup-height-fixed ()
+    (* (1+ (if vertico--input vertico-count 0)) (default-line-height)))
+  (setq mini-popup--height-function #'mini-popup-height-resize)
+
+  ;; Disable the minibuffer resizing of Vertico (HACK)
+  (advice-add #'vertico--resize-window :around
+              (lambda (&rest args)
+                (unless mini-popup-mode
+                  (apply args))))
+
+  ;; Ensure that the popup is updated after refresh (Consult-specific)
+  (add-hook 'consult--completion-refresh-hook
+            (lambda (&rest _) (mini-popup--setup)) 99)
+  (mini-popup-mode t))
+#+end_src
+
+
+#+begin_src emacs-lisp :tangle no
+;; 第一个 frame 规格
+(setq initial-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
+;; 后续 frame 规格
+(setq default-frame-alist '((top . 10 ) (left . 10) (width . 200) (height . 60)))
+
+(use-package pdf-continuous-scroll-mode
+  :straight (:host github :repo  "dalanicolai/pdf-continuous-scroll-mode.el")
+  :demand
+  :after (pdf-tools)
+  :config
+  (add-hook 'pdf-view-mode-hook 'pdf-continuous-scroll-mode))
+
+(use-package find-file-in-project
+  :config
+  ;; ffip adds `ffap-guess-file-name-at-point' automatically and it is crazy slow on TRAMP buffers.
+  ;; https://github.com/mpereira/.emacs.d/#find-file-in-project
+  (remove-hook 'file-name-at-point-functions 'ffap-guess-file-name-at-point))
+
+
 
 (require 'package)
 (setq package-archives '(("celpa" . "https://celpa.conao3.com/packages/")
@@ -603,34 +747,6 @@ DIR must include a .project file to be considered a project."
 ;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag/28746
 ;; 会导致 buffer 部分 fontify 不准确
 (setq fast-but-imprecise-scrolling 't)
-
-(use-package origami
-  :straight (origami :host github :repo "elp-revive/origami.el")
-  :demand t
-  :config
-  (define-prefix-command 'origami-mode-map)
-  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
-  (global-origami-mode)
-  :bind
-  (:map origami-mode-map
-        ("o" . origami-open-node)
-        ("O" . origami-open-node-recursively)
-        ("c" . origami-close-node)
-        ("C" . origami-close-node-recursively)
-        ("a" . origami-toggle-node)
-        ("A" . origami-recursively-toggle-node)
-        ("R" . origami-open-all-nodes)
-        ("M" . origami-close-all-nodes)
-        ("v" . origami-show-only-node)
-        ("k" . origami-previous-fold)
-        ("j" . origami-forward-fold)
-        ("x" . origami-reset)))
-
-(use-package lsp-origami
-  :after (lsp origami)
-  :demand t
-  :config
-  (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
 
 (use-package emmet-mode
   :after(web-mode js2-mode)
@@ -674,23 +790,6 @@ DIR must include a .project file to be considered a project."
     (setq face-font-rescale-alist '(("Iosevka SS14" . 1.0)
                                     ("Sarasa Mono SC" . 1.0714285714285714)
                                     ("HanaMinB" . 1.1428571428571428)))))
-
-(use-package mini-frame
-  :disabled
-  :config
-  (setq x-gtk-resize-child-frames 'resize-mode)
-  ;; 光标位置显示 minibuffer
-  (setq mini-frame-show-parameters
-        (lambda ()
-          (let* ((info (posframe-poshandler-argbuilder))
-                 (posn (posframe-poshandler-point-bottom-left-corner info))
-                 (left (car posn))
-                 (top (cdr posn)))
-            `((left . ,left)
-              (top . ,top)))))
-  ;; 固定在 frame 顶部显式。
-  ;;(custom-set-variables '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)  (height . 10))))
-  (mini-frame-mode))
 
 
 (transient-mark-mode t)
@@ -838,36 +937,7 @@ DIR must include a .project file to be considered a project."
                                                (if window-system
                                                    (my/faces))))))
 
-;; https://github.com/minad/mini-popup
-;; https://raw.githubusercontent.com/minad/mini-popup/main/mini-popup.el
-(use-package mini-popup
-  :ensure nil
-  :load-path "/Users/zhangjun/.emacs.d/site-lisp"
-  :config
-  ;; Configure a height function (Example for Vertico)
-  (defun mini-popup-height-resize ()
-    (* (1+ (min vertico--total vertico-count)) (default-line-height)))
-  (defun mini-popup-height-fixed ()
-    (* (1+ (if vertico--input vertico-count 0)) (default-line-height)))
-  (setq mini-popup--height-function #'mini-popup-height-resize)
 
-  ;; Disable the minibuffer resizing of Vertico (HACK)
-  (advice-add #'vertico--resize-window :around
-              (lambda (&rest args)
-                (unless mini-popup-mode
-                  (apply args))))
-
-  ;; Ensure that the popup is updated after refresh (Consult-specific)
-  (add-hook 'consult--completion-refresh-hook
-            (lambda (&rest _) (mini-popup--setup)) 99)
-  (mini-popup-mode t))
-
-;; 键盘黏滞键
-(use-package key-chord
-  :config
-  (key-chord-mode 1)
-  (key-chord-define-global ".." 'ebuku)
-  (key-chord-define-global ",," '(lamba ()(find-file "~/Downloads/history.json"))))
 
 ;; 画图
 (use-package svg
@@ -910,98 +980,6 @@ DIR must include a .project file to be considered a project."
         org-msg-convert-citation t)
   (org-msg-mode)
   )
-
-;;company-box 为候选者显示图标和帮助文档, 会导致 RIME 输入法提示时卡住, 故关闭。
-(use-package company-box
-  :after (company all-the-icons)
-  :init
-  ;;(setq company-box-doc-enable nil)
-  (setq company-box-doc-delay 0.1)
-  :hook (company-mode . company-box-mode))
-
-;;origami 提供代码折叠功能，最新版本[[https://github.com/elp-revive/origami.el/issues/1][从 celpa 源安装]]：
-;; 由于可以使用 consult-line 和 occur 来替代，所以不再使用。
-(use-package origami
-  :config
-  (define-prefix-command 'origami-mode-map)
-  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
-  (global-origami-mode)
-  :bind
-  (:map origami-mode-map
-        ("o" . origami-open-node)
-        ("O" . origami-open-node-recursively)
-        ("c" . origami-close-node)
-        ("C" . origami-close-node-recursively)
-        ("a" . origami-toggle-node)
-        ("A" . origami-recursively-toggle-node)
-        ("R" . origami-open-all-nodes)
-        ("M" . origami-close-all-nodes)
-        ("v" . origami-show-only-node)
-        ("k" . origami-previous-fold)
-        ("j" . origami-forward-fold)
-        ("x" . origami-reset)))
-
-;; youdao
-(defun my-youdao-dictionary-search-at-point ()
-  "Search word at point and display result with `posframe', `pos-tip', or buffer."
-  (interactive)
-  (if (display-graphic-p)
-      (youdao-dictionary-search-at-point-posframe)
-    (youdao-dictionary-search-at-point)))
-
-(with-no-warnings
-  (defun my-youdao-dictionary--posframe-tip (string)
-    "Show STRING using posframe-show."
-    (unless (and (require 'posframe nil t) (posframe-workable-p))
-      (error "Posframe not workable"))
-
-    (let ((word (youdao-dictionary--region-or-word)))
-      (if word
-          (progn
-            (with-current-buffer (get-buffer-create youdao-dictionary-buffer-name)
-              (let ((inhibit-read-only t))
-                (erase-buffer)
-                (youdao-dictionary-mode)
-                (insert (propertize "\n" 'face '(:height 0.5)))
-                (insert string)
-                (insert (propertize "\n" 'face '(:height 0.5)))
-                (set (make-local-variable 'youdao-dictionary-current-buffer-word) word)))
-            (posframe-show youdao-dictionary-buffer-name
-                           :position (point)
-                           :left-fringe 16
-                           :right-fringe 16
-                           :posframe-width 100
-                           :background-color (face-background 'tooltip nil t)
-                           :internal-border-color (face-foreground 'font-lock-comment-face nil t)
-                           :internal-border-width 1)
-            (unwind-protect
-                (push (read-event) unread-command-events)
-              (progn
-                (posframe-hide youdao-dictionary-buffer-name)
-                (other-frame 0))))
-        (message "Nothing to look up"))))
-
-  (advice-add #'youdao-dictionary--posframe-tip
-              :override #'my-youdao-dictionary--posframe-tip))
-
-;;安装外置输入法切换工具 [[https://github.com/laishulu/macism#install][macism]]，
-;;解决 Mac 切换输入法后必须输入一个字符才能生效的问题。同时系统的 “快捷键”->“选
-;;择上一个输入法” 快捷键必须要开启，否则 macism
-;;[[https://github.com/laishulu/macism/issues/2][会切换失败]]。必须在启用
-;;=respect-mode= 之前设置 =sis-prefix-override-keys= 变量，否则变量不生效。
-(use-package sis
-  ;; mac 输入法选择
-  :ensure-system-package (macism . "brew tap laishulu/macism; brew install macism")
-  :config
-  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  ;; 自动切换到英文的前缀快捷键
-  (push "C-;" sis-prefix-override-keys)
-  (push "M-o" sis-prefix-override-keys)
-  (push "M-g" sis-prefix-override-keys)
-  (push "M-s" sis-prefix-override-keys)
-  (sis-global-context-mode nil)
-  (sis-global-respect-mode t)
-  (global-set-key (kbd "C-\\") 'sis-switch))
 
 ;; 快速跳转当前标记符
 (use-package symbol-overlay
@@ -1188,7 +1166,55 @@ Org-mode Web 站点:
 :bind ("C-c C-e" . easy-hugo))
 #+end_src
 
-** hugo
+* youdao
+
+#+begin_src emacs-lisp
+;; youdao
+(defun my-youdao-dictionary-search-at-point ()
+  "Search word at point and display result with `posframe', `pos-tip', or buffer."
+  (interactive)
+  (if (display-graphic-p)
+      (youdao-dictionary-search-at-point-posframe)
+    (youdao-dictionary-search-at-point)))
+
+(with-no-warnings
+  (defun my-youdao-dictionary--posframe-tip (string)
+    "Show STRING using posframe-show."
+    (unless (and (require 'posframe nil t) (posframe-workable-p))
+      (error "Posframe not workable"))
+
+    (let ((word (youdao-dictionary--region-or-word)))
+      (if word
+          (progn
+            (with-current-buffer (get-buffer-create youdao-dictionary-buffer-name)
+              (let ((inhibit-read-only t))
+                (erase-buffer)
+                (youdao-dictionary-mode)
+                (insert (propertize "\n" 'face '(:height 0.5)))
+                (insert string)
+                (insert (propertize "\n" 'face '(:height 0.5)))
+                (set (make-local-variable 'youdao-dictionary-current-buffer-word) word)))
+            (posframe-show youdao-dictionary-buffer-name
+                           :position (point)
+                           :left-fringe 16
+                           :right-fringe 16
+                           :posframe-width 100
+                           :background-color (face-background 'tooltip nil t)
+                           :internal-border-color (face-foreground 'font-lock-comment-face nil t)
+                           :internal-border-width 1)
+            (unwind-protect
+                (push (read-event) unread-command-events)
+              (progn
+                (posframe-hide youdao-dictionary-buffer-name)
+                (other-frame 0))))
+        (message "Nothing to look up"))))
+
+  (advice-add #'youdao-dictionary--posframe-tip
+              :override #'my-youdao-dictionary--posframe-tip))
+  
+#+end_src
+
+* cnfonts
 
 #+begin_src emacs-lisp
 (use-package cnfonts
@@ -1209,19 +1235,40 @@ Org-mode Web 站点:
   (cnfonts-enable))
 #+end_src
 
+版本 2：
+#+begin_src emacs-lisp
+(use-package cnfonts
+  :demand
+  :init
+  ;; 中英文均使用 Sarasa Mono SC 字体。
+  (setq cnfonts-personal-fontnames '(("Sarasa Mono SC") ("Sarasa Mono SC") ("HanaMinB")))
+  ;; 允许字体缩放(部分主题如 lenven 依赖) 。
+  (setq cnfonts-use-face-font-rescale t)
+  :config
+  ;; emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 调用才会生效。
+  (defun my/set-fonts (&optional font)
+    (setq use-default-font-for-symbols nil)
+    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
+  (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
+  (cnfonts-enable))
+#+end_src
+
+* hugo
+
 #+begin_src emacs-lisp
 ;; New link type for Org-Hugo internal links
 (org-link-set-parameters "hugo"
                          :complete (lambda ()
                                      (concat "{{% ref "(file-name-nondirectory (read-file-name "File: "))" %}}")))
-#+end_src
 
-#+begin_src emacs-lisp
 (add-hook 'before-save-hook 'whitespace-cleanup)
 (add-hook 'prog-mode-hook (lambda () (interactive) (setq show-trailing-whitespace 1)))
 #+end_src
 
-key chord 连续按键快捷键:
+* key-chord
+
+连续按键快捷键:
 #+begin_src emacs-lisp
 (use-package key-chord
   :demand
@@ -1234,7 +1281,18 @@ key chord 连续按键快捷键:
    (setq key-chord-two-keys-delay 0.3))
 #+end_src
 
-** dap
+版本 2：
+#+begin_src emacs-lisp
+;; 键盘黏滞键
+(use-package key-chord
+  :config
+  (key-chord-mode 1)
+  (key-chord-define-global ".." 'ebuku)
+  (key-chord-define-global ",," '(lamba ()(find-file "~/Downloads/history.json"))))
+  
+#+end_src
+
+* dap
 
 如果 =M-x dap-chrome-setup= 命令执行失败，则可以手动编译安装 [[https://github.com/microsoft/vscode-chrome-debug][VS Code - Debugger for Chrome]]：
 #+begin_src shell :tangle no
@@ -1930,25 +1988,6 @@ org-mime 使用 org-mode 来编辑和发送 html 格式邮件：
 #+end_src
 
 ** cnfonts
-
-#+begin_src emacs-lisp
-
-(use-package cnfonts
-  :demand
-  :init
-  ;; 中英文均使用 Sarasa Mono SC 字体。
-  (setq cnfonts-personal-fontnames '(("Sarasa Mono SC") ("Sarasa Mono SC") ("HanaMinB")))
-  ;; 允许字体缩放(部分主题如 lenven 依赖) 。
-  (setq cnfonts-use-face-font-rescale t)
-  :config
-  ;; emoji 和 symbol 字体, 必须通过 cnfonts-set-font-finish-hook 调用才会生效。
-  (defun my/set-fonts (&optional font)
-    (setq use-default-font-for-symbols nil)
-    (set-fontset-font t '(#x1f000 . #x1faff) (font-spec :family "Apple Color Emoji"))
-    (set-fontset-font t 'symbol (font-spec :family "Apple Symbols" :size 20)))
-  (add-hook 'cnfonts-set-font-finish-hook 'my/set-fonts)
-  (cnfonts-enable))
-#+end_src
 
 ** fontine
 
@@ -3402,7 +3441,7 @@ doom-themes:
 (doom-themes-treemacs-theme "doom-colors")
 #+end_src
 
-
+版本 1：
 #+begin_src emacs-lisp
 (use-package treemacs
   :disabled
@@ -3490,7 +3529,215 @@ doom-themes:
 + 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
   project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
 
+版本 2：
+#+begin_src emacs-lisp
+  (use-package treemacs
+    ;; 需要如下配置 files, treemacs 才能找到相关 py 脚本，否则报错。
+    :straight (:files ("src/elisp/*" "src/extra/*" "src/scripts/*" "icons"))
+    :init
+    (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+    :config
+    (setq
+     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
+     treemacs-deferred-git-apply-delay      0.5
+     treemacs-display-in-side-window        t
+     treemacs-eldoc-display                 'simple
+     treemacs-file-event-delay              2000
+     treemacs-file-follow-delay             0.1
+     treemacs-follow-after-init             t
+     treemacs-expand-after-init             t
+     treemacs-git-command-pipe              ""
+     treemacs-goto-tag-strategy             'refetch-index
+     treemacs-indentation                   1
+     treemacs-indentation-string            " "
+     treemacs-is-never-other-window         t
+     treemacs-max-git-entries               100
+     treemacs-missing-project-action        'ask
+     treemacs-no-png-images                 nil
+     treemacs-no-delete-other-windows       t
+     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+     treemacs-position                      'left
+     treemacs-read-string-input             'from-minibuffer
+     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
+     treemacs-recenter-after-file-follow    'on-distance
+     treemacs-recenter-after-tag-follow     'on-distance
+     treemacs-recenter-after-project-jump   'always
+     treemacs-recenter-after-project-expand 'on-distance
+     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
+     treemacs-shownn-cursor                 t
+     treemacs-show-hidden-files             t
+     treemacs-silent-filewatch              nil
+     treemacs-silent-refresh                nil
+     treemacs-sorting                       'alphabetic-asc
+     treemacs-select-when-already-in-treemacs 'stay
+     treemacs-space-between-root-nodes      nil
+     treemacs-tag-follow-cleanup            t
+     treemacs-tag-follow-delay              0.5
+     treemacs-width                         35
+     treemacs-width-increment               5
+     treemacs-width-is-initially-locked     nil
+     treemacs-project-follow-cleanup        t
+     treemacs-git-commit-diff-mode          t
+     imenu-auto-rescan                      t)
+    (treemacs-resize-icons 11)
+    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
+    (treemacs-follow-mode t)
+    ;;(treemacs-tag-follow-mode t)
+    ;;(treemacs-project-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-indent-guide-mode t)
+    (treemacs-git-mode 'deferred)
+    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
+    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+    (add-hook 'buffer-list-update-hook
+	      (lambda ()
+		(when (file-remote-p default-directory)
+		  (require 'treemacs)
+		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		      (delete-window (treemacs-get-local-window))))))
+    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+    (add-hook 'ediff-before-setup-hook
+	      (lambda ()
+		(require 'treemacs)
+		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		    (delete-window (treemacs-get-local-window)) ) ))
+    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
+    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
+    ;;(require 'treemacs-magit)
+    ;;(require 'treemacs-tar-bar)
+    ;;(treemacs-set-scope-type 'Tabs)
+    :bind
+    (:map global-map
+	      ("M-0" . treemacs-select-window)))
+
+  (use-package deadgrep
+    :ensure-system-package (rg . ripgrep)
+    :bind ("<f5>" . deadgrep))
+#+end_src
++ 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
+  project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
+
+版本 3：使用更简洁的 neotree 包：
+#+begin_src emacs-lisp
+  (use-package treemacs
+    :init
+    (with-eval-after-load 'winum (define-key winum-keymap (kbd "s-0") #'treemacs-select-window))
+    :config
+    (setq
+     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
+     treemacs-deferred-git-apply-delay      0.5
+     treemacs-display-in-side-window        t
+     treemacs-eldoc-display                 'simple
+     treemacs-file-event-delay              2000
+     treemacs-file-follow-delay             0.1
+     treemacs-follow-after-init             t
+     treemacs-expand-after-init             t
+     treemacs-git-command-pipe              ""
+     treemacs-goto-tag-strategy             'refetch-index
+     treemacs-indentation                   1
+     treemacs-indentation-string            " "
+     treemacs-is-never-other-window         t
+     treemacs-max-git-entries               100
+     treemacs-missing-project-action        'ask
+     treemacs-no-png-images                 nil ;; 是否显示图标
+     treemacs-no-delete-other-windows       t
+     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+     treemacs-position                      'left
+     treemacs-read-string-input             'from-minibuffer
+     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
+     treemacs-recenter-after-file-follow    'on-distance
+     treemacs-recenter-after-tag-follow     'on-distance
+     treemacs-recenter-after-project-jump   'always
+     treemacs-recenter-after-project-expand 'on-distance
+     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
+     treemacs-shownn-cursor                 t
+     treemacs-show-hidden-files             t
+     treemacs-silent-filewatch              nil
+     treemacs-silent-refresh                nil
+     treemacs-sorting                       'alphabetic-asc
+     treemacs-select-when-already-in-treemacs 'stay
+     treemacs-space-between-root-nodes      nil
+     treemacs-tag-follow-cleanup            t
+     treemacs-tag-follow-delay              0.5
+     treemacs-width                         35
+     treemacs-width-increment               5
+     treemacs-width-is-initially-locked     nil
+     treemacs-project-follow-cleanup        t
+     treemacs-git-commit-diff-mode          t
+     treemacs-indent-guide-style  'block
+     imenu-auto-rescan                      t)
+    (treemacs-resize-icons 11)
+    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
+    (treemacs-follow-mode t)
+    ;;(treemacs-tag-follow-mode t)
+    ;;(treemacs-project-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-indent-guide-mode -1)
+    (treemacs-git-mode 'deferred)
+    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
+    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+    (add-hook 'buffer-list-update-hook
+	      (lambda ()
+		(when (file-remote-p default-directory)
+		  (require 'treemacs)
+		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		      (delete-window (treemacs-get-local-window))))))
+    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+    (add-hook 'ediff-before-setup-hook
+	      (lambda ()
+		(require 'treemacs)
+		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		    (delete-window (treemacs-get-local-window)) ) ))
+    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
+    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
+    ;;(require 'treemacs-magit)
+    ;;(require 'treemacs-tar-bar)
+    ;;(treemacs-set-scope-type 'Tabs)
+    :bind
+    (:map global-map
+	      ("s-0" . treemacs-select-window)))
+
+;; (use-package treemacs-all-the-icons
+;;   :after (treemacs magit)
+;;   :config
+;;   (treemacs-load-theme "all-the-icons"))
+
+(use-package treemacs-magit  
+  :after (treemacs magit)
+  :ensure t)
+
+  (use-package deadgrep
+    :ensure-system-package (rg . ripgrep)
+    :bind ("<f5>" . deadgrep))
+#+end_src
+
 * sis
+
+版本 1：
+#+begin_src emacs-lisp
+;;安装外置输入法切换工具 [[https://github.com/laishulu/macism#install][macism]]，
+;;解决 Mac 切换输入法后必须输入一个字符才能生效的问题。同时系统的 “快捷键”->“选
+;;择上一个输入法” 快捷键必须要开启，否则 macism
+;;[[https://github.com/laishulu/macism/issues/2][会切换失败]]。必须在启用
+;;=respect-mode= 之前设置 =sis-prefix-override-keys= 变量，否则变量不生效。
+(use-package sis
+  ;; mac 输入法选择
+  :ensure-system-package (macism . "brew tap laishulu/macism; brew install macism")
+  :config
+  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+  ;; 自动切换到英文的前缀快捷键
+  (push "C-;" sis-prefix-override-keys)
+  (push "M-o" sis-prefix-override-keys)
+  (push "M-g" sis-prefix-override-keys)
+  (push "M-s" sis-prefix-override-keys)
+  (sis-global-context-mode nil)
+  (sis-global-respect-mode t)
+  (global-set-key (kbd "C-\\") 'sis-switch))
+#+end_src
+
+版本 2：
 #+begin_src emacs-lisp
 (use-package sis
   :demand
@@ -3534,7 +3781,30 @@ doom-themes:
   ;;                                         'english)))
   )
 #+end_src
-+ macism 为 mac 输入法切换工具。
+
+版本 3：
+#+begin_src emacs-lisp
+;; brew tap laishulu/macism && brew install macism
+(use-package sis
+  :config
+  ;;执行 macism 命令查看输入法名称。
+  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+  ;; 添加 emabark 前缀快捷键, 需要在打开 sis-global-xx-mode 之前设置才
+  ;; 生效。
+  (add-to-list 'sis-prefix-override-keys "C-;")
+  (add-to-list 'sis-prefix-override-keys "M-s")
+  (add-to-list 'sis-prefix-override-keys "M-g")
+  (sis-global-cursor-color-mode t)
+  (sis-global-respect-mode t)
+  (sis-global-context-mode t)
+  (sis-global-inline-mode t)
+  ;; 切换系统输入法。
+  (global-set-key (kbd "M-\\") 'sis-switch)
+  (global-set-key (kbd "C-\\") 'sis-switch)
+  ;; 为一些打开 minimibuffer 的命令设置英文输入法。
+  (add-to-list 'sis-respect-minibuffer-triggers
+               (cons 'embark-act (lambda () 'other))))
+#+end_src
 
 * osx-dictionary
 使用 sdcv 替代了 osx-dictionary.
@@ -4294,96 +4564,6 @@ Dictionary's name   Word count
 (global-set-key (kbd "C-M-<up>") 'enlarge-windo)
 #+end_src
 
-* treemacs
-
-#+begin_src emacs-lisp
-  (use-package treemacs
-    ;; 需要如下配置 files, treemacs 才能找到相关 py 脚本，否则报错。
-    :straight (:files ("src/elisp/*" "src/extra/*" "src/scripts/*" "icons"))
-    :init
-    (with-eval-after-load 'winum (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-    :config
-    (setq
-     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
-     treemacs-deferred-git-apply-delay      0.5
-     treemacs-display-in-side-window        t
-     treemacs-eldoc-display                 'simple
-     treemacs-file-event-delay              2000
-     treemacs-file-follow-delay             0.1
-     treemacs-follow-after-init             t
-     treemacs-expand-after-init             t
-     treemacs-git-command-pipe              ""
-     treemacs-goto-tag-strategy             'refetch-index
-     treemacs-indentation                   1
-     treemacs-indentation-string            " "
-     treemacs-is-never-other-window         t
-     treemacs-max-git-entries               100
-     treemacs-missing-project-action        'ask
-     treemacs-no-png-images                 nil
-     treemacs-no-delete-other-windows       t
-     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-     treemacs-position                      'left
-     treemacs-read-string-input             'from-minibuffer
-     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
-     treemacs-recenter-after-file-follow    'on-distance
-     treemacs-recenter-after-tag-follow     'on-distance
-     treemacs-recenter-after-project-jump   'always
-     treemacs-recenter-after-project-expand 'on-distance
-     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
-     treemacs-shownn-cursor                 t
-     treemacs-show-hidden-files             t
-     treemacs-silent-filewatch              nil
-     treemacs-silent-refresh                nil
-     treemacs-sorting                       'alphabetic-asc
-     treemacs-select-when-already-in-treemacs 'stay
-     treemacs-space-between-root-nodes      nil
-     treemacs-tag-follow-cleanup            t
-     treemacs-tag-follow-delay              0.5
-     treemacs-width                         35
-     treemacs-width-increment               5
-     treemacs-width-is-initially-locked     nil
-     treemacs-project-follow-cleanup        t
-     treemacs-git-commit-diff-mode          t
-     imenu-auto-rescan                      t)
-    (treemacs-resize-icons 11)
-    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
-    (treemacs-follow-mode t)
-    ;;(treemacs-tag-follow-mode t)
-    ;;(treemacs-project-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode 'always)
-    (treemacs-indent-guide-mode t)
-    (treemacs-git-mode 'deferred)
-    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
-    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
-    (add-hook 'buffer-list-update-hook
-	      (lambda ()
-		(when (file-remote-p default-directory)
-		  (require 'treemacs)
-		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-		      (delete-window (treemacs-get-local-window))))))
-    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
-    (add-hook 'ediff-before-setup-hook
-	      (lambda ()
-		(require 'treemacs)
-		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-		    (delete-window (treemacs-get-local-window)) ) ))
-    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
-    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
-    ;;(require 'treemacs-magit)
-    ;;(require 'treemacs-tar-bar)
-    ;;(treemacs-set-scope-type 'Tabs)
-    :bind
-    (:map global-map
-	      ("M-0" . treemacs-select-window)))
-
-  (use-package deadgrep
-    :ensure-system-package (rg . ripgrep)
-    :bind ("<f5>" . deadgrep))
-#+end_src
-+ 不启用 ~(treemacs-project-follow-mode t)~, 否则每次 treemacs 只会显示一个 project, 对于 Go 等有多个 module
-  project 的情况不友好。不启用后，可以按需手动将 Go 依赖的 module project 加到当前 workspace 中。
-
 * elfeed
 
 #+begin_src emacs-lisp
@@ -4739,11 +4919,6 @@ tar-bar:
   (pyim-tsinghua-dict-enable))
 #+end_src
 
-* rime
-
-
-全拼配置:
-
 * buffer move
 #+begin_src emacs-lisp
 ;;(global-set-key (kbd "s-h") #'windmove-left)
@@ -5018,7 +5193,7 @@ company-search-map 2.
 
 + M-x company-diag: 诊断。
 
-*  zenburn
+* zenburn
 
 #+begin_src emacs-lisp
 (use-package color-theme-sanityinc-tomorrow
@@ -5043,7 +5218,7 @@ company-search-map 2.
   )
 #+end_src
 
-*  doom-theme
+* doom-theme
 
 #+begin_src emacs-lisp
 (use-package doom-themes
@@ -5065,7 +5240,7 @@ company-search-map 2.
   (doom-themes-treemacs-config))
 #+end_src
 
-*  flymake
+* flymake
 
 eglot 使用 Emacs 内置的 flymake 而非 flycheck 来接收和显示 LSP Server 发送的 publishDiagnostics 事件。flymake
 默认在三种情况下检查 buffer 错误：
@@ -5496,31 +5671,6 @@ lsp-bridge 在开启了编译后，大概率会报错，故关闭：
     }
   }
 }
-#+end_src
-
-* sis
-#+begin_src emacs-lisp
-;; brew tap laishulu/macism && brew install macism
-(use-package sis
-  :disabled
-  :config
-  ;;执行 macism 命令查看输入法名称。
-  (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
-  ;; 添加 emabark 前缀快捷键, 需要在打开 sis-global-xx-mode 之前设置才
-  ;; 生效。
-  (add-to-list 'sis-prefix-override-keys "C-;")
-  (add-to-list 'sis-prefix-override-keys "M-s")
-  (add-to-list 'sis-prefix-override-keys "M-g")
-  (sis-global-cursor-color-mode t)
-  (sis-global-respect-mode t)
-  (sis-global-context-mode t)
-  (sis-global-inline-mode t)
-  ;; 切换系统输入法。
-  (global-set-key (kbd "M-\\") 'sis-switch)
-  (global-set-key (kbd "C-\\") 'sis-switch)
-  ;; 为一些打开 minimibuffer 的命令设置英文输入法。
-  (add-to-list 'sis-respect-minibuffer-triggers
-               (cons 'embark-act (lambda () 'other))))
 #+end_src
 
 * direnv
@@ -6709,104 +6859,6 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
   (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 #+end_src
 
-* treemacs
-
-使用更简洁的 neotree 包：
-#+begin_src emacs-lisp
-  (use-package treemacs
-    :init
-    (with-eval-after-load 'winum (define-key winum-keymap (kbd "s-0") #'treemacs-select-window))
-    :config
-    (setq
-     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
-     treemacs-deferred-git-apply-delay      0.5
-     treemacs-display-in-side-window        t
-     treemacs-eldoc-display                 'simple
-     treemacs-file-event-delay              2000
-     treemacs-file-follow-delay             0.1
-     treemacs-follow-after-init             t
-     treemacs-expand-after-init             t
-     treemacs-git-command-pipe              ""
-     treemacs-goto-tag-strategy             'refetch-index
-     treemacs-indentation                   1
-     treemacs-indentation-string            " "
-     treemacs-is-never-other-window         t
-     treemacs-max-git-entries               100
-     treemacs-missing-project-action        'ask
-     treemacs-no-png-images                 nil ;; 是否显示图标
-     treemacs-no-delete-other-windows       t
-     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-     treemacs-position                      'left
-     treemacs-read-string-input             'from-minibuffer
-     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
-     treemacs-recenter-after-file-follow    'on-distance
-     treemacs-recenter-after-tag-follow     'on-distance
-     treemacs-recenter-after-project-jump   'always
-     treemacs-recenter-after-project-expand 'on-distance
-     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
-     treemacs-shownn-cursor                 t
-     treemacs-show-hidden-files             t
-     treemacs-silent-filewatch              nil
-     treemacs-silent-refresh                nil
-     treemacs-sorting                       'alphabetic-asc
-     treemacs-select-when-already-in-treemacs 'stay
-     treemacs-space-between-root-nodes      nil
-     treemacs-tag-follow-cleanup            t
-     treemacs-tag-follow-delay              0.5
-     treemacs-width                         35
-     treemacs-width-increment               5
-     treemacs-width-is-initially-locked     nil
-     treemacs-project-follow-cleanup        t
-     treemacs-git-commit-diff-mode          t
-     treemacs-indent-guide-style  'block
-     imenu-auto-rescan                      t)
-    (treemacs-resize-icons 11)
-    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
-    (treemacs-follow-mode t)
-    ;;(treemacs-tag-follow-mode t)
-    ;;(treemacs-project-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode 'always)
-    (treemacs-indent-guide-mode -1)
-    (treemacs-git-mode 'deferred)
-    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
-    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
-    (add-hook 'buffer-list-update-hook
-	      (lambda ()
-		(when (file-remote-p default-directory)
-		  (require 'treemacs)
-		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-		      (delete-window (treemacs-get-local-window))))))
-    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
-    (add-hook 'ediff-before-setup-hook
-	      (lambda ()
-		(require 'treemacs)
-		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-		    (delete-window (treemacs-get-local-window)) ) ))
-    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
-    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
-    ;;(require 'treemacs-magit)
-    ;;(require 'treemacs-tar-bar)
-    ;;(treemacs-set-scope-type 'Tabs)
-    :bind
-    (:map global-map
-	      ("s-0" . treemacs-select-window)))
-
-;; (use-package treemacs-all-the-icons
-;;   :after (treemacs magit)
-;;   :config
-;;   (treemacs-load-theme "all-the-icons"))
-
-(use-package treemacs-magit  
-  :after (treemacs magit)
-  :ensure t)
-
-  (use-package deadgrep
-    :ensure-system-package (rg . ripgrep)
-    :bind ("<f5>" . deadgrep))
-#+end_src
-
-
 * sort-tab
 
 #+begin_src emacs-lisp
@@ -6841,8 +6893,9 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
   (setq sort-tab-hide-function '(lambda (buf) (with-current-buffer buf (derived-mode-p 'treemacs-mode)))))
 #+end_src
 
-
 * eaf
+
+2024.03.19 不再使用: 显示的窗口位置不对, 响应慢, 对 macos 支持的不好.
 
 安装:
 #+begin_src shell :tangle no
@@ -6903,5 +6956,158 @@ npm ERR! 1 error generated.
     (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
     ;;(eaf-bind-key take_photo "p" eaf-camera-keybinding)
     (eaf-bind-key nil "M-q" eaf-browser-keybinding)) ;; unbind, see more in the Wiki
+#+end_src
+
+* neotree
+
+20240319 不再使用: 使用速度更快的 dired-sidebar.
+
+#+begin_src emacs-lisp
+(use-package neotree
+  :config
+  (setq neo-smart-open t) ;; 自动跳转到当前打开的文件。
+  (setq neo-theme 'nerd) ;; nerd 更简洁。
+  (setq neo-vc-integration '(face))
+  (setq neo-window-width 30)
+  (setq neo-window-fixed-size nil)
+  (setq neo-theme (if (display-graphic-p) 'icons 'arrow))
+  :bind
+      (:map global-map
+	      ("s-0" . neotree-toggle)))
+(add-hook 'neotree-mode-hook (lambda () (display-line-numbers-mode 0)))
+
+;; 根据项目切换 neotree root 目录。
+(defun my-neotree-project-dir-toggle ()
+  "Open NeoTree using the project root, using projectile, find-file-in-project,
+or the current buffer directory."
+  (interactive)
+  (require 'neotree)
+  (let* ((filepath (buffer-file-name))
+         (project-dir
+          (with-demoted-errors "neotree-project-dir-toggle error: %S"
+              (cond
+               ((featurep 'projectile)
+                (projectile-project-root))
+               ((featurep 'find-file-in-project)
+                (ffip-project-root))
+               (t ;; Fall back to version control root.
+                (if filepath
+                    (vc-call-backend
+                     (vc-responsible-backend filepath) 'root filepath)
+                  nil)))))
+         (neo-smart-open t))
+
+    (if (and (fboundp 'neo-global--window-exists-p)
+             (neo-global--window-exists-p))
+        (neotree-hide)
+      (neotree-show)
+      (when project-dir
+        (neotree-dir project-dir))
+      (when filepath
+        (neotree-find filepath)))))
+(define-key global-map (kbd "M-e") 'my-neotree-project-dir-toggle)
+#+end_src
+
+neotree 窗口快捷键：  
++ U ::  切换到上一级目录；
++ g :: 刷新；  
++ A :: 最大/最小 tree 窗口；
++ s/S :: 选择下一个或上一个同级的 sibling 节点；
++ D/U :: 选择下一个或上一级节点；
++ H :: 显示隐藏文件；
+
+打开文件或目录：  
++ SPC :: 快速显示光标所在的文件，光标
++ TAB :: neo-open-dir
++ RET :: neo-open-file 或 neo-open-dir
++ | :: neo-open-file-vertical-split
++ - :: neo-open-file-horizontal-split
++ a :: neo-open-file-ace-window
++ d :: neo-open-dired，光标必须位于目录节点才有效。
++ O :: neo-open-dir-recursive
++ o :: neotree-open-file-in-system-application
+
+节点 CRUD：
++ C-c C-p :: copy node
++ C-c C-r :: rename node
++ C-c C-d :: delete node
++ C-c C-n :: create ndoe
++ C-c C-a :: neotree-collapse-all
+
+改变 tree 显示的目录：
++ C-c C-c :: neotree-chanage-root, 将光标所在的目录设置为 root；
++ C-c c :: neotree-dir，将指定的目录设置为 root；
++ M-x neotree-show :: 将当前 buffer 所在文件设置为 root
+
+其他：
++ M-x neotree-find :: 在 tree 中定位当前文件；
++ M-x neotree-copy-filepath-to-yank-ring :: 光标位于 neo 窗口时，复制当前节点的路径；
+
+* sis
+
+安装外置输入法切换工具 [[https://github.com/laishulu/macism#install][macism]]，解决 Mac 切换输入法后必须输入一个字符才能生效的问题。同时系统的 “快捷
+键”->“选择上一个输入法” 必须要开启，否则 macism [[https://github.com/laishulu/macism/issues/2][会切换失败]]。
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+  which macism || brew tap laishulu/macism && brew install macism
+  # 切换测试，第一次 mac 会提示权限问题，需要在安全中开启对应权限。
+  macism com.sogou.inputmethod.sogou.pinyin
+#+end_src
+
+Mac 配置：
+1. 关闭搜狗输入法的状态切换相关的快捷键；高级选项中的“自动切换到英文输入法的应用”去掉 emacs；
+2. 开启 Mac 自带的 ABC 输入法；
+3. Mac 系统设置输入法切换快捷键: 键盘-》键盘快捷键 -》输入法 -》“选择上一个输入法”
+
+切换延迟的说明：如果使用 emacs 的 mac-port，自带原生的输入法相关的api，不需要外部的切换工具，那个就很丝滑了。
+#+begin_src shell :tangle no
+brew tap railwaycat/emacsmacport
+brew install emacs-mac --with-modules --with-rsvg --with-imagemagick --with-natural-title-bar
+#+end_src
+
+配置 sis：
+#+begin_src emacs-lisp
+  (use-package sis
+    :demand t
+    :config
+    ;;执行 macism 命令查看输入法名称。
+    (sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.sogou.inputmethod.sogou.pinyin")
+    ;;(sis-ism-lazyman-config "com.apple.keylayout.ABC" "com.apple.inputmethod.SCIM.ITABC")
+
+    ;; 降低 macism 命令切换延迟(默认 20000），防止快速切换到中文时第一个字母未当做拼音的问题。具体最小
+    ;; 值是多少，如 2000，需要进行实际切换测试来验证。
+    ;;(setq sis-do-set (lambda(source) (start-process "set-input-source" nil "macism" source "2000")))
+
+    ;; 自动切换到英文的快捷键前缀, 需要在打开 sis-global-xx-mode 之前设置才生效。
+    (add-to-list 'sis-prefix-override-keys "C-;") ;; embark
+    (add-to-list 'sis-prefix-override-keys "M-s") ;; consult
+    (add-to-list 'sis-prefix-override-keys "M-g") ;; consult
+    (add-to-list 'sis-prefix-override-keys "M-o")
+
+    ;; 开启输入法颜色指示：橘色表示当前是中文输入模式。
+    ;; 貌似有性能问题，先关闭。
+    ;;(setq sis-other-cursor-color "orange") 
+    ;;(sis-global-cursor-color-mode t)
+
+    ;; 开启 respect-mode 后才会在 minibuffer、prefix key 等场景自动切换到英文。
+    (sis-global-respect-mode t)
+
+    ;; context/inline 模式经常会误判，故不使用，而是使用下面定义的手动切换命令。
+    ;;(sis-global-context-mode t)
+    ;;(sis-global-inline-mode t)
+
+    ;; 手动切换输入法。
+    (global-set-key (kbd "C-\\") 'sis-switch)
+    (global-set-key (kbd "C-.") 'sis-switch)
+    (global-set-key (kbd "C-,") 'sis-set-english)
+
+    ;; 为 minimibuffer 命令设置英文输入法。
+    (add-to-list 'sis-respect-minibuffer-triggers (cons 'embark-act (lambda () 'other)))
+
+    ;; Helpful 等特殊 Mode 自动切换到英文。
+    (add-hook 'special-mode-hook #'sis-set-english)
+    (add-hook 'comint-mode-hook #'sis-set-english)
+    (add-hook 'prog-mode-hook #'sis-set-english)
+    (add-hook 'dashboard-mode-hook #'sis-set-english)
+    )
 #+end_src
 
