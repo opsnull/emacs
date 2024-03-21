@@ -451,20 +451,17 @@
   :bind
   ( 
    :map rime-active-mode-map
-   ;; 在已经激活 Rime 候选菜单时，强制在中英文之间切换，直到按回车。
+   ;; 在已经激活 Rime 候选菜单时，强制切换到英文直到按回车。
    ("M-j" . 'rime-inline-ascii)
    :map rime-mode-map
    ;; 强制切换到中文模式. 
    ("M-j" . 'rime-force-enable)
-   ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings 配置相匹配。
-   ;; 中英文切换
-   ("C-." . 'rime-send-keybinding)
-   ;; 输入法菜单
-   ("C-+" . 'rime-send-keybinding)
-   ;; 中英文标点切换
-   ("C-," . 'rime-send-keybinding)
-   ;; 全半角切换
-   ;; ("C-," . 'rime-send-keybinding)
+   ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings
+   ;; 配置相匹配。
+   ("C-." . 'rime-send-keybinding)      ;; 中英文切换
+   ("C-+" . 'rime-send-keybinding)      ;; 输入法菜单
+   ("C-," . 'rime-send-keybinding)      ;; 中英文标点切换
+   ;;("C-," . 'rime-send-keybinding)    ;; 全半角切换
    )
   :config
   ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
@@ -472,23 +469,22 @@
   ;; 将如下快捷键发送给 rime，同时需要在 rime 的 key_binder/bindings 的部分配置才会生效。
   (add-to-list 'rime-translate-keybindings "C-h") ;; 删除拼音字符
   (add-to-list 'rime-translate-keybindings "C-d")
-  (add-to-list 'rime-translate-keybindings "C-k") 
+  (add-to-list 'rime-translate-keybindings "C-k") ;; 删除误上屏的词语
   (add-to-list 'rime-translate-keybindings "C-a") ;; 跳转到第一个拼音字符
   (add-to-list 'rime-translate-keybindings "C-e") ;; 跳转到最后一个拼音字符
   ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
-  (setq rime-inline-ascii-trigger 'shift-l)
-  ;; 临时英文模式, 该列表中任何一个断言值非 nil 时自动切换到英文.    
+  (setq rime-inline-ascii-trigger 'shift-r)
+  ;; 临时英文模式, 该列表中任何一个断言返回 t 时自动切换到英文。如何 rime-inline-predicates 不为空，
+  ;; 则当其中任意一个断言也返回 t 时才会自动切换到英文（inline 等效于 ascii-mode）。
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
           rime-predicate-hydra-p
           rime-predicate-current-uppercase-letter-p
-          ;;rime-predicate-after-alphabet-char-p ;; 会导致不能输入中文字符串
-          ;;rime-predicate-in-code-string-p ;; 会导致不能输入中文字符串
-          rime-predicate-prog-in-code-p ;; 代码块内不能输入中文, 但是注释和字符串不受影响.
+          ;; 在上一个字符是英文时才自动切换到英文，适合字符串中中英文混合的情况。
+          rime-predicate-in-code-string-after-ascii-p
+          ;; 代码块内不能输入中文, 但注释和字符串不受影响。
+          rime-predicate-prog-in-code-p 
           ))
-  ;; (setq rime-inline-predicates
-  ;;       '(rime-predicate-space-after-cc-p ; 中文接一个空格的后面
-  ;;         rime-predicate-current-uppercase-letter-p)) ; 当前输入是大写字母的时候
   (setq rime-show-candidate 'posframe)
   (setq default-input-method "rime")
 
@@ -1678,30 +1674,6 @@ mermaid.initialize({
 (setenv "PATH" (concat my-llvm-path ":" (getenv "PATH")))
 (setq exec-path (cons my-llvm-path  exec-path))
 
-(use-package shell-maker)
-(use-package ob-chatgpt-shell :defer t)
-(use-package ob-dall-e-shell :defer t)
-(use-package chatgpt-shell
-  :requires shell-maker
-  :defer t
-  :config
-  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
-  (setq chatgpt-shell-chatgpt-streaming t)
-  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
-  (setq chatgpt-shell-request-timeout 300)
-  (setq chatgpt-shell-insert-queries-inline t)
-  (require 'ob-chatgpt-shell)
-  (ob-chatgpt-shell-setup)
-  (require 'ob-dall-e-shell)
-  (ob-dall-e-shell-setup)
-  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
-  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
-  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
-  (setq chatgpt-shell-auth-header 
-	(lambda ()
-	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
-
 (use-package tempel
   :bind
   (("M-+" . tempel-complete)
@@ -1754,7 +1726,7 @@ mermaid.initialize({
 ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
 (setq compilation-ask-about-save nil
       compilation-always-kill t
-      compilation-scroll-output t ;; 滚动显示 compilation buffer 内容.
+      ;;compilation-scroll-output t ;; 滚动显示 compilation buffer 内容.
 )
 
 ;; 显示 shell 转义字符的颜色.
@@ -1776,13 +1748,12 @@ mermaid.initialize({
 ;; 快速在其他窗口查看定义。
 (global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
 
-;; 移动到行或代码的开头、结尾。
 (use-package mwim
   :config
   (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
   (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))
 
-;; 开发文档。
+;; 开发者文档。
 (use-package dash-at-point
   :config
   ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
@@ -1805,6 +1776,11 @@ mermaid.initialize({
 (use-package expand-region
   :config
   (global-set-key (kbd "C-=") #'er/expand-region))
+
+(defun my/goto-comment-start ()
+  (interactive)
+  (search-forward comment-start))
+(define-key prog-mode-map (kbd "C-c C-;") 'my/goto-comment-start)
 
 (use-package dired-sidebar
   :bind (("s-0" . dired-sidebar-toggle-sidebar))
@@ -1830,6 +1806,32 @@ mermaid.initialize({
   :config
   (setq anki-helper-media-directory "~/Library/Application Support/Anki2/User 1/collection.media/")
   )
+
+(use-package shell-maker)
+(use-package ob-chatgpt-shell :defer t)
+(use-package ob-dall-e-shell :defer t)
+(use-package chatgpt-shell
+  :requires shell-maker
+  :defer t
+  :config
+  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
+  (setq chatgpt-shell-chatgpt-streaming t)
+  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
+  (setq chatgpt-shell-model-temperature 0.7)
+  (setq chatgpt-shell-request-timeout 300)
+  (setq chatgpt-shell-highlight-blocks t)
+  (setq chatgpt-shell-insert-queries-inline t)
+  (require 'ob-chatgpt-shell)
+  (ob-chatgpt-shell-setup)
+  (require 'ob-dall-e-shell)
+  (ob-dall-e-shell-setup)
+  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
+  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
+  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
+  (setq chatgpt-shell-auth-header 
+	(lambda ()
+	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
 
 (use-package project
   :custom

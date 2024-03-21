@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-19T22:03:34+0800
+#+LASTMOD: 2024-03-21T12:03:34+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -610,14 +610,16 @@ tar-bar 的快捷键是 C-x t 开头的前缀：
 * rime
 
 Mac 系统安装 RIME 输入法：
-1. 下载鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
+1. 下载鼠须管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
 2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
-3. 在 Mac 设置中添加 鼠鬚管 输入法(位于简体中文内), 重新登录用户，然后就可以使用 =Control-+= 来触发 RIME 输入法了。
-4. 如果修改了 ~/Libray/Rime~ 下的配置文件, 需要:
-     + 对于系统输入法: 必须点击鼠须管的 “重新部署” 才能生效;
-     + 对于 emacs-rime 输入法，需要执行 =M-x rime-deploy= 生效；
+3. 在 Mac 设置中添加鼠须管输入法(位于简体中文内), 重新登录用户，然后就可以使用 RIME 输入法了.
 
-下载 [[https://github.com/rime/librime/releases][librime]] 库, emacs-rime 使用它与系统的 RIME 交互：
+Squirrel 程序的配置路径为 =/Library/Input Methods/Squirrel.app/Contents/SharedSupport/= ，用户配置目录
+为 =~/Library/Rime/=, 前者一般只读, 后续是可配置的。如果修改了 ~/Libray/Rime~ 下的配置文件, 需要:
++ 对于鼠须管系统输入法: 必须点击鼠须管的 “重新部署” 生效;
++ 对于 emacs-rime 输入法，需要执行 =M-x rime-deploy= 生效；
+
+安装 [[https://github.com/rime/librime/releases][librime]] 库, emacs-rime 使用它与 RIME 交互：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 curl -L -O https://github.com/rime/librime/releases/download/1.10.0/rime-295cb2a-macOS.tar.bz2
 tar -xvf rime-295cb2a-macOS.tar.bz2
@@ -635,74 +637,61 @@ sudo spctl --master-disable
 + 中英文标点: 输入 vbd 后选择, v 开头有一系列快捷键;  
 + 常见问题：https://github.com/iDvel/rime-ice/issues/133;
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-$ mv Rime Rime.bak.20230406
-$ cd
-$ mkdir ~/Library/Rime
-$ git clone https://github.com/iDvel/rime-ice --depth=1
-$ cp -r rime-ice/* ~/Library/Rime
+mv ~/Library/Rime /Library/Rime.bak
+git clone https://github.com/iDvel/rime-ice --depth=1
+mv rime-ice ~/Library/Rime
 # 后续可以 git pull 更新 rime-ice。
 #+end_src
 
-配置个人同步目录（M-x rime-sync）：
+个人词频同步：用户词典类型 translator/db_class 的值默认为 userdb，即二进制文件，输入过的内容会记录在
+~/Library/Rime/*.userdb/ 文件夹中，只有在同步后才能在同步目录（sync_dir/*/*userdb.txt）看到人类可读
+的用户词典；
++ M-x rime-sync 或点击鼠须管「同步用户数据」，Rime 将输入法方案的用户数据 *.userdb 与备份目录
+  sync_dir 进行双向更新同步。
++ 清理个人同步文件 =*userdb.txt= 中的记录后，需要删除 =~/Library/Rime/*.userdb/= 目录，重启 emacs，下次
+  再使用 rime 时会自动创建该目录，然后执行用户数据同步来生效新的 userdb 记录。
 #+begin_src yaml :tangle ~/Library/Rime/installation.yaml
-distribution_code_name: "emacs-rime"
-distribution_name: Rime
-distribution_version: 1.0.1
-install_time: "Thu Apr  6 17:33:36 2023"
-# 本机的 ID 标志，默认是一串 UUID
-# 生成的文件夹是这个名字，可以改成更好识别的名称
-installation_id: "cde8ff26-5e08-466c-bd2d-aac2aeaedb25"
-rime_version: 1.8.5
-update_time: "Thu Apr  6 21:04:16 2023"
-# 同步的路径，默认是当前配置目录下的 `sync/`
-sync_dir: /Users/zhangjun/.emacs.d/sync/rime
-# 执行 M-x rime-sync 或点击「同步用户数据」后，Rime 会和配置目录下的 *.userdb/ 进行双向更新同步。同步目录
-# （/path/RimeSync/MBP-001）下生成的 *.userdb.txt 就是用户词典了，里面都是输入过的内容。
+  # installation.yaml 文件在第一次部署后会自动生成，在这里可以编辑当前设备的 ID 和同步目录。
+
+  #本机的 ID 标志，默认是一串 UUID，生成的文件夹是这个名字，可以改成更好识别的名称。
+  installation_id: "cde8ff26-5e08-466c-bd2d-aac2aeaedb25"
+  # 同步的目标路径。
+  sync_dir: /Users/zhangjun/.emacs.d/sync/rime
 #+end_src
 
-RIME 配置：
-+ 注意：对于列表类型的字段值, patch 时必须列出修改后的整个列表值，不支持部分 patch。
-+ 详细参考：https://github.com/iDvel/rime-ice/blob/main/default.yaml
-#+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
+[[https://dvel.me/posts/rime-ice/#%E4%BB%A5-patch-%E7%9A%84%E6%96%B9%E5%BC%8F%E6%89%93%E8%A1%A5%E4%B8%81][patch 语法示例]]：
+#+begin_src yaml :tangle no
+# 以 patch: 开头，后面的内容都需要缩进
 patch:
-  schema_list:
-  - schema: rime_ice  # 只启用 rime_ice 雾凇拼音输入法方案。
-  menu/page_size: 9 # 显示 9 个候选词。  
-  # 方案选单切换
-  switcher/hotkeys:
-  - F4
-  - "Control+plus" # 按 C-Shit-+ 调出方案选单。
-  switcher/fold_options: false # 呼出时不折叠。
-  switcher/abbreviate_options: false # 折叠时不缩写选项
-  key_binder/bindings:
-  - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
-  - { when: paging, accept: minus, send: Page_Up }                 # 上一页
-  - { when: always, accept: "Control+period", toggle: ascii_mode}  # 中英文切换
-  - { when: always, accept: "Control+comma", toggle: ascii_punct}  # 中英文标点切换
-  #- { when: always, accept: "Control+comma", toggle: full_shape}  # 全角/半角切换
-  
-  # emacs_editing， 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。需要将这些按键加到
-  # rime-translate-keybindings 变量里后才会生效。
-  - { When: composing, accept: Control+p, send: Up }
-  - { when: composing, accept: Control+n, send: Down }
-  - { when: composing, accept: Control+b, send: Left }
-  - { when: composing, accept: Control+f, send: Right }
-  - { when: composing, accept: Control+a, send: Home }
-  - { when: composing, accept: Control+e, send: End }
-  - { when: composing, accept: Control+d, send: Delete }
-  - { when: composing, accept: Control+k, send: Shift+Delete }
-  - { when: composing, accept: Control+h, send: BackSpace }
-  - { when: composing, accept: Control+g, send: Escape }
-  - { when: composing, accept: Control+bracketleft, send: Escape }
-  - { when: composing, accept: Control+y, send: Page_Up }
-  - { when: composing, accept: Alt+v, send: Page_Up }
-  - { when: composing, accept: Control+v, send: Page_Down }
 
-# 更多按键名称参考: https://github.com/LEOYoon-Tsaw/Rime_collections/blob/master/Rime_description.md
+  ##### 修改单项
+  # 正确 ✅ 这种方式只覆盖 Shift_L，不影响其他选项
+  ascii_composer/switch_key/Shift_L: commit_code
+  
+  # 错误 ❌ 这样导致 switch_key 下将只有 Shift_L 一个选项
+  ascii_composer/switch_key:
+    Shift_L: commit_code
+  
+  ##### 如果有较多修改项，可以直接全部复制过来再修改
+  ascii_composer:
+    good_old_caps_lock: false
+    switch_key:
+      Caps_Lock: commit_code
+      Shift_L: commit_code
+      Shift_R: noop
+      Control_L: noop
+      Control_R: noop
+
+  ##### 结尾的 /+ 表示在原基础上追加
+  # 保留已有的快捷键，追加一个逗号句号翻页
+  key_binder/bindings/+:
+    - { when: paging, accept: comma, send: Page_Up }
+    - { when: has_menu, accept: period, send: Page_Down }
 #+end_src
 
-模糊音配置：
-+ 注意：对于列表类型的 patch, 必须列出修改后的整个列表值，不支持不分列表。
+rime_ice 拼音方案调整(如模糊音，动态词频，自定义词语文件等):
++ 自定义短语：向自定义短语词典文件 opsnull_custom_phrase.txt 添加自定义短语，custom_prase/db_class为
+  stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来动态调频）。
 #+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml 
   patch:
     switches:
@@ -725,10 +714,13 @@ patch:
     #   states: [正常, 单字]
     #   reset: 0
 
-    translator/spelling_hints: 0   # 不显示候选词的拼音。
+    translator/spelling_hints: 0           # 不显示候选词的拼音。
     translator/always_show_comments: false #不显示候选者的拼音。
-    # 模糊拼音
+    translator/enable_user_dict: true      # 根据上屏自动调整词频, 否则根据 *.dict.yaml 中的静态定义的词频率。
+    custom_phrase/user_dict: "opsnull_custom_phrase"  # 自定义短语词典文件，权重最高。
+
     speller/algebra:
+    # 模糊拼音
     # 声母
     - derive/^([zcs])h/$1/          # z c s → zh ch sh
     - derive/^([zcs])([^h])/$1h$2/  # zh ch sh → z c s
@@ -737,6 +729,59 @@ patch:
     # 韵母
     - derive/in/ing/
     - derive/ing/in/
+
+    # 自动纠错(后者用前者替换)
+    # ai
+    - derive/^([wghk])ai$/$1ia/  # wia → wai
+    # ei
+    - derive/([wfghkz])ei$/$1ie/  # wie → wei
+    # ie
+    - derive/([jqx])ie$/$1ei/  # jei → jie    
+#+end_src
+
+Rime 输入法全局配置(patch ~/Library/Rime/default.yaml 文件)：
++ 注意：对于列表类型的字段值, patch 时必须列出修改后的整个列表值，不支持部分 patch。
++ 详细参考：https://github.com/iDvel/rime-ice/blob/main/default.yaml
+#+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
+  patch:
+    schema_list:
+    - schema: rime_ice  # 只启用 rime_ice 雾凇拼音输入法方案。
+    menu/page_size: 9   # 显示 9 个候选词。  
+    # 方案选单切换
+    switcher/hotkeys:
+    - F4
+    - "Control+plus" # 按 C-Shit-+ 调出方案选单。
+    switcher/fold_options: false # 呼出时不折叠。
+    switcher/abbreviate_options: false # 折叠时不缩写选项
+    ascii_composer: # 中英文切换
+      switch_key:   # 关闭左边 Shift 中西文切换，而是使用右侧 Shift（避免频繁误按）。
+        Shift_L: noop 
+        Shift_R: commit_code
+    key_binder/bindings:
+    - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
+    - { when: paging, accept: minus, send: Page_Up }                 # 上一页
+    - { when: always, accept: "Control+period", toggle: ascii_mode}  # 中英文切换
+    - { when: always, accept: "Control+comma", toggle: ascii_punct}  # 中英文标点切换
+    #- { when: always, accept: "Control+comma", toggle: full_shape}  # 全角/半角切换
+
+    # 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。需要将这些按键加到rime-translate-keybindings变
+    # 量里后才会生效。 composing 指的是出现候选词列表的时机。
+    - { When: composing, accept: Control+p, send: Up }
+    - { when: composing, accept: Control+n, send: Down }
+    - { when: composing, accept: Control+b, send: Left }
+    - { when: composing, accept: Control+f, send: Right }
+    - { when: composing, accept: Control+a, send: Home }
+    - { when: composing, accept: Control+e, send: End }
+    - { when: composing, accept: Control+d, send: Delete }
+    - { when: composing, accept: Control+k, send: Shift+Delete } # 从用户数据库中删除误上屏的词语
+    - { when: composing, accept: Control+h, send: BackSpace }
+    - { when: composing, accept: Control+g, send: Escape }
+    - { when: composing, accept: Control+bracketleft, send: Escape }
+    - { when: composing, accept: Control+y, send: Page_Up }
+    - { when: composing, accept: Alt+v, send: Page_Up }
+    - { when: composing, accept: Control+v, send: Page_Down }
+
+  # 更多按键名称参考: https://github.com/LEOYoon-Tsaw/Rime_collections/blob/master/Rime_description.md
 #+end_src
 
 鼠须管(图形前端)配置:
@@ -754,7 +799,12 @@ patch:
         #ascii_punct: true # 中英文标点
 #+end_src
 
-配置 Emacs: 
+配置 Emacs:
++ rime-disable-predicates 定义了一组断言函数，当任一函数断言成立时，Rime 自动将输入法切换为英文
+  （inline、ascii-inline、ascii-mode 都指的是英文）。如果同时定义了 rime-inline-predicates 变量，则
+  当这两组函数都至少有一个断言成立时才会切换为英文。
++ rime-predicate-after-alphabet-char-p 和 rime-predicate-in-code-string-p 条件都会导致不能正确的中英
+  文混排。
 #+begin_src emacs-lisp
   (use-package rime
     :custom
@@ -766,20 +816,17 @@ patch:
     :bind
     ( 
      :map rime-active-mode-map
-     ;; 在已经激活 Rime 候选菜单时，强制在中英文之间切换，直到按回车。
+     ;; 在已经激活 Rime 候选菜单时，强制切换到英文直到按回车。
      ("M-j" . 'rime-inline-ascii)
      :map rime-mode-map
      ;; 强制切换到中文模式. 
      ("M-j" . 'rime-force-enable)
-     ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings 配置相匹配。
-     ;; 中英文切换
-     ("C-." . 'rime-send-keybinding)
-     ;; 输入法菜单
-     ("C-+" . 'rime-send-keybinding)
-     ;; 中英文标点切换
-     ("C-," . 'rime-send-keybinding)
-     ;; 全半角切换
-     ;; ("C-," . 'rime-send-keybinding)
+     ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的 key_binder/bindings
+     ;; 配置相匹配。
+     ("C-." . 'rime-send-keybinding)      ;; 中英文切换
+     ("C-+" . 'rime-send-keybinding)      ;; 输入法菜单
+     ("C-," . 'rime-send-keybinding)      ;; 中英文标点切换
+     ;;("C-," . 'rime-send-keybinding)    ;; 全半角切换
      )
     :config
     ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
@@ -787,23 +834,22 @@ patch:
     ;; 将如下快捷键发送给 rime，同时需要在 rime 的 key_binder/bindings 的部分配置才会生效。
     (add-to-list 'rime-translate-keybindings "C-h") ;; 删除拼音字符
     (add-to-list 'rime-translate-keybindings "C-d")
-    (add-to-list 'rime-translate-keybindings "C-k") 
+    (add-to-list 'rime-translate-keybindings "C-k") ;; 删除误上屏的词语
     (add-to-list 'rime-translate-keybindings "C-a") ;; 跳转到第一个拼音字符
     (add-to-list 'rime-translate-keybindings "C-e") ;; 跳转到最后一个拼音字符
     ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
-    (setq rime-inline-ascii-trigger 'shift-l)
-    ;; 临时英文模式, 该列表中任何一个断言值非 nil 时自动切换到英文.    
+    (setq rime-inline-ascii-trigger 'shift-r)
+    ;; 临时英文模式, 该列表中任何一个断言返回 t 时自动切换到英文。如何 rime-inline-predicates 不为空，
+    ;; 则当其中任意一个断言也返回 t 时才会自动切换到英文（inline 等效于 ascii-mode）。
     (setq rime-disable-predicates
           '(rime-predicate-ace-window-p
             rime-predicate-hydra-p
             rime-predicate-current-uppercase-letter-p
-            ;;rime-predicate-after-alphabet-char-p ;; 会导致不能输入中文字符串
-            ;;rime-predicate-in-code-string-p ;; 会导致不能输入中文字符串
-            rime-predicate-prog-in-code-p ;; 代码块内不能输入中文, 但是注释和字符串不受影响.
+            ;; 在上一个字符是英文时才自动切换到英文，适合字符串中中英文混合的情况。
+            rime-predicate-in-code-string-after-ascii-p
+            ;; 代码块内不能输入中文, 但注释和字符串不受影响。
+            rime-predicate-prog-in-code-p 
             ))
-    ;; (setq rime-inline-predicates
-    ;;       '(rime-predicate-space-after-cc-p ; 中文接一个空格的后面
-    ;;         rime-predicate-current-uppercase-letter-p)) ; 当前输入是大写字母的时候
     (setq rime-show-candidate 'posframe)
     (setq default-input-method "rime")
 
@@ -3178,35 +3224,6 @@ bpf
 -c
 #+end_src
 
-** chatgpt-shell
-
-在 ~/.authinfo.gpg 文件中添加 api.openai.com 的 key，然后使用本地 socks5h 代理访问 API。
-#+begin_src emacs-lisp
-(use-package shell-maker)
-(use-package ob-chatgpt-shell :defer t)
-(use-package ob-dall-e-shell :defer t)
-(use-package chatgpt-shell
-  :requires shell-maker
-  :defer t
-  :config
-  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
-  (setq chatgpt-shell-chatgpt-streaming t)
-  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
-  (setq chatgpt-shell-request-timeout 300)
-  (setq chatgpt-shell-insert-queries-inline t)
-  (require 'ob-chatgpt-shell)
-  (ob-chatgpt-shell-setup)
-  (require 'ob-dall-e-shell)
-  (ob-dall-e-shell-setup)
-  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
-  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
-  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
-  (setq chatgpt-shell-auth-header 
-	(lambda ()
-	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
-#+end_src
-
 ** tempel
 
 #+begin_src emacs-lisp
@@ -3392,7 +3409,7 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
   ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
   (setq compilation-ask-about-save nil
         compilation-always-kill t
-        compilation-scroll-output t ;; 滚动显示 compilation buffer 内容.
+        ;;compilation-scroll-output t ;; 滚动显示 compilation buffer 内容.
   )
 
   ;; 显示 shell 转义字符的颜色.
@@ -3441,36 +3458,50 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
 
 ** others
 
+mwim： C-a/C-e 移动到行或代码的开头、结尾：
 #+begin_src emacs-lisp
-;; 移动到行或代码的开头、结尾。
-(use-package mwim
-  :config
-  (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
-  (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))
+  (use-package mwim
+    :config
+    (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
+    (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))  
+#+end_src
 
-;; 开发文档。
-(use-package dash-at-point
-  :config
-  ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
-  (global-set-key (kbd "C-c d .") #'dash-at-point)
-  ;; 提示选择 docset;
-  (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
-  ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
-  (add-to-list 'dash-at-point-docsets "go")
-  (add-to-list 'dash-at-point-docsets "viper")
-  (add-to-list 'dash-at-point-docsets "cobra")
-  (add-to-list 'dash-at-point-docsets "pflag")
-  (add-to-list 'dash-at-point-docsets "k8s/api")
-  (add-to-list 'dash-at-point-docsets "k8s/apimachineary")
-  (add-to-list 'dash-at-point-docsets "k8s/client-go")
-  (add-to-list 'dash-at-point-docsets "klog")  
-  (add-to-list 'dash-at-point-docsets "k8s/controller-runtime")
-  (add-to-list 'dash-at-point-docsets "k8s/componet-base")
-  (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))
+dash 开发者文档：
+#+begin_src emacs-lisp
+  ;; 开发者文档。
+  (use-package dash-at-point
+    :config
+    ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
+    (global-set-key (kbd "C-c d .") #'dash-at-point)
+    ;; 提示选择 docset;
+    (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
+    ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
+    (add-to-list 'dash-at-point-docsets "go")
+    (add-to-list 'dash-at-point-docsets "viper")
+    (add-to-list 'dash-at-point-docsets "cobra")
+    (add-to-list 'dash-at-point-docsets "pflag")
+    (add-to-list 'dash-at-point-docsets "k8s/api")
+    (add-to-list 'dash-at-point-docsets "k8s/apimachineary")
+    (add-to-list 'dash-at-point-docsets "k8s/client-go")
+    (add-to-list 'dash-at-point-docsets "klog")  
+    (add-to-list 'dash-at-point-docsets "k8s/controller-runtime")
+    (add-to-list 'dash-at-point-docsets "k8s/componet-base")
+    (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))  
+#+end_src
 
-(use-package expand-region
-  :config
-  (global-set-key (kbd "C-=") #'er/expand-region))
+expand-region 扩展区域：
+#+begin_src emacs-lisp
+  (use-package expand-region
+    :config
+    (global-set-key (kbd "C-=") #'er/expand-region))
+#+end_src
+
+快速跳转到注释位置（自定义函数）：
+#+begin_src emacs-lisp
+  (defun my/goto-comment-start ()
+    (interactive)
+    (search-forward comment-start))
+  (define-key prog-mode-map (kbd "C-c C-;") 'my/goto-comment-start)
 #+end_src
 
 * dired-sidebar
@@ -3618,6 +3649,37 @@ anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
 参考：
 1. [[https://yiufung.net/post/anki-org/][Power up Anki with Emacs, Org mode, anki-editor and more]]
 2. [[https://docs.ankiweb.net/intro.html][Introduction - Anki Manual]]
+
+* chatgpt-shell
+
+在 ~/.authinfo.gpg 文件中添加 api.openai.com 的 key，然后使用本地 socks5h 代理访问 API。
+#+begin_src emacs-lisp
+(use-package shell-maker)
+(use-package ob-chatgpt-shell :defer t)
+(use-package ob-dall-e-shell :defer t)
+(use-package chatgpt-shell
+  :requires shell-maker
+  :defer t
+  :config
+  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
+  (setq chatgpt-shell-chatgpt-streaming t)
+  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
+  (setq chatgpt-shell-model-temperature 0.7)
+  (setq chatgpt-shell-request-timeout 300)
+  (setq chatgpt-shell-highlight-blocks t)
+  (setq chatgpt-shell-insert-queries-inline t)
+  (require 'ob-chatgpt-shell)
+  (ob-chatgpt-shell-setup)
+  (require 'ob-dall-e-shell)
+  (ob-dall-e-shell-setup)
+  ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
+  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
+  ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
+  (setq chatgpt-shell-auth-header 
+	(lambda ()
+	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
+#+end_src
 
 * project
 
@@ -4152,8 +4214,9 @@ buffer/file:
   (setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))  
 #+end_src
 
-Emacs 29 的 xwidget-webkit 对 Mac 支持不好( [[https://github.com/d12frosted/homebrew-emacs-plus/issues/519][Better support for xwidget-webkit]]), 部分功能只有 GTK/X11
-才支持, 如: buffer 内搜索increase-search/webkit-history:
+Emacs 29 xwidget-webkit 对 Mac 支持不好( [[https://github.com/d12frosted/homebrew-emacs-plus/issues/519][Better support for xwidget-webkit]]), 部分功能只有 GTK/X11才
+支持, 如: buffer 内搜索 increase-search/webkit-history:
++ 如果要复制 xwidget 的内容，需要选择后右击，从上下文菜单中选择 copy。
 #+begin_src emacs-lisp
   (setq url-user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
   (setq xwidget-webkit-buffer-name-format "*webkit* [%T] - %U")

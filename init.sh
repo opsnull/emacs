@@ -15,11 +15,9 @@ mv dist ~/.emacs.d/librime
 sudo spctl --master-disable
 # 后续再开启：sudo spctl --master-enable
 
-$ mv Rime Rime.bak.20230406
-$ cd
-$ mkdir ~/Library/Rime
-$ git clone https://github.com/iDvel/rime-ice --depth=1
-$ cp -r rime-ice/* ~/Library/Rime
+mv ~/Library/Rime /Library/Rime.bak
+git clone https://github.com/iDvel/rime-ice --depth=1
+mv rime-ice ~/Library/Rime
 # 后续可以 git pull 更新 rime-ice。
 
 which rg || brew install ripgrep
