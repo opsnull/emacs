@@ -12,7 +12,6 @@
 (setq-default lexical-binding t)
 (setq lexical-binding t)
 
-;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
 (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
 
@@ -25,8 +24,6 @@
 (mapc (lambda (p)
         (setenv "PATH" (concat p ":" (getenv "PATH"))))
       my-bin-path)
-
-;; Emacs 查找外部程序时使用 exec-path 变量而非 PATH 变量，这里单独设置 exec-path。
 (let ((paths my-bin-path))
   (dolist (path paths)
     (setq exec-path (cons path exec-path))))

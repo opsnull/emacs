@@ -16,11 +16,9 @@
 ;; 可以升级内置包。
 ;;(setq package-install-upgrade-built-in t)
 
-;; 安装 vc-use-package 使 use-package 支持使用 :vc 指令从 github 等安装软件包。
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
-;; 将自己安装的 coreutils 添加到 PATH 环境变量和 exec-path 变量中。
 (setq my-coreutils-path "/usr/local/opt/curl/bin")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
@@ -28,14 +26,19 @@
 (setq my/socks-host "127.0.0.1")
 (setq my/socks-port 1080)
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
+
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
 ;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
 ;; 所以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
 (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
                     ".openai.azure.com" ".baidu.com"))
+
+
+;; Google 默认会 403 缺少 UA 的请求。
 (setq my/user-agent
       "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+
 (use-package mb-url-http
   :demand
   :vc (:fetcher github :repo dochang/mb-url)
@@ -51,7 +54,7 @@
                                       "--keepalive-time" "60"
                                       "--keepalive"
                                       "--max-time" "300"
-                                       ;;防止 POST 超过 1024Bytes 时发送 Expect: 100-continue 导致 1s 延迟.
+                                      ;;防止 POST 超过 1024Bytes 时发送 Expect: 100-continue 导致 1s 延迟.
                                       "-H" "Expect: ''"
                                       ;;"-u" ,github-auth
                                       "--user-agent" ,my/user-agent
@@ -100,20 +103,17 @@
   (require 'epa-file)
   (epa-file-enable))
 
-;; 关闭容易误操作的按键。
 (let ((keys '("s-w" "C-z" "<mouse-2>" "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
-	      "s--" "s-0" "s-+" "C-<wheel-down>" "C-<wheel-up>")))
+              "s--" "s-0" "s-+" "C-<wheel-down>" "C-<wheel-up>")))
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
-;; macOS 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper。
 (setq mac-command-modifier 'meta)
 ;; option 作为 Super 键。
 (setq mac-option-modifier 'super)
 ;; fn 作为 Hyper 键。
 (setq ns-function-modifier 'hyper)
 
-;; 提升 io 性能。
 (setq process-adaptive-read-buffering nil)
 (setq read-process-output-max (* 1024 1024 4))
 (setq inhibit-compacting-font-caches t)
@@ -121,10 +121,8 @@
 (setq-default ad-redefinition-action 'accept)
 (setq bidi-inhibit-bpa t)
 (setq bidi-paragraph-direction 'left-to-right)
-(setq-default bidi-display-reordering nil) 
+(setq-default bidi-display-reordering nil)
 
-;; Garbage Collector Magic Hack
-;; 提升 vterm buffer、json 文件响应性能。
 (use-package gcmh
   :init
   ;;(setq garbage-collection-messages t)
@@ -134,6 +132,8 @@
   (setq gcmh-high-cons-threshold (* 32 1024 1024))
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
+
+(add-hook 'after-init-hook #'garbage-collect t)
 
 (when (memq window-system '(mac ns x))
   (tool-bar-mode -1)
@@ -441,6 +441,13 @@
   (global-set-key (kbd "s-8") 'tab-bar-select-tab)
   (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 
+(use-package nyan-mode
+  :config
+  (setq nyan-animate-nyancat t)
+  (setq nyan-wavy-trail t)
+  (nyan-mode)
+  (nyan-start-animation))
+
 (use-package rime
   :custom
   (rime-user-data-dir "~/Library/Rime/")
@@ -476,6 +483,9 @@
   (setq rime-inline-ascii-trigger 'shift-r)
   ;; 临时英文模式, 该列表中任何一个断言返回 t 时自动切换到英文。如何 rime-inline-predicates 不为空，
   ;; 则当其中任意一个断言也返回 t 时才会自动切换到英文（inline 等效于 ascii-mode）。
+  ;; 自定义 avy 断言函数.
+  (defun rime-predicate-avy-p ()
+    (bound-and-true-p avy-command))
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
           rime-predicate-hydra-p
@@ -483,7 +493,8 @@
           ;; 在上一个字符是英文时才自动切换到英文，适合字符串中中英文混合的情况。
           rime-predicate-in-code-string-after-ascii-p
           ;; 代码块内不能输入中文, 但注释和字符串不受影响。
-          rime-predicate-prog-in-code-p 
+          rime-predicate-prog-in-code-p
+          rime-predicate-avy-p
           ))
   (setq rime-show-candidate 'posframe)
   (setq default-input-method "rime")
@@ -492,6 +503,7 @@
         (list :background-color "#333333"
               :foreground-color "#dcdccc"
               :internal-border-width 2))
+
 
   ;; 部分 major-mode 关闭 RIME 输入法。
   (defadvice switch-to-buffer (after activate-input-method activate)
@@ -1208,6 +1220,7 @@
 (use-package paren
   :hook (after-init . show-paren-mode)
   :init
+  (setq show-paren-delay 0)
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t)
   (setq show-paren-style 'parenthesis) ;; parenthesis, expression
@@ -1290,6 +1303,11 @@
   ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t) 
   )
 
+;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
+(defun my/manually-activate-flymake ()
+  (add-hook 'flymake-diagnostic-functions #'eglot-flymake-backend nil t)
+  (flymake-mode 1))
+
 (use-package eglot
   :demand
   :preface
@@ -1301,7 +1319,10 @@
                 (remove #'flymake-eldoc-function eldoc-documentation-functions)))
     ;; (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
     )
-  :hook ((eglot-managed-mode . my/eglot-eldoc))
+  :hook (
+         (eglot-managed-mode . my/eglot-eldoc)
+         (eglot-managed-mode . manually-activate-flymake) 
+         )
   :bind
   (:map eglot-mode-map
         ("C-c C-a" . eglot-code-actions)
@@ -1312,6 +1333,8 @@
         ("C-c C-f" . eglot-format-buffer)
         ("C-c C-r" . eglot-rename))
   :config
+  ;; elgot 不管理和配置 flymake，这样会保留自定义的 flymake backend（如 flymake-clippy）。
+  (add-to-list 'eglot-stay-out-of 'flymake)
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
   ;; 置的太大，否则可能影响性能。
   (setq eglot-events-buffer-size (* 1024 1024 1))
@@ -1525,6 +1548,7 @@
   (setq rust-mode-treesitter-derive t) ;; rust-mode 作为 rust-ts-mode 而非 prog-mode 的子 mode.
   :config
   (setq rust-format-on-save t)
+  (setq rust-rustfmt-switches '("--edition" "2021"))
 
   ;; treesit-auto 默认不将 XX-mode-hook 添加到对应的 XX-ts-mode-hook 上, 需要手动指定.
   (setq rust-ts-mode-hook rust-mode-hook) 
@@ -1537,10 +1561,11 @@
                '((rust-ts-mode rust-mode) .
                  ("rust-analyzer"
                   :initializationOptions
-                  ( :checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
+                  ( ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
                     :cachePriming (:enable :json-false) ;; 启动时不预热缓存.
                     ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
                     :check (
+                            :command "clippy"
                             :allTargets :json-false
                             :workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
                             )
@@ -1557,6 +1582,9 @@
                     )
                   )))
   )
+
+(use-package flymake-clippy
+  :hook (rust-ts-mode . flymake-clippy-setup-backend))
 
 (use-package rust-playground)
 
@@ -1726,8 +1754,13 @@ mermaid.initialize({
 ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
 (setq compilation-ask-about-save nil
       compilation-always-kill t
-      ;;compilation-scroll-output t ;; 滚动显示 compilation buffer 内容.
-)
+      compilation-scroll-output 'first-error ;; 滚动显示到第一个出错位置。
+      compilation-context-lines 10
+      compilation-skip-threshold 2
+      ;;compilation-window-height 100
+      )
+
+(define-key compilation-mode-map (kbd "q") 'delete-window)
 
 ;; 显示 shell 转义字符的颜色.
 (add-hook 'compilation-filter-hook
@@ -2378,3 +2411,10 @@ mermaid.initialize({
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
+
+(use-package avy
+  :config
+  (global-set-key (kbd "C-:") 'avy-goto-char)
+  (global-set-key (kbd "C-'") 'avy-goto-char-2)
+  (global-set-key (kbd "M-g f") 'avy-goto-line)
+  )

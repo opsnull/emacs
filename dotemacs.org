@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-21T12:03:34+0800
+#+LASTMOD: 2024-03-24T20:03:53+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -30,8 +30,7 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 
 * init
 
-=early-init.el= 是 =Emacs= 启动时最开始执行的文件，执行复杂逻辑可能导致启动失败，所以该文件尽量以变量定
-义为主。
+=early-init.el= 启动时最开始执行的文件，执行复杂逻辑可能会失败，所以该文件尽量以变量定义为主。
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
   (when (fboundp 'native-compile-async)
     (setenv "LIBRARY_PATH"
@@ -46,11 +45,16 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   (setq-default load-prefer-newer t)
   (setq-default lexical-binding t)
   (setq lexical-binding t)
+#+end_src
 
-  ;; 在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
+在单独文件保存自定义配置，避免污染 ~/.emacs 文件。
+#+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
   (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
   (add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
+#+end_src
 
+设置 Emacs 搜索二进制工具的路径, Emacs 查找外部程序时使用 exec-path 而非 PATH 变量:
+#+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
   (setq my-bin-path '(
                       "/usr/local/opt/findutils/libexec/gnubin"
                       "/Users/zhangjun/go/bin"
@@ -60,8 +64,6 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   (mapc (lambda (p)
           (setenv "PATH" (concat p ":" (getenv "PATH"))))
         my-bin-path)
-
-  ;; Emacs 查找外部程序时使用 exec-path 变量而非 PATH 变量，这里单独设置 exec-path。
   (let ((paths my-bin-path))
     (dolist (path paths)
       (setq exec-path (cons path exec-path))))
@@ -69,6 +71,7 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 
 * package
 
+设置各种软件包源：
 #+begin_src emacs-lisp
   (require 'package)
   (setq package-archives '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
@@ -79,94 +82,105 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   (package-initialize)
   (when (not package-archive-contents)
     (package-refresh-contents))
+#+end_src
++ =M-x use-package-report= : 查看 package 加载时间（按 S 排序）。
 
+配置包默认参数：
+#+begin_src emacs-lisp
   (setq use-package-verbose t)
   (setq use-package-always-ensure t)
   (setq use-package-always-demand t)
   (setq use-package-compute-statistics t)
 
   ;; 可以升级内置包。
-  ;;(setq package-install-upgrade-built-in t)
+  ;;(setq package-install-upgrade-built-in t)    
+#+end_src
 
-  ;; 安装 vc-use-package 使 use-package 支持使用 :vc 指令从 github 等安装软件包。
+安装 vc-use-package 使 use-package 支持使用 :vc 指令从 github 等安装软件包。
+#+begin_src emacs-lisp
   (unless (package-installed-p 'vc-use-package)
     (package-vc-install "https://github.com/slotThe/vc-use-package"))
 #+end_src
-+ =M-x use-package-report= : 查看 package 加载时间（按 S 排序）。
 
 * proxy
 
-全局 socks5 代理：
-+ Mac 自带的 curl 不支持 socks 代理。
-+ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
-+ 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
+Mac 自带的 curl 不支持 socks5 代理, 这里安装支持 socks5 代理的 GNU curl 版本：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 ls -l /usr/local/opt/curl/bin/curl || brew install curl
 export PATH="/usr/local/opt/curl/bin:$PATH"
 #+end_src
 
+将安装的 curl 添加到 PATH 环境变量和 exec-path 变量中。
 #+begin_src emacs-lisp
-   ;; 将自己安装的 coreutils 添加到 PATH 环境变量和 exec-path 变量中。
-   (setq my-coreutils-path "/usr/local/opt/curl/bin")
-   (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
-   (setq exec-path (cons my-coreutils-path  exec-path))
+  (setq my-coreutils-path "/usr/local/opt/curl/bin")
+  (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+  (setq exec-path (cons my-coreutils-path  exec-path))
+#+end_src
 
-   (setq my/socks-host "127.0.0.1")
-   (setq my/socks-port 1080)
-   (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
-   ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
-   ;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
-   ;; 所以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
-   (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
-                       ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
-                       ".openai.azure.com" ".baidu.com"))
-   (setq my/user-agent
-         "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
-   (use-package mb-url-http
-     :demand
-     :vc (:fetcher github :repo dochang/mb-url)
-     :init
-     (require 'auth-source)
-     (let ((credential (auth-source-user-and-password "api.github.com")))
-       (setq github-user (car credential)
-             github-password (cadr credential))
-       (setq github-auth (concat github-user ":" github-password))
-       (setq mb-url-http-backend 'mb-url-http-curl
-             mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-             mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-                                         "--keepalive-time" "60"
-                                         "--keepalive"
-                                         "--max-time" "300"
-                                          ;;防止 POST 超过 1024Bytes 时发送 Expect: 100-continue 导致 1s 延迟.
-                                         "-H" "Expect: ''"
-                                         ;;"-u" ,github-auth
-                                         "--user-agent" ,my/user-agent
-                                         ))))
-   (defun proxy-socks-enable ()
-     (interactive)
-     (require 'socks)
-     (setq url-gateway-method 'socks
-           socks-noproxy my/no-proxy
-           socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-     ;; curl/wget/ruby/python/go 都感知 no_proxy 变量: https://superuser.com/a/1690537
-     (let ((no-proxy (mapconcat 'identity my/no-proxy ",")))
-       (setenv "no_proxy" no-proxy))
-     (setenv "ALL_PROXY" my/socks-proxy)
-     (setenv "ALL_PROXY" my/socks-proxy)
-     (setenv "HTTP_PROXY" nil)
-     (setenv "HTTPS_PROXY" nil)
-     ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
-     (advice-add 'url-http :around 'mb-url-http-around-advice))
+全局 socks5 代理：
++ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
+#+begin_src emacs-lisp
+  (setq my/socks-host "127.0.0.1")
+  (setq my/socks-port 1080)
+  (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
-   (defun proxy-socks-disable ()
-     (interactive)
-     (require 'socks)
-     (setq url-gateway-method 'native
-           socks-noproxy nil)
-     (setenv "all_proxy" "")
-     (setenv "ALL_PROXY" ""))
+  ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
+  ;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
+  ;; 所以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
+  (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
+                      ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
+                      ".openai.azure.com" ".baidu.com"))
 
-   (proxy-socks-enable)
+
+  ;; Google 默认会 403 缺少 UA 的请求。
+  (setq my/user-agent
+        "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+  
+  (use-package mb-url-http
+    :demand
+    :vc (:fetcher github :repo dochang/mb-url)
+    :init
+    (require 'auth-source)
+    (let ((credential (auth-source-user-and-password "api.github.com")))
+      (setq github-user (car credential)
+            github-password (cadr credential))
+      (setq github-auth (concat github-user ":" github-password))
+      (setq mb-url-http-backend 'mb-url-http-curl
+            mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+            mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
+                                        "--keepalive-time" "60"
+                                        "--keepalive"
+                                        "--max-time" "300"
+                                        ;;防止 POST 超过 1024Bytes 时发送 Expect: 100-continue 导致 1s 延迟.
+                                        "-H" "Expect: ''"
+                                        ;;"-u" ,github-auth
+                                        "--user-agent" ,my/user-agent
+                                        ))))
+  (defun proxy-socks-enable ()
+    (interactive)
+    (require 'socks)
+    (setq url-gateway-method 'socks
+          socks-noproxy my/no-proxy
+          socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
+    ;; curl/wget/ruby/python/go 都感知 no_proxy 变量: https://superuser.com/a/1690537
+    (let ((no-proxy (mapconcat 'identity my/no-proxy ",")))
+      (setenv "no_proxy" no-proxy))
+    (setenv "ALL_PROXY" my/socks-proxy)
+    (setenv "ALL_PROXY" my/socks-proxy)
+    (setenv "HTTP_PROXY" nil)
+    (setenv "HTTPS_PROXY" nil)
+    ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
+    (advice-add 'url-http :around 'mb-url-http-around-advice))
+
+  (defun proxy-socks-disable ()
+    (interactive)
+    (require 'socks)
+    (setq url-gateway-method 'native
+          socks-noproxy nil)
+    (setenv "all_proxy" "")
+    (setenv "ALL_PROXY" ""))
+
+  (proxy-socks-enable)
 #+end_src
 
 * tuning
@@ -190,21 +204,27 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
    epa-file-cache-passphrase-for-symmetric-encryption t)
   (require 'epa-file)
   (epa-file-enable))
+#+end_src
 
-;; 关闭容易误操作的按键。
-(let ((keys '("s-w" "C-z" "<mouse-2>" "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
-	      "s--" "s-0" "s-+" "C-<wheel-down>" "C-<wheel-up>")))
-  (dolist (key keys)
-    (global-unset-key (kbd key))))
+关闭容易误操作的按键。
+#+begin_src emacs-lisp
+  (let ((keys '("s-w" "C-z" "<mouse-2>" "s-k" "s-o" "s-t" "s-p" "s-n" "s-," "s-."
+                "s--" "s-0" "s-+" "C-<wheel-down>" "C-<wheel-up>")))
+    (dolist (key keys)
+      (global-unset-key (kbd key))))
+#+end_src
 
-;; macOS 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper。
+Mac 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper。
+#+begin_src emacs-lisp
 (setq mac-command-modifier 'meta)
 ;; option 作为 Super 键。
 (setq mac-option-modifier 'super)
 ;; fn 作为 Hyper 键。
 (setq ns-function-modifier 'hyper)
+#+end_src
 
-;; 提升 io 性能。
+提升 io 性能。
+#+begin_src emacs-lisp
 (setq process-adaptive-read-buffering nil)
 (setq read-process-output-max (* 1024 1024 4))
 (setq inhibit-compacting-font-caches t)
@@ -212,19 +232,22 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 (setq-default ad-redefinition-action 'accept)
 (setq bidi-inhibit-bpa t)
 (setq bidi-paragraph-direction 'left-to-right)
-(setq-default bidi-display-reordering nil) 
+(setq-default bidi-display-reordering nil)   
+#+end_src
 
-;; Garbage Collector Magic Hack
-;; 提升 vterm buffer、json 文件响应性能。
-(use-package gcmh
-  :init
-  ;;(setq garbage-collection-messages t)
-  ;;(setq gcmh-verbose t)
-  (setq gcmh-idle-delay 'auto) ;; default is 15s
-  (setq gcmh-auto-idle-delay-factor 10)
-  (setq gcmh-high-cons-threshold (* 32 1024 1024))
-  (gcmh-mode 1)
-  (gcmh-set-high-threshold))
+Garbage Collector Magic Hack, 提升 vterm buffer、json 文件响应性能。
+#+begin_src emacs-lisp
+  (use-package gcmh
+    :init
+    ;;(setq garbage-collection-messages t)
+    ;;(setq gcmh-verbose t)
+    (setq gcmh-idle-delay 'auto) ;; default is 15s
+    (setq gcmh-auto-idle-delay-factor 10)
+    (setq gcmh-high-cons-threshold (* 32 1024 1024))
+    (gcmh-mode 1)
+    (gcmh-set-high-threshold))
+
+  (add-hook 'after-init-hook #'garbage-collect t)
 #+end_src
 
 * face
@@ -607,6 +630,18 @@ tar-bar 的快捷键是 C-x t 开头的前缀：
 + (global-set-key (kbd "C-s-j") 'tab-bar-history-back)
 + (global-set-key (kbd "C-s-k") 'tab-bar-history-forward)  
 
+** nyan
+
+modeline 彩虹猫。
+#+begin_src emacs-lisp
+(use-package nyan-mode
+  :config
+  (setq nyan-animate-nyancat t)
+  (setq nyan-wavy-trail t)
+  (nyan-mode)
+  (nyan-start-animation))
+#+end_src
+
 * rime
 
 Mac 系统安装 RIME 输入法：
@@ -841,6 +876,9 @@ Rime 输入法全局配置(patch ~/Library/Rime/default.yaml 文件)：
     (setq rime-inline-ascii-trigger 'shift-r)
     ;; 临时英文模式, 该列表中任何一个断言返回 t 时自动切换到英文。如何 rime-inline-predicates 不为空，
     ;; 则当其中任意一个断言也返回 t 时才会自动切换到英文（inline 等效于 ascii-mode）。
+    ;; 自定义 avy 断言函数.
+    (defun rime-predicate-avy-p ()
+      (bound-and-true-p avy-command))
     (setq rime-disable-predicates
           '(rime-predicate-ace-window-p
             rime-predicate-hydra-p
@@ -848,7 +886,8 @@ Rime 输入法全局配置(patch ~/Library/Rime/default.yaml 文件)：
             ;; 在上一个字符是英文时才自动切换到英文，适合字符串中中英文混合的情况。
             rime-predicate-in-code-string-after-ascii-p
             ;; 代码块内不能输入中文, 但注释和字符串不受影响。
-            rime-predicate-prog-in-code-p 
+            rime-predicate-prog-in-code-p
+            rime-predicate-avy-p
             ))
     (setq rime-show-candidate 'posframe)
     (setq default-input-method "rime")
@@ -857,6 +896,7 @@ Rime 输入法全局配置(patch ~/Library/Rime/default.yaml 文件)：
           (list :background-color "#333333"
                 :foreground-color "#dcdccc"
                 :internal-border-width 2))
+
 
     ;; 部分 major-mode 关闭 RIME 输入法。
     (defadvice switch-to-buffer (after activate-input-method activate)
@@ -1000,6 +1040,8 @@ orderless 补全风格：使用空格分割的一个或多个匹配模式，模�
 + ~,~ :: uses =orderless-initialism=, 即首字母缩写匹配:  \<a.*\<b.*\c;
 + ~=~ :: uses =orderless-literal=, 字面量匹配;
 + ~~~ :: uses =orderless-flex=, 匹配: a.*b.*c;
++ ~^~ :: uses =orderless-literal-prefix=
++ ~&~ :: modifies the component with =orderless-annotation=  
 + ~%~ ::  makes the string match ignoring diacritics and similar inflections on characters (it uses
   the function =char-fold-to-regexp= to do this).
 
@@ -2041,6 +2083,7 @@ javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURICo
 (use-package paren
   :hook (after-init . show-paren-mode)
   :init
+  (setq show-paren-delay 0)
   (setq show-paren-when-point-inside-paren t
         show-paren-when-point-in-periphery t)
   (setq show-paren-style 'parenthesis) ;; parenthesis, expression
@@ -2174,6 +2217,10 @@ elgot 使用 emacs 内置的 flymake（而非 flycheck）、xref、eldoc、proje
 eglot 使用 Emacs 内置的 flymake 而非 flycheck 来接收和显示 LSP Server 发送的 publishDiagnostics 事件,
 eglot 诊断是通过向 flymake-diagnostic-functions hook 添加 'eglot-flymake-backend 实现的。
 
+eglot 默认将 flymake 的 backend 清空，只保留 eglot 自身，可以通过配置 ~(add-to-list
+'eglot-stay-out-of 'flymake)~ 来关闭 eglot 对 flymake 的清空行为，这样可以使用自定义的 flymake
+backends，但后续需要添加 hook 来手动启动和配置 eglot-flymake-backend。
+
 不能给所有 prog-mode 都开启 eglot，否则当它没有 language server 时 eglot 报错。
 
 由于 treesit-auto 已经对 major-mode 做了 remap ，需要对 xx-ts-mode-hook 添加 hook，而不是以前的
@@ -2181,6 +2228,11 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
 
 配置 emacs eglot:
 #+begin_src emacs-lisp
+  ;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
+  (defun my/manually-activate-flymake ()
+    (add-hook 'flymake-diagnostic-functions #'eglot-flymake-backend nil t)
+    (flymake-mode 1))
+
   (use-package eglot
     :demand
     :preface
@@ -2192,7 +2244,10 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
                   (remove #'flymake-eldoc-function eldoc-documentation-functions)))
       ;; (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
       )
-    :hook ((eglot-managed-mode . my/eglot-eldoc))
+    :hook (
+           (eglot-managed-mode . my/eglot-eldoc)
+           (eglot-managed-mode . manually-activate-flymake) 
+           )
     :bind
     (:map eglot-mode-map
           ("C-c C-a" . eglot-code-actions)
@@ -2203,6 +2258,8 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
           ("C-c C-f" . eglot-format-buffer)
           ("C-c C-r" . eglot-rename))
     :config
+    ;; elgot 不管理和配置 flymake，这样会保留自定义的 flymake backend（如 flymake-clippy）。
+    (add-to-list 'eglot-stay-out-of 'flymake)
     ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
     ;; 置的太大，否则可能影响性能。
     (setq eglot-events-buffer-size (* 1024 1024 1))
@@ -2745,7 +2802,6 @@ which gopls || go install golang.org/x/tools/gopls@latest
 ** rust
 
 安装 rust 工具链，这里使用 rustup 来管理工具链和版本：
-+ rust-analyzer [[https://rust-analyzer.github.io/manual.html#rust-analyzer-language-server-binary][官方手册]]。
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 # 清理旧环境
 mv ~/.cargo{,.bak}
@@ -2762,7 +2818,7 @@ rustup component add rust-docs # 添加 rust 标准库文档
 rustup toolchain list   # 查看安装的工具链
 #+end_src
 
-如果要浏览 rust github 官方库，则需要进一步操作：
+如 rust github 官方库，则需要进一步操作：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 rustup toolchain install nightly # rust 仓库依赖 nightly 版本工具链
 rustup default nightly           # 将工具链切换到 nightly 版本
@@ -2803,6 +2859,7 @@ cargo doc --open # 查看当前项目和依赖的文档
     (setq rust-mode-treesitter-derive t) ;; rust-mode 作为 rust-ts-mode 而非 prog-mode 的子 mode.
     :config
     (setq rust-format-on-save t)
+    (setq rust-rustfmt-switches '("--edition" "2021"))
 
     ;; treesit-auto 默认不将 XX-mode-hook 添加到对应的 XX-ts-mode-hook 上, 需要手动指定.
     (setq rust-ts-mode-hook rust-mode-hook) 
@@ -2815,10 +2872,11 @@ cargo doc --open # 查看当前项目和依赖的文档
                  '((rust-ts-mode rust-mode) .
                    ("rust-analyzer"
                     :initializationOptions
-                    ( :checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
+                    ( ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
                       :cachePriming (:enable :json-false) ;; 启动时不预热缓存.
                       ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
                       :check (
+                              :command "clippy"
                               :allTargets :json-false
                               :workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
                               )
@@ -2835,6 +2893,14 @@ cargo doc --open # 查看当前项目和依赖的文档
                       )
                     )))
     )
+#+end_src
+
+flymake-clippy 为 flymake 添加 flymake-clippy-backend，用于对 rust 代码进行丰富的 linter 规则检查：
++ 需要配置 eglot 才能生效，参考 [[https://git.sr.ht/~mgmarlow/flymake-clippy/][flymake-clippy 文档]]。
++ 不和 eglot/rust-analyzer diagnose 强绑定，可以执行 ~M-x flymake-start~ 开启 linter 检查；
+#+begin_src emacs-lisp
+  (use-package flymake-clippy
+    :hook (rust-ts-mode . flymake-clippy-setup-backend))  
 #+end_src
 
 快速 rust 开发测试:
@@ -3409,8 +3475,13 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
   ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
   (setq compilation-ask-about-save nil
         compilation-always-kill t
-        ;;compilation-scroll-output t ;; 滚动显示 compilation buffer 内容.
-  )
+        compilation-scroll-output 'first-error ;; 滚动显示到第一个出错位置。
+        compilation-context-lines 10
+        compilation-skip-threshold 2
+        ;;compilation-window-height 100
+        )
+
+  (define-key compilation-mode-map (kbd "q") 'delete-window)
 
   ;; 显示 shell 转义字符的颜色.
   (add-hook 'compilation-filter-hook
@@ -4309,6 +4380,16 @@ macos 互操作:
     (global-set-key (kbd "C-c C-d") #'helpful-at-point)
     (global-set-key (kbd "C-h F") #'helpful-function)
     (global-set-key (kbd "C-h C") #'helpful-command))
+#+end_src
+
+avy 跳转增强：
+#+begin_src emacs-lisp
+  (use-package avy
+    :config
+    (global-set-key (kbd "C-:") 'avy-goto-char)
+    (global-set-key (kbd "C-'") 'avy-goto-char-2)
+    (global-set-key (kbd "M-g f") 'avy-goto-line)
+    )  
 #+end_src
 
 * refs
