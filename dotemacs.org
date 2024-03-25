@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-24T20:03:53+0800
+#+LASTMOD: 2024-03-25T16:03:08+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -96,7 +96,7 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
   ;;(setq package-install-upgrade-built-in t)    
 #+end_src
 
-安装 vc-use-package 使 use-package 支持使用 :vc 指令从 github 等安装软件包。
+vc-use-package 为 use-package 增加 :vc 指令， 从而可以从 github 等安装软件包。
 #+begin_src emacs-lisp
   (unless (package-installed-p 'vc-use-package)
     (package-vc-install "https://github.com/slotThe/vc-use-package"))
@@ -2905,8 +2905,19 @@ flymake-clippy 为 flymake 添加 flymake-clippy-backend，用于对 rust 代码
 
 快速 rust 开发测试:
 1. BUGFIX: https://github.com/grafov/rust-playground/pull/11/files 
+2. 设置 Cargo.toml 模板文件变量中 edition 值为 2021（默认是 2018）。
 #+begin_src emacs-lisp
-(use-package rust-playground)
+  (use-package rust-playground
+    :config
+    (setq rust-playground-cargo-toml-template
+   "[package]
+name = \"foo\"
+version = \"0.1.0\"
+authors = [\"Rust Example <rust-snippet@example.com>\"]
+edition = \"2021\"
+
+[dependencies]")
+    )
 #+end_src
 
 eglot-x 为 rust 提供了 M-x eglot-x-reload-workspace 命令, 可以在 Cargo.toml 文件发生变化时手动执行而

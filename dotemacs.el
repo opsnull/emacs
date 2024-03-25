@@ -1586,7 +1586,17 @@
 (use-package flymake-clippy
   :hook (rust-ts-mode . flymake-clippy-setup-backend))
 
-(use-package rust-playground)
+(use-package rust-playground
+    :config
+    (setq rust-playground-cargo-toml-template
+   "[package]
+name = \"foo\"
+version = \"0.1.0\"
+authors = [\"Rust Example <rust-snippet@example.com>\"]
+edition = \"2021\"
+
+[dependencies]")
+    )
 
 (use-package eglot-x
   :after eglot
