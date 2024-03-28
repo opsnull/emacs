@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-28T17:03:42+0800
+#+LASTMOD: 2024-03-28T20:03:42+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -34,7 +34,7 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
   (when (fboundp 'native-compile-async)
     (setenv "LIBRARY_PATH"
-            (concat (getenv "LIBRARY_PATH") "/usr/local/opt/gcc/lib/gcc/current:/usr/local/opt/gcc/lib/gcc/current/gcc/x86_64-apple-darwin22/13"))
+            (concat (getenv "LIBRARY_PATH") "/opt/homebrew/opt/gcc/lib/gcc/current/:/opt/homebrew/opt/gcc/lib/gcc/current/gcc/aarch64-apple-darwin23/13/"))
     (setq native-comp-speed 4)
     (setq native-comp-async-jobs-number 8)
     ;;(setq inhibit-automatic-native-compilation t)
@@ -56,9 +56,10 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 设置 Emacs 搜索二进制工具的路径, Emacs 查找外部程序时使用 exec-path 而非 PATH 变量:
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
   (setq my-bin-path '(
-                      "/usr/local/opt/findutils/libexec/gnubin"
-                      "/Users/zhangjun/go/bin"
-                      "/Users/zhangjun/.cargo/bin"
+                      "/opt/homebrew/opt/findutils/libexec/gnubin"
+                      "/opt/homebrew/bin"
+                      "/Users/alizj/go/bin"
+                      "/Users/alizj/.cargo/bin"
                       ))
   ;; 设置 Emacs 启动外部程序时（如 lsp server）给它们传入的环境变量。
   (mapc (lambda (p)
@@ -112,7 +113,7 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
 
 将安装的 curl 添加到 PATH 环境变量和 exec-path 变量中。
 #+begin_src emacs-lisp
-  (setq my-coreutils-path "/usr/local/opt/curl/bin")
+  (setq my-coreutils-path "/opt/homebrew/opt/curl/bin/")
   (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
   (setq exec-path (cons my-coreutils-path  exec-path))
 #+end_src
@@ -146,7 +147,7 @@ export PATH="/usr/local/opt/curl/bin:$PATH"
             github-password (cadr credential))
       (setq github-auth (concat github-user ":" github-password))
       (setq mb-url-http-backend 'mb-url-http-curl
-            mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+            mb-url-http-curl-program "/opt/homebrew/opt/curl/bin/curl"
             mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
                                         "--keepalive-time" "60"
                                         "--keepalive"
@@ -691,7 +692,7 @@ mv rime-ice ~/Library/Rime
   #本机的 ID 标志，默认是一串 UUID，生成的文件夹是这个名字，可以改成更好识别的名称。
   installation_id: "cde8ff26-5e08-466c-bd2d-aac2aeaedb25"
   # 同步的目标路径。
-  sync_dir: /Users/zhangjun/.emacs.d/sync/rime
+  sync_dir: /Users/alizj/.emacs.d/sync/rime
 #+end_src
 
 [[https://dvel.me/posts/rime-ice/#%E4%BB%A5-patch-%E7%9A%84%E6%96%B9%E5%BC%8F%E6%89%93%E8%A1%A5%E4%B8%81][patch 语法示例]]：
@@ -845,7 +846,7 @@ Rime 输入法全局配置(patch ~/Library/Rime/default.yaml 文件)：
     :custom
     (rime-user-data-dir "~/Library/Rime/")
     (rime-librime-root "~/.emacs.d/librime/dist")
-    (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@29/include")
+    (rime-emacs-module-header-root "/opt/homebrew/opt/emacs-plus@29/include")
     :hook
     (emacs-startup . (lambda () (setq default-input-method "rime")))
     :bind
@@ -1620,7 +1621,7 @@ which magick || brew install imagemagick
 #+OPTIONS: prop:t title:nil num:2 toc:nil ^:nil
 #+LATEX_COMPILER: xelatex
 #+LATEX_CLASS: ctexart
-#+LATEX_HEADER: \\usepackage{/Users/zhangjun/.emacs.d/mystyle}
+#+LATEX_HEADER: \\usepackage{/Users/alizj/.emacs.d/mystyle}
 
 # 定制 PDF 封面和目录。
 #+begin_export latex
@@ -2411,7 +2412,7 @@ brew install global pygments # 提供 global、gtags 命令, gtags 使用 pygmen
 # 统一的 tags 文件目录
 export GTAGSOBJDIRPREFIX=~/.cache/gtags/ 
 mkdir $GTAGSOBJDIRPREFIX
-export GTAGSCONF=/usr/local/Cellar/global/*/share/gtags/gtags.conf
+export GTAGSCONF=/opt/homebrew/opt/global/share/gtags/gtags.conf
 # 使用 pygments 支持更多的语言，他噢夹南是支持 reference 搜索。
 export GTAGSLABEL=pygments
 
@@ -2609,12 +2610,12 @@ hint: See PEP 668 for the detailed specification.
 配置 Emacs:
 #+begin_src emacs-lisp
   ;; 将 venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
-  (setq my-venv-path "/Users/zhangjun/py/venv/bin/")
+  (setq my-venv-path "/Users/alizj/.venv/bin/")
   (setenv "PATH" (concat my-venv-path ":" (getenv "PATH")))
   (setq exec-path (cons my-venv-path  exec-path))
 
   ;; 使用虚拟环境的 python:
-  (setq python-shell-virtualenv-root "/Users/zhangjun/py/venv")
+  (setq python-shell-virtualenv-root "/Users/alizj/.venv")
 
   (defun my/python-setup-shell (&rest args)
     (if (executable-find "ipython3")
@@ -2717,7 +2718,7 @@ which gopls || go install golang.org/x/tools/gopls@latest
 
 设置 go 环境变量, eglot 启动 gopls 时传递它们:
 #+begin_src emacs-lisp
-  (dolist (env '(("GOPATH" "/Users/zhangjun/go")
+  (dolist (env '(("GOPATH" "/Users/alizj/go")
                  ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
                  ("GOPRIVATE" "*.alibaba-inc.com")))
     (setenv (car env) (cadr env)))  
@@ -2841,12 +2842,12 @@ cargo doc --open # 查看当前项目和依赖的文档
 
 将 brew rustup-init 安装的目录添加到 PATH 和 emacs exec-path 中:
 #+begin_src emacs-lisp
-  (setq my-cargo-path "/Users/zhangjun/.cargo/bin")
+  (setq my-cargo-path "/Users/alizj/.cargo/bin")
   (setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
   (setq exec-path (cons my-cargo-path  exec-path))
   ;; https://github.com/mozilla/sccache?tab=readme-ov-file
   ;; cargo install sccache --locked
-  (setenv "RUSTC_WRAPPER" "/Users/zhangjun/.cargo/bin/sccache")
+  (setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
 #+end_src
 
 配置 rust-mode:
@@ -2941,7 +2942,7 @@ eglot-x 为 rust 提供了 M-x eglot-x-reload-workspace 命令, 可以在 Cargo.
     ;; 查看本地 rust std 文档;
     (defun my/browser-ruststd ()
       (interactive)
-      (xwidget-webkit-browse-url "file:///Users/zhangjun/.rustup/toolchains/nightly-x86_64-apple-darwin/share/doc/rust/html/std/index.html"  t))
+      (xwidget-webkit-browse-url "file:///Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/share/doc/rust/html/std/index.html"  t))
     (define-key rust-ts-mode-map (kbd "C-c d s") 'my/browser-ruststd)
 
     ;; 在线 https:://docs.rs/ 搜索文档.
@@ -2950,7 +2951,7 @@ eglot-x 为 rust 提供了 M-x eglot-x-reload-workspace 命令, 可以在 Cargo.
       (xwidget-webkit-browse-url
        (concat "https://docs.rs/releases/search?query=" (string-replace " " "%20" query)) t))
     (define-key rust-ts-mode-map (kbd "C-c d o") 'my/browser-docsrs) ;; 助记: o -> online
-    )    
+    )
 #+end_src
 
 cargo package 不再维护, 故切换到 cargo-mode package, 它提供了管理 Cargo.toml 依赖的命令.
@@ -3110,16 +3111,16 @@ shellcheck -V &>/dev/null || brew install shellcheck
 
 安装最新的 llvm 和 clang:
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-$ brew install llvm
-$ export CPPFLAGS="-I/usr/local/opt/llvm/include"
-$ export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
-$ export PATH="/usr/local/opt/llvm/bin:$PATH"
-$ export LDFLAGS="-L/usr/local/opt/llvm/lib"
+  $ brew install llvm
+LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++"
+export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 #+end_src
 
 将 llvm bin 目录添加到 emacs：
 #+begin_src emacs-lisp
-(setq my-llvm-path "/usr/local/opt/llvm/bin")
+(setq my-llvm-path "/opt/homebrew/opt/llvm/bin")
 (setenv "PATH" (concat my-llvm-path ":" (getenv "PATH")))
 (setq exec-path (cons my-llvm-path  exec-path))
 #+end_src
@@ -4119,7 +4120,7 @@ which trash || brew install trash
 dired:
 #+begin_src emacs-lisp
   ;; dired
-  (setq my-coreutils-path "/usr/local/opt/coreutils/libexec/gnubin")
+  (setq my-coreutils-path "/opt/homebrew/opt/coreutils/libexec/gnubin")
   (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
   (setq exec-path (cons my-coreutils-path  exec-path))
   (use-package emacs

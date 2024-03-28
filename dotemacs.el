@@ -19,7 +19,7 @@
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
-(setq my-coreutils-path "/usr/local/opt/curl/bin")
+(setq my-coreutils-path "/opt/homebrew/opt/curl/bin/")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
 
@@ -49,7 +49,7 @@
           github-password (cadr credential))
     (setq github-auth (concat github-user ":" github-password))
     (setq mb-url-http-backend 'mb-url-http-curl
-          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
+          mb-url-http-curl-program "/opt/homebrew/opt/curl/bin/curl"
           mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
                                       "--keepalive-time" "60"
                                       "--keepalive"
@@ -452,7 +452,7 @@
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@29/include")
+  (rime-emacs-module-header-root "/opt/homebrew/opt/emacs-plus@29/include")
   :hook
   (emacs-startup . (lambda () (setq default-input-method "rime")))
   :bind
@@ -1321,7 +1321,7 @@
     )
   :hook (
          (eglot-managed-mode . my/eglot-eldoc)
-         (eglot-managed-mode . manually-activate-flymake) 
+         (eglot-managed-mode . my/manually-activate-flymake) 
          )
   :bind
   (:map eglot-mode-map
@@ -1433,12 +1433,12 @@
   (add-hook 'xref-backend-functions #'citre-xref-backend -100))
 
 ;; 将 venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
-(setq my-venv-path "/Users/zhangjun/py/venv/bin/")
+(setq my-venv-path "/Users/alizj/.venv/bin/")
 (setenv "PATH" (concat my-venv-path ":" (getenv "PATH")))
 (setq exec-path (cons my-venv-path  exec-path))
 
 ;; 使用虚拟环境的 python:
-(setq python-shell-virtualenv-root "/Users/zhangjun/py/venv")
+(setq python-shell-virtualenv-root "/Users/alizj/.venv")
 
 (defun my/python-setup-shell (&rest args)
   (if (executable-find "ipython3")
@@ -1469,7 +1469,7 @@
                    (my/python-setup-shell)
                    (yapf-mode))))
 
-(dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
+(dolist (env '(("GOPATH" "/Users/alizj/go")
                ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
                ("GOPRIVATE" "*.alibaba-inc.com")))
   (setenv (car env) (cadr env)))
@@ -1533,12 +1533,12 @@
   :config
   (setq go-playground-init-command "go mod init"))
 
-(setq my-cargo-path "/Users/zhangjun/.cargo/bin")
+(setq my-cargo-path "/Users/alizj/.cargo/bin")
 (setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
 (setq exec-path (cons my-cargo-path  exec-path))
 ;; https://github.com/mozilla/sccache?tab=readme-ov-file
 ;; cargo install sccache --locked
-(setenv "RUSTC_WRAPPER" "/Users/zhangjun/.cargo/bin/sccache")
+(setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
 
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
@@ -1613,7 +1613,7 @@ edition = \"2021\"
   ;; 查看本地 rust std 文档;
   (defun my/browser-ruststd ()
     (interactive)
-    (xwidget-webkit-browse-url "file:///Users/zhangjun/.rustup/toolchains/nightly-x86_64-apple-darwin/share/doc/rust/html/std/index.html"  t))
+    (xwidget-webkit-browse-url "file:///Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/share/doc/rust/html/std/index.html"  t))
   (define-key rust-ts-mode-map (kbd "C-c d s") 'my/browser-ruststd)
 
   ;; 在线 https:://docs.rs/ 搜索文档.
@@ -1708,7 +1708,7 @@ mermaid.initialize({
 (setq sh-basic-offset 4)
 (setq sh-indentation 4)
 
-(setq my-llvm-path "/usr/local/opt/llvm/bin")
+(setq my-llvm-path "/opt/homebrew/opt/llvm/bin")
 (setenv "PATH" (concat my-llvm-path ":" (getenv "PATH")))
 (setq exec-path (cons my-llvm-path  exec-path))
 
@@ -2181,7 +2181,7 @@ mermaid.initialize({
   (recentf-mode +1))
 
 ;; dired
-(setq my-coreutils-path "/usr/local/opt/coreutils/libexec/gnubin")
+(setq my-coreutils-path "/opt/homebrew/opt/coreutils/libexec/gnubin")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
 (use-package emacs
