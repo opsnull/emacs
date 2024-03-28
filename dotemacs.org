@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-25T16:03:08+0800
+#+LASTMOD: 2024-03-28T17:03:42+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -2246,7 +2246,7 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
       )
     :hook (
            (eglot-managed-mode . my/eglot-eldoc)
-           (eglot-managed-mode . manually-activate-flymake) 
+           (eglot-managed-mode . my/manually-activate-flymake) 
            )
     :bind
     (:map eglot-mode-map
@@ -2717,7 +2717,7 @@ which gopls || go install golang.org/x/tools/gopls@latest
 
 设置 go 环境变量, eglot 启动 gopls 时传递它们:
 #+begin_src emacs-lisp
-  (dolist (env '(("GOPATH" "/Users/zhangjun/go/bin")
+  (dolist (env '(("GOPATH" "/Users/zhangjun/go")
                  ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
                  ("GOPRIVATE" "*.alibaba-inc.com")))
     (setenv (car env) (cadr env)))  
@@ -3828,7 +3828,7 @@ anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 which cmake || brew install cmake
 which glibtool || brew install libtool
-which exiftran || brew install fxiftran
+which exiftran || brew install exiftran
 #+end_src
 
 #+begin_src emacs-lisp
