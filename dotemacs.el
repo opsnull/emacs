@@ -36,7 +36,7 @@
 
 ;; Google 默认会 403 缺少 UA 的请求。
 (setq my/user-agent
-      "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
 
 (use-package mb-url-http
   :demand
@@ -293,7 +293,7 @@
           (t
            :default-family "Iosevka Comfy"
            :default-weight regular
-           :default-height 160 ;; 默认字体 16px, 需要是偶数才能实现等宽等高。
+           :default-height 160 ;; 默认字号, 需要是偶数才能实现等宽等高。
            :fixed-pitch-family "Iosevka Comfy"
            :fixed-pitch-weight nil
            :fixed-pitch-height 1.0
@@ -307,20 +307,15 @@
   (fontaine-mode 1)
   (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
   (add-hook 'enable-theme-functions #'fontaine-apply-current-preset)
-
-  ;; Recover last preset or fall back to desired style from `fontaine-presets'.
   (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))
-
-  ;; The other side of `fontaine-restore-latest-preset'.
   (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset))
 
+;; 设置 emoji/symbol 和中文字体。
 (defun my/set-font ()
   (when window-system    
-    ;; 设置 Emoji 和 Symbol 字体。
     (setq use-default-font-for-symbols nil)
     (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
     (set-fontset-font t 'symbol (font-spec :family "Symbola")) ;; Apple Symbols, Symbola
-    ;; 设置中文字体。
     (let ((font (frame-parameter nil 'font))
           (font-spec (font-spec :family "LXGW WenKai Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
@@ -561,9 +556,9 @@
               (corfu-mode)))
   )
 
-  ;; 保存 corfu 自动补全历史，后续可以按照高频排序。
-  (savehist-mode 1)
-  (add-to-list 'savehist-additional-variables #'corfu-history)
+;; 保存 corfu 自动补全历史，后续可以按照高频排序。
+(savehist-mode 1)
+(add-to-list 'savehist-additional-variables #'corfu-history)
 
 ;; minibuffer 历史记录。
 (use-package savehist
@@ -833,12 +828,14 @@
         org-cycle-level-faces t
         org-n-level-faces 4
         org-indent-indentation-per-level 2
+	
         ;; 内容缩进与对应 headerline 一致。
         org-adapt-indentation t
         org-list-indent-offset 2
-        ;; 代码块不缩进。
-        ;;org-src-preserve-indentation t
-        ;;org-edit-src-content-indentation 0
+	
+        ;; 代码块缩进。
+        org-src-preserve-indentation t
+        org-edit-src-content-indentation 0
 
         ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
         org-log-into-drawer t
@@ -1001,10 +998,10 @@
   (setq org-latex-engraved-theme 'ef-light))
 
 (defun my/export-pdf (backend)
-	    (progn 
-	      ;;(setq org-export-with-toc nil)
-	      (setq org-export-headline-levels 2))
-)
+  (progn 
+    ;;(setq org-export-with-toc nil)
+    (setq org-export-headline-levels 2))
+  )
 (add-hook 'org-export-before-processing-functions #'my/export-pdf)
 
 ;; ox- 为对应的导出后端。
@@ -1045,7 +1042,7 @@
                             (redraw-display)
 			        (blink-cursor-mode -1)
                             ;;(org-display-inline-images)
-				;;(hl-line-mode -1)
+			        ;;(hl-line-mode -1)
                             ;;(text-scale-increase 1)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
@@ -1122,23 +1119,23 @@
        (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
   (setq org-journal-file-header 'org-journal-file-header-func))
 
-  ;; org-agenda 集成。
-  ;; automatically adds the current and all future journal entries to the agenda
-  ;;(setq org-journal-enable-agenda-integration t)
-  ;; When org-journal-file-pattern has the default value, this would be the regex.
-  (setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
-  (add-to-list 'org-agenda-files org-journal-dir)
+;; org-agenda 集成。
+;; automatically adds the current and all future journal entries to the agenda
+;;(setq org-journal-enable-agenda-integration t)
+;; When org-journal-file-pattern has the default value, this would be the regex.
+(setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
+(add-to-list 'org-agenda-files org-journal-dir)
 
-  ;; org-capture 集成。
-  (defun org-journal-find-location ()
-    (org-journal-new-entry t)
-    (unless (eq org-journal-file-type 'daily)
-      (org-narrow-to-subtree))
-    (goto-char (point-max)))
-  (setq org-capture-templates
-        (cons '("j" "Journal" plain (function org-journal-find-location)
-                "** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
-                :jump-to-captured t :immediate-finish t) org-capture-templates))
+;; org-capture 集成。
+(defun org-journal-find-location ()
+  (org-journal-new-entry t)
+  (unless (eq org-journal-file-type 'daily)
+    (org-narrow-to-subtree))
+  (goto-char (point-max)))
+(setq org-capture-templates
+      (cons '("j" "Journal" plain (function org-journal-find-location)
+              "** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
+              :jump-to-captured t :immediate-finish t) org-capture-templates))
 
 (use-package ox-hugo
   :demand
@@ -1183,7 +1180,6 @@
 				(format "L%s" start)))))))
 )
 
-;; 高亮显示缩进。
 (use-package highlight-indent-guides
   :custom
   (highlight-indent-guides-method 'column)
@@ -1198,7 +1194,6 @@
   (add-hook 'js-ts-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 
-;; c/c++/go-mode indent 风格：总是使用 tab 而非空格.
 (setq indent-tabs-mode t)
 (setq c-ts-mode-indent-offset 8)
 (setq c-ts-common-indent-offset 8)
@@ -1209,10 +1204,8 @@
 (setq c-default-style "linux") 
 (setq tab-width 8)
 
-;; 彩色括号。
 (use-package rainbow-delimiters :hook (prog-mode . rainbow-delimiters-mode))
 
-;; 高亮匹配的括号。
 (use-package paren
   :hook (after-init . show-paren-mode)
   :init
@@ -1222,7 +1215,6 @@
   (setq show-paren-style 'parenthesis) ;; parenthesis, expression
   (set-face-attribute 'show-paren-match nil :weight 'extra-bold))
 
-;; 智能补全括号。
 (use-package smartparens
   :config
   (require 'smartparens-config)
@@ -1251,8 +1243,9 @@
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
   (catch 'ret
-    (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有 .project 等文件，
-		        ;; 否则判断 project root 失败。
+    (let ((pr-flags '(
+		      ;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有 .project 等文件，
+		      ;; 否则判断 project root 失败。
 		      ("go.mod" "Cargo.toml" "pom.xml" "package.json" ".project" )
                       ;; 以下文件容易导致 project root 判断失败, 故关闭。
                       ;; ("Makefile" "README.org" "README.md")
@@ -1447,9 +1440,7 @@
   :after eglot
   :config (eglot-booster-mode))
 
-;; GNU Global gtags
 (setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
-;; brew update 可能会更新 Global 版本，故这里使用 glob 匹配版本号。
 (setenv "GTAGSCONF" (car (file-expand-wildcards "/opt/homebrew/opt/global/share/gtags/gtags.conf")))
 (setenv "GTAGSLABEL" "pygments")
 
@@ -1638,11 +1629,11 @@
   :hook (rust-ts-mode . flymake-clippy-setup-backend))
 
 (use-package rust-playground
-    :config
-    (setq rust-playground-cargo-toml-template
-          "[package]
-  name = \"foo\"
-  version = \"0.1.0\"
+  :config
+  (setq rust-playground-cargo-toml-template
+        "[package]
+name = \"foo\"
+version = \"0.1.0\"
 authors = [\"Rust Example <rust-snippet@example.com>\"]
 edition = \"2021\"
 
@@ -1796,7 +1787,7 @@ mermaid.initialize({
   ;; (after-init . dape-breakpoint-load))
 
   :config
-   (setq dape-buffer-window-arrangement 'right) ;; 'gud
+  (setq dape-buffer-window-arrangement 'right) ;; 'gud
 
   ;; To not display info and/or buffers on startup
   ;; (remove-hook 'dape-on-start-hooks 'dape-info)
@@ -2062,10 +2053,11 @@ mermaid.initialize({
     (setenv "VTERM_TRAMP" "true")
     (setq tramp-remote-process-environment process-environment)))
 
-;; 切换 Buffer 时设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到远程 vterm shell 环境变量中，
-;; 这样远程机器 ~/.bashrc 读取并执行的 emacs_bashrc 脚本正确设置 Buffer 名称和 vtem_prompt_end 函数, 从而确保目录跟踪功能正常,
-;; 以及通过主机名而非 IP 来打开远程 vterm shell, 确保 SSH ProxyJump 功能正常（只能通过主机名而非 IP 访问），以及避免目标 IP 重复时
-;; 连接复用错误的问题。
+;; 切换 Buffer 时设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到
+;; 远程 vterm shell 环境变量中，这样远程机器 ~/.bashrc 读取并执行的 emacs_bashrc 脚本正确设置 Buffer
+;; 名称和 vtem_prompt_end 函数, 从而确保目录跟踪功能正常,以及通过主机名而非 IP 来打开远程 vterm
+;; shell, 确保 SSH ProxyJump 功能正常（只能通过主机名而非 IP 访问），以及避免目标 IP 重复时连接复用
+;; 错误的问题。
 (defvar my/remote-host "")
 (add-hook 'buffer-list-update-hook
           (lambda ()
@@ -2338,15 +2330,15 @@ mermaid.initialize({
              (read-string "url: " url)))))
   (xwidget-webkit-browse-url url t))
 
-(defun my/browser-google (query)
+(defun my/browser-search (query)
   (interactive "ssearch: ")
   (xwidget-webkit-browse-url
-   (concat "https://google.com/search?q=" (string-replace " " "%20" query)) t))
+   (concat "https://duckduckgo.com?q=" (string-replace " " "%20" query)) t))
 
 (define-prefix-command 'my-browser-prefix)
 (global-set-key (kbd "C-c o") 'my-browser-prefix)
 (define-key my-browser-prefix (kbd "o") 'my/browser-open-at-point)
-(define-key my-browser-prefix (kbd "s") 'my/browser-google)
+(define-key my-browser-prefix (kbd "s") 'my/browser-search)
 
 ;;在线搜索, 可以先选中 region 再执行搜索。
 (use-package engine-mode
