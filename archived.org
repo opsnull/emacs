@@ -2615,6 +2615,14 @@ patch:
   :bind
   ("M-g c" . avy-goto-char-2)
   ("M-g l" . avy-goto-line))
+
+  (use-package avy
+    :disabled
+    :config
+    (global-set-key (kbd "C-:") 'avy-goto-char)
+    (global-set-key (kbd "C-'") 'avy-goto-char-2)
+    (global-set-key (kbd "M-g f") 'avy-goto-line)
+    )  
 #+end_src
 
 * other
@@ -7110,4 +7118,152 @@ brew install emacs-mac --with-modules --with-rsvg --with-imagemagick --with-natu
     (add-hook 'dashboard-mode-hook #'sis-set-english)
     )
 #+end_src
+
+* dash
+
+dash 开发者文档：
+#+begin_src emacs-lisp
+  ;; 开发者文档。
+  (use-package dash-at-point
+    :config
+    ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
+    (global-set-key (kbd "C-c d .") #'dash-at-point)
+    ;; 提示选择 docset;
+    (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
+    ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
+    (add-to-list 'dash-at-point-docsets "go")
+    (add-to-list 'dash-at-point-docsets "viper")
+    (add-to-list 'dash-at-point-docsets "cobra")
+    (add-to-list 'dash-at-point-docsets "pflag")
+    (add-to-list 'dash-at-point-docsets "k8s/api")
+    (add-to-list 'dash-at-point-docsets "k8s/apimachineary")
+    (add-to-list 'dash-at-point-docsets "k8s/client-go")
+    (add-to-list 'dash-at-point-docsets "klog")  
+    (add-to-list 'dash-at-point-docsets "k8s/controller-runtime")
+    (add-to-list 'dash-at-point-docsets "k8s/componet-base")
+    (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))  
+#+end_src
+
+* anki
+:PROPERTIES:
+:ANKI_NOTE_HASH: ddecd24f60772acf8616cce396d072b4
+:ANKI_NOTE_ID: 1703514191896
+:ID:       6D6E9542-0E37-4C37-B6E7-9749472CE956
+:END:
+
+#+begin_src emacs-lisp
+(use-package anki-helper
+  :vc (:fetcher github :repo Elilif/emacs-anki-helper)
+  :config
+  (setq anki-helper-media-directory "~/Library/Application Support/Anki2/User 1/collection.media/")
+  )
+#+end_src
++ Anki GUI 默认使用的 media-directory 是 "~/Library/Application Support/Anki2/User
+  1/collection.media/"，需要与 anki-helper-media-directory 变量配置的一致，否则不能显示图片。
++ anki 支持启动时通过命令行参数或环境变量来指定数据目录：
+  https://docs.ankiweb.net/files.html#startup-options
+   + 数据目录下可以有多个 profile，然后使用 -p <name> 来指定具体的 profile name；
+
++ 安装 anki 插件 [[https://github.com/FooSoft/anki-connect][AnkiConnect]]；
++ 安装 anki 插件 [[https://github.com/hwiorn/anki-open-org-note][anki-open-org-note]]，以支持在 anki 卡片反向链接到 org 文档。
+
+修改 anki-open-org-note 的配置： Tools -> Add-ons -> Open Org Note -> Config, 贴入如下内容（重启anki
+生效）：
++ 在 org-paths 列表中添加 org-mode 文件的上层路径；
++ 系统安装 ripgrep 命令，搜索命令更好；
++ 修正原始的 note_match 正则表达式(最新 anki-open-org-note 版本已修复)；
++ Emacs 需要以 server 启动，而且需要关闭 socks5 代理，否则报错 ‘anki-helper--curl-sentinel: End of
+   file while parsing JSON’。
+#+begin_example
+{
+    "exec": "emacsclient -nce '(progn (select-frame-set-input-focus (selected-frame)) (find-file \"{org_file}\") (goto-char {char_pos_end}) (when (string-equal \"{note_type}\" \"ANKI_NOTE_ID\") (org-back-to-heading t)) (recenter))'",
+    "note_match": "^\\s*(?:#\\+|:)(ANKI_NOTE_ID|ATTR_ID):\\s*?{note_id}\\b",
+    "org-paths": [
+        "~/org",
+        "~/docs",
+        "~/work/docs",
+        "~/.emacs.d"
+    ],
+    "ripgrep_opts": "rg -ni",
+    "shortcuts": {
+        "open": "Ctrl+O"
+    },
+    "texts": {
+        "open": "Open Note",
+        "open_btn": "Open",
+        "open_hint": "Open Org Note in Editor",
+        "open_menu": "Org Notes"
+    },
+    "use_index_cache": true,
+    "use_ripgrep": true
+}
+#+end_example
+
+调试 anki 程序（如打印插件日志）：
+#+begin_src shell :tangle no
+zj@a:~$ cd /Applications/Anki.app/Contents/
+CodeResources   Frameworks/     Info.plist      MacOS/          Resources/      _CodeSignature/ 
+zj@a:~$ cd /Applications/Anki.app/Contents/MacOS/
+zj@a:/Applications/Anki.app/Contents/MacOS$ ls
+anki*  lib/  libankihelper.dylib
+zj@a:/Applications/Anki.app/Contents/MacOS$ ./anki 
+Anki starting...
+Initial setup...
+Preparing to run...
+Qt debug: doh set to ""  --  SystemOnly 
+Starting main loop...
+JS warning /_anki/js/editor.js:438 No version information available for component [tex]/noerrors
+JS warning /_anki/js/editor.js:438 No version information available for component [tex]/mathtools
+JS warning /_anki/js/editor.js:438 No version information available for component [tex]/mhchem
+regex parse error:
+    ^\s*(?:#\+|:)(ANKI_NOTE_ID|ATTR_ID):\s*\"?1703514630494\"?\b
+                                           ^^
+error: unrecognized escape sequence
+regex parse error:
+    ^\s*(?:#\+|:)(ANKI_NOTE_ID|ATTR_ID):\s*\"?1703514630494\"?\b
+                                           ^^
+error: unrecognized escape sequence
+regex parse error:
+    ^\s*(?:#\+|:)(ANKI_NOTE_ID|ATTR_ID):\s*\"?1703514630494\"?\b
+                                           ^^
+error: unrecognized escape sequence
+^Czj@a:/Applications/Anki.app/Contents/MacOS$ ./anki 
+#+end_src
+
+anki-helpers 支持创建两类卡片：
+1. 使用光标所在的 org-mode entry：headline 为 front 内容，下面的内容为 back 卡片内容；
+2. 交互式创建 front 和 back 卡片内容；
+
+也可以通过 entry 匹配的模式来为文档所有 entry 生成卡片，匹配 tags/property/todo 的语法于 agenda tags
+view 一致：
++ 例如下面的 ANKI_MATCH 只会创建两个卡片。
+#+begin_example
+,#+ANKI_DECK: Default
+,#+ANKI_MATCH: TODO="TODO"|+DATE="today"
+,#+ANKI_NOTE_TYPE: Basic
+,#+ANKI_TAGS: test
+
+,* test note 1
+back side
+,* TODO test note 2
+back side
+,* test note 3
+:PROPERTIES:
+:DATE:     today
+:END:
+back side
+,* test note 4
+back side
+#+end_example
+
+使用 anki-helper-set-front-region 和 anki-helper-make-two-sided-card 函数来交互式创建卡片的标题和内
+容：
+1. 先选中内容，然后执行 anki-helper-set-front-region，设置 front 卡片内容；
+2. 再选中内容，然后执行 anki-helper-make-two-sided-card，设置 back 卡片内容；
+
+anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
+
+参考：
+1. [[https://yiufung.net/post/anki-org/][Power up Anki with Emacs, Org mode, anki-editor and more]]
+2. [[https://docs.ankiweb.net/intro.html][Introduction - Anki Manual]]
 

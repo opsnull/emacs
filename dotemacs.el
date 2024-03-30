@@ -34,7 +34,6 @@
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
                     ".openai.azure.com" ".baidu.com"))
 
-
 ;; Google 默认会 403 缺少 UA 的请求。
 (setq my/user-agent
       "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
@@ -87,12 +86,13 @@
 
 (use-package epa
   :config
+  ;; gpg 私钥使用这里定义的 user 信息。
   (setq user-full-name "zhangjun")
   (setq user-mail-address "geekard@qq.com")
-  (setq auth-sources '("~/.authinfo.gpg" "~/work/proxylist/hosts_auth"))
+  (setq auth-sources '("~/.authinfo.gpg"))
   (setq auth-source-cache-expiry 300)
   ;;(setq auth-source-debug t)
-   
+
   (setq-default
    ;; 缺省使用 email 地址加密。
    epa-file-select-keys nil
@@ -108,6 +108,7 @@
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
+;; command 作为 Meta 键。
 (setq mac-command-modifier 'meta)
 ;; option 作为 Super 键。
 (setq mac-option-modifier 'super)
@@ -142,16 +143,15 @@
   (setq use-file-dialog nil)
   (setq use-dialog-box nil))
 
-;; 向下/向上翻另外的窗口。
-(global-set-key (kbd "s-v") 'scroll-other-window)  
-(global-set-key (kbd "C-s-v") 'scroll-other-window-down)
+;; 高亮当前行。
+(global-hl-line-mode t)
+(setq global-hl-line-sticky-flag t)
 
-;; 不显示 Title Bar。
-;; square corner: undecorated, round corner: undecorated-round
-(add-to-list 'default-frame-alist '(undecorated . t)) 
-(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-(add-to-list 'default-frame-alist '(selected-frame) 'name nil)
-(add-to-list 'default-frame-alist '(ns-appearance . dark))
+;; 显示行号。
+(global-display-line-numbers-mode t)
+
+;; 光标和字符宽度一致（如 TAB)
+(setq x-stretch-cursor nil)
 
 ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
 (setq ns-pop-up-frames nil)
@@ -160,7 +160,18 @@
 (setq display-buffer-reuse-frames t)
 ;;(setq frame-resize-pixelwise t)
 
-;; 在 frame 底部显示的窗口列表。
+;; 30: 左右分屏, nil: 上下分屏。
+(setq split-width-threshold nil)
+
+;; 刷行显示。
+(global-set-key (kbd "<f5>") #'redraw-display)
+
+;; square corner: undecorated, round corner: undecorated-round
+(add-to-list 'default-frame-alist '(undecorated . t)) 
+(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+(add-to-list 'default-frame-alist '(selected-frame) 'name nil)
+(add-to-list 'default-frame-alist '(ns-appearance . dark))
+
 (setq display-buffer-alist
       `((,(rx bos (or
                    "*Apropos*"
@@ -180,30 +191,9 @@
          (inhibit-same-window . t)
          (window-height . 0.33))))
 
-;; 高亮当前行。
-(global-hl-line-mode t)
-(setq global-hl-line-sticky-flag t)
-
-;; 显示行号。
-(global-display-line-numbers-mode t)
-
-;; 光标和字符宽度一致（如 TAB)
-(setq x-stretch-cursor nil)
-
-;; 30: 左右分屏, nil: 上下分屏。
-(setq split-width-threshold 30)
-
-;; 像素平滑滚动。
-(pixel-scroll-precision-mode t)
-
-;; 启动后最大化显示模式，加 t 参数让 togg-frame-XX 最后运行，这样最大化才生效。
 ;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
 (add-hook 'window-setup-hook 'toggle-frame-maximized t)
 
-;; 刷行显示。
-(global-set-key (kbd "<f5>") #'redraw-display)
-
-;; 透明背景。
 (defun my/toggle-transparency ()
   (interactive)
   ;; 分别为 frame 获得焦点和失去焦点的不透明度。
@@ -221,11 +211,15 @@
 ;; 切换窗口。
 (global-set-key (kbd "s-o") #'other-window)
 
-;; 滚动显示。
 (global-set-key (kbd "s-j") (lambda () (interactive) (scroll-up 1)))
 (global-set-key (kbd "s-k") (lambda () (interactive) (scroll-down 1)))
 
-;; 内容居中显示。
+;; 像素平滑滚动。
+(pixel-scroll-precision-mode t)
+
+(global-set-key (kbd "s-v") 'scroll-other-window)  
+(global-set-key (kbd "C-s-v") 'scroll-other-window-down)
+
 (use-package olivetti
   :config
   ;; 内容区域宽度，超过后自动折行。
@@ -279,10 +273,10 @@
 (use-package fontaine
   :config
   (setq fontaine-latest-state-file
-	(locate-user-emacs-file "fontaine-latest-state.eld"))
+        (locate-user-emacs-file "fontaine-latest-state.eld"))
 
   (setq fontaine-presets
-	'((small
+        '((small
            :default-family "Iosevka Comfy Motion"
            :default-height 80
            :variable-pitch-family "Iosevka Comfy Fixed")
@@ -328,9 +322,9 @@
     (set-fontset-font t 'symbol (font-spec :family "Symbola")) ;; Apple Symbols, Symbola
     ;; 设置中文字体。
     (let ((font (frame-parameter nil 'font))
-	  (font-spec (font-spec :family "LXGW WenKai Screen")))
+          (font-spec (font-spec :family "LXGW WenKai Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
-	(set-fontset-font font charset font-spec)))))
+        (set-fontset-font font charset font-spec)))))
 
 ;; emacs 启动后或 fontaine preset 切换时设置字体。
 (add-hook 'after-init-hook 'my/set-font)
@@ -366,7 +360,6 @@
 (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
 (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
-;; 高亮光标移动到的行。
 (use-package pulsar
   :config
   (setq pulsar-pulse t)
@@ -423,9 +416,9 @@
                " "
                (alist-get 'name tab)
                (or (and tab-bar-close-button-show
-			(not (eq tab-bar-close-button-show
-				 (if current-p 'non-selected 'selected)))
-			tab-bar-close-button)
+                        (not (eq tab-bar-close-button-show
+                                 (if current-p 'non-selected 'selected)))
+                        tab-bar-close-button)
                    "")
                " ")
        'face (funcall tab-bar-tab-face-function tab))))
@@ -539,20 +532,20 @@
   :init
   (global-corfu-mode 1)    ;; 全局模式，eshell 等也会生效。
   (corfu-popupinfo-mode 1) ;;  显示候选者文档。
-  ;; 滚动显示 corfu-popupinfo 中的内容, 与后续滚动显示 eldoc-box 中的内容操作一致.
+  ;; 滚动显示 corfu-popupinfo 中的内容, 与后续滚动显示 eldoc-box 中的内容操作一致。
   :bind (:map corfu-popupinfo-map
               ("C-M-j" . corfu-popupinfo-scroll-up)
               ("C-M-k" . corfu-popupinfo-scroll-down))
   :custom
-  (corfu-cycle t)                ;; 自动轮转.
-  (corfu-auto t)                 ;; 自动补全(不需要按 TAB).
-  (corfu-auto-prefix 2)          ;; 触发自动补全的前缀长度.
-  (corfu-auto-delay 0.1)         ;; 触发自动补全的延迟, 当满足前缀长度或延迟时, 都会自动补全.
-  (corfu-separator ?\s)          ;; Orderless 过滤分隔符.
+  (corfu-cycle t)                ;; 自动轮转。
+  (corfu-auto t)                 ;; 自动补全(不需要按 TAB)。
+  (corfu-auto-prefix 2)          ;; 触发自动补全的前缀长度。
+  (corfu-auto-delay 0.1)         ;; 触发自动补全的延迟, 当满足前缀长度或延迟时, 都会自动补全。
+  (corfu-separator ?\s)          ;; Orderless 过滤分隔符。
   (corfu-preselect 'prompt)      ;; Preselect the prompt
   (corfu-scroll-margin 5)
-  (corfu-on-exact-match nil)           ;; 默认不选中候选者(即使只有一个).
-  (corfu-popupinfo-delay '(0.1 . 0.2)) ;;候选者帮助文档显示延迟, 这里设置的尽可能小, 以提高响应.
+  (corfu-on-exact-match nil)           ;; 默认不选中候选者(即使只有一个)。
+  (corfu-popupinfo-delay '(0.1 . 0.2)) ;;候选者帮助文档显示延迟, 这里设置的尽可能小, 以提高响应。
   (corfu-popupinfo-max-width 140)
   (corfu-popupinfo-max-height 30)
   :config
@@ -732,6 +725,7 @@
       (org-fold-show-entry))))
 (advice-add 'consult-line :around #'my/org-show-entry)
 
+;; 显示 mode 相关的命令。
 (global-set-key (kbd "C-c M-x") #'consult-mode-command)
 (global-set-key (kbd "C-c i") #'consult-info)
 (global-set-key (kbd "C-c m") #'consult-man)
@@ -742,14 +736,16 @@
 (global-set-key (kbd "C-x 5 b") #'consult-buffer-other-frame)
 (global-set-key (kbd "C-x r b") #'consult-bookmark)
 (global-set-key (kbd "C-x p b") #'consult-project-buffer)
-(global-set-key (kbd "C-'") #'consult-register-store)
-(global-set-key (kbd "C-M-'") #'consult-register)
 (global-set-key (kbd "M-y") #'consult-yank-pop)
 (global-set-key (kbd "M-Y") #'consult-yank-from-kill-ring)
-(global-set-key (kbd "M-g e") #'consult-compile-error)
-(global-set-key (kbd "M-g f") #'consult-flymake)
 (global-set-key (kbd "M-g g") #'consult-goto-line)
 (global-set-key (kbd "M-g o") #'consult-outline)
+;; 寄存器，可以保存 point、window、frame
+(global-set-key (kbd "C-'") #'consult-register-store)
+(global-set-key (kbd "C-M-'") #'consult-register)
+;; 编译错误。
+(global-set-key (kbd "M-g e") #'consult-compile-error)
+(global-set-key (kbd "M-g f") #'consult-flymake)
 ;; consult-buffer 默认已包含 recent file.
 ;;(global-set-key (kbd "M-g r") #'consult-recent-file)
 (global-set-key (kbd "M-g m") #'consult-mark)
@@ -765,8 +761,8 @@
 (global-set-key (kbd "M-s D") #'consult-locate)
 (global-set-key (kbd "M-s l") #'consult-line)
 (global-set-key (kbd "M-s M-l") #'consult-line)
-;; Search dynamically across multiple buffers. By default search across project buffers. If invoked with a
-;; prefix argument search across all buffers.
+;; Search dynamically across multiple buffers. By default search across project buffers. If invoked
+;; with a prefix argument search across all buffers.
 (global-set-key (kbd "M-s L") #'consult-line-multi)
 ;; Isearch 集成。
 (global-set-key (kbd "M-s e") #'consult-isearch-history)
@@ -1234,6 +1230,60 @@
   ;;(smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
+(use-package project
+  :custom
+  (project-switch-commands
+   '(
+     (consult-project-buffer "buffer" ?b)
+     (project-dired "dired" ?d)
+     (magit-project-status "magit status" ?g)
+     (project-find-file "find file" ?p)
+     (consult-ripgrep "rigprep" ?r)
+     (vterm-toggle-cd "vterm" ?t)))
+  (compilation-always-kill t)
+  (project-vc-merge-submodules nil)
+  :config
+  ;; project-find-file 忽略的目录或文件列表。
+  (add-to-list 'vc-directory-exclusion-list "vendor")
+  (add-to-list 'vc-directory-exclusion-list "node_modules")
+  (add-to-list 'vc-directory-exclusion-list "target"))
+
+(defun my/project-try-local (dir)
+  "Determine if DIR is a non-Git project."
+  (catch 'ret
+    (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有 .project 等文件，
+		        ;; 否则判断 project root 失败。
+		      ("go.mod" "Cargo.toml" "pom.xml" "package.json" ".project" )
+                      ;; 以下文件容易导致 project root 判断失败, 故关闭。
+                      ;; ("Makefile" "README.org" "README.md")
+                      )))
+      (dolist (current-level pr-flags)
+        (dolist (f current-level)
+          (when-let ((root (locate-dominating-file dir f)))
+            (throw 'ret (cons 'local root))))))))
+(setq project-find-functions '(my/project-try-local project-try-vc))
+
+(cl-defmethod project-root ((project (head local)))
+  (cdr project))
+
+(defun my/project-discover ()
+  (interactive)
+  ;; 去掉 "~/go/src/k8s.io/*" 目录。
+  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/gitlab.*/*/*"))
+    (dolist (file (file-expand-wildcards search-path))
+      (when (file-directory-p file)
+        (message "dir %s" file)
+        ;; project-remember-projects-under 列出 file 下的目录, 分别加到 project-list-file 中。
+        (project-remember-projects-under file nil)
+        (message "added project %s" file)))))
+
+;; 不将 tramp 项目记录到 projects 文件中，防止 emacs-dashboard 启动时检查 project 卡住。
+(defun my/project-remember-advice (fn pr &optional no-write)
+  (let* ((remote? (file-remote-p (project-root pr)))
+         (no-write (if remote? t no-write)))
+    (funcall fn pr no-write)))
+(advice-add 'project-remember-project :around 'my/project-remember-advice)
+
 (use-package treesit-auto
   :demand t
   :config
@@ -1400,7 +1450,7 @@
 ;; GNU Global gtags
 (setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
 ;; brew update 可能会更新 Global 版本，故这里使用 glob 匹配版本号。
-(setenv "GTAGSCONF" (car (file-expand-wildcards "/usr/local/Cellar/global/*/share/gtags/gtags.conf")))
+(setenv "GTAGSCONF" (car (file-expand-wildcards "/opt/homebrew/opt/global/share/gtags/gtags.conf")))
 (setenv "GTAGSLABEL" "pygments")
 
 (use-package citre
@@ -1432,7 +1482,7 @@
   ;; 手动添加 citre-xref-backend，-100 表示添加到开头，这样 citre 的结果优先生效。
   (add-hook 'xref-backend-functions #'citre-xref-backend -100))
 
-;; 将 venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
+;; 将 ~/.venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
 (setq my-venv-path "/Users/alizj/.venv/bin/")
 (setenv "PATH" (concat my-venv-path ":" (getenv "PATH")))
 (setq exec-path (cons my-venv-path  exec-path))
@@ -1496,6 +1546,7 @@
 (add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
 
 (defvar go--tools '("golang.org/x/tools/gopls"
+                    "github.com/rogpeppe/godef"
                     "golang.org/x/tools/cmd/goimports"
                     "honnef.co/go/tools/cmd/staticcheck"
                     "github.com/go-delve/delve/cmd/dlv"
@@ -1562,24 +1613,24 @@
                  ("rust-analyzer"
                   :initializationOptions
                   ( ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
-                    :cachePriming (:enable :json-false) ;; 启动时不预热缓存.
-                    ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
-                    :check (
-                            :command "clippy"
-                            :allTargets :json-false
-                            :workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
+                   :cachePriming (:enable :json-false) ;; 启动时不预热缓存.
+                   ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
+                   :check (
+                           :command "clippy"
+                           :allTargets :json-false
+                           :workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
+                           )
+                   :procMacro (:attributes (:enable t) :enable :json-false)
+                   :cargo ( :buildScripts (:enable :json-false)
+                            :extraArgs ["--offline"] ;; 不联网节省时间.
+                            ;;:features "all"
+                            ;;:noDefaultFeatures t
+                            :cfgs (:tokio_unstable "")
+                            ;;:autoreload :json-false
                             )
-                    :procMacro (:attributes (:enable t) :enable :json-false)
-                    :cargo ( :buildScripts (:enable :json-false)
-                             :extraArgs ["--offline"] ;; 不联网节省时间.
-                             ;;:features "all"
-                             ;;:noDefaultFeatures t
-                             :cfgs (:tokio_unstable "")
-                             ;;:autoreload :json-false
-                             )
-                    :diagnostics ( ;;:enable :json-false
-                                  :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
-                    )
+                   :diagnostics ( ;;:enable :json-false
+                                 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
+                   )
                   )))
   )
 
@@ -1589,14 +1640,13 @@
 (use-package rust-playground
     :config
     (setq rust-playground-cargo-toml-template
-   "[package]
-name = \"foo\"
-version = \"0.1.0\"
+          "[package]
+  name = \"foo\"
+  version = \"0.1.0\"
 authors = [\"Rust Example <rust-snippet@example.com>\"]
 edition = \"2021\"
 
-[dependencies]")
-    )
+[dependencies]"))
 
 (use-package eglot-x
   :after eglot
@@ -1626,12 +1676,12 @@ edition = \"2021\"
 
 (use-package cargo-mode
   :custom
-  ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用 compilation.
+  ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用 compilation。
   (cargo-mode-use-comint nil) 
   :hook
   (rust-ts-mode . cargo-minor-mode)
   :config
-  ;; 自动滚动显示 compilation buffer 内容.
+  ;; 自动滚动显示 compilation buffer 内容。
   (setq compilation-scroll-output t))
 
 (use-package markdown-mode
@@ -1717,6 +1767,8 @@ mermaid.initialize({
   (("M-+" . tempel-complete)
    ("M-*" . tempel-insert))
   :init
+  ;; 自定义模板文件。
+  (setq tempel-path "/Users/alizj/emacs/templates")
   (defun tempel-setup-capf ()
     (setq-local completion-at-point-functions (cons #'tempel-expand completion-at-point-functions)))
   (add-hook 'conf-mode-hook 'tempel-setup-capf)
@@ -1796,26 +1848,6 @@ mermaid.initialize({
   (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
   (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))
 
-;; 开发者文档。
-(use-package dash-at-point
-  :config
-  ;; 可以在搜索输入中指定 docset 名称，例如： spf13/viper: getstring
-  (global-set-key (kbd "C-c d .") #'dash-at-point)
-  ;; 提示选择 docset;
-  (global-set-key (kbd "C-c d d") #'dash-at-point-with-docset)
-  ;; 扩展提示可选的 docset 列表， 名称必须与 dash 中定义的一致。
-  (add-to-list 'dash-at-point-docsets "go")
-  (add-to-list 'dash-at-point-docsets "viper")
-  (add-to-list 'dash-at-point-docsets "cobra")
-  (add-to-list 'dash-at-point-docsets "pflag")
-  (add-to-list 'dash-at-point-docsets "k8s/api")
-  (add-to-list 'dash-at-point-docsets "k8s/apimachineary")
-  (add-to-list 'dash-at-point-docsets "k8s/client-go")
-  (add-to-list 'dash-at-point-docsets "klog")  
-  (add-to-list 'dash-at-point-docsets "k8s/controller-runtime")
-  (add-to-list 'dash-at-point-docsets "k8s/componet-base")
-  (add-to-list 'dash-at-point-docsets "k8s.io/kubernetes"))
-
 (use-package expand-region
   :config
   (global-set-key (kbd "C-=") #'er/expand-region))
@@ -1844,12 +1876,6 @@ mermaid.initialize({
   ;;(setq dired-sidebar-use-custom-font t)
   )
 
-(use-package anki-helper
-  :vc (:fetcher github :repo Elilif/emacs-anki-helper)
-  :config
-  (setq anki-helper-media-directory "~/Library/Application Support/Anki2/User 1/collection.media/")
-  )
-
 (use-package shell-maker)
 (use-package ob-chatgpt-shell :defer t)
 (use-package ob-dall-e-shell :defer t)
@@ -1875,60 +1901,6 @@ mermaid.initialize({
   (setq chatgpt-shell-auth-header 
 	(lambda ()
 	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
-
-(use-package project
-  :custom
-  (project-switch-commands
-   '(
-     (consult-project-buffer "buffer" ?b)
-     (project-dired "dired" ?d)
-     (magit-project-status "magit status" ?g)
-     (project-find-file "find file" ?p)
-     (consult-ripgrep "rigprep" ?r)
-     (vterm-toggle-cd "vterm" ?t)))
-  (compilation-always-kill t)
-  (project-vc-merge-submodules nil)
-  :config
-  ;; project-find-file 忽略的目录或文件列表。
-  (add-to-list 'vc-directory-exclusion-list "vendor")
-  (add-to-list 'vc-directory-exclusion-list "node_modules")
-  (add-to-list 'vc-directory-exclusion-list "target"))
-
-(defun my/project-try-local (dir)
-  "Determine if DIR is a non-Git project."
-  (catch 'ret
-    (let ((pr-flags '(;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有 .project 等文件，
-		        ;; 否则判断 project root 失败。
-		      ("go.mod" "Cargo.toml" "pom.xml" "package.json" ".project" )
-                      ;; 以下文件容易导致 project root 判断失败, 故关闭。
-                      ;; ("Makefile" "README.org" "README.md")
-                      )))
-      (dolist (current-level pr-flags)
-        (dolist (f current-level)
-          (when-let ((root (locate-dominating-file dir f)))
-            (throw 'ret (cons 'local root))))))))
-(setq project-find-functions '(my/project-try-local project-try-vc))
-
-(cl-defmethod project-root ((project (head local)))
-  (cdr project))
-
-(defun my/project-discover ()
-  (interactive)
-  ;; 去掉 "~/go/src/k8s.io/*" 目录。
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/gitlab.*/*/*"))
-    (dolist (file (file-expand-wildcards search-path))
-      (when (file-directory-p file)
-        (message "dir %s" file)
-        ;; project-remember-projects-under 列出 file 下的目录, 分别加到 project-list-file 中。
-        (project-remember-projects-under file nil)
-        (message "added project %s" file)))))
-
-;; 不将 tramp 项目记录到 projects 文件中，防止 emacs-dashboard 启动时检查 project 卡住。
-(defun my/project-remember-advice (fn pr &optional no-write)
-  (let* ((remote? (file-remote-p (project-root pr)))
-         (no-write (if remote? t no-write)))
-    (funcall fn pr no-write)))
-(advice-add 'project-remember-project :around 'my/project-remember-advice)
 
 (use-package vterm
   :hook
@@ -2421,10 +2393,3 @@ mermaid.initialize({
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
-
-(use-package avy
-  :config
-  (global-set-key (kbd "C-:") 'avy-goto-char)
-  (global-set-key (kbd "C-'") 'avy-goto-char-2)
-  (global-set-key (kbd "M-g f") 'avy-goto-line)
-  )

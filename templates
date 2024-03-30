@@ -42,7 +42,7 @@ org-mode ;; 空格分割的多个 Mode 名称。
 #+LATEX_COMPILER: xelatex
 #+LATEX_CLASS: ctexart
 # 引用自定义 latext style 文件，需要去掉 .sty 后缀。
-#+LATEX_HEADER: \\usepackage{/Users/zhangjun/.emacs.d/mystyle}
+#+LATEX_HEADER: \\usepackage{/Users/alizj/emacs/mystyle}
 
 # 定制 PDF 封面和目录。
 #+begin_export latex
