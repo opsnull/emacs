@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-30T15:03:57+0800
+#+LASTMOD: 2024-03-31T10:03:57+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -669,6 +669,9 @@ mv ~/Library/Rime ~/Library/Rime.bak
 git clone https://github.com/iDvel/rime-ice --depth=1
 mv rime-ice ~/Library/Rime
 # 后续可以 git pull 更新 rime-ice。
+cd ~/Library/Rime
+cp custom_phrase.txt  opsnull_custom_phrase.txt # 自定义词频文件
+sed -i -e 's/custom_phrase.txt/opsnull_custom_phrase/g' opsnull_custom_phrase.txt # 修改其中的 db_name
 #+end_src
 
 个人词频同步：用户词典类型 =translator/db_class= 的值默认为 userdb，即二进制文件，输入过的内容会记录在
@@ -720,127 +723,128 @@ patch:
 rime_ice 拼音方案调整(如模糊音，动态词频，自定义词语文件等):
 + 自定义短语：向自定义短语词典文件 opsnull_custom_phrase.txt 添加自定义短语，custom_prase/db_class为
   stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来动态调频）。
++ 首次添加该文件后需要执行 M-x rime-deploy 和 M-x rime-sync 生效。
 #+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml 
-  patch:
-    switches:
-    - name: ascii_mode
-      states: [ 中, Ａ ]
-    - name: ascii_punct  # 中英标点
-      states: [ ¥, $ ]
-    # 下面这些开关一般用不到, 故关闭(如候选词中不再显示 emoji).
-    # - name: traditionalization
-    #   states: [ 简, 繁 ]
-    #   reset: 0
-    # - name: emoji
-    #   states: [ 💀, 😄 ]
-    #   reset: 1
-    # - name: full_shape
-    #   states: [ 半角, 全角 ]
-    #   reset: 0
-    # - name: search_single_char  # search.lua 的功能开关，辅码查词时是否单字优先
-    #   abbrev: [词, 单]
-    #   states: [正常, 单字]
-    #   reset: 0
+patch:
+  switches:
+  - name: ascii_mode
+    states: [ 中, Ａ ]
+  - name: ascii_punct  # 中英标点
+    states: [ ¥, $ ]
+  # 下面这些开关一般用不到, 故关闭(如候选词中不再显示 emoji).
+  # - name: traditionalization
+  #   states: [ 简, 繁 ]
+  #   reset: 0
+  # - name: emoji
+  #   states: [ 💀, 😄 ]
+  #   reset: 1
+  # - name: full_shape
+  #   states: [ 半角, 全角 ]
+  #   reset: 0
+  # - name: search_single_char  # search.lua 的功能开关，辅码查词时是否单字优先
+  #   abbrev: [词, 单]
+  #   states: [正常, 单字]
+  #   reset: 0
 
-    translator/spelling_hints: 0           # 不显示候选词的拼音。
-    translator/always_show_comments: false #不显示候选者的拼音。
-    translator/enable_user_dict: true      # 根据上屏自动调整词频, 否则根据 *.dict.yaml 中的静态定义的词频率。
-    custom_phrase/user_dict: "opsnull_custom_phrase"  # 自定义短语词典文件，权重最高。
+  translator/spelling_hints: 0           # 不显示候选词的拼音。
+  translator/always_show_comments: false #不显示候选者的拼音。
+  translator/enable_user_dict: true      # 根据上屏自动调整词频, 否则根据 *.dict.yaml 中的静态定义的词频率。
+  custom_phrase/user_dict: "opsnull_custom_phrase"  # 自定义短语词典文件，权重最高。
 
-    speller/algebra:
-    # 模糊拼音
-    # 声母
-    - derive/^([zcs])h/$1/          # z c s → zh ch sh
-    - derive/^([zcs])([^h])/$1h$2/  # zh ch sh → z c s
-    #- derive/^l/n/  # n → l
-    #- derive/^n/l/  # l → n
-    # 韵母
-    - derive/in/ing/
-    - derive/ing/in/
+  speller/algebra:
+  # 模糊拼音
+  # 声母
+  - derive/^([zcs])h/$1/          # z c s → zh ch sh
+  - derive/^([zcs])([^h])/$1h$2/  # zh ch sh → z c s
+  #- derive/^l/n/  # n → l
+  #- derive/^n/l/  # l → n
+  # 韵母
+  - derive/in/ing/
+  - derive/ing/in/
 
-    # 自动纠错(后者用前者替换)
-    # ai
-    - derive/^([wghk])ai$/$1ia/  # wia → wai
-    # ei
-    - derive/([wfghkz])ei$/$1ie/  # wie → wei
-    # ie
-    - derive/([jqx])ie$/$1ei/  # jei → jie    
+  # 自动纠错(后者用前者替换)
+  # ai
+  - derive/^([wghk])ai$/$1ia/  # wia → wai
+  # ei
+  - derive/([wfghkz])ei$/$1ie/  # wie → wei
+  # ie
+  - derive/([jqx])ie$/$1ei/  # jei → jie    
 #+end_src
 
 Rime 输入法全局配置(patch ~/Library/Rime/default.yaml 文件)：
 + 注意：对于列表类型的字段值, patch 时必须列出修改后的整个列表值，不支持部分 patch。
 + 详细参考：https://github.com/iDvel/rime-ice/blob/main/default.yaml
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
-  patch:
-    schema_list:
-    - schema: rime_ice  # 只启用 rime_ice 雾凇拼音输入法方案。
-    menu/page_size: 9   # 显示 9 个候选词。  
-    # 方案选单切换
-    switcher/hotkeys:
-    - F4
-    - "Control+plus" # 按 C-Shit-+ 调出方案选单。
-    switcher/fold_options: false # 呼出时不折叠。
-    switcher/abbreviate_options: false # 折叠时不缩写选项
-    ascii_composer: # 中英文切换
-      switch_key:   # 关闭左边 Shift 中西文切换，而是使用右侧 Shift（避免频繁误按）。
-        Shift_L: noop 
-        Shift_R: commit_code
-    key_binder/bindings:
-    - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
-    - { when: paging, accept: minus, send: Page_Up }                 # 上一页
-    - { when: always, accept: "Control+period", toggle: ascii_mode}  # 中英文切换
-    - { when: always, accept: "Control+comma", toggle: ascii_punct}  # 中英文标点切换
-    #- { when: always, accept: "Control+comma", toggle: full_shape}  # 全角/半角切换
+patch:
+  schema_list:
+  - schema: rime_ice  # 只启用 rime_ice 雾凇拼音输入法方案。
+  menu/page_size: 9   # 显示 9 个候选词。  
+  # 方案选单切换
+  switcher/hotkeys:
+  - F4
+  - "Control+plus" # 按 C-Shit-+ 调出方案选单。
+  switcher/fold_options: false # 呼出时不折叠。
+  switcher/abbreviate_options: false # 折叠时不缩写选项
+  ascii_composer: # 中英文切换
+    switch_key:   # 关闭左边 Shift 中西文切换，而是使用右侧 Shift（避免频繁误按）。
+      Shift_L: noop 
+      Shift_R: commit_code
+  key_binder/bindings:
+  - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
+  - { when: paging, accept: minus, send: Page_Up }                 # 上一页
+  - { when: always, accept: "Control+period", toggle: ascii_mode}  # 中英文切换
+  - { when: always, accept: "Control+comma", toggle: ascii_punct}  # 中英文标点切换
+  #- { when: always, accept: "Control+comma", toggle: full_shape}  # 全角/半角切换
 
-    # 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。需要将这些按键加到rime-translate-keybindings变
-    # 量里后才会生效。 composing 指的是出现候选词列表的时机。
-    - { When: composing, accept: Control+p, send: Up }
-    - { when: composing, accept: Control+n, send: Down }
-    - { when: composing, accept: Control+b, send: Left }
-    - { when: composing, accept: Control+f, send: Right }
-    - { when: composing, accept: Control+a, send: Home }
-    - { when: composing, accept: Control+e, send: End }
-    - { when: composing, accept: Control+d, send: Delete }
-    - { when: composing, accept: Control+k, send: Shift+Delete } # 从用户数据库中删除误上屏的词语
-    - { when: composing, accept: Control+h, send: BackSpace }
-    - { when: composing, accept: Control+g, send: Escape }
-    - { when: composing, accept: Control+bracketleft, send: Escape }
-    - { when: composing, accept: Control+y, send: Page_Up }
-    - { when: composing, accept: Alt+v, send: Page_Up }
-    - { when: composing, accept: Control+v, send: Page_Down }
+  # 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。需要将这些按键加到rime-translate-keybindings变
+  # 量里后才会生效。 composing 指的是出现候选词列表的时机。
+  - { When: composing, accept: Control+p, send: Up }
+  - { when: composing, accept: Control+n, send: Down }
+  - { when: composing, accept: Control+b, send: Left }
+  - { when: composing, accept: Control+f, send: Right }
+  - { when: composing, accept: Control+a, send: Home }
+  - { when: composing, accept: Control+e, send: End }
+  - { when: composing, accept: Control+d, send: Delete }
+  - { when: composing, accept: Control+k, send: Shift+Delete } # 从用户数据库中删除误上屏的词语
+  - { when: composing, accept: Control+h, send: BackSpace }
+  - { when: composing, accept: Control+g, send: Escape }
+  - { when: composing, accept: Control+bracketleft, send: Escape }
+  - { when: composing, accept: Control+y, send: Page_Up }
+  - { when: composing, accept: Alt+v, send: Page_Up }
+  - { when: composing, accept: Control+v, send: Page_Down }
 
-  # 更多按键名称参考: https://github.com/LEOYoon-Tsaw/Rime_collections/blob/master/Rime_description.md
+# 更多按键名称参考: https://github.com/LEOYoon-Tsaw/Rime_collections/blob/master/Rime_description.md
 #+end_src
 
 鼠须管(图形前端)配置:
 + 为 Emacs 等默认使用英文: =重要!= 这样在系统输入法是 RIME 时, emacs 使用 emacs-rime 的配置.
 + 获取 app 名示例： =osascript -e 'id of app "Finder"'=
 #+begin_src yaml :tangle ~/Library/Rime/squirrel.custom.yaml
-  patch:
-    style:
-      font_face: "LXGW WenKai Screen" # 候选者字体
-      font_point: 13
-      candidate_list_layout: linear # 水平显示候选者列表
-    app_options:
-      # 以下默认使用英文。
-      org.gnu.Emacs:
-        ascii_mode: true
-        no_inline: true
-      com.apple.Terminal:
-        ascii_mode: true
-      org.mozilla.firefox: 
-        ascii_mode: true
-      com.google.Chrome:
-        ascii_mode: true
-      com.apple.finder:
-        ascii_mode: true
-      # 以下默认使用中文。
-      com.microsoft.Word: 
-        ascii_mode: false
-      com.microsoft.Excel: 
-        ascii_mode: false
-      com.microsoft.Powerpoint:
-        ascii_mode: false
+patch:
+  style:
+    font_face: "LXGW WenKai Screen" # 候选者字体
+    font_point: 14
+    candidate_list_layout: linear # 水平显示候选者列表
+  app_options:
+    # 以下默认使用英文。
+    org.gnu.Emacs:
+      ascii_mode: true
+      no_inline: true
+    com.apple.Terminal:
+      ascii_mode: true
+    org.mozilla.firefox: 
+      ascii_mode: true
+    com.google.Chrome:
+      ascii_mode: true
+    com.apple.finder:
+      ascii_mode: true
+    # 以下默认使用中文。
+    com.microsoft.Word: 
+      ascii_mode: false
+    com.microsoft.Excel: 
+      ascii_mode: false
+    com.microsoft.Powerpoint:
+      ascii_mode: false
 #+end_src
 
 配置 Emacs:
@@ -1322,7 +1326,7 @@ marginalia：
 * org
 ** org
 
-按照 watchexec 命令：
+安装 watchexec 工具：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 which watchexec || brew install watchexec
 #+end_src
