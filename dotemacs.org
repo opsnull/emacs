@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-01T11:04:37+0800
+#+LASTMOD: 2024-04-01T17:04:21+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -759,6 +759,8 @@ patch:
   #- derive/^l/n/  # n → l
   #- derive/^n/l/  # l → n
   # 韵母
+  - derive/eng$/en/
+  - derive/en$/eng/
   - derive/in/ing/
   - derive/ing/in/
 
