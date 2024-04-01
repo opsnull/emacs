@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-03-31T10:03:57+0800
+#+LASTMOD: 2024-04-01T11:04:37+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -838,12 +838,16 @@ patch:
       ascii_mode: true
     com.apple.finder:
       ascii_mode: true
+    com.raycast.macos:
+      ascii_mode: true
     # 以下默认使用中文。
     com.microsoft.Word: 
       ascii_mode: false
     com.microsoft.Excel: 
       ascii_mode: false
     com.microsoft.Powerpoint:
+      ascii_mode: false
+    dd.work.exclusive4aliding:
       ascii_mode: false
 #+end_src
 
@@ -2081,6 +2085,8 @@ c/c++/go-mode indent 风格：总是使用 tab 而非空格：
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
 #+end_src
 
+手动添加 project 目录： =M-x project-remember-projects-under=
+
 ** treesit
 
 treesit-auto 自动安装 grammer 和自动将 xx major-mode remap 到对应的 xx-ts-mode 上。具体参考变量:
@@ -2295,7 +2301,9 @@ major-mode 的 eglot，从而让 xref-backend-functions 恢复为以前的值，
     (if (bound-and-true-p eglot--managed-mode)
         (progn
           (eglot-shutdown-all)
-          (remove-hook hook 'eglot-ensure))
+          (remove-hook hook 'eglot-ensure)
+          ;; 将 citre 添加到 xref backend 中，-100 表示添加到开头，确保优先使用。
+          (add-hook 'xref-backend-functions #'citre-xref-backend -100))
       (progn
         (add-hook hook 'eglot-ensure)
         (eglot-ensure)))))
@@ -2307,8 +2315,6 @@ major-mode 的 eglot，从而让 xref-backend-functions 恢复为以前的值，
 + 查看 language server 的 stderr 信息: ~M-x eglot-stderr-buffer~
 + 查看 language server 的访问日志: ~M-x eglot-events-buffer~
 
-如果代码项目没有 .git 目录，则打开文件时可能会卡主。
-
 eglot 使用 =project-current= 来获得 project root 目录，如果该函数返回的目录不对，可能会导致 eglot 补全
 失效, 报错：
 #+begin_example :tangle no
@@ -2316,6 +2322,7 @@ jsonrpc-error: "request id=44 failed:", (jsonrpc-error-code . 0), (jsonrpc-error
 #+end_example
 
 可以查看变量 ~eglot--servers-by-project~ 来查看当前 eglot server 识别的 project 情况：
++ 如果代码项目没有 .git 目录，则打开文件时可能会卡住。
 #+begin_example :tangle no
 eglot--servers-by-project is a variable defined in eglot.el.
 
@@ -2352,7 +2359,6 @@ consult-eglot 提供 ~consult-eglot-symbols~ 函数，方便选择 workspace 中
 #+end_src
 
 ** citre
-
 
 =Etags=: GNU Emacs comes with two ctags utilities, =etags and ctags=, which are compiled from the same
 source code. Etags generates a tag table file for Emacs, while the ctags command is used to create a
@@ -2425,8 +2431,8 @@ citre 是基于 Ctags（Universal Ctags 版本）的代码浏览器工具，也�
   (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
   (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
   (global-set-key (kbd "C-x c u") 'citre-global-update-database)
-  ;; 手动添加 citre-xref-backend，-100 表示添加到开头，这样 citre 的结果优先生效。
-  (add-hook 'xref-backend-functions #'citre-xref-backend -100))
+  ;; eglot 生效时关闭 citre-mode，防止两者的 xref backend 相互干扰。
+  (add-hook 'eglot-managed-mode-hook (lambda ()(citre-mode -1))))
 #+end_src
 
 创建和更新 GNU global GTAGS 文件（保存到 GTAGSOBJDIRPREFIX 环境变量指定的位置，如 ~/.cache/gtags/)：

@@ -1426,7 +1426,9 @@
     (if (bound-and-true-p eglot--managed-mode)
         (progn
           (eglot-shutdown-all)
-          (remove-hook hook 'eglot-ensure))
+          (remove-hook hook 'eglot-ensure)
+          ;; 将 citre 添加到 xref backend 中，-100 表示添加到开头，确保优先使用。
+          (add-hook 'xref-backend-functions #'citre-xref-backend -100))
       (progn
         (add-hook hook 'eglot-ensure)
         (eglot-ensure)))))
@@ -1470,8 +1472,8 @@
   (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
   (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
   (global-set-key (kbd "C-x c u") 'citre-global-update-database)
-  ;; 手动添加 citre-xref-backend，-100 表示添加到开头，这样 citre 的结果优先生效。
-  (add-hook 'xref-backend-functions #'citre-xref-backend -100))
+  ;; eglot 生效时关闭 citre-mode，防止两者的 xref backend 相互干扰。
+  (add-hook 'eglot-managed-mode-hook (lambda ()(citre-mode -1))))
 
 ;; 将 ~/.venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
 (setq my-venv-path "/Users/alizj/.venv/bin/")
