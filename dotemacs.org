@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-01T17:04:21+0800
+#+LASTMOD: 2024-04-01T18:04:27+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -679,8 +679,7 @@ sed -i -e 's/custom_phrase.txt/opsnull_custom_phrase/g' opsnull_custom_phrase.tx
 用户词典；
 + =M-x rime-sync= 或点击鼠须管「同步用户数据」，Rime 将输入法方案的用户数据 *.userdb 与备份目录
   sync_dir 进行双向更新同步。
-+ 清理个人同步文件 =*userdb.txt= 中的记录后，需要删除 =~/Library/Rime/*.userdb/= 目录，重启 Emacs，下次
-  再使用 rime 时会自动创建该目录，然后执行用户数据同步来生效新的 userdb 记录。
+
 #+begin_src yaml :tangle ~/Library/Rime/installation.yaml
 # installation.yaml 文件在第一次部署后会自动生成，在这里可以编辑当前设备的 ID 和同步目录。
 
@@ -689,6 +688,12 @@ installation_id: "cde8ff26-5e08-466c-bd2d-aac2aeaedb25"
 # 同步的目标路径。
 sync_dir: /Users/alizj/.emacs.d/sync/rime
 #+end_src
+
+userdb 不支持删除记录，所以不能通过清理 =*userdb.txt= 文件的方式来清理 userdb 记录。解决步骤是：：
+1. 删除 =~/Library/Rime/*.userdb/= 目录；
+2. 重启 Emacs；
+3. 再执行 M-x rime-sync 来全新同步 *userdb.txt 中记录
+上面的步骤也适合于 userdb 文件损坏导致的个人词频不生效的情况。
 
 [[https://dvel.me/posts/rime-ice/#%E4%BB%A5-patch-%E7%9A%84%E6%96%B9%E5%BC%8F%E6%89%93%E8%A1%A5%E4%B8%81][patch 语法示例]]：
 #+begin_src yaml :tangle no
@@ -721,8 +726,8 @@ patch:
 #+end_src
 
 rime_ice 拼音方案调整(如模糊音，动态词频，自定义词语文件等):
-+ 自定义短语：向自定义短语词典文件 opsnull_custom_phrase.txt 添加自定义短语，custom_prase/db_class为
-  stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来动态调频）。
++ 自定义短语：向自定义短语词典文件 opsnull_custom_phrase.txt 添加自定义短语，custom_prase/db_class
+  为stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来动态调频）。
 + 首次添加该文件后需要执行 M-x rime-deploy 和 M-x rime-sync 生效。
 #+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml 
 patch:
