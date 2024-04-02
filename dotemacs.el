@@ -1452,6 +1452,7 @@
 (setenv "GTAGSLABEL" "pygments")
 
 (use-package citre
+  :after (eglot)
   :init
   ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，会自动
   ;; 向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。

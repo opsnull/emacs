@@ -5097,6 +5097,37 @@ lsp-bridge 在开启了编译后，大概率会报错，故关闭：
 ((emacs-lisp-mode . ((no-byte-compile . t))))
 #+end_src
 
+由于 lsp-bridge mode map 将 M-./M-,/M-? 等 xref 相关命令绑定到自己的 lsp-bridge 相关函数，但是当
+lsp-bridge 的补全、跳转等不可用时，需要使用 citre-mode 的 xref 集成特性的化，就需要使用 M-x xref-xxx
+等命令。这时可以在 project root 目录创建一个 .dir-locals.el 文件来为项目所有文件关闭 lsp-mode：
+#+begin_src emacs-lisp :tangle no
+;;; Directory Local Variables
+;;; For more information see (info "(emacs) Directory Variables")
+
+;;; disable lsp-mode and enable ggtags-mode
+((nil . ((eval . (lsp-bridge-mode -1)))
+      ))
+#+end_src
+
+为了方便输入，可以在 ~/.emacs.d/snippets/prog-mode 下创建一个名为 disable-lsp-bridge 的 snippet，后
+续可以使用M-x consult-yasnippet 来快速在 .dir-locals.el 文件中插入 snippet 文件内容。
+#+begin_src emacs-lisp :tangle no
+# -*- mode: snippet -*-
+# name: disable-lsp-bridge
+# key: dlspb
+# --
+;;; Directory Local Variables
+;;; For more information see (info "(emacs) Directory Variables")
+
+;;; .dir-locals.el
+;;; disable lsp-mode and enable ggtags-mode
+((nil . ((eval . (lsp-bridge-mode -1)))
+      ))
+#+end_src
+
+通过上面的 .dir-locals.el 机制来在项目级别关闭 lsp-bridge 后，M-./M-,/M-? 恢复绑定到 consult-xref 来
+跳转和预览。
+
 * company
 
 company-capf 使用 completion-at-point 机制，所以自动的会使用 orderless。但是 orderless 的过滤 style 貌似不能正

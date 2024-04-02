@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-02T23:04:20+0800
+#+LASTMOD: 2024-04-03T00:04:49+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -2057,7 +2057,7 @@ grammer 安装位置: =~/.emacs.d/tree-sitter=, 如 =~/.emacs.d/tree-sitter/libt
 
 ** flymake
 
-flymake 检查 buffer 的情况, 错误信息将自己显示在 buffer 区域, 同时也会发送给 eldoc:
+flymake 检查 buffer 的情况, 错误信息直接显示在 buffer 区域, 同时也会发送给 eldoc:
 1. 执行 ~M-x flymake-start~;
 2. 超过 flymake-no-changes-timeout( 默认 0.5)，设置为 nil 后表示无限长;
 3. 保存 buffer 时 (除非设置 flymake-start-on-save-buffer 为 nil);
@@ -2366,6 +2366,7 @@ citre 是基于 Ctags（Universal Ctags 版本）的代码浏览器工具，也�
 (setenv "GTAGSLABEL" "pygments")
 
 (use-package citre
+  :after (eglot)
   :init
   ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，会自动
   ;; 向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
@@ -2444,47 +2445,16 @@ M-l 前缀快捷键：
 
 对于开启了 citre-mode 的 buffer，citre 会向 xref-backend-functions 中添加 citre-xref-backend, 所以后
 续使用 imenu/xref-find-references/xref-find-definitions 时会使用 citre 提供的输入。同时 xref 和
-consult 结合，可以使用 consult 来预览 xref 的结果：
-+ xref-backend-functions 可能会被添加多个 backend，它使用第一个 backend 返回地信息，所以必须确保
-  citre-xref-backend 位于列表的第一位。常见的问题是：
-  + eglot 会将 xref-backend-functions 重置为唯一的 eglot-xref-backend。解决办法：定义一个函数
-    my/toggle-eglot 来关闭 eglot，这时 xref-backend-functions 会恢复为 eglot 启动前设置的值。
-  + dump-jump 会添加到 citre-xref-backend 前面。
+consult 结合，可以使用 consult 来预览 xref 的结果。
+
+xref-backend-functions 可能会被添加多个 backend，它使用第一个 backend 返回地信息，所以必须确保
+citre-xref-backend 位于列表的第一位。常见的问题是 eglot 会将 xref-backend-functions 重置为唯一的
+eglot-xref-backend。
++ 解决办法：定义一个函数 my/toggle-eglot 来关闭 eglot，这时 xref-backend-functions 会恢复为 eglot 启
+  动前设置的值。
 
 在 citre-jump（M-.) 的弹出时 buffer 中可以使用正则语法对候选者进行过滤（orderless 提供的支持）, 例
-如:
-: something kind:^member$ kind:^macro$ input:.c$
-
-由于 lsp-bridge mode map 将 M-./M-,/M-? 等 xref 相关命令绑定到自己的 lsp-bridge 相关函数，但是当
-lsp-bridge 的补全、跳转等不可用时，需要使用 citre-mode 的 xref 集成特性的化，就需要使用 M-x xref-xxx
-等命令。这时可以在 project root 目录创建一个 .dir-locals.el 文件来为项目所有文件关闭 lsp-mode：
-#+begin_src emacs-lisp :tangle no
-;;; Directory Local Variables
-;;; For more information see (info "(emacs) Directory Variables")
-
-;;; disable lsp-mode and enable ggtags-mode
-((nil . ((eval . (lsp-bridge-mode -1)))
-      ))
-#+end_src
-
-为了方便输入，可以在 ~/.emacs.d/snippets/prog-mode 下创建一个名为 disable-lsp-bridge 的 snippet，后
-续可以使用M-x consult-yasnippet 来快速在 .dir-locals.el 文件中插入 snippet 文件内容。
-#+begin_src emacs-lisp :tangle no
-# -*- mode: snippet -*-
-# name: disable-lsp-bridge
-# key: dlspb
-# --
-;;; Directory Local Variables
-;;; For more information see (info "(emacs) Directory Variables")
-
-;;; .dir-locals.el
-;;; disable lsp-mode and enable ggtags-mode
-((nil . ((eval . (lsp-bridge-mode -1)))
-      ))
-#+end_src
-
-通过上面的 .dir-locals.el 机制来在项目级别关闭 lsp-bridge 后，M-./M-,/M-? 恢复绑定到 consult-xref 来
-跳转和预览。
+如: =something kind:^member$ kind:^macro$ input:.c$=
 
 ** python
 
@@ -3004,14 +2974,12 @@ emacs 使用 =bash-ts-mode= 来编辑 shell 脚本。安装 bash language server
 npm i -g bash-language-server
 #+end_src
 
-bash language server 使用 shellcheck 做语法检查和静态分析，使用 lsp diagnose 机制来提示错误（不需要
-再安装flymake/flycheck)。 这里安装 Shell 脚本静态分析工具 ShellCheck, 支持对 shell 进行语法检查和错
-误诊断:
+bash language server 使用 shellcheck 工具来做语法检查和静态分析，使用 lsp diagnose 机制来提示错误：
 #+begin_src bash ~/.emacs.d/init.sh
 brew install shellcheck
 #+end_src
 
-设置 shell 脚本缩进规则：
+设置脚本缩进规则：
 #+begin_src emacs-lisp
 (setq sh-basic-offset 4)
 (setq sh-indentation 4)
@@ -3540,7 +3508,7 @@ dired-sidebar 相比 treemacs/neotree 的优势是速度快, 而且复用 dired 
 brew install cmake libtool exiftran
 #+end_src
 
-vterm: 
+配置 vterm: 
 #+begin_src emacs-lisp
 (use-package vterm
   :hook
