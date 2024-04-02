@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-01T18:04:27+0800
+#+LASTMOD: 2024-04-02T20:04:47+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -637,21 +637,13 @@ nyan：modeline 彩虹猫。
 
 * rime
 
-Mac 系统安装 RIME 输入法：
-1. 下载鼠须管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
-2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
-3. 在 Mac 设置中添加鼠须管输入法(位于简体中文内), 重新登录用户后就可以使用 RIME 输入法了.
-
-Squirrel 程序的配置路径为 =/Library/Input Methods/Squirrel.app/Contents/SharedSupport/= ，用户配置目录
-为 =~/Library/Rime/=, 前者一般只读, 后续是可配置的。如果修改了 =~/Libray/Rime= 下的配置文件, 需要:
-+ 对于鼠须管系统输入法: 必须点击鼠须管的 “重新部署” 生效;
-+ 对于 emacs-rime 输入法，需要执行 =M-x rime-deploy= 生效；
-
-安装 [[https://github.com/rime/librime/releases][librime]] 库, emacs-rime 使用它与 RIME 交互：
+安装 [[https://github.com/rime/librime/releases][librime]] 库, 它是 RIME 输入法后端引擎：
++ emacs-rime 直接和该引擎打交道，不需要安装 Mac 输入法前端 App 鼠须管 squirrel；
++ 通过 squirrel App 同步用户配置数据，可能会导致 userdb 数据损坏（~/Library/Rime/rime_ice.userdb/LOG
+  文件有日志记录），进而导致 RIME 动态词频、用户词典等功能异常。
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-curl -L -O https://github.com/rime/librime/releases/download/1.10.0/rime-295cb2a-macOS.tar.bz2
-tar -xvf rime-295cb2a-macOS.tar.bz2
-mkdir ~/.emacs.d/librime/dist
+wget https://github.com/rime/librime/releases/download/1.11.0/rime-76a0a16-macOS-universal.tar.bz2
+tar -xvf rime-76a0a16-macOS-universal.tar.bz2
 mv ~/.emacs.d/librime/dist{,.bak}
 mv dist ~/.emacs.d/librime
 # 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
@@ -838,10 +830,6 @@ patch:
       ascii_mode: true
       no_inline: true
     com.apple.Terminal:
-      ascii_mode: true
-    org.mozilla.firefox: 
-      ascii_mode: true
-    com.google.Chrome:
       ascii_mode: true
     com.apple.finder:
       ascii_mode: true
