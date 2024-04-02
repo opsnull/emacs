@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-02T20:04:47+0800
+#+LASTMOD: 2024-04-02T23:04:20+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -97,7 +97,7 @@ ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
 ;;(setq package-install-upgrade-built-in t)    
 #+end_src
 
-vc-use-package 为 use-package 增加 :vc 指令，从而可以从 github 等安装软件包。
+=vc-use-package= 为 =use-package= 增加 =:vc= 指令，从而可以从 github 等安装软件包。
 #+begin_src emacs-lisp
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
@@ -111,7 +111,7 @@ brew install curl
 export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 #+end_src
 
-将安装的 curl 添加到 PATH 环境变量和 exec-path 变量中。
+将安装的 curl 添加到 PATH 环境变量和 exec-path 变量中：
 #+begin_src emacs-lisp
 (setq my-coreutils-path "/opt/homebrew/opt/curl/bin/")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
@@ -126,8 +126,8 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
-;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
-;; 所以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
+;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com; 所
+;; 以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
 (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
                     ".openai.azure.com" ".baidu.com"))
@@ -169,7 +169,6 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
   (setenv "ALL_PROXY" my/socks-proxy)
   (setenv "HTTP_PROXY" nil)
   (setenv "HTTPS_PROXY" nil)
-  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
   (advice-add 'url-http :around 'mb-url-http-around-advice))
 
 (defun proxy-socks-disable ()
@@ -185,7 +184,7 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 
 * tuning
 
-性能调优: 参考 [[https://github.com/hlissner/doom-emacs/blob/develop/core/core.el][doom core.el]]
+设置 epa，用于 GPG 加解密：
 #+begin_src emacs-lisp
 (use-package epa
   :config
@@ -225,7 +224,7 @@ Mac 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper。
 (setq ns-function-modifier 'hyper)
 #+end_src
 
-提升 io 性能。
+提升 io 性能，参考 [[https://github.com/hlissner/doom-emacs/blob/develop/core/core.el][doom core.el]]
 #+begin_src emacs-lisp
 (setq process-adaptive-read-buffering nil)
 (setq read-process-output-max (* 1024 1024 4))
@@ -264,6 +263,15 @@ Garbage Collector Magic Hack, 提升 vterm buffer、json 文件响应性能。
   (setq use-dialog-box nil))
 #+end_src
 
+不显示 Title Bar：
+#+begin_src emacs-lisp
+;; square corner: undecorated, round corner: undecorated-round
+(add-to-list 'default-frame-alist '(undecorated . t)) 
+(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+(add-to-list 'default-frame-alist '(selected-frame) 'name nil)
+(add-to-list 'default-frame-alist '(ns-appearance . dark))
+#+end_src
+
 光标和行号：
 #+begin_src emacs-lisp
 ;; 高亮当前行。
@@ -289,17 +297,8 @@ frame 设置：
 ;; 30: 左右分屏, nil: 上下分屏。
 (setq split-width-threshold nil)
 
-;; 刷行显示。
+;; 刷新显示。
 (global-set-key (kbd "<f5>") #'redraw-display)
-#+end_src
-
-不显示 Title Bar：
-#+begin_src emacs-lisp
-;; square corner: undecorated, round corner: undecorated-round
-(add-to-list 'default-frame-alist '(undecorated . t)) 
-(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-(add-to-list 'default-frame-alist '(selected-frame) 'name nil)
-(add-to-list 'default-frame-alist '(ns-appearance . dark))
 #+end_src
 
 在 frame 底部显示的窗口列表:
@@ -370,7 +369,7 @@ frame 设置：
 
 org-mode buffer 内容居中显示：
 + 设置 olivetti body 宽度： ~C-c | (M-x olivetti-set-width)~
-+ olivetti-body-width 和 fill-column 都是 buffer local 变量，需要使用 setq-default 才能在所有 buffer
++ =olivetti-body-width= 和 =fill-column= 都是 buffer local 变量，需要使用 =setq-default= 才能在所有 buffer
   中生效。
 #+begin_src emacs-lisp
 (use-package olivetti
@@ -398,8 +397,7 @@ dashboard：
   (setq dashboard-items '((recents . 15) (projects . 8) (agenda . 3))))
 #+end_src
 
-doom-modeline 使用 nerd-icons 在 modeline 上显示 icons。nerd-incos 默认使用 Symbols Nerd Fonts Mono，
-可以使用 ~M-x nerd-icons-install-fonts~ 安装。
+doom-modeline：它使用 Symbols Nerd Fonts Mono 字体在 modeline 上显示 icons，需要单独安装该字体。
 #+begin_src emacs-lisp
 (use-package nerd-icons)
 (use-package doom-modeline
@@ -637,7 +635,7 @@ nyan：modeline 彩虹猫。
 
 * rime
 
-安装 [[https://github.com/rime/librime/releases][librime]] 库, 它是 RIME 输入法后端引擎：
+安装 RIME 输入法后端引擎 [[https://github.com/rime/librime/releases][librime]] ：
 + emacs-rime 直接和该引擎打交道，不需要安装 Mac 输入法前端 App 鼠须管 squirrel；
 + 通过 squirrel App 同步用户配置数据，可能会导致 userdb 数据损坏（~/Library/Rime/rime_ice.userdb/LOG
   文件有日志记录），进而导致 RIME 动态词频、用户词典等功能异常。
@@ -666,28 +664,8 @@ cp custom_phrase.txt  opsnull_custom_phrase.txt # 自定义词频文件
 sed -i -e 's/custom_phrase.txt/opsnull_custom_phrase/g' opsnull_custom_phrase.txt # 修改其中的 db_name
 #+end_src
 
-个人词频同步：用户词典类型 =translator/db_class= 的值默认为 userdb，即二进制文件，输入过的内容会记录在
-=~/Library/Rime/*.userdb/= 文件夹中，只有在同步后才能在同步目录 =sync_dir/*/*userdb.txt= 看到人类可读的
-用户词典；
-+ =M-x rime-sync= 或点击鼠须管「同步用户数据」，Rime 将输入法方案的用户数据 *.userdb 与备份目录
-  sync_dir 进行双向更新同步。
-
-#+begin_src yaml :tangle ~/Library/Rime/installation.yaml
-# installation.yaml 文件在第一次部署后会自动生成，在这里可以编辑当前设备的 ID 和同步目录。
-
-#本机的 ID 标志，默认是一串 UUID，生成的文件夹是这个名字，可以改成更好识别的名称。
-installation_id: "cde8ff26-5e08-466c-bd2d-aac2aeaedb25"
-# 同步的目标路径。
-sync_dir: /Users/alizj/.emacs.d/sync/rime
-#+end_src
-
-userdb 不支持删除记录，所以不能通过清理 =*userdb.txt= 文件的方式来清理 userdb 记录。解决步骤是：：
-1. 删除 =~/Library/Rime/*.userdb/= 目录；
-2. 重启 Emacs；
-3. 再执行 M-x rime-sync 来全新同步 *userdb.txt 中记录
-上面的步骤也适合于 userdb 文件损坏导致的个人词频不生效的情况。
-
 [[https://dvel.me/posts/rime-ice/#%E4%BB%A5-patch-%E7%9A%84%E6%96%B9%E5%BC%8F%E6%89%93%E8%A1%A5%E4%B8%81][patch 语法示例]]：
++ 注意：对于列表类型的字段值, patch 时必须列出修改后的整个列表值，不支持部分 patch。
 #+begin_src yaml :tangle no
 # 以 patch: 开头，后面的内容都需要缩进
 patch:
@@ -770,8 +748,7 @@ patch:
   - derive/([jqx])ie$/$1ei/  # jei → jie    
 #+end_src
 
-Rime 输入法全局配置(patch ~/Library/Rime/default.yaml 文件)：
-+ 注意：对于列表类型的字段值, patch 时必须列出修改后的整个列表值，不支持部分 patch。
+Rime 输入法全局配置：
 + 详细参考：https://github.com/iDvel/rime-ice/blob/main/default.yaml
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
 patch:
@@ -813,37 +790,6 @@ patch:
   - { when: composing, accept: Control+v, send: Page_Down }
 
 # 更多按键名称参考: https://github.com/LEOYoon-Tsaw/Rime_collections/blob/master/Rime_description.md
-#+end_src
-
-鼠须管(图形前端)配置:
-+ 为 Emacs 等默认使用英文: =重要!= 这样在系统输入法是 RIME 时, emacs 使用 emacs-rime 的配置.
-+ 获取 app 名示例： =osascript -e 'id of app "Finder"'=
-#+begin_src yaml :tangle ~/Library/Rime/squirrel.custom.yaml
-patch:
-  style:
-    font_face: "LXGW WenKai Screen" # 候选者字体
-    font_point: 14
-    candidate_list_layout: linear # 水平显示候选者列表
-  app_options:
-    # 以下默认使用英文。
-    org.gnu.Emacs:
-      ascii_mode: true
-      no_inline: true
-    com.apple.Terminal:
-      ascii_mode: true
-    com.apple.finder:
-      ascii_mode: true
-    com.raycast.macos:
-      ascii_mode: true
-    # 以下默认使用中文。
-    com.microsoft.Word: 
-      ascii_mode: false
-    com.microsoft.Excel: 
-      ascii_mode: false
-    com.microsoft.Powerpoint:
-      ascii_mode: false
-    dd.work.exclusive4aliding:
-      ascii_mode: false
 #+end_src
 
 配置 Emacs:
@@ -920,6 +866,28 @@ patch:
       (activate-input-method "rime"))))
 #+end_src
 
+个人词频：用户词典类型 =translator/db_class= 的值默认为 userdb，即二进制文件，输入过的内容会记录在
+=~/Library/Rime/*.userdb/= 文件夹中，只有在同步后才能在同步目录 =sync_dir/*/*userdb.txt= 看到人类可读的
+用户词典；
++ =M-x rime-sync= 或点击鼠须管「同步用户数据」，Rime 将输入法方案的用户数据 *.userdb 与备份目录
+  sync_dir 进行双向更新同步。
+
+#+begin_src yaml :tangle ~/Library/Rime/installation.yaml
+# installation.yaml 文件在第一次部署后会自动生成，在这里可以编辑当前设备的 ID 和同步目录。
+
+#本机的 ID 标志，默认是一串 UUID，生成的文件夹是这个名字，可以改成更好识别的名称。
+installation_id: "cde8ff26-5e08-466c-bd2d-aac2aeaedb25"
+# 同步的目标路径。
+sync_dir: /Users/alizj/.emacs.d/sync/rime
+#+end_src
+
+userdb 不支持删除记录，所以不能通过清理 =*userdb.txt= 文件的方式来清理 userdb 记录。解决步骤是：：
+1. 删除 =~/Library/Rime/*.userdb/= 目录；
+2. 重启 Emacs；
+3. 再执行 M-x rime-sync 来全新同步 *userdb.txt 中记录；
+上面的步骤也适合于 userdb 文件损坏（查看文件 ~/Library/Rime/rime_ice.userdb/LOG）导致的个人词频不生
+效的情况。
+
 * completion
 
 vertico 提供 minibuffer 区域的自动补全功能, 使用 orderless 的过滤风格来对候选者进行过滤:
@@ -952,8 +920,8 @@ vertico 提供 minibuffer 区域的自动补全功能, 使用 orderless 的过�
   (setq enable-recursive-minibuffers t))
 #+end_src
 
-corf 是在光标出显示候选者列表和对应文档, 可以和 orderless 结合使用, 使用 orderless 的过滤风格来过滤
-候选者.
+corf 在光标出显示候选者列表和对应文档, 可以和 orderless 结合使用, 使用 orderless 的过滤风格来过滤候
+选者.
 + 对于光标处的连续输入, 可以使用 M-SPC(corfu-insert-separator) 来插入 orderless 分隔符(默认是空格);
 + vetico 是 minibuffer 区域的补全 UI, 它直接使用 SPC(orderless 默认的分隔符) 分割多个过滤条件;
 #+begin_src emacs-lisp
@@ -1124,7 +1092,7 @@ cape 补全融合:
   )
 #+end_src
 
-安装 ripgrep 工具命令：
+安装 ripgrep 工具命令，consult-rg 依赖它：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 which rg || brew install ripgrep
 #+end_src
@@ -1323,7 +1291,6 @@ marginalia：
 #+end_src
 
 * org
-** org
 
 安装 watchexec 工具：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
@@ -1467,15 +1434,13 @@ which watchexec || brew install watchexec
     (make-directory dir)))
 #+end_SRC
 
-** image
-
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 which pngpaste || brew install pngpaste
 which magick || brew install imagemagick
 #+end_src
 + imagemagick 用于图片分辨率转换, 编译 emacs 时需要指定 =--with-imagemagick= 参数。
 
-拖拽保存图片或 F6 保存剪贴板中图片:
+org-download：拖拽保存图片或 F6 保存剪贴板中图片:
 #+begin_src emacs-lisp
 (use-package org-download
   :config
@@ -1492,8 +1457,7 @@ which magick || brew install imagemagick
   (setq org-download-annotate-function (lambda (link) (previous-line 1) "")))
 #+end_src
 
-** babel
-
+配置 babel：
 #+begin_src emacs-lisp
 ;; 关闭 C-c C-c 触发执行代码.
 (setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
@@ -1529,8 +1493,6 @@ which magick || brew install imagemagick
 
 (use-package org-contrib)
 #+end_src
-
-** tex
 
 在 =~/emacs/templates= 文件中添加一个名为 my-latext 的 tempel 模板，内容如下：
 + 如果生成的 pdf 不显示目录，检查文档 #+OPTIONS 参数中的 toc:nil 和 num: 2 是否生效（如在对应行上执
@@ -1575,6 +1537,7 @@ which magick || brew install imagemagick
 ")
 #+end_example
 
+配置 tex：
 #+begin_src emacs-lisp
 ;; 将安装的 tex 添加到 PATH 环境变量和 exec-path 变量中，后续 Emacs 查询 xelatex 命令使用。
 (setq my-tex-path "/Library/TeX/texbin")
@@ -1730,8 +1693,8 @@ which magick || brew install imagemagick
 %\renewcommand\labelitemi{\ensuremath{\bullet}}
 #+end_src
 
-** slide
-
+slide：
++ 如果文字居中失效, 可以执行 =M-x redraw-display= 命令来生效。
 #+begin_src emacs-lisp
 (use-package org-tree-slide
   :after (org)
@@ -1766,12 +1729,6 @@ which magick || brew install imagemagick
   (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
   (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
 #+end_src
-+ 如果文字居中失效, 可以执行 =M-x redraw-display= 命令来生效。
-
-** capture
-:PROPERTIES:
-:ID:       8E33B032-60B8-4392-B362-BDFBF4D4F636
-:END:
 
 org-capture 支持 store-link 和 capture 协议：
 1. store-link：获取浏览器的 URL 和 Title，然后在 kill-ring 中生成一个链接；
@@ -1780,10 +1737,10 @@ org-capture 支持 store-link 和 capture 协议：
 打开 MAC “脚本编辑器” ，写入如下内容，保存为 “EmacsClient-Org”，文件格式为 “应用程序”，保存到 /Applications 目录。
 #+begin_src shell :tangle no
 on open location this_URL
-    do shell script "/usr/local/bin/emacsclient \"" & this_URL & "\" && open -a Emacs"
+    do shell script "/opt/homebrew/bin/emacsclient \"" & this_URL & "\" && open -a Emacs"
 end open location
 #+end_src
-+ 如果是自编译的 Emmacs, 则 emacsclient 位于 /usr/local/bin 目录下，否则位于 /Applications/Emacs 包中。
++ 如果是自编译的 Emmacs 则 emacsclient 位于 =/opt/homebrew/bin/= 目录下，否则位于 =/Applications/Emacs= 包中。
 
 编辑 "/Applications/EmacsClient-Org.app/Contents/Info.plist" 文件，在 plist->dict 部分添加如下内容：
 #+begin_src xml :tangle no
@@ -1833,8 +1790,7 @@ javascript:location.href='org-protocol://store-link?url='+encodeURIComponent(loc
 javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title)+'&body='+encodeURIComponent(window.getSelection())
 #+end_src
 
-** journal
-
+journal 日记：
 #+begin_src emacs-lisp
 (use-package org-journal
   :commands org-journal-new-entry
@@ -1906,8 +1862,7 @@ javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURICo
 (my-gpg "# -*- mode:org; epa-file-encrypt-to: (\"geekard@qq.com\") -*-")
 #+end_example
 
-** hugo
-
+ox-hugo 博客：
 #+begin_src emacs-lisp
 (use-package ox-hugo
   :demand
@@ -1921,6 +1876,9 @@ javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURICo
 #+end_src
 
 * magit
+
+ =(setq auto-revert-check-vc-info t)= 自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU
+ Profile 显示比较影响性能，故暂不开启。
 
 #+begin_src emacs-lisp
 (setq vc-follow-symlinks t)
@@ -1956,8 +1914,6 @@ javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURICo
 				(format "L%s" start)))))))
 )
 #+end_src
-+ =(setq auto-revert-check-vc-info t)= 自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU Profile 显示
-   比较影响性能，故暂不开启。
 
 * coding
 ** indent
@@ -2111,7 +2067,7 @@ eglot-send-changes-idle-time 时间后才显示 LSP 诊断消息，这样可以�
 #+begin_src emacs-lisp
 (use-package flymake
   :config
-  (setq flymake-no-changes-timeout nil) ;; 不自动检查 buffer 错误.
+  (setq flymake-no-changes-timeout nil) ;; 不自动检查 buffer 错误。
   (global-set-key (kbd "C-s-l") #'consult-flymake)
   (define-key flymake-mode-map (kbd "C-s-n") #'flymake-goto-next-error)
   (define-key flymake-mode-map (kbd "C-s-p") #'flymake-goto-prev-error))
@@ -2130,7 +2086,6 @@ eglot-send-changes-idle-time 时间后才显示 LSP 诊断消息，这样可以�
 eglot 不指示 eldoc 在 echo-area 显示结构化成员(field) 或函数签名信息, 但是在 M-x
 eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息.
 + [[https://codeberg.org/mekeor/emacs-eglot-signature-eldoc-talkative][eglot-signature-eldoc-talkative]] 项目提供的函数可以让 eglot 指示 eldoc 在 echo-area 显示函数签名.
-
 #+begin_src emacs-lisp
 (use-package eldoc
   :config
@@ -2138,6 +2093,7 @@ eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息.
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
   ;; Ready 的内容.
   ;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
+  
   ;; 在打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 的内容会跟随显示 hover 信息, 如函数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
 
@@ -2156,17 +2112,14 @@ eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息.
                    (if (get-buffer-window "*eldoc*")
                        (delete-window (get-buffer-window "*eldoc*"))
                      (display-buffer "*eldoc*")))))
-
-;; minibuffer 窗口最大高度.
-;;(setq max-mini-window-height 3)
-(setq eldoc-echo-area-use-multiline-p nil)  ;; 为 nil 时只单行显示 eldoc 信息.
 #+end_src
 
 eldoc-box 在 frame 右上角显示 eldoc-doc-buffer 的内容. 依赖 markdown-mode 来格式化显示文档的内容, 但
 是不能点击其中的链接, https://github.com/joaotavora/eglot/discussions/1238
 #+begin_src emacs-lisp
 (use-package eldoc-box
-  :after eglot
+  :after
+  (eglot eldoc)
   ;; 滚动显示 eldoc-box buffer 中的内容, 与 corfu-popupinfo-map 的操作一致:
   :bind (:map eglot-mode-map
               ("C-M-k" . my/eldoc-box-scroll-up)
@@ -2193,6 +2146,14 @@ eldoc-box 在 frame 右上角显示 eldoc-doc-buffer 的内容. 依赖 markdown-
   )  
 #+end_src
 
+由于使用了 eldoc-box 显示 eldoc 信息，所以没必要再在 minibuffer 显示 eldoc 信息。这里将 minibuffer
+窗口最大高度设为 1，可以确保显示一行（默认为小数，表示 frame 高度占比，会导致显示多行）。
+#+begin_src emacs-lisp
+(setq max-mini-window-height 1) 
+;; 为 nil 时只单行显示 eldoc 信息.
+(setq eldoc-echo-area-use-multiline-p nil)
+#+end_src
+
 ** eglot
 
 elgot 使用 emacs 内置的 flymake（而非 flycheck）、xref、eldoc、project。
@@ -2211,14 +2172,16 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
 
 配置 emacs eglot:
 #+begin_src emacs-lisp
-;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
-(defun my/manually-activate-flymake ()
-  (add-hook 'flymake-diagnostic-functions #'eglot-flymake-backend nil t)
-  (flymake-mode 1))
-
 (use-package eglot
   :demand
+  :after
+  (flymake eldoc)
   :preface
+  ;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
+  (defun my/manually-activate-flymake ()
+    (add-hook 'flymake-diagnostic-functions #'eglot-flymake-backend nil t)
+    (flymake-mode 1))
+
   (defun my/eglot-eldoc ()
     (setq completion-category-defaults nil)
     ;; eldoc buffer 首先显示 flymake 诊断信息.
@@ -2243,12 +2206,14 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
   :config
   ;; elgot 不管理和配置 flymake，这样会保留自定义的 flymake backend（如 flymake-clippy）。
   (add-to-list 'eglot-stay-out-of 'flymake)
+
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
   ;; 置的太大，否则可能影响性能。
   (setq eglot-events-buffer-size (* 1024 1024 1))
-  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向
-  ;; LSP 发送诊断请求.
-  (setq eglot-send-changes-idle-time 0.2)
+  
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向LSP
+  ;; 发送诊断请求.
+  (setq eglot-send-changes-idle-time 0.1)
 
   ;; 当最后一个源码 buffer 关闭时自动关闭 eglot server.
   (customize-set-variable 'eglot-autoshutdown t)
@@ -2349,7 +2314,7 @@ consult-eglot 提供 ~consult-eglot-symbols~ 函数，方便选择 workspace 中
 #+begin_src emacs-lisp
 (use-package eglot-booster
   :vc (:fetcher github :repo jdtsmith/eglot-booster)
-  :after eglot
+  :after (eglot)
   :config (eglot-booster-mode))
 #+end_src
 
@@ -2802,7 +2767,7 @@ cargo sweep --installed
 #+begin_src emacs-lisp
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
-  :after eglot
+  :after (eglot)
   :init
   (require 'rust-ts-mode)
   (setq rust-mode-treesitter-derive t) ;; rust-mode 作为 rust-ts-mode 而非 prog-mode 的子 mode.
@@ -2846,10 +2811,11 @@ cargo sweep --installed
 
 flymake-clippy 为 flymake 添加 flymake-clippy-backend，用于对 rust 代码进行丰富的 linter 规则检查：
 + 需要配置 eglot 才能生效，参考 [[https://git.sr.ht/~mgmarlow/flymake-clippy/][flymake-clippy 文档]]。
-+ 不和 eglot/rust-analyzer diagnose 强绑定，可以执行 ~M-x flymake-start~ 开启 linter 检查；
 #+begin_src emacs-lisp
 (use-package flymake-clippy
-  :hook (rust-ts-mode . flymake-clippy-setup-backend))  
+  :after (flymake rust-mode)
+  :hook
+  (rust-ts-mode . flymake-clippy-setup-backend))  
 #+end_src
 
 快速 rust 开发测试:
@@ -2872,7 +2838,7 @@ eglot-x 为 rust 提供了 M-x eglot-x-reload-workspace 命令, 可以在 Cargo.
 不需要重启 eglot:
 #+begin_src emacs-lisp
 (use-package eglot-x
-  :after eglot
+  :after (eglot rust-mode)
   :vc (:fetcher github :repo nemethf/eglot-x)
   :init
   (require 'rust-ts-mode) ;; 绑定 rust-ts-mode-map 需要.
@@ -2904,6 +2870,7 @@ eglot-x 为 rust 提供了 M-x eglot-x-reload-workspace 命令, 可以在 Cargo.
 cargo package 不再维护, 故切换到 cargo-mode package, 它提供了管理 Cargo.toml 依赖的命令.
 #+begin_src emacs-lisp
 (use-package cargo-mode
+  :after (rust-mode)
   :custom
   ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用 compilation。
   (cargo-mode-use-comint nil) 
@@ -2996,7 +2963,6 @@ mermaid.initialize({
 使用 grip 来预览 markdown 文件，它调用 github markdown API 来渲染文件，从而确保渲染后分隔和 Github
 一致。为了避免 API 调用频率限制，可以创建一个空 scop 的 Access Token，然后将 username 和 token 保存
 到 =~/.authinfo.gpg= 文件中：
-
 #+begin_src bash :tangle no
 machine api.github.com login geekard@qq.com password YOUR_TOKEN
 #+end_src
@@ -4094,7 +4060,6 @@ Emacs 29 xwidget-webkit 对 Mac 支持不好( [[https://github.com/d12frosted/ho
 ;; Google 翻译
 (use-package google-translate
   :config
-  (setq max-mini-window-height 0.2)
   ;; C-n/p 切换翻译类型。
   (setq google-translate-translation-directions-alist
         '(("en" . "zh-CN") ("zh-CN" . "en")))

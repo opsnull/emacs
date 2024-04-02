@@ -28,8 +28,8 @@
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
-;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
-;; 所以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
+;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com; 所
+;; 以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
 (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
                     ".openai.azure.com" ".baidu.com"))
@@ -71,7 +71,6 @@
   (setenv "ALL_PROXY" my/socks-proxy)
   (setenv "HTTP_PROXY" nil)
   (setenv "HTTPS_PROXY" nil)
-  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
   (advice-add 'url-http :around 'mb-url-http-around-advice))
 
 (defun proxy-socks-disable ()
@@ -143,6 +142,12 @@
   (setq use-file-dialog nil)
   (setq use-dialog-box nil))
 
+;; square corner: undecorated, round corner: undecorated-round
+(add-to-list 'default-frame-alist '(undecorated . t)) 
+(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+(add-to-list 'default-frame-alist '(selected-frame) 'name nil)
+(add-to-list 'default-frame-alist '(ns-appearance . dark))
+
 ;; 高亮当前行。
 (global-hl-line-mode t)
 (setq global-hl-line-sticky-flag t)
@@ -163,14 +168,8 @@
 ;; 30: 左右分屏, nil: 上下分屏。
 (setq split-width-threshold nil)
 
-;; 刷行显示。
+;; 刷新显示。
 (global-set-key (kbd "<f5>") #'redraw-display)
-
-;; square corner: undecorated, round corner: undecorated-round
-(add-to-list 'default-frame-alist '(undecorated . t)) 
-(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-(add-to-list 'default-frame-alist '(selected-frame) 'name nil)
-(add-to-list 'default-frame-alist '(ns-appearance . dark))
 
 (setq display-buffer-alist
       `((,(rx bos (or
@@ -1285,7 +1284,7 @@
 
 (use-package flymake
   :config
-  (setq flymake-no-changes-timeout nil) ;; 不自动检查 buffer 错误.
+  (setq flymake-no-changes-timeout nil) ;; 不自动检查 buffer 错误。
   (global-set-key (kbd "C-s-l") #'consult-flymake)
   (define-key flymake-mode-map (kbd "C-s-n") #'flymake-goto-next-error)
   (define-key flymake-mode-map (kbd "C-s-p") #'flymake-goto-prev-error))
@@ -1296,6 +1295,7 @@
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
   ;; Ready 的内容.
   ;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
+  
   ;; 在打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 的内容会跟随显示 hover 信息, 如函数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
 
@@ -1315,12 +1315,9 @@
                        (delete-window (get-buffer-window "*eldoc*"))
                      (display-buffer "*eldoc*")))))
 
-;; minibuffer 窗口最大高度.
-;;(setq max-mini-window-height 3)
-(setq eldoc-echo-area-use-multiline-p nil)  ;; 为 nil 时只单行显示 eldoc 信息.
-
 (use-package eldoc-box
-  :after eglot
+  :after
+  (eglot eldoc)
   ;; 滚动显示 eldoc-box buffer 中的内容, 与 corfu-popupinfo-map 的操作一致:
   :bind (:map eglot-mode-map
               ("C-M-k" . my/eldoc-box-scroll-up)
@@ -1346,14 +1343,20 @@
   ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t) 
   )
 
-;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
-(defun my/manually-activate-flymake ()
-  (add-hook 'flymake-diagnostic-functions #'eglot-flymake-backend nil t)
-  (flymake-mode 1))
+(setq max-mini-window-height 1) 
+;; 为 nil 时只单行显示 eldoc 信息.
+(setq eldoc-echo-area-use-multiline-p nil)
 
 (use-package eglot
   :demand
+  :after
+  (flymake eldoc)
   :preface
+  ;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
+  (defun my/manually-activate-flymake ()
+    (add-hook 'flymake-diagnostic-functions #'eglot-flymake-backend nil t)
+    (flymake-mode 1))
+
   (defun my/eglot-eldoc ()
     (setq completion-category-defaults nil)
     ;; eldoc buffer 首先显示 flymake 诊断信息.
@@ -1378,12 +1381,14 @@
   :config
   ;; elgot 不管理和配置 flymake，这样会保留自定义的 flymake backend（如 flymake-clippy）。
   (add-to-list 'eglot-stay-out-of 'flymake)
+
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能设
   ;; 置的太大，否则可能影响性能。
   (setq eglot-events-buffer-size (* 1024 1024 1))
-  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向
-  ;; LSP 发送诊断请求.
-  (setq eglot-send-changes-idle-time 0.2)
+  
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向LSP
+  ;; 发送诊断请求.
+  (setq eglot-send-changes-idle-time 0.1)
 
   ;; 当最后一个源码 buffer 关闭时自动关闭 eglot server.
   (customize-set-variable 'eglot-autoshutdown t)
@@ -1439,7 +1444,7 @@
 
 (use-package eglot-booster
   :vc (:fetcher github :repo jdtsmith/eglot-booster)
-  :after eglot
+  :after (eglot)
   :config (eglot-booster-mode))
 
 (setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
@@ -1586,7 +1591,7 @@
 
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
-  :after eglot
+  :after (eglot)
   :init
   (require 'rust-ts-mode)
   (setq rust-mode-treesitter-derive t) ;; rust-mode 作为 rust-ts-mode 而非 prog-mode 的子 mode.
@@ -1628,7 +1633,9 @@
   )
 
 (use-package flymake-clippy
-  :hook (rust-ts-mode . flymake-clippy-setup-backend))
+  :after (flymake rust-mode)
+  :hook
+  (rust-ts-mode . flymake-clippy-setup-backend))
 
 (use-package rust-playground
   :config
@@ -1642,7 +1649,7 @@ edition = \"2021\"
 [dependencies]"))
 
 (use-package eglot-x
-  :after eglot
+  :after (eglot rust-mode)
   :vc (:fetcher github :repo nemethf/eglot-x)
   :init
   (require 'rust-ts-mode) ;; 绑定 rust-ts-mode-map 需要.
@@ -1668,6 +1675,7 @@ edition = \"2021\"
   )
 
 (use-package cargo-mode
+  :after (rust-mode)
   :custom
   ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用 compilation。
   (cargo-mode-use-comint nil) 
@@ -2355,7 +2363,6 @@ mermaid.initialize({
 ;; Google 翻译
 (use-package google-translate
   :config
-  (setq max-mini-window-height 0.2)
   ;; C-n/p 切换翻译类型。
   (setq google-translate-translation-directions-alist
         '(("en" . "zh-CN") ("zh-CN" . "en")))

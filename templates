@@ -8,7 +8,7 @@ fundamental-mode ;; 适用于所有 Mode。
 ;;; org-mode
 org-mode ;; 空格分割的多个 Mode 名称。
 
-;; 插入自己的 GnuPG 加密 key。
+;; 插入自己的 GnuPG 加密 key(journal 等 GPG 文件使用）。
 (my-gpg "# -*- mode:org; epa-file-encrypt-to: (\"geekard@qq.com\") -*-")
 
 (my-org-file "#+TITLE: " (p "title") n
