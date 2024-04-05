@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-03T00:04:49+0800
+#+LASTMOD: 2024-04-05T10:04:41+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
 #+OPTIONS: prop:t ^:nil
@@ -17,6 +17,8 @@
 #+HUGO_LOCALE: zh
 #+OPTIONS: title:t
 #+HUGO_CUSTOM_FRONT_MATTER: :series '("emacs") :series_order 1
+
+更多 Emacs 内容请访问我的博客: https://blog.opsnull.com/emacs/
 
 * install
 
