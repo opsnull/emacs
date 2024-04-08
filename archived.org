@@ -5505,6 +5505,7 @@ consult-eglot 提供 consult-eglot-symbols 函数，可以选择 workspace 中�
 #+end_src
 
 * cape
+
 #+begin_src emacs-lisp
 ;; cape 补全融合
 (use-package cape)
@@ -7297,4 +7298,162 @@ anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
 参考：
 1. [[https://yiufung.net/post/anki-org/][Power up Anki with Emacs, Org mode, anki-editor and more]]
 2. [[https://docs.ankiweb.net/intro.html][Introduction - Anki Manual]]
+
+
+* citre
+
+=Etags=: GNU Emacs comes with two ctags utilities, =etags and ctags=, which are compiled from the same
+source code. Etags generates a tag table file for Emacs, while the ctags command is used to create a
+similar table in a format understood by vi. They have different sets of command line options: etags
+does not recognize and ignores options which only make sense for vi style tag files produced by the
+ctags command.
++ etags 和 ctags 都是来自于同一个项目的源码，但是 etags 为 emacs 生产 tag table，而 ctags 为 vi 生成
+  tag table。
++ etags 生成的文件名称为 =TAGS= ，ctags 命令生成的文件名称为 =tags= ，GNU global 的 gtags 命令生成的文件
+  名称为 =GTAGS= ；
+
+=Exuberant Ctags=: written and maintained by Darren Hiebert until 2009, was initially distributed with
+Vim, but became a separate project upon the release of Vim 6. It includes support for Emacs and
+etags compatibility. Exuberant Ctags includes support for over 40 programming languages with the
+ability to add support for even more using regular expressions.
++ 最开始随 vim 发布，也支持 emacs 的 etags，支持大量语言， =目前已经被 Universal Ctags 取代= 。
+
+=Universal Ctags=: is a fork of Exuberant Ctags, with the objective of continuing its development. A
+few parsers are rewritten to better support the languages.
++ Universal Ctags 是 Exuberant Ctags 的 fork 版本。
+
+[[https://www.gnu.org/software/global/][GNU Global]] 内置了 5 种语言解析器，包括 C/Yacc/JAVA/assembly, 其他 25 种语言使用 Pygments + Universal
+Ctags 解析器插件来支持的。
+
+安装 GNU global 和 pygments, global 依赖并自动安装 universal-ctags, 通过 pygments 能生成更丰富的 TAG 内容，同
+时支持 reference 搜索。
++ https://github.com/universal-ctags/citre/blob/master/docs/user-manual/citre-global.md 
++ global 默认使用 brew 安装的 python@3.12 和 pygments, 而不能直接使用 pip install pygments.
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+brew install global pygments # 提供 global、gtags 命令, gtags 使用 pygments 支持跟多语言
+
+# 在 ~/.bashrc 中添加如下配置：
+# 统一的 tags 文件目录
+export GTAGSOBJDIRPREFIX=~/.cache/gtags/ 
+mkdir $GTAGSOBJDIRPREFIX
+export GTAGSCONF=/opt/homebrew/opt/global/share/gtags/gtags.conf
+# 使用 pygments 支持更多的语言，他噢夹南是支持 reference 搜索。
+export GTAGSLABEL=pygments
+#+end_src
+
+citre 是基于 Ctags（Universal Ctags 版本）的代码浏览器工具，也支持[[https://github.com/universal-ctags/citre/blob/master/docs/user-manual/citre-global.md][集成使用GNU global 的 GTAGS 文件]]。
+#+begin_src emacs-lisp
+(setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
+(setenv "GTAGSCONF" (car (file-expand-wildcards "/opt/homebrew/opt/global/share/gtags/gtags.conf")))
+(setenv "GTAGSLABEL" "pygments")
+
+(use-package citre
+  :after (eglot)
+  :config
+  ;; 只使用支持 reference 的 GNU Global tags。
+  (setq citre-completion-backends '(global))
+  (setq citre-find-definition-backends '(global))
+  (setq citre-find-reference-backends '(global))
+  (setq citre-tags-in-buffer-backends  '(global))
+  (setq citre-auto-enable-citre-mode-backends '(global))
+  ;; citre-config 的逻辑只对 prog-mode 的文件有效。
+  (setq citre-auto-enable-citre-mode-modes '(c-mode c-ts-mode go-mode go-ts-mode))
+  (setq citre-use-project-root-when-creating-tags t)
+  (setq citre-peek-file-content-height 20)
+  ;; citre-config 自动开启 citre-mode 后，下面 citre-mode-map 快捷键才生效。
+  (define-key citre-mode-map (kbd "s-.") 'citre-jump)
+  (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
+  (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
+  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
+  (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
+  (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
+  (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
+  (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
+  (global-set-key (kbd "C-x c u") 'citre-global-update-database))
+#+end_src
+
+eglot 运行时将 xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其它 backend. 这里定
+义一个一键切换函数，在 eglot 失效的情况下，手动关闭当前 major-mode 的 eglot，从而让
+xref-backend-functions 恢复为以前的值，如 citre-xref-backend;
+#+begin_src emacs-lisp
+(defun my/toggle-eglot ()
+  (interactive)
+  (let ((current-mode major-mode)
+        (hook (intern (concat (symbol-name major-mode) "-hook"))))
+    (if (bound-and-true-p eglot--managed-mode)
+        (progn
+          (eglot-shutdown-all)
+          (remove-hook hook 'eglot-ensure)
+          ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，
+          ;; 会自动向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu
+          ;; 的集成。
+          (require 'citre-config)
+          ;; 将 citre 添加到 xref backend 中，-100 表示添加到开头，确保优先使用。
+          (add-hook 'xref-backend-functions #'citre-xref-backend -100))
+      (progn
+        (add-hook hook 'eglot-ensure)
+        (eglot-ensure)))))
+(global-set-key (kbd "s-`") 'my/toggle-eglot)
+#+end_src
+
+创建和更新 GNU global GTAGS 文件（保存到 GTAGSOBJDIRPREFIX 环境变量指定的位置，如 ~/.cache/gtags/)：
++ M-x citre-global-create-database
++ M-x citre-global-update-database
+#+begin_src shell :tangle no
+zj@a:~/.cache/gtags/Users/alizj/go/src/**/bp-agent$ ls -l
+total 2.8M
+-rw-r--r-- 1 alizj  32K  3 30 11:53 GPATH
+-rw-r--r-- 1 alizj 600K  3 30 11:53 GRTAGS  # reference tags
+-rw-r--r-- 1 alizj 1.9M  3 30 11:53 GTAGS   # tags
+#+end_src
+
+注意以下两个命令创建 Universal Ctags 的 ctags 文件（项目有 .tags/ 目录或 .tags 或 tags 文件），而非
+GNU global GTAGS 文件，不支持 references，不建议使用：
++ M-x citre-create-tags-file
++ M-x citre-update-tags-file
+  
+如果误使用了上面的命令创建 ctags 文件则后续使用 xref-find-references 会 hang，需要删除。
+
+使用 citre: 
++ M-x citre-jump-to-reference :: which reuses the citre-jump UI;
++ M-x citre-peek-references :: equivalent to citre-peek;
++ M-x citre-ace-peek-references :: equivalent to citre-ace-peek;
++ M-x citre-peek-through-references :: equivalent to citre-peek-through.
++ M-x citre-ace-peek :: 使用 ace 来 peek 查看指定的符号定义或函数签名。
++ M-x citre-peek :: 查看当前光标处符号的定义或函数签名。
+
+执行 s-? (citre-peek-reference) 支持如下快捷键：
++ M-n, M-p: Next/prev line，当前显示的内容的下一行或上一行（文件不变）。
++ M-N, M-P: Next/prev definition. 切换到下一个或上一个文件。
++ M-l j: Jump to the definition. (跳转到当前预览的位置定义文件，同时 peek window 继续显示，可以使用
+  M-n/M-p/M-N/M-P 来使用 peek window)。
++ M-l p：M-x citre-peek-through， 在 peek window 中选择一个 symbol，然后跳转到定义。
++ C-g: Close the peek window.
+
+M-l 前缀快捷键：
++ j citre-peek-jump
++ f citre-peek-make-current-tag-first
++ D citre-peek-delete-branches
++ d citre-peek-delete-branch
++ r citre-peek-through-reference
++ p citre-peek-through
+  
+通过 peek through 打开多个多个 function definition 后，citre 会在 peek window 下方记录 peek history，
+可以使用 <left>/<right> 来移动 history，当前的位置用 [func] 方括号来表示。
+
+可以使用 C-l 来调整 peek window 的位置。
+
+对于开启了 citre-mode 的 buffer，citre 会向 xref-backend-functions 中添加 citre-xref-backend, 所以后
+续使用 imenu/xref-find-references/xref-find-definitions 时会使用 citre 提供的输入。同时 xref 和
+consult 结合，可以使用 consult 来预览 xref 的结果。
+
+xref-backend-functions 可能会被添加多个 backend，它使用第一个 backend 返回地信息，所以必须确保
+citre-xref-backend 位于列表的第一位。常见的问题是 eglot 会将 xref-backend-functions 重置为唯一的
+eglot-xref-backend。
++ 解决办法：定义一个函数 my/toggle-eglot 来关闭 eglot，这时 xref-backend-functions 会恢复为 eglot 启
+  动前设置的值。
+
+在 citre-jump（M-.) 的弹出时 buffer 中可以使用正则语法对候选者进行过滤（orderless 提供的支持）, 例
+如: =something kind:^member$ kind:^macro$ input:.c$=
+
 

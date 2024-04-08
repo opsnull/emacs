@@ -1424,21 +1424,6 @@
                              (allowImplicitNetworkAccess . t)  
                              )))))
 
-(defun my/toggle-eglot ()
-  (interactive)
-  (let ((current-mode major-mode)
-        (hook (intern (concat (symbol-name major-mode) "-hook"))))
-    (if (bound-and-true-p eglot--managed-mode)
-        (progn
-          (eglot-shutdown-all)
-          (remove-hook hook 'eglot-ensure)
-          ;; 将 citre 添加到 xref backend 中，-100 表示添加到开头，确保优先使用。
-          (add-hook 'xref-backend-functions #'citre-xref-backend -100))
-      (progn
-        (add-hook hook 'eglot-ensure)
-        (eglot-ensure)))))
-(global-set-key (kbd "s-`") 'my/toggle-eglot)
-
 (use-package consult-eglot
   :after (eglot consult))
 
@@ -1446,40 +1431,6 @@
   :vc (:fetcher github :repo jdtsmith/eglot-booster)
   :after (eglot)
   :config (eglot-booster-mode))
-
-(setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
-(setenv "GTAGSCONF" (car (file-expand-wildcards "/opt/homebrew/opt/global/share/gtags/gtags.conf")))
-(setenv "GTAGSLABEL" "pygments")
-
-(use-package citre
-  :after (eglot)
-  :init
-  ;; 当打开一个文件时，如果可以找到对应 TAGS 文件则自动开启 citre-mode。开启了 citre-mode 后，会自动
-  ;; 向 xref-backend-functions hook 添加 citre-xref-backend，从而支持于 xref 和 imenu 的集成。
-  (require 'citre-config)
-  :config
-  ;; 只使用支持 reference 的 GNU Global tags。
-  (setq citre-completion-backends '(global))
-  (setq citre-find-definition-backends '(global))
-  (setq citre-find-reference-backends '(global))
-  (setq citre-tags-in-buffer-backends  '(global))
-  (setq citre-auto-enable-citre-mode-backends '(global))
-  ;; citre-config 的逻辑只对 prog-mode 的文件有效。
-  (setq citre-auto-enable-citre-mode-modes '(go-ts-mode go-mode python-ts-mode python-mode rust-ts-mode rust-mode))
-  (setq citre-use-project-root-when-creating-tags t)
-  (setq citre-peek-file-content-height 20)
-  ;; citre-config 自动开启 citre-mode 后，下面 citre-mode-map 快捷键才生效。
-  (define-key citre-mode-map (kbd "s-.") 'citre-jump)
-  (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
-  (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
-  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
-  (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
-  (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
-  (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
-  (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
-  (global-set-key (kbd "C-x c u") 'citre-global-update-database)
-  ;; eglot 生效时关闭 citre-mode，防止两者的 xref backend 相互干扰。
-  (add-hook 'eglot-managed-mode-hook (lambda ()(citre-mode -1))))
 
 ;; 将 ~/.venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
 (setq my-venv-path "/Users/alizj/.venv/bin/")
