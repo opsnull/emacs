@@ -32,7 +32,7 @@
 ;; 以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
 (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
-                    ".openai.azure.com" ".baidu.com"))
+                    ".openai.azure.com" ".baidu.com" ".aliyun-inc.com"))
 
 ;; Google 默认会 403 缺少 UA 的请求。
 (setq my/user-agent
