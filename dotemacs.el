@@ -947,7 +947,7 @@
   (setq org-download-annotate-function (lambda (link) (previous-line 1) "")))
 
 ;; 关闭 C-c C-c 触发执行代码.
-(setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
+;;(setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
 ;; 关闭确认执行代码的操作.
 (setq org-confirm-babel-evaluate nil)
 ;; 使用语言的 mode 来格式化代码.

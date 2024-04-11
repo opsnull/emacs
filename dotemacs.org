@@ -1,8 +1,8 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-10T12:04:10+0800
+#+LASTMOD: 2024-04-11T17:04:56+0800
 #+STARTUP: overview hideblocks
-#+PROPERTY: header-args:emacs-lisp :tangle yes :results silent :exports code :eval no
+#+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
 #+LANGUAGE: zh-CN
 
@@ -863,6 +863,7 @@ patch:
     (if (or (string-match "vterm-mode" (symbol-name major-mode))
             (string-match "dired-mode" (symbol-name major-mode))
             (string-match "image-mode" (symbol-name major-mode))
+	      (string-match "compilation-mode" (symbol-name major-mode))
             (string-match "minibuffer-mode" (symbol-name major-mode)))
         (activate-input-method nil)
       (activate-input-method "rime"))))
@@ -1462,7 +1463,7 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片:
 配置 babel：
 #+begin_src emacs-lisp
 ;; 关闭 C-c C-c 触发执行代码.
-(setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
+;;(setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
 ;; 关闭确认执行代码的操作.
 (setq org-confirm-babel-evaluate nil)
 ;; 使用语言的 mode 来格式化代码.
