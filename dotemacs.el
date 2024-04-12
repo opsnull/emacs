@@ -491,12 +491,13 @@
               :foreground-color "#dcdccc"
               :internal-border-width 2))
 
-
-  ;; 部分 major-mode 关闭 RIME 输入法。
+  ;; 部分 mode 关闭 RIME 输入法。
   (defadvice switch-to-buffer (after activate-input-method activate)
     (if (or (string-match "vterm-mode" (symbol-name major-mode))
             (string-match "dired-mode" (symbol-name major-mode))
             (string-match "image-mode" (symbol-name major-mode))
+            (string-match "compilation-mode" (symbol-name major-mode))
+            (string-match "isearch-mode" (symbol-name major-mode))
             (string-match "minibuffer-mode" (symbol-name major-mode)))
         (activate-input-method nil)
       (activate-input-method "rime"))))
