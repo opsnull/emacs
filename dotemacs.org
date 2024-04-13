@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-12T11:04:29+0800
+#+LASTMOD: 2024-04-13T20:04:46+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -27,7 +27,7 @@
 brew uninstall emacs-plus@29
 brew install emacs-plus@29  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon --with-native-comp --with-poll --HEAD
 brew unlink emacs-plus@29 && brew link emacs-plus@29
-ln -sf /usr/local/opt/emacs-plus@29/Emacs.app /Applications
+ln -sf /opt/homebrew/opt/emacs-plus/Emacs.app /Applications/
 #+end_src
 
 * init
