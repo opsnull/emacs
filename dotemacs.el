@@ -976,6 +976,8 @@
    (emacs-lisp . t)
    (rust . t)
    (python . t)
+   (C . t) ;; provide C, C++, and D
+   (java . t)
    (awk . t)
    (css . t)))
 
@@ -1018,7 +1020,7 @@
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   (add-to-list 'org-latex-classes
-               '("ctexart"
+	       '("ctexart"
                  "\\documentclass[lang=cn,11pt,a4paper,table]{ctexart}
                     [NO-DEFAULT-PACKAGES]
                     [PACKAGES]
@@ -1032,6 +1034,12 @@
 ;; org export html 格式时需要 htmlize.el 包来格式化代码。
 (use-package htmlize)
 
+;; 使用 imagemagick 而非默认的 dvipng 来生成 M-x org-latex-preview 在线显式的图片。
+;; dvipng 总是报错。
+;; 参考：https://orgmode.org/worg/org-tutorials/org-latex-preview.html
+(setq latex-run-command "xelatex")
+(setq org-latex-create-formula-image-program 'imagemagick)
+
 (use-package org-tree-slide
   :after (org)
   :commands org-tree-slide-mode
@@ -1040,17 +1048,17 @@
                             (org-fold-hide-block-all)
                             (setq-default x-stretch-cursor -1)
                             (redraw-display)
-	    		    (blink-cursor-mode -1)
-			    (setq cursor-type 'bar)
+                            (blink-cursor-mode -1)
+                            (setq cursor-type 'bar)
                             ;;(org-display-inline-images)
-			    ;;(hl-line-mode -1)
+                            ;;(hl-line-mode -1)
                             (text-scale-increase 2)
-			    (setq org-tree-slide-slide-in-waiting 0.01)
+                            (setq org-tree-slide-slide-in-waiting 0.01)
                             (read-only-mode 1)))
    (org-tree-slide-stop . (lambda ()
                             (blink-cursor-mode +1)
                             (setq-default x-stretch-cursor t)
-			    (setq cursor-type t)
+                            (setq cursor-type t)
                             (text-scale-increase 0)
                             ;;(hl-line-mode 1)
                             (read-only-mode -1))))

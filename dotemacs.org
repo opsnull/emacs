@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-13T22:04:03+0800
+#+LASTMOD: 2024-04-25T18:04:47+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -60,6 +60,7 @@ ln -sf /opt/homebrew/opt/emacs-plus/Emacs.app /Applications/
 (setq my-bin-path '(
                     "/opt/homebrew/bin"
                     "/opt/homebrew/opt/findutils/libexec/gnubin"
+		      "/opt/homebrew/opt/openjdk/bin"
                     "/Users/alizj/go/bin"
                     "/Users/alizj/.cargo/bin"
                     ))
@@ -1491,6 +1492,8 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片:
    (emacs-lisp . t)
    (rust . t)
    (python . t)
+   (C . t) ;; provide C, C++, and D
+   (java . t)
    (awk . t)
    (css . t)))
 
@@ -1579,7 +1582,7 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片:
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   (add-to-list 'org-latex-classes
-               '("ctexart"
+	       '("ctexart"
                  "\\documentclass[lang=cn,11pt,a4paper,table]{ctexart}
                     [NO-DEFAULT-PACKAGES]
                     [PACKAGES]
@@ -1592,6 +1595,19 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片:
 
 ;; org export html 格式时需要 htmlize.el 包来格式化代码。
 (use-package htmlize)
+#+end_src
+
+在线预览 LaTex fragments：
++ 预览命令：C-c C-x C-l (org-latex-preview)，When called with a single prefix argument, clear all
+  images in the current entry. Two prefix arguments produce a preview image for all fragments in the
+  buffer, while three of them clear all the images in that buffer.
++ 或者添加启动时自动预览：#+STARTUP: latexpreview 或  nolatexpreview
+#+begin_src emacs-lisp
+;; 使用 imagemagick 而非默认的 dvipng 来生成 M-x org-latex-preview 在线显式的图片。
+;; dvipng 总是报错。
+;; 参考：https://orgmode.org/worg/org-tutorials/org-latex-preview.html
+(setq latex-run-command "xelatex")
+(setq org-latex-create-formula-image-program 'imagemagick)
 #+end_src
 
 自定义样式 mystyle.sty: 对于表格，如果列内容过宽则导出的 pdf 中该列的内容会被截断，可以为表格设置如
@@ -1611,6 +1627,8 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片:
 
 % 提示 title
 \usepackage[explicit]{titlesec}
+% 每个 chapter 另起一页
+\newcommand{\sectionbreak}{\clearpage}
 \usepackage{titling}
 \setlength{\droptitle}{-6em}
 
