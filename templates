@@ -29,7 +29,20 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	     "#+HUGO_CATEGORIES: " (p "catagory1 catagory2") n
 	     "#+HUGO_LOCALE: zh" n
 	     "#+OPTIONS: title:t" n 
-	     "#+HUGO_CUSTOM_FRONT_MATTER: :series "  "'(\"" (p "series name") "\") :series_order " (p "1") n)
+	     "#+HUGO_CUSTOM_FRONT_MATTER: :series "  "'(\"" (p "series name") "\") :series_order " (p "1") n
+	     " " n
+	     (p "这是摘要") n
+	     " " n
+	     "hugo: more"
+	     " " n
+	     " " n
+             "#+begin_details" n
+             "#+begin_summary" n
+             "变更历史" n
+             "#+end_summary" n
+	       " " n
+	       (format-time-string "%Y-%m-%d %a  ")  "首次创建" n
+             "#+end_details" n)
 
 (my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 
 	  "#+SUBTITLE: 内部资料，注意保密!
