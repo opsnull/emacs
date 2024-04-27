@@ -274,37 +274,37 @@
 (use-package fontaine
   :config
   (setq fontaine-latest-state-file
-        (locate-user-emacs-file "fontaine-latest-state.eld"))
+	(locate-user-emacs-file "fontaine-latest-state.eld"))
 
   (setq fontaine-presets
-        '((small
-           :default-family "Iosevka Comfy Motion"
-           :default-height 80
-           :variable-pitch-family "Iosevka Comfy Fixed")
-          (regular) ;; 使用缺省配置。
-          (medium
-           :default-weight semilight
-           :default-height 115
-           :bold-weight extrabold)
-          (large
-           :inherit medium
-           :default-height 150)
-          (presentation
-           :default-height 180)
-          (t
-           :default-family "Iosevka Comfy"
-           :default-weight regular
-           :default-height 160 ;; 默认字号, 需要是偶数才能实现等宽等高。
-           :fixed-pitch-family "Iosevka Comfy"
-           :fixed-pitch-weight nil
-           :fixed-pitch-height 1.0
-           :fixed-pitch-serif-family "Iosevka Comfy"
-           :fixed-pitch-serif-weight nil
-           :fixed-pitch-serif-height 1.0
-           :variable-pitch-family "Iosevka Comfy Duo"
-           :variable-pitch-weight nil
-           :variable-pitch-height 1.0
-           :line-spacing nil)))
+	'((small
+	   :default-family "Iosevka Comfy Motion"
+	   :default-height 80
+	   :variable-pitch-family "Iosevka Comfy Fixed")
+	  (regular) ;; 使用缺省配置。
+	  (medium
+	   :default-weight semilight
+	   :default-height 115
+	   :bold-weight extrabold)
+	  (large
+	   :inherit medium
+	   :default-height 150)
+	  (presentation
+	   :default-height 180)
+	  (t
+	   :default-family "Iosevka Comfy"
+	   :default-weight regular
+	   :default-height 160 ;; 默认字号, 需要是偶数才能实现等宽等高。
+	   :fixed-pitch-family "Iosevka Comfy"
+	   :fixed-pitch-weight nil
+	   :fixed-pitch-height 1.0
+	   :fixed-pitch-serif-family "Iosevka Comfy"
+	   :fixed-pitch-serif-weight nil
+	   :fixed-pitch-serif-height 1.0
+	   :variable-pitch-family "Iosevka Comfy Duo"
+	   :variable-pitch-weight nil
+	   :variable-pitch-height 1.0
+	   :line-spacing nil)))
   (fontaine-mode 1)
   (define-key global-map (kbd "C-c f") #'fontaine-set-preset)
   (add-hook 'enable-theme-functions #'fontaine-apply-current-preset)
@@ -318,13 +318,22 @@
     (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
     (set-fontset-font t 'symbol (font-spec :family "Symbola")) ;; Apple Symbols, Symbola
     (let ((font (frame-parameter nil 'font))
-          (font-spec (font-spec :family "LXGW WenKai Screen")))
+	  (font-spec (font-spec :family "LXGW WenKai Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
-        (set-fontset-font font charset font-spec)))))
+	(set-fontset-font font charset font-spec)))))
 
 ;; emacs 启动后或 fontaine preset 切换时设置字体。
 (add-hook 'after-init-hook 'my/set-font)
 (add-hook 'fontaine-set-preset-hook 'my/set-font)
+
+;; 设置字体缩放比例，设置为 1.172 可以确保 2 倍放大后对应的是 22 号偶数字体，这样表格可以对齐。16 *
+;; 1.172 * 1.172 = 21.97（Emacs 取整为 22）。
+(setq text-scale-mode-step 1.172)
+;; table 只使用中英文严格等宽的 LXGW WenKai Mono Screen 字体, 避免中英文不对齐。
+(custom-theme-set-faces
+ 'user
+ '(org-table ((t (:family "LXGW WenKai Mono Screen"))))
+ )
 
 (use-package ef-themes
   :demand
@@ -352,7 +361,7 @@
   (interactive)
   (pcase appearance
     ('light (load-theme 'ef-elea-light t))
-    ('dark (load-theme 'ef-elea-dark t))))
+    ('dark (load-theme 'ef-maris-dark t))))
 (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
 (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
@@ -916,7 +925,8 @@
           ("SRC" "»" "«")
           ("example" "»–" "–«")
           ("quote" "❝" "❞")))
-  ;; 缩放字体时表格边界不对齐，故不美化表格。
+  ;; org-modern-table 会导致 text scale 时表格不对齐，故关闭。
+  ;; https://github.com/minad/org-modern/issues/69
   (setq org-modern-table nil)
   (setq org-modern-list '(
                           (?* . "✤")
