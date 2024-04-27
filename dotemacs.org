@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-27T19:04:29+0800
+#+LASTMOD: 2024-04-27T20:04:25+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -580,8 +580,8 @@ tab-bar：
   (global-set-key (kbd "s-f") 'tab-bar-history-forward)
   (global-set-key (kbd "s-b") 'tab-bar-history-back)
   (global-set-key (kbd "s-t") 'tab-bar-new-tab)
-  (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
-  (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
+  (keymap-global-set "s-n" 'tab-bar-switch-to-next-tab)
+  (keymap-global-set "s-p" 'tab-bar-switch-to-prev-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
   (global-set-key (kbd "s-0") 'tab-bar-close-tab)
 
@@ -1322,9 +1322,11 @@ which watchexec || brew install watchexec
         org-highlight-latex-and-related '(latex)
         ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
         org-export-with-latex 'verbatim
-        org-export-with-broken-links t
+        org-export-with-broken-links 'mark
         ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
         org-export-with-sub-superscripts nil
+        org-export-default-language "zh-CN" ;; 默认是 en
+        org-export-coding-system 'utf-8
 
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
         org-use-sub-superscripts nil
@@ -1343,11 +1345,11 @@ which watchexec || brew install watchexec
         org-cycle-level-faces t
         org-n-level-faces 4
         org-indent-indentation-per-level 2
-	
+        
         ;; 内容缩进与对应 headerline 一致。
         org-adapt-indentation t
         org-list-indent-offset 2
-	
+        
         ;; 代码块缩进。
         org-src-preserve-indentation t
         org-edit-src-content-indentation 0

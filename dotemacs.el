@@ -392,8 +392,8 @@
   (global-set-key (kbd "s-f") 'tab-bar-history-forward)
   (global-set-key (kbd "s-b") 'tab-bar-history-back)
   (global-set-key (kbd "s-t") 'tab-bar-new-tab)
-  (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
-  (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
+  (keymap-global-set "s-n" 'tab-bar-switch-to-next-tab)
+  (keymap-global-set "s-p" 'tab-bar-switch-to-prev-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
   (global-set-key (kbd "s-0") 'tab-bar-close-tab)
 
