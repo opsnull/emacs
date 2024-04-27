@@ -245,12 +245,14 @@
   :hook (after-init . doom-modeline-mode)
   :custom
   (doom-modeline-buffer-encoding nil)
-  (doom-modeline-env-version t)
+  (doom-modeline-env-version nil)
+  (doom-modeline-env-enable-rust nil)
   (doom-modeline-env-enable-go nil)
   (doom-modeline-buffer-file-name-style 'truncate-nil) ;; relative-from-project
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
   (doom-modeline-time-icon nil)
+  (doom-modeline-check-simple-format t)
   :config
   (display-battery-mode 0)
   (column-number-mode t)
