@@ -32,7 +32,7 @@
 ;; 以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
 (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
-                    ".openai.azure.com" ".baidu.com" ".aliyun-inc.com"))
+                    "jpaia.openai.azure.com" ".baidu.com" ".aliyun-inc.com"))
 
 ;; Google 默认会 403 缺少 UA 的请求。
 (setq my/user-agent
@@ -818,9 +818,11 @@
         org-highlight-latex-and-related '(latex)
         ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
         org-export-with-latex 'verbatim
-        org-export-with-broken-links t
+        org-export-with-broken-links 'mark
         ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
         org-export-with-sub-superscripts nil
+        org-export-default-language "zh-CN" ;; 默认是 en
+        org-export-coding-system 'utf-8
 
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
         org-use-sub-superscripts nil
@@ -839,11 +841,11 @@
         org-cycle-level-faces t
         org-n-level-faces 4
         org-indent-indentation-per-level 2
-	
+        
         ;; 内容缩进与对应 headerline 一致。
         org-adapt-indentation t
         org-list-indent-offset 2
-	
+        
         ;; 代码块缩进。
         org-src-preserve-indentation t
         org-edit-src-content-indentation 0
@@ -1860,8 +1862,11 @@ mermaid.initialize({
   :requires shell-maker
   :defer t
   :config
-  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
+  ;;(setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
+  ;;(setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "eusaia.openai.azure.com"))
+  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "uksouthaia.openai.azure.com"))
   (setq chatgpt-shell-chatgpt-streaming t)
+  ;;(setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
   (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
   (setq chatgpt-shell-model-temperature 0.7)
   (setq chatgpt-shell-request-timeout 300)
@@ -1872,12 +1877,26 @@ mermaid.initialize({
   (require 'ob-dall-e-shell)
   (ob-dall-e-shell-setup)
   ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-32k/chat/completions?api-version=2024-02-15-preview")
-  (setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
+  ;;(setq chatgpt-shell-api-url-path  "/openai/deployments/jpaia/chat/completions?api-version=2024-02-15-preview")
+  ;;(setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
+
+  ;; (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt4-0125-preview/chat/completions?api-version=2024-02-15-preview")
+  ;; (setq chatgpt-shell-api-url-base "https://eusaia.openai.azure.com/")
+
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-0125/chat/completions?api-version=2024-02-15-preview")
+  (setq chatgpt-shell-api-url-base "https://uksouthaia.openai.azure.com/")
+
   ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
+  ;; (setq chatgpt-shell-auth-header 
+  ;; 	(lambda ()
+  ;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com"))))
+  ;; (setq chatgpt-shell-auth-header 
+  ;; 	(lambda ()
+  ;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "eusaia.openai.azure.com"))))
   (setq chatgpt-shell-auth-header 
 	(lambda ()
-	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com")))))
+	  (format "api-key: %s" (auth-source-pick-first-password :host "uksouthaia.openai.azure.com"))))
+)
 
 (use-package vterm
   :hook
