@@ -29,10 +29,10 @@
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
 ;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com; 所
-;; 以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
+;; 以这里使用的是同时满足两者的域名后缀形式, 如 .baidu.com;
 (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
-                    "jpaia.openai.azure.com" ".baidu.com" ".aliyun-inc.com"))
+                    ".openai.azure.com" ".baidu.com" ".aliyun-inc.com"))
 
 ;; Google 默认会 403 缺少 UA 的请求。
 (setq my/user-agent
@@ -869,6 +869,8 @@
         ;; org-timer 到期时发送声音提示。
         org-clock-sound t)
 
+  ;; 关闭容易误按的 archive 命令。
+  (setq org-archive-default-command nil)
   ;; 不自动对齐 tag。
   (setq org-tags-column 0)
   (setq org-auto-align-tags nil)
@@ -1223,7 +1225,6 @@
 (setq c-ts-mode-indent-offset 8)
 (setq c-ts-common-indent-offset 8)
 (setq c-basic-offset 8)
-(setq c-electric-pound-behavior 'alignleft)
 ;; kernel 风格：table 和 offset 都是 tab 缩进，而且都是 8 字符。
 ;; https://www.kernel.org/doc/html/latest/process/coding-style.html
 (setq c-default-style "linux") 
@@ -1459,7 +1460,7 @@
   :config (eglot-booster-mode))
 
 ;; 将 ~/.venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
-(setq my-venv-path "/Users/alizj/.venv/bin/")
+(setq my-venv-path "/Users/alizj/.venv/bin")
 (setenv "PATH" (concat my-venv-path ":" (getenv "PATH")))
 (setq exec-path (cons my-venv-path  exec-path))
 
@@ -1589,16 +1590,17 @@
                  ("rust-analyzer"
                   :initializationOptions
                   ( ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
-                   :cachePriming (:enable :json-false) ;; 启动时不预热缓存.
-                   ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
+                   ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.                   
                    :check (
                            :command "clippy"
+                           ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std                                  
                            :allTargets :json-false
-                           :workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
+                           ;;:workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
                            )
-                   :procMacro (:attributes (:enable t) :enable :json-false)
-                   :cargo ( :buildScripts (:enable :json-false)
-                            :extraArgs ["--offline"] ;; 不联网节省时间.
+                   ;;:procMacro (:attributes (:enable t) :enable :json-false)
+                   :cargo (
+                            ;;:buildScripts (:enable :json-false)
+                            ;;:extraArgs ["--offline"] ;; 不联网节省时间.
                             ;;:features "all"
                             ;;:noDefaultFeatures t
                             :cfgs (:tokio_unstable "")
@@ -1836,6 +1838,44 @@ mermaid.initialize({
   (search-forward comment-start))
 (define-key prog-mode-map (kbd "C-c C-;") 'my/goto-comment-start)
 
+(setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
+(setenv "GTAGSCONF" (car (file-expand-wildcards "/opt/homebrew/opt/global/share/gtags/gtags.conf")))
+(setenv "GTAGSLABEL" "pygments")
+
+(use-package citre
+  :after (eglot)
+  :config
+  ;; 只使用支持 reference 的 GNU Global tags。
+  (setq citre-completion-backends '(global))
+  (setq citre-find-definition-backends '(global))
+  (setq citre-find-reference-backends '(global))
+  (setq citre-tags-in-buffer-backends  '(global))
+  (setq citre-auto-enable-citre-mode-backends '(global))
+  (setq citre-use-project-root-when-creating-tags t)
+  (setq citre-peek-file-content-height 20)
+
+  ;;为指定 mode 且项目具有 global tags 文件时自动开启 citre。
+  (setq citre-auto-enable-citre-mode-modes '(
+					     c-mode c-ts-mode
+					     ;; go-mode go-ts-mode
+					     ))
+  ;; 使用 eglot-managed-mode-hook 而非 find-file-hook，从而确保 citre-mode 在 eglot 启动后才开启。
+  (add-hook 'eglot-managed-mode-hook #'citre-auto-enable-citre-mode) 
+  ;; 不检查是否有 tags 文件，无条件开启 citre-mode。
+  ;;(add-hook 'eglot-managed-mode-hook #'citre-mode)
+  
+  ;; 启用 citre mode 后才能使用如下快捷键。
+  (define-key citre-mode-map (kbd "s-.") 'citre-jump)
+  (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
+  (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
+  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
+  (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
+  (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
+  (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
+  (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
+  (global-set-key (kbd "C-x c u") 'citre-global-update-database)
+  )
+
 (use-package dired-sidebar
   :bind (("s-0" . dired-sidebar-toggle-sidebar))
   :ensure t
@@ -1862,41 +1902,50 @@ mermaid.initialize({
   :requires shell-maker
   :defer t
   :config
-  ;;(setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
-  ;;(setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "eusaia.openai.azure.com"))
-  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "uksouthaia.openai.azure.com"))
-  (setq chatgpt-shell-chatgpt-streaming t)
-  ;;(setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
-  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
+  (setq chatgpt-shell-model-version "gpt-4o")
   (setq chatgpt-shell-model-temperature 0.7)
   (setq chatgpt-shell-request-timeout 300)
   (setq chatgpt-shell-highlight-blocks t)
   (setq chatgpt-shell-insert-queries-inline t)
+  (setq chatgpt-shell-chatgpt-streaming t)
+  (setq chatgpt-shell-system-prompt 2) ;; 默认使用 Programming prompt
+
+  (setq chatgpt-shell-system-prompts
+    `(("tl;dr" . "Be as succint but informative as possible and respond in tl;dr form to my queries")
+      ("General" . "You use org-mode format to structure responses. Always show code snippets in org-mode source code block format.")
+      ;; Based on https://github.com/benjamin-asdf/dotfiles/blob/8fd18ff6bd2a1ed2379e53e26282f01dcc397e44/mememacs/.emacs-mememacs.d/init.el#L768
+      ("Programming" . ,(chatgpt-shell--append-system-info
+			 "The user is a programmer with very limited time.
+                        You treat their time as precious. You do not repeat obvious things, including their query.
+                        You are as concise as possible in responses.
+                        You never apologize for confusions because it would waste their time.
+                        You use emacs org-mode format to structure responses.
+                        Always show code snippets in org-mode source code block format.
+                        Don't explain code snippets.
+                        Whenever you output updated code for the user, only show diffs, instead of entire snippets."))
+      ("Positive Programming" . ,(chatgpt-shell--append-system-info
+                                  "Your goal is to help the user become an amazing computer programmer.
+                        You are positive and encouraging.
+                        You love see them learn.
+                        You do not repeat obvious things, including their query.
+                        You are as concise in responses. You always guide the user go one level deeper and help them see patterns.
+                        You never apologize for confusions because it would waste their time.
+                        You use markdown liberally to structure responses. Always show code snippets in markdown blocks with language labels.
+                        Don't explain code snippets. Whenever you output updated code for the user, only show diffs, instead of entire snippets."))))
+
   (require 'ob-chatgpt-shell)
   (ob-chatgpt-shell-setup)
   (require 'ob-dall-e-shell)
   (ob-dall-e-shell-setup)
   ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-  ;;(setq chatgpt-shell-api-url-path  "/openai/deployments/jpaia/chat/completions?api-version=2024-02-15-preview")
-  ;;(setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
-
-  ;; (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt4-0125-preview/chat/completions?api-version=2024-02-15-preview")
-  ;; (setq chatgpt-shell-api-url-base "https://eusaia.openai.azure.com/")
-
-  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-0125/chat/completions?api-version=2024-02-15-preview")
-  (setq chatgpt-shell-api-url-base "https://uksouthaia.openai.azure.com/")
-
+  (setq chatgpt-shell-api-url-base "https://westus3ai.openai.azure.com")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt4oai/chat/completions?api-version=2024-02-15-preview")
+  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))
   ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
-  ;; (setq chatgpt-shell-auth-header 
-  ;; 	(lambda ()
-  ;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com"))))
-  ;; (setq chatgpt-shell-auth-header 
-  ;; 	(lambda ()
-  ;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "eusaia.openai.azure.com"))))
   (setq chatgpt-shell-auth-header 
 	(lambda ()
-	  (format "api-key: %s" (auth-source-pick-first-password :host "uksouthaia.openai.azure.com"))))
-)
+	  (format "api-key: %s" (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))))
+  )
 
 (use-package vterm
   :hook

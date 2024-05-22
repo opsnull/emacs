@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-04-30T23:04:49+0800
+#+LASTMOD: 2024-05-22T19:05:59+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -130,10 +130,10 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
 ;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com; 所
-;; 以这里使用的是同时满足两者的域名后缀形式, 如 baidu.com;
+;; 以这里使用的是同时满足两者的域名后缀形式, 如 .baidu.com;
 (setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
                     ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
-                    "jpaia.openai.azure.com" ".baidu.com" ".aliyun-inc.com"))
+                    ".openai.azure.com" ".baidu.com" ".aliyun-inc.com"))
 
 ;; Google 默认会 403 缺少 UA 的请求。
 (setq my/user-agent
@@ -1373,6 +1373,8 @@ which watchexec || brew install watchexec
         ;; org-timer 到期时发送声音提示。
         org-clock-sound t)
 
+  ;; 关闭容易误按的 archive 命令。
+  (setq org-archive-default-command nil)
   ;; 不自动对齐 tag。
   (setq org-tags-column 0)
   (setq org-auto-align-tags nil)
@@ -1979,7 +1981,6 @@ c/c++/go-mode indent 风格：总是使用 tab 而非空格：
 (setq c-ts-mode-indent-offset 8)
 (setq c-ts-common-indent-offset 8)
 (setq c-basic-offset 8)
-(setq c-electric-pound-behavior 'alignleft)
 ;; kernel 风格：table 和 offset 都是 tab 缩进，而且都是 8 字符。
 ;; https://www.kernel.org/doc/html/latest/process/coding-style.html
 (setq c-default-style "linux") 
@@ -2016,6 +2017,12 @@ c/c++/go-mode indent 风格：总是使用 tab 而非空格：
 #+end_src
 
 ** project
+
+1. 查看当前项目的 project root：(project-current)
+2. 手动添加 project 目录： =M-x project-remember-projects-under=
+3. 手动标记项目根目录：在目录下创建 .project 文件。
+   + project 使用 top-down 方式来检查项目路径中是否存在 .project 文件，所以在上层各路径的目录中不应
+     该存在 .project 文件，否则会导致判断失败。
 
 #+begin_src emacs-lisp
 (use-package project
@@ -2073,8 +2080,6 @@ c/c++/go-mode indent 风格：总是使用 tab 而非空格：
     (funcall fn pr no-write)))
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
 #+end_src
-
-手动添加 project 目录： =M-x project-remember-projects-under=
 
 ** treesit
 
@@ -2370,7 +2375,7 @@ hint: See PEP 668 for the detailed specification.
 #+begin_src shell :tangle no
 zj@a:~$ python3 -m venv .venv
 zj@a:~$ source ~/.venv/bin/activate
-# 更新 ~/.bashrc 中的 PATH： PATH=/Users/alizj/.venv/bin/:$PATH
+# 更新 ~/.bashrc 中的 PATH： PATH=/Users/alizj/.venv/bin:$PATH
 
 # 安装相关的包到虚拟环境中
 (.venv) zj@a:~$ pip3 install pygments jinji2 ipython markdown flake8 yapf pyright grip debugpy
@@ -2379,7 +2384,7 @@ zj@a:~$ source ~/.venv/bin/activate
 配置 Emacs 使用 venv 虚拟环境:
 #+begin_src emacs-lisp
 ;; 将 ~/.venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
-(setq my-venv-path "/Users/alizj/.venv/bin/")
+(setq my-venv-path "/Users/alizj/.venv/bin")
 (setenv "PATH" (concat my-venv-path ":" (getenv "PATH")))
 (setq exec-path (cons my-venv-path  exec-path))
 
@@ -2637,16 +2642,17 @@ cargo sweep --installed
                  ("rust-analyzer"
                   :initializationOptions
                   ( ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
-                   :cachePriming (:enable :json-false) ;; 启动时不预热缓存.
-                   ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
+                   ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.                   
                    :check (
                            :command "clippy"
+                           ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std                                  
                            :allTargets :json-false
-                           :workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
+                           ;;:workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
                            )
-                   :procMacro (:attributes (:enable t) :enable :json-false)
-                   :cargo ( :buildScripts (:enable :json-false)
-                            :extraArgs ["--offline"] ;; 不联网节省时间.
+                   ;;:procMacro (:attributes (:enable t) :enable :json-false)
+                   :cargo (
+                            ;;:buildScripts (:enable :json-false)
+                            ;;:extraArgs ["--offline"] ;; 不联网节省时间.
                             ;;:features "all"
                             ;;:noDefaultFeatures t
                             :cfgs (:tokio_unstable "")
@@ -2684,8 +2690,9 @@ edition = \"2021\"
 [dependencies]"))
 #+end_src
 
-eglot-x 为 rust 提供了 M-x eglot-x-reload-workspace 命令, 可以在 Cargo.toml 文件发生变化时手动执行而
-不需要重启 eglot:
+eglot-x 为 Rust 提供了几个好用的命令：
+1. =M-x eglot-x-reload-workspace= ：在 Cargo.toml 文件发生变化时手动执行而不需要重启 eglot；
+2. =M-x eglot-x-expand-macro= ：展开宏定义；
 #+begin_src emacs-lisp
 (use-package eglot-x
   :after (eglot rust-mode)
@@ -2899,9 +2906,10 @@ brew install clang-format
 clang-format --dump-config
 #+end_src
 
-创建全局 ~/.clang-format 文件，也可以在各 project root 目录创建项目配置文件：
-+ 主要修改的是：Tab 和 Indent 的配置参数。
-#+begin_src text :tangle no
+创建全局 ~/.clang-format 文件，也可以在各 project root 目录创建项目配置文件，主要配置的是：
+1. Tab 和 Indent 缩进；
+2. 不对头文件进行排序，防止编译报错；
+#+begin_src text :tangle ~/.clang-format
 # clang-format configuration file. Intended for clang-format >= 11.
 #
 # For more information, see:
@@ -2913,123 +2921,52 @@ clang-format --dump-config
 # linux 内核开发风格：
 # https://raw.githubusercontent.com/torvalds/linux/master/.clang-format 
 ---
+# 基本配置
 DisableFormat: false
-TabWidth: 8
-UseTab: Always
-IndentWidth: 8
+Language:        Cpp  # 可以是 'Cpp', 'Java', 'JavaScript', 'Proto', 'TableGen' 等等
+BasedOnStyle:    WebKit  # 基于 WebKit 风格，因为它最接近 Linux 内核的风格
 
-AccessModifierOffset: -4
-AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignEscapedNewlines: Left
-AlignOperands: true
-AlignTrailingComments: false
-AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterDefinitionReturnType: None
-AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: false
-BinPackArguments: true
-BinPackParameters: true
-BraceWrapping:
-  AfterClass: false
-  AfterControlStatement: false
-  AfterEnum: false
-  AfterFunction: true
-  AfterNamespace: true
-  AfterObjCDeclaration: false
-  AfterStruct: false
-  AfterUnion: false
-  AfterExternBlock: false
-  BeforeCatch: false
-  BeforeElse: false
-  IndentBraces: false
-  SplitEmptyFunction: true
-  SplitEmptyRecord: true
-  SplitEmptyNamespace: true
-BreakBeforeBinaryOperators: None
-BreakBeforeBraces: Custom
-BreakBeforeInheritanceComma: false
-BreakBeforeTernaryOperators: false
-BreakConstructorInitializersBeforeComma: false
-BreakConstructorInitializers: BeforeComma
-BreakAfterJavaFieldAnnotations: false
-BreakStringLiterals: false
-ColumnLimit: 80
-CommentPragmas: '^ IWYU pragma:'
-CompactNamespaces: false
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-ConstructorInitializerIndentWidth: 8
-ContinuationIndentWidth: 8
-Cpp11BracedListStyle: false
-DerivePointerAlignment: false
+# 缩进
+IndentWidth:     8  # 缩进宽度
+TabWidth:        8  # 制表符宽度
+UseTab:          ForIndentation  # 使用制表符进行缩进，空格用于对齐
 
-ExperimentalAutoDetectBinPacking: false
-FixNamespaceComments: false
+# 换行
+AllowShortIfStatementsOnASingleLine: false  # 禁止 if 语句在单行内
+AllowShortLoopsOnASingleLine: false  # 禁止循环语句在单行内
+AlwaysBreakBeforeMultilineStrings: true  # 多行字符串之前总是换行
+BreakBeforeBraces: Linux  # 使用 Linux 风格的大括号位置
+ColumnLimit: 100  # 每行的字符限制
 
-IncludeBlocks: Preserve
-IncludeCategories:
-  - Regex: '.*'
-    Priority: 1
-IncludeIsMainRegex: '(Test)?$'
-IndentCaseLabels: false
-IndentGotoLabels: false
+# 空格
+SpaceBeforeParens: ControlStatements  # 在控制语句的括号前加空格（if, for, while, 等）
+SpaceAfterCStyleCast: true  # C 风格的强制类型转换后加空格
 
+# 注释
+CommentPragmas: '^ IWYU pragma:'  # 支持 IWYU pragmas 注释
+IndentExternBlock: AfterExternBlock  # 在 extern "C" 块后进行缩进
 
-IndentWrappedFunctionNames: false
-JavaScriptQuotes: Leave
-JavaScriptWrapImports: true
-KeepEmptyLinesAtTheStartOfBlocks: false
-MacroBlockBegin: ''
-MacroBlockEnd: ''
-MaxEmptyLinesToKeep: 1
-NamespaceIndentation: None
-ObjCBinPackProtocolList: Auto
-ObjCBlockIndentWidth: 8
-ObjCSpaceAfterProperty: true
-ObjCSpaceBeforeProtocolList: true
+# 包含文件
+SortIncludes: false  # 禁用头文件排序，防止编译出错。
+IncludeBlocks: Preserve  # 保持头文件分组
 
-# Taken from git's rules
-PenaltyBreakAssignment: 10
-PenaltyBreakBeforeFirstCallParameter: 30
-PenaltyBreakComment: 10
-PenaltyBreakFirstLessLess: 0
-PenaltyBreakString: 10
-PenaltyExcessCharacter: 100
-PenaltyReturnTypeOnItsOwnLine: 60
+# 函数定义
+AlignTrailingComments: true  # 尾部注释对齐
+AlignConsecutiveDeclarations: true  # 连续的声明对齐
 
-PointerAlignment: Right
-ReflowComments: false
-SortIncludes: false
-SortUsingDeclarations: false
-SpaceAfterCStyleCast: false
-SpaceAfterTemplateKeyword: true
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeCtorInitializerColon: true
-SpaceBeforeInheritanceColon: true
-SpaceBeforeParens: ControlStatementsExceptForEachMacros
-SpaceBeforeRangeBasedForLoopColon: true
-SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 1
-SpacesInAngles: false
-SpacesInContainerLiterals: false
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-Standard: Cpp03
+# 其他
+NamespaceIndentation: All  # 所有命名空间内的代码都缩进
+ReflowComments: true  # 重新格式化注释
+
+# 特定于 C 语言的设置
+Standard:        Cpp11  # 使用 C++11 标准
 #+end_src
 
 在各 project root 目录中创建：
-1. [[https://clangd.llvm.org/installation.html#project-setup][compile_commands.json 文件]] , 为不同的文件单独指定编译参数;
-2. 或者 compile_flags.txt 文件，为项目中所有文件来指定 build flags 。
+1. [[https://clangd.llvm.org/installation.html#project-setup][compile_commands.json 文件]] ：为不同的文件单独指定编译参数;
+2. compile_flags.txt 文件：为项目中所有文件来指定 build flags 。
 
-生成 compile_commands.json 文件的方式：
+为了便于 clangd lsp 能准确对项目源码进行生成 compile_commands.json 文件的方式：
 1. Cmake 项目：
 #+begin_src shell :tangle no
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1
@@ -3049,6 +2986,7 @@ clang $FLAGS some_file.cc # $FLAGS 变量内容来源于 compile_flags.txt 文�
 
 compile_flags.txt 示例（如果 flag 的 args 中间有空格，需要分两行）；
 + 相对路径是相对于 project root 目录。
++ -c 是必须的，用来对每个源文件单独编译，否则表示生成可执行程序。
 #+begin_src text :results none :tangle no
 -target
 bpf
@@ -3326,6 +3264,152 @@ expand-region 扩展区域：
 (define-key prog-mode-map (kbd "C-c C-;") 'my/goto-comment-start)
 #+end_src
 
+** citre
+
+=Etags=: GNU Emacs comes with two ctags utilities, =etags and ctags=, which are compiled from the same
+source code. Etags generates a tag table file for Emacs, while the ctags command is used to create a
+similar table in a format understood by vi. They have different sets of command line options: etags
+does not recognize and ignores options which only make sense for vi style tag files produced by the
+ctags command.
++ etags 和 ctags 都是来自于同一个项目的源码，但是 etags 为 emacs 生产 tag table，而 ctags 为 vi 生成
+  tag table。
++ etags 生成的文件名称为 =TAGS= ，ctags 命令生成的文件名称为 =tags= ，GNU global 的 gtags 命令生成的文件
+  名称为 =GTAGS= ；
+
+=Exuberant Ctags=: written and maintained by Darren Hiebert until 2009, was initially distributed with
+Vim, but became a separate project upon the release of Vim 6. It includes support for Emacs and
+etags compatibility. Exuberant Ctags includes support for over 40 programming languages with the
+ability to add support for even more using regular expressions.
++ 最开始随 vim 发布，也支持 emacs 的 etags，支持大量语言， =目前已经被 Universal Ctags 取代= 。
+
+=Universal Ctags=: is a fork of Exuberant Ctags, with the objective of continuing its development. A
+few parsers are rewritten to better support the languages.
++ Universal Ctags 是 Exuberant Ctags 的 fork 版本。
+
+[[https://www.gnu.org/software/global/][GNU Global]] 内置了 5 种语言解析器，包括 C/Yacc/JAVA/assembly, 其他 25 种语言使用 Pygments + Universal
+Ctags 解析器插件来支持的。
+
+安装 GNU global 和 pygments, global 依赖并自动安装 universal-ctags, 通过 pygments 能生成更丰富的 TAG
+内容，同时支持 reference 搜索。
++ https://github.com/universal-ctags/citre/blob/master/docs/user-manual/citre-global.md 
++ global 默认使用 brew 安装的 python@3.12 和 pygments, 而不能直接使用 pip install pygments.
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+brew install global pygments # 提供 global、gtags 命令, gtags 使用 pygments 支持跟多语言
+
+# 在 ~/.bashrc 中添加如下配置：
+# 统一的 tags 文件目录
+export GTAGSOBJDIRPREFIX=~/.cache/gtags/ 
+mkdir $GTAGSOBJDIRPREFIX
+export GTAGSCONF=/opt/homebrew/opt/global/share/gtags/gtags.conf
+# 使用 pygments 支持更多的语言，他噢夹南是支持 reference 搜索。
+export GTAGSLABEL=pygments
+#+end_src
+
+citre 是基于 Ctags（Universal Ctags 版本）的代码浏览器工具，也支持[[https://github.com/universal-ctags/citre/blob/master/docs/user-manual/citre-global.md][集成使用 GNU global 的 GTAGS 文件]]。
+
+对于开启了 citre-mode 的 buffer，citre 向 xref-backend-functions 中添加 citre-xref-backend, 而且位于
+列表的开始，这样 xref 先使用 citre-xref-backend，当无返回结果时再查找其它注册的 xref backend 如
+eglot-xref-backend 等。
++ xref-backend-functions 可能会被添加多个 backend，但 xref 使用第一个返回非空数据的 backend，而忽略后
+  续 backend。
+
+新版本的 citre-xref-backend 支持自动集成 eglot，它先使用 eglot 的结果，如果为空，再使用 tags 文件的
+结果作为后备，所以不管项目是否存在 tags 文件，都可以为所有 prog-mode 开启 citre-mode。
+
+其他 xref 特性，如 imenu/xref-find-references/xref-find-definitions 等都会使用 citre 提供的输入。同
+时 xref 和 consult 结合，可以使用 consult 来预览 xref 的结果。
+
+配置 citre：
+#+begin_src emacs-lisp
+(setenv "GTAGSOBJDIRPREFIX" (expand-file-name "~/.cache/gtags/"))
+(setenv "GTAGSCONF" (car (file-expand-wildcards "/opt/homebrew/opt/global/share/gtags/gtags.conf")))
+(setenv "GTAGSLABEL" "pygments")
+
+(use-package citre
+  :after (eglot)
+  :config
+  ;; 只使用支持 reference 的 GNU Global tags。
+  (setq citre-completion-backends '(global))
+  (setq citre-find-definition-backends '(global))
+  (setq citre-find-reference-backends '(global))
+  (setq citre-tags-in-buffer-backends  '(global))
+  (setq citre-auto-enable-citre-mode-backends '(global))
+  (setq citre-use-project-root-when-creating-tags t)
+  (setq citre-peek-file-content-height 20)
+
+  ;;为指定 mode 且项目具有 global tags 文件时自动开启 citre。
+  (setq citre-auto-enable-citre-mode-modes '(
+					     c-mode c-ts-mode
+					     ;; go-mode go-ts-mode
+					     ))
+  ;; 使用 eglot-managed-mode-hook 而非 find-file-hook，从而确保 citre-mode 在 eglot 启动后才开启。
+  (add-hook 'eglot-managed-mode-hook #'citre-auto-enable-citre-mode) 
+  ;; 不检查是否有 tags 文件，无条件开启 citre-mode。
+  ;;(add-hook 'eglot-managed-mode-hook #'citre-mode)
+  
+  ;; 启用 citre mode 后才能使用如下快捷键。
+  (define-key citre-mode-map (kbd "s-.") 'citre-jump)
+  (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
+  (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
+  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
+  (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
+  (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
+  (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
+  (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag)
+  (global-set-key (kbd "C-x c u") 'citre-global-update-database)
+  )
+#+end_src
+
+创建和更新 GNU global GTAGS 文件（保存到 GTAGSOBJDIRPREFIX 环境变量指定的位置，如 ~/.cache/gtags/)：
++ M-x citre-global-create-database
++ M-x citre-global-update-database
+#+begin_src shell :tangle no
+zj@a:~/.cache/gtags/Users/alizj/go/src/**/bp-agent$ ls -l
+total 2.8M
+-rw-r--r-- 1 alizj  32K  3 30 11:53 GPATH
+-rw-r--r-- 1 alizj 600K  3 30 11:53 GRTAGS  # reference tags
+-rw-r--r-- 1 alizj 1.9M  3 30 11:53 GTAGS   # tags
+#+end_src
+
+注意以下两个命令创建 Universal Ctags 的 ctags 文件（项目有 .tags/ 目录或 .tags 或 tags 文件），而非
+GNU global GTAGS 文件，不支持 references，不建议使用：
++ M-x citre-create-tags-file
++ M-x citre-update-tags-file
+  
+如果误使用了上面的命令创建 ctags 文件则后续使用 xref-find-references 会 hang，需要删除。
+
+使用 citre: 
++ M-x citre-jump-to-reference :: which reuses the citre-jump UI;
++ M-x citre-peek-references :: equivalent to citre-peek;
++ M-x citre-ace-peek-references :: equivalent to citre-ace-peek;
++ M-x citre-peek-through-references :: equivalent to citre-peek-through.
++ M-x citre-ace-peek :: 使用 ace 来 peek 查看指定的符号定义或函数签名。
++ M-x citre-peek :: 查看当前光标处符号的定义或函数签名。
+
+执行 s-? (citre-peek-reference) 支持如下快捷键：
++ M-n, M-p: Next/prev line，当前显示的内容的下一行或上一行（文件不变）。
++ M-N, M-P: Next/prev definition. 切换到下一个或上一个文件。
++ M-l j: Jump to the definition. (跳转到当前预览的位置定义文件，同时 peek window 继续显示，可以使用
+  M-n/M-p/M-N/M-P 来使用 peek window)。
++ M-l p：M-x citre-peek-through， 在 peek window 中选择一个 symbol，然后跳转到定义。
++ C-g: Close the peek window.
+
+M-l 前缀快捷键：
++ j citre-peek-jump
++ f citre-peek-make-current-tag-first
++ D citre-peek-delete-branches
++ d citre-peek-delete-branch
++ r citre-peek-through-reference
++ p citre-peek-through
+  
+通过 peek through 打开多个多个 function definition 后，citre 会在 peek window 下方记录 peek history，
+可以使用 <left>/<right> 来移动 history，当前的位置用 [func] 方括号来表示。
+
+使用 C-l 来调整 peek window 的位置。
+
+在 citre-jump（M-.) 的弹出时 buffer 中可以使用正则语法对候选者进行过滤（orderless 提供的支持）, 例
+如: =something kind:^member$ kind:^macro$ input:.c$=
+
 * dired-sidebar
 
 dired-sidebar 相比 treemacs/neotree 的优势是速度快, 而且复用 dired 的快捷键.
@@ -3353,6 +3437,8 @@ dired-sidebar 相比 treemacs/neotree 的优势是速度快, 而且复用 dired 
 * chatgpt-shell
 
 在 ~/.authinfo.gpg 文件中添加 api.openai.com 的 key，然后使用本地 socks5h 代理访问 API。
++ azure 各 region 的访问速度测试：https://www.azurespeed.com/Azure/Latency
++ 切换 prompt：M-x chatgpt-shell-swap-system-prompt
 #+begin_src emacs-lisp
 (use-package shell-maker)
 (use-package ob-chatgpt-shell :defer t)
@@ -3361,41 +3447,50 @@ dired-sidebar 相比 treemacs/neotree 的优势是速度快, 而且复用 dired 
   :requires shell-maker
   :defer t
   :config
-  ;;(setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "jpaia.openai.azure.com"))
-  ;;(setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "eusaia.openai.azure.com"))
-  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "uksouthaia.openai.azure.com"))
-  (setq chatgpt-shell-chatgpt-streaming t)
-  ;;(setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
-  (setq chatgpt-shell-model-version "gpt-4-32k") ;; gpt-3.5-turbo gpt-4-32k
+  (setq chatgpt-shell-model-version "gpt-4o")
   (setq chatgpt-shell-model-temperature 0.7)
   (setq chatgpt-shell-request-timeout 300)
   (setq chatgpt-shell-highlight-blocks t)
   (setq chatgpt-shell-insert-queries-inline t)
+  (setq chatgpt-shell-chatgpt-streaming t)
+  (setq chatgpt-shell-system-prompt 2) ;; 默认使用 Programming prompt
+
+  (setq chatgpt-shell-system-prompts
+    `(("tl;dr" . "Be as succint but informative as possible and respond in tl;dr form to my queries")
+      ("General" . "You use org-mode format to structure responses. Always show code snippets in org-mode source code block format.")
+      ;; Based on https://github.com/benjamin-asdf/dotfiles/blob/8fd18ff6bd2a1ed2379e53e26282f01dcc397e44/mememacs/.emacs-mememacs.d/init.el#L768
+      ("Programming" . ,(chatgpt-shell--append-system-info
+			 "The user is a programmer with very limited time.
+                        You treat their time as precious. You do not repeat obvious things, including their query.
+                        You are as concise as possible in responses.
+                        You never apologize for confusions because it would waste their time.
+                        You use emacs org-mode format to structure responses.
+                        Always show code snippets in org-mode source code block format.
+                        Don't explain code snippets.
+                        Whenever you output updated code for the user, only show diffs, instead of entire snippets."))
+      ("Positive Programming" . ,(chatgpt-shell--append-system-info
+                                  "Your goal is to help the user become an amazing computer programmer.
+                        You are positive and encouraging.
+                        You love see them learn.
+                        You do not repeat obvious things, including their query.
+                        You are as concise in responses. You always guide the user go one level deeper and help them see patterns.
+                        You never apologize for confusions because it would waste their time.
+                        You use markdown liberally to structure responses. Always show code snippets in markdown blocks with language labels.
+                        Don't explain code snippets. Whenever you output updated code for the user, only show diffs, instead of entire snippets."))))
+
   (require 'ob-chatgpt-shell)
   (ob-chatgpt-shell-setup)
   (require 'ob-dall-e-shell)
   (ob-dall-e-shell-setup)
   ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-  ;;(setq chatgpt-shell-api-url-path  "/openai/deployments/jpaia/chat/completions?api-version=2024-02-15-preview")
-  ;;(setq chatgpt-shell-api-url-base "https://jpaia.openai.azure.com/")
-
-  ;; (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt4-0125-preview/chat/completions?api-version=2024-02-15-preview")
-  ;; (setq chatgpt-shell-api-url-base "https://eusaia.openai.azure.com/")
-
-  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt-4-0125/chat/completions?api-version=2024-02-15-preview")
-  (setq chatgpt-shell-api-url-base "https://uksouthaia.openai.azure.com/")
-
+  (setq chatgpt-shell-api-url-base "https://westus3ai.openai.azure.com")
+  (setq chatgpt-shell-api-url-path  "/openai/deployments/gpt4oai/chat/completions?api-version=2024-02-15-preview")
+  (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))
   ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
-  ;; (setq chatgpt-shell-auth-header 
-  ;; 	(lambda ()
-  ;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "jpaia.openai.azure.com"))))
-  ;; (setq chatgpt-shell-auth-header 
-  ;; 	(lambda ()
-  ;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "eusaia.openai.azure.com"))))
   (setq chatgpt-shell-auth-header 
 	(lambda ()
-	  (format "api-key: %s" (auth-source-pick-first-password :host "uksouthaia.openai.azure.com"))))
-)
+	  (format "api-key: %s" (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))))
+  )
 #+end_src
 
 * terminal
