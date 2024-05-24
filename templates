@@ -33,7 +33,7 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	     " " n
 	     (p "这是摘要") n
 	     " " n
-	     "hugo: more"
+	     "#+hugo: more"
 	     " " n
 	     " " n
              "#+begin_details" n
