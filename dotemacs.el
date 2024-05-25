@@ -537,7 +537,7 @@
 (use-package corfu
   :init
   (global-corfu-mode 1)    ;; 全局模式，eshell 等也会生效。
-  (corfu-popupinfo-mode 1) ;;  显示候选者文档。
+  (corfu-popupinfo-mode 1) ;;  显示候选者文档，eldoc-box 也会显示这些内容。
   ;; 滚动显示 corfu-popupinfo 中的内容, 与后续滚动显示 eldoc-box 中的内容操作一致。
   :bind (:map corfu-popupinfo-map
               ("C-M-j" . corfu-popupinfo-scroll-up)
@@ -550,7 +550,7 @@
   (corfu-separator ?\s)          ;; Orderless 过滤分隔符。
   (corfu-preselect 'prompt)      ;; Preselect the prompt
   (corfu-scroll-margin 5)
-  (corfu-on-exact-match nil)           ;; 默认不选中候选者(即使只有一个)。
+  (corfu-on-exact-match nil)     ;; 默认不选中候选者(即使只有一个)。
   (corfu-popupinfo-delay '(0.1 . 0.2)) ;;候选者帮助文档显示延迟, 这里设置的尽可能小, 以提高响应。
   (corfu-popupinfo-max-width 140)
   (corfu-popupinfo-max-height 30)
@@ -1318,7 +1318,9 @@
 
 (use-package eldoc
   :config
-  (setq eldoc-idle-delay 0.1)
+  ;; 不能设置的小于 0.5，否则影响 eldoc-box hover 不显示。
+  ;;(setq eldoc-idle-delay 0.5)
+
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
   ;; Ready 的内容.
   ;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
@@ -1345,29 +1347,20 @@
 (use-package eldoc-box
   :after
   (eglot eldoc)
-  ;; 滚动显示 eldoc-box buffer 中的内容, 与 corfu-popupinfo-map 的操作一致:
   :bind (:map eglot-mode-map
-              ("C-M-k" . my/eldoc-box-scroll-up)
-              ("C-M-j" . my/eldoc-box-scroll-down)
-              ("M-h" . eldoc-box-eglot-help-at-point))
+              ("C-c C-d" . eldoc)
+              ("C-M-k" . scroll-other-window-down)
+              ("C-M-j" . scroll-other-window))
   :config
-  (setq eldoc-box-max-pixel-height 600)
-  (defun my/eldoc-box-scroll-up ()
-    "Scroll up in `eldoc-box--frame'"
-    (interactive)
-    (with-current-buffer eldoc-box--buffer
-      (with-selected-frame eldoc-box--frame
-        (scroll-down 3))))
-  (defun my/eldoc-box-scroll-down ()
-    "Scroll down in `eldoc-box--frame'"
-    (interactive)
-    (with-current-buffer eldoc-box--buffer
-      (with-selected-frame eldoc-box--frame
-        (scroll-up 3))))
+  ;; 滚动显示 eldoc-box frame 的文档，快捷键与 corfu-popupinfo-map 的设置一致:
+  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window)
+  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window-down)
 
-  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
-  ;; eldoc-box-hover-at-point-mode 有性能问题,显示延迟大, 故不使用.
-  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t) 
+  (setq eldoc-box-max-pixel-height 400)
+  (setq eldoc-box-max-pixel-width 800)
+
+  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
+  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
   )
 
 (setq max-mini-window-height 1) 
@@ -1401,8 +1394,6 @@
         ("C-c C-a" . eglot-code-actions)
         ;; 如果 buffer 出现错误的诊断消息，执行 flymake-start 重新触发诊断。
         ("C-c C-c" . flymake-start)
-        ("C-c C-d" . eldoc)
-        ("C-c C-p" . eldoc-box-help-at-point) ;; 显示光标处的帮助信息.
         ("C-c C-f" . eglot-format-buffer)
         ("C-c C-r" . eglot-rename))
   :config
@@ -1413,8 +1404,8 @@
   ;; 置的太大，否则可能影响性能。
   (setq eglot-events-buffer-size (* 1024 1024 1))
   
-  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向LSP
-  ;; 发送诊断请求.
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向
+  ;; LSP发送诊断请求.
   (setq eglot-send-changes-idle-time 0.1)
 
   ;; 当最后一个源码 buffer 关闭时自动关闭 eglot server.
@@ -1433,7 +1424,7 @@
         '(
           ;;:hoverProvider ;; 显示光标位置信息。
           ;;:documentHighlightProvider ;; 高亮当前 symbol。
-          ;;:inlayHintProvider ;; 显示 inlay hint 提示。
+          :inlayHintProvider ;; 显示 inlay hint 提示。
           ))
 
   ;; 加强高亮的 symbol 效果。
@@ -1502,6 +1493,8 @@
   (setenv (car env) (cadr env)))
 
 (require 'go-ts-mode)
+;; go install github.com/zmb3/gogetdoc@latest
+;;(setq godoc-at-point-function 'godoc-gogetdoc)
 ;; 查看光标处符号的本地文档.
 (define-key go-ts-mode-map (kbd "C-c d .") #'godoc-at-point) 
 
@@ -1623,7 +1616,7 @@
         "[package]
 name = \"foo\"
 version = \"0.1.0\"
-authors = [\"Rust Example <rust-snippet@example.com>\"]
+authors = [\"opsnull <geekard@qq.com>\"]
 edition = \"2021\"
 
 [dependencies]"))
@@ -1637,7 +1630,7 @@ edition = \"2021\"
   (eglot-x-setup))
 
 (with-eval-after-load 'rust-ts-mode
-  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档.
+  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档，由于是 web 网页，链接和类型都可以点击。
   (define-key rust-ts-mode-map (kbd "C-c d .") #'eglot-x-open-external-documentation)
 
   ;; 查看本地 rust std 文档;

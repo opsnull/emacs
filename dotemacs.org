@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-05-22T19:05:59+0800
+#+LASTMOD: 2024-05-25T12:05:38+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -943,7 +943,7 @@ corf 在光标出显示候选者列表和对应文档, 可以和 orderless 结�
 (use-package corfu
   :init
   (global-corfu-mode 1)    ;; 全局模式，eshell 等也会生效。
-  (corfu-popupinfo-mode 1) ;;  显示候选者文档。
+  (corfu-popupinfo-mode 1) ;;  显示候选者文档，eldoc-box 也会显示这些内容。
   ;; 滚动显示 corfu-popupinfo 中的内容, 与后续滚动显示 eldoc-box 中的内容操作一致。
   :bind (:map corfu-popupinfo-map
               ("C-M-j" . corfu-popupinfo-scroll-up)
@@ -956,7 +956,7 @@ corf 在光标出显示候选者列表和对应文档, 可以和 orderless 结�
   (corfu-separator ?\s)          ;; Orderless 过滤分隔符。
   (corfu-preselect 'prompt)      ;; Preselect the prompt
   (corfu-scroll-margin 5)
-  (corfu-on-exact-match nil)           ;; 默认不选中候选者(即使只有一个)。
+  (corfu-on-exact-match nil)     ;; 默认不选中候选者(即使只有一个)。
   (corfu-popupinfo-delay '(0.1 . 0.2)) ;;候选者帮助文档显示延迟, 这里设置的尽可能小, 以提高响应。
   (corfu-popupinfo-max-width 140)
   (corfu-popupinfo-max-height 30)
@@ -2132,7 +2132,9 @@ eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息.
 #+begin_src emacs-lisp
 (use-package eldoc
   :config
-  (setq eldoc-idle-delay 0.1)
+  ;; 不能设置的小于 0.5，否则影响 eldoc-box hover 不显示。
+  ;;(setq eldoc-idle-delay 0.5)
+
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
   ;; Ready 的内容.
   ;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
@@ -2157,35 +2159,28 @@ eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息.
                      (display-buffer "*eldoc*")))))
 #+end_src
 
-eldoc-box 在 frame 右上角显示 eldoc-doc-buffer 的内容. 依赖 markdown-mode 来格式化显示文档的内容, 但
-是不能点击其中的链接, https://github.com/joaotavora/eglot/discussions/1238
+eldoc-box 在 frame 右上角或光标位置显示 eldoc-doc-buffer 的内容. 依赖 markdown-mode 来格式化显示文档
+的内容。
++ 对于 rust，可以使用 M-x eglot-x-open-external-documentation (C-c d .) 来快速查看光标处的 web 文档，
+  而且文档中的链接都是可点击的。
 #+begin_src emacs-lisp
 (use-package eldoc-box
   :after
   (eglot eldoc)
-  ;; 滚动显示 eldoc-box buffer 中的内容, 与 corfu-popupinfo-map 的操作一致:
   :bind (:map eglot-mode-map
-              ("C-M-k" . my/eldoc-box-scroll-up)
-              ("C-M-j" . my/eldoc-box-scroll-down)
-              ("M-h" . eldoc-box-eglot-help-at-point))
+              ("C-c C-d" . eldoc)
+              ("C-M-k" . scroll-other-window-down)
+              ("C-M-j" . scroll-other-window))
   :config
-  (setq eldoc-box-max-pixel-height 600)
-  (defun my/eldoc-box-scroll-up ()
-    "Scroll up in `eldoc-box--frame'"
-    (interactive)
-    (with-current-buffer eldoc-box--buffer
-      (with-selected-frame eldoc-box--frame
-        (scroll-down 3))))
-  (defun my/eldoc-box-scroll-down ()
-    "Scroll down in `eldoc-box--frame'"
-    (interactive)
-    (with-current-buffer eldoc-box--buffer
-      (with-selected-frame eldoc-box--frame
-        (scroll-up 3))))
+  ;; 滚动显示 eldoc-box frame 的文档，快捷键与 corfu-popupinfo-map 的设置一致:
+  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window)
+  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window-down)
 
-  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
-  ;; eldoc-box-hover-at-point-mode 有性能问题,显示延迟大, 故不使用.
-  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t) 
+  (setq eldoc-box-max-pixel-height 400)
+  (setq eldoc-box-max-pixel-width 800)
+
+  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
+  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
   )  
 #+end_src
 
@@ -2242,8 +2237,6 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
         ("C-c C-a" . eglot-code-actions)
         ;; 如果 buffer 出现错误的诊断消息，执行 flymake-start 重新触发诊断。
         ("C-c C-c" . flymake-start)
-        ("C-c C-d" . eldoc)
-        ("C-c C-p" . eldoc-box-help-at-point) ;; 显示光标处的帮助信息.
         ("C-c C-f" . eglot-format-buffer)
         ("C-c C-r" . eglot-rename))
   :config
@@ -2254,8 +2247,8 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
   ;; 置的太大，否则可能影响性能。
   (setq eglot-events-buffer-size (* 1024 1024 1))
   
-  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向LSP
-  ;; 发送诊断请求.
+  ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle time 才会向
+  ;; LSP发送诊断请求.
   (setq eglot-send-changes-idle-time 0.1)
 
   ;; 当最后一个源码 buffer 关闭时自动关闭 eglot server.
@@ -2274,7 +2267,7 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
         '(
           ;;:hoverProvider ;; 显示光标位置信息。
           ;;:documentHighlightProvider ;; 高亮当前 symbol。
-          ;;:inlayHintProvider ;; 显示 inlay hint 提示。
+          :inlayHintProvider ;; 显示 inlay hint 提示。
           ))
 
   ;; 加强高亮的 symbol 效果。
@@ -2501,6 +2494,8 @@ go install golang.org/x/tools/gopls@latest
 查看本地和在线 go 文档:  
 #+begin_src emacs-lisp
 (require 'go-ts-mode)
+;; go install github.com/zmb3/gogetdoc@latest
+;;(setq godoc-at-point-function 'godoc-gogetdoc)
 ;; 查看光标处符号的本地文档.
 (define-key go-ts-mode-map (kbd "C-c d .") #'godoc-at-point) 
 
@@ -2684,7 +2679,7 @@ flymake-clippy 为 flymake 添加 flymake-clippy-backend，用于对 rust 代码
         "[package]
 name = \"foo\"
 version = \"0.1.0\"
-authors = [\"Rust Example <rust-snippet@example.com>\"]
+authors = [\"opsnull <geekard@qq.com>\"]
 edition = \"2021\"
 
 [dependencies]"))
@@ -2693,6 +2688,7 @@ edition = \"2021\"
 eglot-x 为 Rust 提供了几个好用的命令：
 1. =M-x eglot-x-reload-workspace= ：在 Cargo.toml 文件发生变化时手动执行而不需要重启 eglot；
 2. =M-x eglot-x-expand-macro= ：展开宏定义；
+3. =M-x eglot-x-open-external-documentation= ：用浏览器查看光标处的 rust 文档；
 #+begin_src emacs-lisp
 (use-package eglot-x
   :after (eglot rust-mode)
@@ -2706,7 +2702,7 @@ eglot-x 为 Rust 提供了几个好用的命令：
 查看本地和在线文档:
 #+begin_src emacs-lisp
 (with-eval-after-load 'rust-ts-mode
-  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档.
+  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档，由于是 web 网页，链接和类型都可以点击。
   (define-key rust-ts-mode-map (kbd "C-c d .") #'eglot-x-open-external-documentation)
 
   ;; 查看本地 rust std 文档;
