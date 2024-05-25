@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-05-25T12:05:38+0800
+#+LASTMOD: 2024-05-25T14:05:04+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -2127,13 +2127,15 @@ eglot-send-changes-idle-time 时间后才显示 LSP 诊断消息，这样可以�
 ** eldoc
 
 eglot 不指示 eldoc 在 echo-area 显示结构化成员(field) 或函数签名信息, 但是在 M-x
-eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息.
-+ [[https://codeberg.org/mekeor/emacs-eglot-signature-eldoc-talkative][eglot-signature-eldoc-talkative]] 项目提供的函数可以让 eglot 指示 eldoc 在 echo-area 显示函数签名.
+eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息:
 #+begin_src emacs-lisp
 (use-package eldoc
+  :after (eglot)
+  :bind (:map eglot-mode-map
+              ("C-c C-d" . eldoc)
+              )
   :config
-  ;; 不能设置的小于 0.5，否则影响 eldoc-box hover 不显示。
-  ;;(setq eldoc-idle-delay 0.5)
+  (setq eldoc-idle-delay 0.3)
 
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
   ;; Ready 的内容.
@@ -2159,33 +2161,7 @@ eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息.
                      (display-buffer "*eldoc*")))))
 #+end_src
 
-eldoc-box 在 frame 右上角或光标位置显示 eldoc-doc-buffer 的内容. 依赖 markdown-mode 来格式化显示文档
-的内容。
-+ 对于 rust，可以使用 M-x eglot-x-open-external-documentation (C-c d .) 来快速查看光标处的 web 文档，
-  而且文档中的链接都是可点击的。
-#+begin_src emacs-lisp
-(use-package eldoc-box
-  :after
-  (eglot eldoc)
-  :bind (:map eglot-mode-map
-              ("C-c C-d" . eldoc)
-              ("C-M-k" . scroll-other-window-down)
-              ("C-M-j" . scroll-other-window))
-  :config
-  ;; 滚动显示 eldoc-box frame 的文档，快捷键与 corfu-popupinfo-map 的设置一致:
-  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window)
-  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window-down)
-
-  (setq eldoc-box-max-pixel-height 400)
-  (setq eldoc-box-max-pixel-width 800)
-
-  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
-  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
-  )  
-#+end_src
-
-由于使用了 eldoc-box 显示 eldoc 信息，所以没必要再在 minibuffer 显示 eldoc 信息。这里将 minibuffer
-窗口最大高度设为 1，可以确保显示一行（默认为小数，表示 frame 高度占比，会导致显示多行）。
+将 minibuffer窗口最大高度设为 1，可以确保显示一行（默认为小数，表示 frame 高度占比，会导致显示多行）。
 #+begin_src emacs-lisp
 (setq max-mini-window-height 1) 
 ;; 为 nil 时只单行显示 eldoc 信息.
@@ -2213,7 +2189,7 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
 (use-package eglot
   :demand
   :after
-  (flymake eldoc)
+  (flymake)
   :preface
   ;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
   (defun my/manually-activate-flymake ()

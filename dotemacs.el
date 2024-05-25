@@ -1317,9 +1317,12 @@
   (define-key flymake-mode-map (kbd "C-s-p") #'flymake-goto-prev-error))
 
 (use-package eldoc
+  :after (eglot)
+  :bind (:map eglot-mode-map
+              ("C-c C-d" . eldoc)
+              )
   :config
-  ;; 不能设置的小于 0.5，否则影响 eldoc-box hover 不显示。
-  ;;(setq eldoc-idle-delay 0.5)
+  (setq eldoc-idle-delay 0.3)
 
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示先
   ;; Ready 的内容.
@@ -1344,25 +1347,6 @@
                        (delete-window (get-buffer-window "*eldoc*"))
                      (display-buffer "*eldoc*")))))
 
-(use-package eldoc-box
-  :after
-  (eglot eldoc)
-  :bind (:map eglot-mode-map
-              ("C-c C-d" . eldoc)
-              ("C-M-k" . scroll-other-window-down)
-              ("C-M-j" . scroll-other-window))
-  :config
-  ;; 滚动显示 eldoc-box frame 的文档，快捷键与 corfu-popupinfo-map 的设置一致:
-  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window)
-  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window-down)
-
-  (setq eldoc-box-max-pixel-height 400)
-  (setq eldoc-box-max-pixel-width 800)
-
-  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
-  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
-  )
-
 (setq max-mini-window-height 1) 
 ;; 为 nil 时只单行显示 eldoc 信息.
 (setq eldoc-echo-area-use-multiline-p nil)
@@ -1370,7 +1354,7 @@
 (use-package eglot
   :demand
   :after
-  (flymake eldoc)
+  (flymake)
   :preface
   ;; 由于后续 eglot 将 flymake stay-out，需要手动加回 eglot-flymake-backend 并启动 flymake。
   (defun my/manually-activate-flymake ()
