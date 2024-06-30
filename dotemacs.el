@@ -188,7 +188,7 @@
                    "Shell Command Output") (0+ not-newline))
          (display-buffer-below-selected display-buffer-at-bottom)
          (inhibit-same-window . t)
-         (window-height . 0.33))))
+         (window-height . 0.25))))
 
 ;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
 (add-hook 'window-setup-hook 'toggle-frame-maximized t)
@@ -198,34 +198,16 @@
   ;; 分别为 frame 获得焦点和失去焦点的不透明度。
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90)) 
   (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
-  (add-to-list 'default-frame-alist '(alpha-background . 90)) ;; Emacs 29
-  )
-
-;; 调整窗口大小。
-(global-set-key (kbd "s-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "s-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "s-<down>") 'shrink-window)
-(global-set-key (kbd "s-<up>") 'enlarge-window)
+  (add-to-list 'default-frame-alist '(alpha-background . 90)))
 
 ;; 切换窗口。
-(global-set-key (kbd "s-o") #'other-window)
-
-(global-set-key (kbd "s-j") (lambda () (interactive) (scroll-up 1)))
-(global-set-key (kbd "s-k") (lambda () (interactive) (scroll-down 1)))
+(global-set-key (kbd "s-o") #'other-window)  
 
 ;; 像素平滑滚动。
 (pixel-scroll-precision-mode t)
 
 (global-set-key (kbd "s-v") 'scroll-other-window)  
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
-
-(use-package olivetti
-  :config
-  ;; 内容区域宽度，超过后自动折行。
-  (setq-default olivetti-body-width 120)
-  (add-hook 'org-mode-hook 'olivetti-mode))
-;; fill-column 值要小于 olivetti-body-width 才能正常折行。
-(setq-default fill-column 100)
 
 (use-package dashboard
   :config
@@ -265,7 +247,7 @@
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
-;; 为 vterm-mode 定义简化的 modeline，提升性能。
+;; 为 vterm-mode 定义简化的 modeline，避免 buffer 内容过多时影响性能。
 (doom-modeline-def-modeline 'my-term-modeline
   '(buffer-info) ;; 左侧
   '(misc-info minor-modes input-method)) ;; 右侧
@@ -322,21 +304,22 @@
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
 	(set-fontset-font font charset font-spec)))))
 
-;; emacs 启动后或 fontaine preset 切换时设置字体。
+;; Emacs 启动后或 fontaine preset 切换时设置字体。
 (add-hook 'after-init-hook 'my/set-font)
 (add-hook 'fontaine-set-preset-hook 'my/set-font)
 
 ;; 设置字体缩放比例，设置为 1.172 可以确保 2 倍放大后对应的是 22 号偶数字体，这样表格可以对齐。16 *
 ;; 1.172 * 1.172 = 21.97（Emacs 取整为 22）。
 (setq text-scale-mode-step 1.172)
-;; table 只使用中英文严格等宽的 LXGW WenKai Mono Screen 字体, 避免中英文不对齐。
+
+;; org-table 只使用中英文严格等宽的 LXGW WenKai Mono Screen 字体, 避免中英文不对齐。
 (custom-theme-set-faces
  'user
- '(org-table ((t (:family "LXGW WenKai Mono Screen"))))
- )
+ '(org-table ((t (:family "LXGW WenKai Mono Screen")))))
 
 (use-package ef-themes
   :demand
+  :disabled
   :config
   (mapc #'disable-theme custom-enabled-themes)
   (setq ef-themes-variable-pitch-ui t)
@@ -357,13 +340,89 @@
           (t . (variable-pitch 1.1))))
   (setq ef-themes-region '(intense no-extend neutral)))
 
-(defun my/load-theme (appearance)
-  (interactive)
-  (pcase appearance
-    ('light (load-theme 'ef-elea-light t))
-    ('dark (load-theme 'ef-maris-dark t))))
-(add-hook 'ns-system-appearance-change-functions 'my/load-theme)
-(add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
+(use-package doom-themes
+  :disabled
+  :demand
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  ;;:straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+
+  :config
+  (setq doom-themes-enable-bold t)
+  (setq doom-themes-enable-italic t)
+  (doom-themes-visual-bell-config)
+  (load-theme 'doom-one t)
+  (doom-themes-org-config)
+  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch t)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config)
+  )
+
+;; 调整 header 字体大小。
+;; ef-themes/modus-themes 主题有专门参数用于调整 header 字体，不需要配置如下参数。
+;; (dolist (face '((org-level-1 . 1.9)
+;;                 (org-level-2 . 1.8)
+;;                 (org-level-3 . 1.7)
+;;                 (org-level-4 . 1.6)
+;;                 (org-level-5 . 1.5)
+;;                 (org-level-6 . 1.4)
+;;                 (org-level-7 . 1.4)
+;;                 (org-level-8 . 1.2)))
+;;   (set-face-attribute (car face) nil :height (cdr face)))
+
+(use-package modus-themes
+  :ensure t
+  :config
+  ;; Maybe define some palette overrides, such as by using our presets
+  ;; (setq modus-themes-common-palette-overrides
+  ;;       modus-themes-preset-overrides-intense)
+
+  (setq modus-themes-common-palette-overrides
+	'(
+	  ;; Make the `tab-bar-mode' mode subtle while keepings its original gray aesthetic.
+	  (bg-tab-bar bg-main)
+          (bg-tab-current bg-active)
+          (bg-tab-other bg-dim)
+	  ;; Make the fringe invisible
+	  (fringe unspecified)
+	  ;; org-mode src block
+	  (bg-prose-block-contents bg-dim) ;; bg-magenta-nuanced
+        (bg-prose-block-delimiter unspeficied)
+        (fg-prose-block-delimiter fg-dim)
+	  ))
+
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-mixed-fonts t
+        modus-themes-variable-pitch-ui t
+        modus-themes-custom-auto-reload t
+        modus-themes-disable-other-themes t
+        modus-themes-prompts '(italic bold)
+        modus-themes-completions
+        '((matches . (extrabold))
+          (selection . (semibold italic text-also)))
+        modus-themes-headings
+        '(
+          ;; title
+          (0 . (variable-pitch 2.0))
+          (1 . (variable-pitch 1.8))
+          (2 . (1.5))
+          (agenda-date . (1.3))
+          (agenda-structure . (variable-pitch light 1.8))
+          (t . (1.3))))
+  (load-theme 'modus-vivendi :no-confirm) ;; modus-operandi
+  )
+
+;; (defun my/load-theme (appearance)
+;;   (interactive)
+;;   (pcase appearance
+;;     ('light (load-theme 'doom-one-light t))
+;;     ('dark (load-theme 'doom-one t))))
+;; (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
+;; (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
 (use-package pulsar
   :config
@@ -439,13 +498,6 @@
   (global-set-key (kbd "s-8") 'tab-bar-select-tab)
   (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 
-(use-package nyan-mode
-  :config
-  (setq nyan-animate-nyancat t)
-  (setq nyan-wavy-trail t)
-  (nyan-mode)
-  (nyan-start-animation))
-
 (use-package rime
   :custom
   (rime-user-data-dir "~/Library/Rime/")
@@ -516,7 +568,7 @@
 (use-package vertico
   :config
   (require 'vertico-directory) 
-  (setq vertico-count 20)
+  (setq vertico-count 25)
   ;; 默认不选中任何候选者，这样可以避免不必要的预览.
   ;;(setq vertico-preselect 'prompt)
   (vertico-mode 1)
@@ -1056,6 +1108,14 @@
 (setq latex-run-command "xelatex")
 (setq org-latex-create-formula-image-program 'imagemagick)
 
+(use-package olivetti
+  :config
+  ;; 内容区域宽度，超过后自动折行。
+  (setq-default olivetti-body-width 120)
+  (add-hook 'org-mode-hook 'olivetti-mode))
+;; fill-column 值要小于 olivetti-body-width 才能正常折行。
+(setq-default fill-column 100)
+
 (use-package org-tree-slide
   :after (org)
   :commands org-tree-slide-mode
@@ -1192,7 +1252,6 @@
 (use-package git-link
   :config
   (setq git-link-use-commit t)
-
   ;; 重写 gitlab 的 format 字符串，以匹配公司的系统。
   (defun git-link-commit-gitlab (hostname dirname commit)
     (format "https://%s/%s/commit/%s" hostname dirname commit))
@@ -1205,7 +1264,7 @@
                               (if end
                                   (format "L%s-%s" start end)
 				(format "L%s" start)))))))
-)
+  )
 
 (use-package highlight-indent-guides
   :custom
@@ -1473,7 +1532,9 @@
 
 (dolist (env '(("GOPATH" "/Users/alizj/go")
                ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
-               ("GOPRIVATE" "*.alibaba-inc.com")))
+               ("GOPRIVATE" "*.alibaba-inc.com")
+	       ("GOOS" "linux")
+	       ("GOARCH" "arm64")))
   (setenv (car env) (cadr env)))
 
 (require 'go-ts-mode)
@@ -1496,6 +1557,10 @@
 (define-key go-ts-mode-map (kbd "C-c d o") 'my/browser-pkggo) ;; 助记: o -> online
 
 (require 'go-ts-mode)
+
+;; (setq gofmt-command "golangci-lint")
+;; (setq gofmt-args "run --config /Users/alizj/.golangci.yml --fix")
+
 ;; go 使用 TAB 缩进.
 (add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
 
@@ -1508,6 +1573,7 @@
                     "github.com/josharian/impl"
                     "github.com/cweill/gotests/..."
                     "github.com/fatih/gomodifytags"
+                    "github.com/golangci/golangci-lint/cmd/golangci-lint"
                     "github.com/davidrjenni/reftools/cmd/fillstruct"))
 
 (defun go-update-tools ()
@@ -1629,6 +1695,13 @@ edition = \"2021\"
     (xwidget-webkit-browse-url
      (concat "https://docs.rs/releases/search?query=" (string-replace " " "%20" query)) t))
   (define-key rust-ts-mode-map (kbd "C-c d o") 'my/browser-docsrs) ;; 助记: o -> online
+
+  ;; 在线搜索 crate 包。
+  (defun my/search-crates.io (query)
+    (interactive "ssearch: ")
+    (xwidget-webkit-browse-url
+     (concat "https://crates.io/search?q=" (string-replace " " "%20" query)) t))
+  (global-set-key (kbd "C-c s c") 'my/browser-docsrs) ;; 助记: c -> crates.io
   )
 
 (use-package cargo-mode
@@ -2347,10 +2420,10 @@ mermaid.initialize({
 
 (add-hook 'xwidget-webkit-mode-hook
           (lambda ()
-            (setq kill-buffer-query-functions nil)
+            ;;(setq kill-buffer-query-functions nil)
             (setq header-line-format nil)
             (display-line-numbers-mode 0)
-            (local-set-key "q" (lambda () (interactive) (kill-this-buffer)))
+            ;;(local-set-key "q" (lambda () (interactive) (kill-this-buffer)))
             (local-set-key (kbd "C-t") (lambda () (interactive) (xwidget-webkit-browse-url "https://google.com" t)))))
 
 (defun my/browser-open-at-point (url)

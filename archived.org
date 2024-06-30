@@ -45,7 +45,6 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
   (use-package dap-java :disabled t))
 #+end_src
 
-
 * symbol-overlay
 
 符号高亮和跳转, 已被 ctrlf 替代：
@@ -515,73 +514,6 @@ project 配置参考：
   ;; Manual preview key for `affe-grep'
   (consult-customize affe-grep :preview-key (kbd "M-.")))
 
-#+end_src
-
-* project
-#+begin_src emacs-lisp
-(use-package project
-  :after (vterm)
-  :config
-  (setq project-switch-commands
-    '((?f "File" project-find-file)
-          (?g "Grep" project-find-regexp)
-          (?d "Dired" project-dired)
-          (?b "Buffer" project-switch-to-buffer)
-          (?q "Query replace" project-query-replace-regexp)
-          (?v "VC dir" project-vc-dir)
-          (?t "Vterm" vterm)))
-
-  (defun my/project-try-local (dir)
-    "Determine if DIR is a non-Git project.
-DIR must include a .project file to be considered a project."
-    (catch 'ret
-      ;;(dolist (flag-file '(".project" "README.org" "README.md" "Makefile" "pom.xml" "go.mod" "project.clj"))
-      (dolist (flag-file '(".project" ".project."))
-    (when-let ((root (locate-dominating-file dir flag-file)))
-          (throw 'ret (cons 'local root))))))
-
-  (setq project-find-functions '(my/project-try-local project-try-vc))
-
-  (cl-defmethod project-root ((project (head local)))
-    (cdr project))
-
-  (defun my/project-info ()
-    (interactive)
-    (message "%s" (project-current t)))
-
-  (defun my/project-discover ()
-    (interactive)
-    (dolist (search-path '("~/codes/" "~/go/src/github.com/*" "~/go/src/k8s.io/*" "~/go/src/gitlab.*/*/*"))
-      (dolist (file (file-expand-wildcards search-path))
-    (message "-> %s" file)
-    (when (file-directory-p file)
-          (when-let ((pr (project-current nil file)))
-            (project-remember-project pr)
-            (message "add project %s..." pr))))))
-
-  (defun my/project-add (dir)
-    (interactive "DWhich dir:")
-    (let* ((project-flag-file (expand-file-name ".project." dir)))
-      (if-let ((pr (project-current nil dir)))
-          (if (string-equal (project-root pr) dir)
-              (project-remember-project pr)
-            (progn
-              (make-empty-file project-flag-file)
-              (project-remember-project (cons 'local dir))))
-    (progn
-          (make-empty-file project-flag-file)
-          (project-remember-project (cons 'local dir)))))
-    (message "Add project %s..." dir))
-
-  (defun my/project-remove ()
-    "Remove project from `project--list' using completion."
-    (interactive)
-    (project--ensure-read-project-list)
-    (let* ((projects project--list)
-           (dir (completing-read "REMOVE project: " projects nil t)))
-      (setq project--list (delete (assoc dir projects) projects))
-      (project--write-project-list)))
-  )  
 #+end_src
 
 * origami
@@ -2378,253 +2310,6 @@ M-w 是前缀，默认选择当前行，使用 easy-kill-alist 中的快捷键�
   (global-set-key (kbd "C-<") 'goto-last-change-reverse))
 #+end_src
 
-* rime
-
-Mac 系统安装 RIME 输入法：
-1. 下载鼠鬚管 Squirrel [[https://rime.im/download/]]，它包含输入法方案。
-2. 下载 Squirrel 使用的 [[https://github.com/rime/librime/releases][librime]] （从 Squirrel 的 [[https://github.com/rime/squirrel/blob/master/CHANGELOG.md][CHANGELOG]] 中获取版本）
-3. 重新登录用户，然后就可以使用 =Control-+= 来触发 RIME 输入法了。
-4. 在 Mac 的输入法配置程序中将 鼠须管 去掉，只保留 ABC 和搜狗输入法；
-5. 部署生效,:
-   + 如果修改了 =~/Library/Rime= 下的配置，必须点击鼠须管的 “重新部署” 才能生效。
-   + 对于 emacs-rime，如果修改了 =~/Library/Rime= 下的配置，需要执行 =M-x rime-deploy= 生效；
-
-下载 [[https://github.com/rime/librime/releases][librime]] 库, emacs-rime 使用它与系统的 RIME 交互：
-#+Begin_src bash :tangle no
-curl -L -O https://github.com/rime/librime/releases/download/1.7.2/rime-1.7.2-osx.zip
-unzip rime-1.7.2-osx.zip -d ~/.emacs.d/librime
-rm -rf rime-1.7.2-osx.zip
-# 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
-sudo spctl --master-disable
-# 后续再开启：sudo spctl --master-enable
-#+end_src
-
-从 [[https://github.com/ssnhd/rime][ssnhd/rime]] 下载最新的词库方案安装包, 将“配置文件” 目录下的内容复制到到 =~/Library/Rime= 目录。
-
-RIME 输入法自定义缺省配置中文：
-#+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
-patch:
-  schema_list:
-    - schema: luna_pinyin_simp # 朙月拼音
-    - schema: numbers # 大写数字
-  menu/page_size: 9
-  ascii_composer/good_old_caps_lock: true
-  ascii_composer/switch_key:
-    Caps_Lock: commit_code
-    Shift_L: inline_ascii
-    Shift_R: commit
-    Control_L: commit_code
-    Control_R: commit_code
-  switcher/hotkeys:
-  - F4
-  - "Control+plus" # 使用 C-+ 调出输入法菜单
-  key_binder/bindings:
-  - { when: composing, accept: Shift+Tab, send: Page_Up }          # 上一页
-  - { when: paging, accept: minus, send: Page_Up }                 # 上一页
-  - { when: composing, accept: Tab, send: Page_Down }              # 下一页
-  - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
-  - { when: always, accept: "Control+equal", toggle: ascii_mode}   # 中英文切换
-  - { when: always, accept: "Control+period", toggle: ascii_punct} # 中英文标点切换
-  - { when: always, accept: "Control+comma", toggle: full_shape}   # 全角/半角切换
-# 更多快捷键参考: https://github.com/Iorest/rime-setting/blob/master/default.custom.yaml
-#+end_src
-
-全拼配置:
-#+begin_src yaml :tangle ~/Library/Rime/luna_pinyin_simp.custom.yaml 
-patch:
-  switches:
-    - name: ascii_mode # 0 中文，1 英文
-      reset: 0
-      states: ["中文", "西文"]
-    - name: full_shape # 全角/半角符号开关
-      reset: 0
-      states: ["半角", "全角"]
-    - name: show_emoji # Emoji 开关
-      reset: 0
-      states: ["🈚️️\uFE0E", "🈶️️\uFE0F"]
-    - name: zh_simp # (※1) 繁简转换
-      reset: 1
-      states: ["漢字", "汉字"]
-    - name: symbol_support
-      reset: 0 # 安装包中默认为 1, 必须设置为 0, 否则激活输入法后 emacs 卡死。
-      states: [ "无符", "符" ]
-  simplifier:
-    option_name: zh_simp
-
-  # 启用罕见字過濾
-  engine/filters:
-    - simplifier
-    - simplifier@emoji_conversion
-    - uniquifier
-    - charset_filter@gbk # (※3) GBK 过滤
-    - single_char_filter
-
-  emoji_conversion:
-    opencc_config: emoji.json
-    option_name: show_emoji
-    tags: abc
-    #tips: all    # Emoji 显示注释
-
-  # 改写拼写运算，含英文的词汇（luna_pinyin.cn_en.dict.yaml）不影响简拼
-  "speller/algebra/@before 0": xform/^([b-df-hj-np-tv-z])$/$1_/
-
-  # 载入朙月拼音扩充词库
-  "translator/dictionary": luna_pinyin.extended
-
-  # 加载easy_en依赖
-  "schema/dependencies/@1": easy_en
-  # 载入翻译英文的码表翻译器，取名为 english
-  "engine/translators/@4": table_translator@english
-  # english翻译器的设定项
-  english:
-    dictionary: easy_en
-    spelling_hints: 9
-    enable_completion: false # 是否启用英文输入联想补全
-    enable_sentence: false # 混输时不出现带有图案的英文
-    initial_quality: -0.5 # 英文候选词的位置, 数值越大越靠前。
-
-  # 快捷表情和符号
-  punctuator:
-    import_preset: symbols
-    symbols:
-      "/fs": [½, ‰, ¼, ⅓, ⅔, ¾, ⅒]
-      "/xh": [＊, ×, ✱, ★, ☆, ✩, ✧, ❋, ❊, ❉, ❈, ❅, ✿, ✲]
-      "/dq": [🌍, 🌎, 🌏, 🌐, 🌑, 🌒, 🌓, 🌔, 🌕, 🌖, 🌗, 🌘]
-      "/sg": [🍇, 🍉, 🍌, 🍍, 🍎, 🍏, 🍑, 🍒, 🍓, 🍗, 🍦, 🎂, 🍺, 🍻]
-      "/dw": [🙈, 🐵, 🐈, 🐷, 🐨, 🐼, 🐾, 🐔, 🐬, 🐠, 🦋]
-      "/bq": [😀, 😁, 😂, 😃, 😄, 😅, 😆, 😉, 😊, 😋, 😎, 😍, 😘, 😗]
-      "/ss": [💪, 👈, 👉, 👆, 👇, ✋, 👌, 👍, 👎, ✊, 👊, 👋, 👏, 👐]
-    half_shape:
-      "#": "#"
-      "*": "*"
-      "`": "`"
-      "~": "~"
-      "@": "@"
-      "=": "="
-      '\': "、"
-      "%": "%"
-      "$": ["¥", "$"]
-      "|": ["|", "｜", "·"]
-      "/": ["/", "÷"]
-      "'": { pair: ["「", "」"] }
-      "[": "【"
-      "]": "】"
-      "<": "《"
-      ">": "》"
-
-  recognizer/patterns/punct: "^/([a-z]+|[0-9]0?)$"
-
-  # 模糊拼音
-  "speller/algebra":
-    - erase/^xx$/ # 第一行保留
-
-    # 模糊音定義
-    # 需要哪組就刪去行首的 # 號，單雙向任選
-    - derive/^([zcs])h/$1/             # zh, ch, sh => z, c, s
-    - derive/^([zcs])([^h])/$1h$2/     # z, c, s => zh, ch, sh
-    #- derive/^n/l/                     # n => l
-    #- derive/^l/n/                     # l => n
-    - derive/([ei])n$/$1ng/            # en => eng, in => ing
-    - derive/([ei])ng$/$1n/            # eng => en, ing => in
-    # 以下是一組容錯拼寫，《漢語拼音》方案以前者爲正
-    #- derive/^([nl])ve$/$1ue/          # nve = nue, lve = lue
-    #- derive/^([jqxy])u/$1v/           # ju = jv,
-    #- derive/un$/uen/                  # gun = guen,
-    #- derive/ui$/uei/                  # gui = guei,
-    #- derive/iu$/iou/                  # jiu = jiou,
-    # 自動糾正一些常見的按鍵錯誤
-    - derive/([aeiou])ng$/$1gn/        # dagn => dang
-    - derive/([dtngkhrzcs])o(u|ng)$/$1o/  # zho => zhong|zhou
-    - derive/ong$/on/                  # zhonguo => zhong guo
-    - derive/ao$/oa/                   # hoa => hao
-    - derive/([iu])a(o|ng?)$/a$1$2/    # tain => tian
-
-  # 分尖團後 v => ü 的改寫條件也要相應地擴充：
-  #'translator/preedit_format':
-  #  - "xform/([nljqxyzcs])v/$1ü/"
-
-  # librime-lua 输入动态时间和日期
-  "engine/translators/@6": lua_translator@date_translator
-#+end_src
-
-配置 Emacs:
-#+begin_src emacs-lisp
-(use-package rime
-  :disabled
-  :ensure-system-package
-  ("/Applications/SwitchKey.app" . "brew install --cask switchkey")
-  :custom
-  (rime-user-data-dir "~/Library/Rime/")
-  (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/usr/local/opt/emacs-plus@28/include")
-  :hook
-  (emacs-startup . (lambda () (setq default-input-method "rime")))
-  :bind
-  ( :map rime-active-mode-map
-    ;; 强制切换到英文模式，直到按回车
-    ("M-j" . 'rime-inline-ascii)
-    :map rime-mode-map
-    ;; 中英文切换
-    ("C-=" . 'rime-send-keybinding)
-    ;; 输入法菜单
-    ("C-+" . 'rime-send-keybinding)
-    ;; 中英文标点切换
-    ("C-." . 'rime-send-keybinding)
-    ;; 全半角切换
-    ("C-," . 'rime-send-keybinding)
-    ;; 强制切换到中文模式
-    ("M-j" . 'rime-force-enable))
-  :config
-  ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
-  (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
-  (setq rime-inline-ascii-trigger 'shift-l)
-  ;; 临时英文模式。
-  (setq rime-disable-predicates
-        '(rime-predicate-ace-window-p
-          rime-predicate-hydra-p
-          rime-predicate-current-uppercase-letter-p
-          rime-predicate-after-alphabet-char-p
-          rime-predicate-prog-in-code-p
-          rime-predicate-after-ascii-char-p
-          ))
-  (setq rime-show-candidate 'posframe)
-
-  ;; 部分 major-mode 关闭 RIME 输入法。
-  (defadvice switch-to-buffer (after activate-input-method activate)
-    (if (or (string-match "vterm-mode" (symbol-name major-mode))
-            (string-match "dired-mode" (symbol-name major-mode))
-            (string-match "image-mode" (symbol-name major-mode))
-            (string-match "minibuffer-mode" (symbol-name major-mode)))
-        (activate-input-method nil)
-      (activate-input-method "rime"))))
-#+end_src
-+  使用 [[https://github.com/itsuhane/SwitchKey][SwitchKey]] 将 Emacs 的默认系统输入法设置为英文，防止搜狗输入法干扰 RIME。
-
-然后执行命令 =M-x rime-deploy= 生效。输入 =weiyamu=, 如果内容是 =鳚亚目= 则证明导入成功。
-
-
-
-跳转到特定字符或行：
-#+begin_src emacs-lisp
-(use-package avy
-  :config
-  ;; 值在当前 window 中跳转。
-  (setq avy-all-windows nil)
-  (setq avy-background t)
-  :bind
-  ("M-g c" . avy-goto-char-2)
-  ("M-g l" . avy-goto-line))
-
-  (use-package avy
-    :disabled
-    :config
-    (global-set-key (kbd "C-:") 'avy-goto-char)
-    (global-set-key (kbd "C-'") 'avy-goto-char-2)
-    (global-set-key (kbd "M-g f") 'avy-goto-line)
-    )  
-#+end_src
-
 * other
 
 #+begin_src emacs-lisp
@@ -3297,20 +2982,6 @@ lsp-pyright:
   (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
 #+end_src
 
-* vertico
-
-与使用 awesome-tray  时，不能使用 buffer 风格，否则显示的效果不对。
-#+begin_src emacs-lisp
-  ;; 开启 vertico-multiform, 为 commands 或 categories 设置不同的显示风格。
-  (vertico-multiform-mode)
-
-  ;; 按照 completion category 设置显示风格, 优先级比 vertico-multiform-commands 低。
-  ;; 为 file 设置 grid 模式, 为 grep 设置 buffer 模式。
-  (setq vertico-multiform-categories
-        '((file grid)
-          (consult-grep buffer)))
-#+end_src
-
 * awesome-tab
 
 #+begin_src emacs-lispe
@@ -3356,86 +3027,6 @@ lsp-pyright:
 (use-package color-rg
   :straight (:host github :repo "manateelazycat/color-rg"))
 #+end_src
-
-* corfu
-
-Corfu 是文本补全框架，类似于 completion-at-point 和 company-mode 包, 相比 company 的主要优势是与 Emacs 集成的
-更好, 更轻量:
-1. Corfu 基于 Emacs 内置的 completion-at-point 实现, 任何使用 completion-at-point, completion-in-region 的地方
-   都可以使用 Corfu 来提供候选列表;
-2. 任何 completion-style 实现 (如 orderless) 都可以用来过滤候选者;
-
-#+begin_src  emacs-lisp
-(use-package corfu
-  :disabled
-  :demand
-  :straight (corfu :host github :repo "minad/corfu" :files ("*.el" "extensions/*.el"))
-  :init
-  :bind
-  (:map corfu-map
-        ("TAB" . corfu-next)
-        ([tab] . corfu-next)
-        ("S-TAB" . corfu-previous)
-        ([backtab] . corfu-previous)) 
-  :custom
-  (corfu-min-width 80)
-  (corfu-max-width corfu-min-width)
-  (corfu-count 14)
-  (corfu-scroll-margin 4)
-  ;; 后续使用 corfu-doc 来显示文档，故关闭。
-  (corfu-echo-documentation nil)
-  ;; 使用候选者的历史位置来排序。
-  :config
-  (savehist-mode 1)
-  (corfu-history-mode t)
-  (add-to-list 'savehist-additional-variables 'corfu-history)
-  (global-corfu-mode))
-
-;; 总是在弹出菜单中显示候选者。
-(setq completion-cycle-threshold nil)
-
-;; 使用 TAB 来 indentation+completion(completion-at-point 默认是 M-TAB) 。
-(setq tab-always-indent 'complete)
-
-;; 在候选者右方显示文档。
-(use-package corfu-doc
-  :disabled
-  :straight (corfu-doc :host github :repo "galeo/corfu-doc")
-  :after (corfu)
-  :hook (corfu-mode . corfu-doc-mode)
-  :bind
-  (:map corfu-map
-        ("M-n" . corfu-doc-sroll-up)
-        ("M-p" . corfu-doc-scroll-down))
-  :custom
-  (corfu-doc-delay 0.2)
-  (corfu-doc-max-width 80)
-  (corfu-doc-max-height 30))
-#+end_src
-+ Corfu: 支持 ~orderless~ 过滤候选列表, 使用 ~M-SPC~ 来插入多个过滤模式;
-  
-* capf
-
-capf 给补全系统添加额外的候选者类型：
- #+begin_src emacs-lisp
-(use-package cape
-  :disabled
-  :demand
-  :straight (cape :host github :repo "minad/cape")
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  :config
-  (setq cape-dabbrev-min-length 3)
-  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
-  (cape-wrap-prefix-length #'cape-dabbrev 3))
- #+end_src
 
 * treemacs
 
@@ -3850,59 +3441,6 @@ doom-themes:
   (setq awesome-tray-active-modules '("location" "buffer-read-only" "file-path" "mode-name" "input-method" "date")))
 #+end_src
 
-* theme
-
-#+begin_src emacs-lisp
-(use-package ef-themes
-  :disabled
-  :straight (ef-themes :host github :repo "protesilaos/ef-themes")
-  :config
-  ;; Disable all other themes to avoid awkward blending:
-  (mapc #'disable-theme custom-enabled-themes))
-
-;; 高亮光标移动到的行。
-(use-package pulsar
-  :disabled
-  :straight (pulsar :host github :repo "protesilaos/pulsar")
-  :config
-  (setq pulsar-pulse t)
-  (setq pulsar-delay 2)
-  (setq pulsar-iterations 10)
-  (setq pulsar-face 'pulsar-magenta)
-  (setq pulsar-highlight-face 'pulsar-yellow)
-  (pulsar-global-mode 1))
-
-(use-package modus-themes
-  :disabled
-  :init
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-region '(accented no-extend)
-        modus-themes-hl-line '(underline accented)
-        modus-themes-paren-match '(intense)
-        modus-themes-links '(neutral-underline background)
-        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
-        modus-themes-prompts '(intense bold)
-        modus-themes-syntax '(alt-syntax)
-        modus-themes-mixed-fonts t
-        modus-themes-org-blocks 'gray-background ;; 'tinted-background
-        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
-        modus-themes-scale-1 1.1
-        modus-themes-scale-2 1.15
-        modus-themes-scale-3 1.21
-        modus-themes-scale-4 1.27
-        modus-themes-scale-title 1.33)
-  ;; 关闭 variable-pitch-ui 和添加 padding, 否则 mode-line 右侧可能溢出。
-  (setq modus-themes-variable-pitch-ui nil)
-  (setq modus-themes-mode-line (quote (borderless (padding 4) (height 0.9))))
-  ;; Load the theme files before enabling a theme
-  (modus-themes-load-themes)
-  ;;:config
-  ;;(modus-themes-load-vivendi) ;; 深色主题
-  ;;(modus-themes-load-operandi) ;; 浅色主题
-  )
-#+end_src
-
 * tree-sitter
 
 
@@ -3973,126 +3511,6 @@ doom-themes:
        (save-excursion (hs-show-all))
        (setq this-command 'hs-global-show))
       (_ (hs-hide-all))))
-#+end_src
-
-* proxy
-
-全局 socks5 代理：
-+ Mac 自带的 curl 不支持 socks 代理, 需要安装 =brew install curl= 并设置 ~export
-  PATH="/usr/local/opt/curl/bin:$PATH"~
-+ [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
-+ 需要添加 =--user-agent= 配置, 否则会被 Google 403 Forbidden;
-
-  #+begin_src emacs-lisp
-(setq my/socks-proxy "127.0.0.1:13659")
-;;(setq my/socks-proxy "127.0.0.1:10000")
-
-(defun proxy-socks-show ()
-  "Show SOCKS proxy."
-  (interactive)
-  (if (bound-and-true-p socks-noproxy)
-      (message "Current SOCKS%d proxy is %s:%s"
-               (cadddr socks-server) (cadr socks-server) (caddr socks-server))
-    (message "No SOCKS proxy")))
-
-(defun proxy-socks-enable ()
-  "Enable SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'socks
-        socks-noproxy '("localhost"))
-  (let* ((proxy (split-string my/socks-proxy ":"))
-         (host (car proxy))
-         (port (string-to-number (cadr proxy))))
-    (setq socks-server `("Default server" ,host ,port 5)))
-  (setenv "all_proxy" (concat "socks5h://" my/socks-proxy))
-  (setenv "ALL_PROXY" (concat "socks5h://" my/socks-proxy))
-  (proxy-socks-show))
-
-(defun proxy-socks-disable ()
-  "Disable SOCKS proxy."
-  (interactive)
-  (setq url-gateway-method 'native
-        socks-noproxy nil
-        socks-server nil)
-  (setenv "all_proxy" "")
-  (setenv "ALL_PROXY" "")
-  (proxy-socks-show))
-
-(defun proxy-socks-toggle ()
-  "Toggle SOCKS proxy."
-  (interactive)
-  (if (bound-and-true-p socks-noproxy)
-      (proxy-socks-disable)
-    (proxy-socks-enable)))
-  #+end_src
-
-* proxy
-
-#+begin_src emacs-lisp
-;; 添加环境变量 export PATH="/usr/local/opt/curl/bin:$PATH"
-(use-package emacs
-  :straight (:type built-in)
-  :ensure-system-package ("/usr/local/opt/curl/bin/curl" . "brew install curl"))
-
-(setq my/socks-host "127.0.0.1")
-(setq my/socks-port 13659)
-(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
-
-(use-package mb-url-http
-  :demand
-  :straight (mb-url :repo "dochang/mb-url")
-  :commands (mb-url-http-around-advice)
-  :init
-  (require 'auth-source)
-  (let ((credential (auth-source-user-and-password "api.github.com")))
-    (setq github-user (car credential)
-          github-password (cadr credential))
-    (setq github-auth (concat github-user ":" github-password))
-    (setq mb-url-http-backend 'mb-url-http-curl
-          mb-url-http-curl-program "/usr/local/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-                                      ;;"--max-time" "300"
-                                      ;;"-u" ,github-auth
-                                      ;;"--user-agent" "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-                                      ))))
-
-(defun proxy-socks-show ()
-  "Show SOCKS proxy."
-  (interactive)
-  (when (fboundp 'cadddr)
-    (if (bound-and-true-p socks-noproxy)
-        (message "Current SOCKS%d proxy is %s:%d" 5 my/socks-host my/socks-port)
-      (message "No SOCKS proxy"))))
-
-(defun proxy-socks-enable ()
-  "使用 socks 代理 url 访问请求。"
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'socks
-        socks-noproxy '("0.0.0.0" "localhost" "10.0.0.0/8" "172.0.0.0/8" "*cn" "*alibaba-inc.com" "*taobao.com" "*antfin-inc.com")
-        socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-  (setenv "all_proxy" my/socks-proxy)
-  (proxy-socks-show)
-  ;;url-retrieve 使用 curl 作为后端实现, 支持全局 socks5 代理。
-  (advice-add 'url-http :around 'mb-url-http-around-advice))
-
-(defun proxy-socks-disable ()
-  "Disable SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (setq url-gateway-method 'native
-        socks-noproxy nil)
-  (setenv "all_proxy" "")
-  (proxy-socks-show))
-
-(defun proxy-socks-toggle ()
-  "Toggle SOCKS proxy."
-  (interactive)
-  (require 'socks)
-  (if (bound-and-true-p socks-noproxy)
-      (proxy-socks-disable)
-    (proxy-socks-enable)))
 #+end_src
 
 * symbol-overlay
@@ -4174,6 +3592,7 @@ doom-themes:
 #+end_src
 
 * winner
+
 使用内置的 tab-bar history 来代替：
 #+begin_src emacs-lisp
 (use-package winner
@@ -4539,32 +3958,8 @@ Dictionary's name   Word count
   (add-hook 'ef-themes-post-load-hook #'my-ef-themes-hl-todo-faces))
 #+end_src
 
-* vterm
-#+begin_src emacs-lisp
-  ;; 使用 consult 预览显示 vterm buffer 候选列表;
-  (setq my/consult--source-vterm-buffer
-        `(
-          :name "VTerm"
-          :narrow ?t
-          :category buffer
-          :face consult-buffer
-          :state ,#'consult--buffer-state
-          :annotate ,(lambda (cand)
-                       (let ((buf (get-buffer cand)))
-                         (buffer-local-value 'default-directory buf)))
-          :items ,(lambda () (consult--buffer-query :sort 'visibility
-                                               :as #'buffer-name
-                                               :include (list (rx bos "*vterm"))))))
-  (defun my/consult-buffer-vterm-only ()
-    (interactive)
-    (let ((consult-buffer-sources '(my/consult--source-vterm-buffer)))
-      (consult-buffer)))
-  )
-(global-set-key (kbd "C-c t") #'my/consult-buffer-vterm-only)
-
-#+end_src
-
 * window
+
 #+begin_src emacs-lisp
 (global-set-key (kbd "C-M-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "C-M-<right>") 'enlarge-window-horizontally)
@@ -4751,116 +4146,6 @@ ctrlf 是 isearch 更好的替代品（搜索结果编号，支持：C-v, M-v, M
 (setq scroll-margin 2)
 #+end_src
 
-* org latex
-#+begin_src emacs-lisp
-  ;; ;; Alist of packages to be inserted in every LaTeX header.
-  ;; (setq org-latex-packages-alist
-  ;;       (quote (("" "color" t)
-  ;;               ("" "xcolor" t)
-  ;;               ("" "listings" t)
-  ;;               ("" "fontspec" t)
-  ;;               ("" "parskip" t) ;; 增加正文段落的间距
-  ;;               ("AUTO" "inputenc" t))))
-
-  ;; 自定义 latex 语言环境(基于 tcolorbox), 参考：https://blog.shimanoke.com/ja/posts/output-latex-code-with-tcolorbox/
-  (setq org-latex-custom-lang-environments
-        '((c "\\begin{programlist}[label={%l}]{c}{: %c}\n%s\\end{programlist}")
-          (ditaa "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (emacs-lisp "\\begin{programlist}[label={%l}]{lisp}{: %c}\n%s\\end{programlist}")
-          (ruby "\\begin{programlist}[label={%l}]{ruby}{: %c}\n%s\\end{programlist}")
-          (latex "\\begin{programlist}[label={%l}]{latex}{: %c}\n%s\\end{programlist}")
-          (go "\\begin{programlist}[label={%l}]{go}{: %c}\n%s\\end{programlist}")
-          (lua "\\begin{programlist}[label={%l}]{lua}{: %c}\n%s\\end{programlist}")
-          (java "\\begin{programlist}[label={%l}]{java}{: %c}\n%s\\end{programlist}")
-          (javascript "\\begin{programlist}[label={%l}]{javascript}{: %c}\n%s\\end{programlist}")
-          (json "\\begin{programlist}[label={%l}]{json}{: %c}\n%s\\end{programlist}")
-          (plantuml "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (yaml "\\begin{programlist}[label={%l}]{yaml}{: %c}\n%s\\end{programlist}")
-          (maxima "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (ipython "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
-          (python "\\begin{programlist}[label={%l}]{python}{: %c}\n%s\\end{programlist}")
-          (perl "\\begin{programlist}[label={%l}]{perl}{: %c}\n%s\\end{programlist}")
-          (html "\\begin{programlist}[label={%l}]{html}{: %c}\n%s\\end{programlist}")
-          (org "\\begin{programlist}[label={%l}]{text}{: %c}\n%s\\end{programlist}")
-          (typescript "\\begin{programlist}[label={%l}]{typescript}{: %c}\n%s\\end{programlist}")
-          (scss "\\begin{programlist}[label={%l}]{scss}{: %c}\n%s\\end{programlist}")
-          (sh "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
-          (bash "\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\end{programlist}")
-          (shell "\\\\begin{programlist}[label={%l}]{shell}{: %c}\n%s\\\\end{programlist}")
-          (shellinput "\\begin{shellinput}[%c]\n%s\\end{shellinput}")
-          (shelloutput "\\begin{shelloutput}[%c]\n%s\\end{shelloutput}"))))
-
-#+end_src
-
-* simplify
-
-init: 
-=early-init.el= 是 =Emacs= 启动时最开始执行的文件，执行复杂逻辑可能导致启动失败，所以该文件尽量以变量定义为主。
-#+begin_src emacs-lisp
-;; 加载较新的 .el 文件。
-(setq-default load-prefer-newer t)
-(setq-default lexical-binding t)
-(setq lexical-binding t)
-
-;; 个人信息。
-(setq user-full-name "zhangjun")
-(setq user-mail-address "geekard@qq.com")
-#+end_src
-
-package:
-#+begin_src emacs-lisp
-(setq straight-host-usernames '((github . "opsnull")))
-(setq straight-check-for-modifications '(check-on-save find-when-checking watch-files))
-#+end_src
-
-ui:
-#+begin_src emacs-lisp
-;; 关闭启动消息。
-(setq inhibit-startup-screen t)
-(setq inhibit-startup-message t)
-(setq inhibit-startup-echo-area-message t)
-(setq initial-scratch-message nil)
-
-;; 出错提示。
-(setq visible-bell t)
-
-;; 窗口间显示分割线。
-;;(setq window-divider-default-places t)
-;;(add-hook 'window-setup-hook #'window-divider-mode)
-
-
-;; 大文件不显示行号。
-(setq large-file-warning-threshold nil)
-(setq line-number-display-limit large-file-warning-threshold)
-(setq line-number-display-limit-width 1000)
-
-;; 显示行号。
-(dolist (mode '(text-mode-hook prog-mode-hook conf-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 1))))
-
-;; 下面的 reuse window 的配置会导致 sort-tab 与 ibuffer/embark 等不兼容（这些 mode 起的
-;; 临时 buffer 会在 sort-tab 的地方显示, 导致不可用)。
-;; (setq display-buffer-base-action
-;;       '(display-buffer-reuse-mode-window
-;;         display-buffer-reuse-window
-;;         display-buffer-same-window))
-#+end_src
-
-tar-bar:
-#+begin_src emacs-lisp
- (setq tab-bar-format '(
-                         ;;tab-bar-format-history ;; 不显示最左侧的 < 和 >
-                         ;;tab-bar-format-tabs
-                         tab-bar-format-tabs-groups
-                         tab-bar-separator
-                         tab-bar-format-add-tab
-                         ;; tab-bar-format-align-right ;; 后续内容右对齐
-                         ;; tab-bar-format-global
-                         ;; current-time-string
-                         ;; tab-bar-separator
-                         ))
-#+end_src
-
 * pyim
 
 #+begin_src emacs-lisp
@@ -4946,187 +4231,6 @@ tar-bar:
   (global-set-key (kbd "C-s-h") #'buf-move-left)
   (global-set-key (kbd "C-s-l") #'buf-move-right))
 #+end_src
-
-* doom-theme
-
-#+begin_src emacs-lisp
-(use-package doom-themes
-  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
-  :custom-face
-  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  :config
-  (doom-themes-visual-bell-config)
-  ;;(load-theme 'doom-palenight t)
-  (doom-themes-org-config)
-  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
-  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
-  (setq doom-themes-treemacs-enable-variable-pitch nil)
-  (setq doom-themes-treemacs-theme "doom-colors")
-  (doom-themes-treemacs-config))
-#+end_src
-
-* lsp-bridge
-
-lsp-bridge 依赖如下 python packages:
-#+begin_src bash :tangle ~/.emacs.d/init.sh
-pip3 install epc orjson sexpdata six paramiko
-#+end_src
-
-#+begin_src emacs-lisp
-;;(use-package posframe)
-
-;; dump-jump 支持 GNU Global 的 gtags 跳转。
-(use-package  dumb-jump
-  :demand
-  :init
-  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
-  :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-
-;; 融合 `lsp-bridge' `find-function' 以及 `dumb-jump' 的智能跳转。
-(defun lsp-bridge-jump ()
-  (interactive)
-  (cond
-   ((eq major-mode 'emacs-lisp-mode)
-    (let ((symb (function-called-at-point)))
-      (when symb
-        (find-function symb))))
-   (lsp-bridge-mode
-    (lsp-bridge-find-def))
-   (t
-    (require 'dumb-jump)
-    (dumb-jump-go))))
-
-(defun lsp-bridge-jump-back ()
-  (interactive)
-  (cond
-   (lsp-bridge-mode
-    (lsp-bridge-return-from-def))
-   (t
-    (require 'dumb-jump)
-    (dumb-jump-back))))
-
-(use-package lsp-bridge
-  :disabled
-  :after (markdown-mode)
-  :straight (:host github :repo "manateelazycat/lsp-bridge" :files ("*" "acm/*"))
-  :no-native-compile t ;; straight pull 包后不编译为 elc。
-  :custom
-  ;; 不在 modeline 显示 lsp-bridge 信息。
-  (lsp-bridge-enable-mode-line nil)
-  :config
-  (setq lsp-bridge-enable-log t)
-  (setq lsp-bridge-enable-signature-help t)
-  ;;(setq lsp-bridge-signature-show-function 'lsp-bridge-signature-posframe)
-  ;; word 补全。
-  (setq acm-enable-search-file-words nil)
-  (setq lsp-bridge-enable-search-words nil)
-  ;; (setq lsp-bridge-search-words-rebuild-cache-idle 10)
-  ;; (setq acm-candidate-match-function 'orderless-flex)
-  ;; 至少输入 N 个字符后才开始补全。
-  ;; (setq acm-backend-lsp-candidate-min-length 0)
-  (setq acm-backend-lsp-enable-auto-import nil)
-  ;; (setq acm-backend-lsp-candidate-max-length 100)
-  ;; (setq acm-enable-icon nil)
-  ;; (setq acm-enable-doc nil)
-  ;; (setq acm-enable-telega nil)
-  (setq acm-enable-tabnine nil)
-  (setq lsp-bridge-diagnostic-tooltip-border-width 0)
-  (setq lsp-bridge-enable-hover-diagnostic t)
-  (setq lsp-bridge-diagnostic-display-errors-delay 1)
-  ;; 关闭 code action 的 popup-menu.
-  (setq lsp-bridge-code-action-enable-popup-menu nil)
-  ;; (setq lsp-bridge-lookup-doc-tooltip-max-width 100)
-  ;; (setq lsp-bridge-lookup-doc-tooltip-border-width 0)
-  ;;  过滤 warnning.
-  ;;(setq lsp-bridge-diagnostic-hide-severities '(2 3 4))
-  ;; 开启 citre 集成。
-  ;;(setq acm-enable-citre t)
-  ;; 关闭 yas 补全。
-  ;;(setq acm-enable-yas nil)
-  (add-to-list 'lsp-bridge-org-babel-lang-list "emacs-lisp")
-  (add-to-list 'lsp-bridge-org-babel-lang-list "sh")
-  (add-to-list 'lsp-bridge-org-babel-lang-list "shell")
-  (add-to-list 'lsp-bridge-org-babel-lang-list "go")
-  ;; go 缩进。
-  ;;(add-to-list 'lsp-bridge-formatting-indent-alist '(go-mode . c-basic-offset))
-  ;;(add-to-list 'lsp-bridge-formatting-indent-alist '(go-ts-mode . c-basic-offset))
-  ;; go 注释字符后不提示补全。
-  ;; (add-to-list 'lsp-bridge-completion-hide-characters "/")
-  ;; (add-to-list 'lsp-bridge-completion-hide-characters "，")
-  ;; (add-to-list 'lsp-bridge-completion-hide-characters "。")
-  (global-lsp-bridge-mode)
-  ;; 关闭自动补全；
-  (setq lsp-bridge-complete-manually t)
-  ;; 手动触发自动补全。
-  (global-set-key (kbd "M-SPC") 'lsp-bridge-popup-complete-menu)
-  ;; (define-key acm-mode-map [tab] 'acm-select-next)
-  ;; (define-key acm-mode-map [backtab] 'acm-select-prev)
-  ;; (define-key acm-mode-map "\M-j" 'acm-complete)
-
-  ;;; lsp-bridge
-  ;; M-j 被预留给 pyim 使用。
-  (define-key acm-mode-map (kbd "M-j") nil)
-  ;; 使用 TAB 而非回车键来选定。
-  ;;(define-key acm-mode-map (kbd "RET") nil)
-  (define-key lsp-bridge-mode-map (kbd "M-.") #'lsp-bridge-find-def)
-  (define-key lsp-bridge-mode-map (kbd "C-M-.") #'lsp-bridge-find-def-other-window)
-  (define-key lsp-bridge-mode-map (kbd "M-,") #'lsp-bridge-find-def-return)
-  (define-key lsp-bridge-mode-map (kbd "M-?") #'lsp-bridge-find-references)
-  (define-key lsp-bridge-mode-map (kbd "M-d") #'lsp-bridge-popup-documentation)
-  ;; 这两个快捷键让位于 symobl-overlay
-  ;; (define-key lsp-bridge-mode-map (kbd "M-n") #'lsp-bridge-popup-documentation-scroll-up)
-  ;; (define-key lsp-bridge-mode-map (kbd "M-p") #'lsp-bridge-popup-documentation-scroll-down)
-  (define-key lsp-bridge-mode-map (kbd "C-c C-a") #'lsp-bridge-code-action)
-  (define-key lsp-bridge-mode-map (kbd "C-c C-f") #'lsp-bridge-code-format)
-  (define-key lsp-bridge-mode-map (kbd "C-s-d") #'lsp-bridge-diagnostic-list)
-  (define-key lsp-bridge-mode-map (kbd "C-s-n") #'lsp-bridge-diagnostic-jump-next)
-  (define-key lsp-bridge-mode-map (kbd "C-s-p") #'lsp-bridge-diagnostic-jump-prev))
-#+end_src
-+ acm-backend-search-words, 用来替换 acm-backend-dabbrev, acm-backend-search-words 后端的原理是， Emacs 告诉
-  Python 进程哪些文件被打开了， Python 进程就开一个子线程在后台计算每个文件的单词， 并对提取的单词进行清洗、去
-  重和排序。
-+ M-x lsp-bridge-toggle-english-helper: 快速切换英文单词补全后端；
-
-lsp-bridge 在开启了编译后，大概率会报错，故关闭：  
-#+begin_src emacs-lisp  :tangle ~/.emacs.d/straight/build/lsp-bridge/.dir-locals.el
-((emacs-lisp-mode . ((no-byte-compile . t))))
-#+end_src
-
-由于 lsp-bridge mode map 将 M-./M-,/M-? 等 xref 相关命令绑定到自己的 lsp-bridge 相关函数，但是当
-lsp-bridge 的补全、跳转等不可用时，需要使用 citre-mode 的 xref 集成特性的化，就需要使用 M-x xref-xxx
-等命令。这时可以在 project root 目录创建一个 .dir-locals.el 文件来为项目所有文件关闭 lsp-mode：
-#+begin_src emacs-lisp :tangle no
-;;; Directory Local Variables
-;;; For more information see (info "(emacs) Directory Variables")
-
-;;; disable lsp-mode and enable ggtags-mode
-((nil . ((eval . (lsp-bridge-mode -1)))
-      ))
-#+end_src
-
-为了方便输入，可以在 ~/.emacs.d/snippets/prog-mode 下创建一个名为 disable-lsp-bridge 的 snippet，后
-续可以使用M-x consult-yasnippet 来快速在 .dir-locals.el 文件中插入 snippet 文件内容。
-#+begin_src emacs-lisp :tangle no
-# -*- mode: snippet -*-
-# name: disable-lsp-bridge
-# key: dlspb
-# --
-;;; Directory Local Variables
-;;; For more information see (info "(emacs) Directory Variables")
-
-;;; .dir-locals.el
-;;; disable lsp-mode and enable ggtags-mode
-((nil . ((eval . (lsp-bridge-mode -1)))
-      ))
-#+end_src
-
-通过上面的 .dir-locals.el 机制来在项目级别关闭 lsp-bridge 后，M-./M-,/M-? 恢复绑定到 consult-xref 来
-跳转和预览。
 
 * company
 
@@ -5232,37 +4336,38 @@ company-search-map 2.
 
 + M-x company-diag: 诊断。
 
-* zenburn
+* theme
 
 #+begin_src emacs-lisp
+;; 低对比度主题。
 (use-package color-theme-sanityinc-tomorrow
   :straight (:host github :repo "purcell/color-theme-sanityinc-tomorrow")
-)
+  )
 
 (use-package zenburn-theme
   :straight (:host github :repo "bbatsov/zenburn-emacs")
   :config
   ;; use variable-pitch fonts for some headings and titles
-(setq zenburn-use-variable-pitch t)
+  (setq zenburn-use-variable-pitch t)
 
-;; scale headings in org-mode
-(setq zenburn-scale-org-headlines t)
+  ;; scale headings in org-mode
+  (setq zenburn-scale-org-headlines t)
 
-;; scale headings in outline-mode
-(setq zenburn-scale-outline-headlines t)
-(setq zenburn-height-plus-1 1.2)
-(setq zenburn-height-plus-2 1.3)
-(setq zenburn-height-plus-3 1.4)
-(setq zenburn-height-plus-4 1.5)
+  ;; scale headings in outline-mode
+  (setq zenburn-scale-outline-headlines t)
+  (setq zenburn-height-plus-1 1.2)
+  (setq zenburn-height-plus-2 1.3)
+  (setq zenburn-height-plus-3 1.4)
+  (setq zenburn-height-plus-4 1.5)
+  (load-theme 'zenburn t)
   )
 #+end_src
 
-* doom-theme
-
+doom-themes:
 #+begin_src emacs-lisp
 (use-package doom-themes
   ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
-  :straight (:files ("*.el" "themes/*" "extensions/*"))
+  ;;:straight (:files ("*.el" "themes/*" "extensions/*"))
   :custom-face
   (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
   :custom
@@ -5279,50 +4384,59 @@ company-search-map 2.
   (doom-themes-treemacs-config))
 #+end_src
 
-* flymake
-
-eglot 使用 Emacs 内置的 flymake 而非 flycheck 来接收和显示 LSP Server 发送的 publishDiagnostics 事件。flymake
-默认在三种情况下检查 buffer 错误：
-1. 执行 M-x flymake-start 命令；
-2. flymake-no-changes-timeout 时间以后，默认为 0.5， 设置为 nil 后表示无限长。
-3. buffer 被报错。
-
-将 flymake-no-changes-timeout 设置为 nil 后，eglot 不会显示实时的诊断消息，而是当保存 buffer 内容后，经过
-eglot-send-changes-idle-time 时间后才显示 LSP 诊断消息，这样可以避免显示无意义的错误。
-+ https://github.com/joaotavora/eglot/commit/2b87b06d9ef15e7c39d87fd5a4375b6deaa7e322
+ef-themes, modus-themes:
 #+begin_src emacs-lisp
-(use-package flymake
-  :ensure t
-  :straight (:type built-in)
+(use-package ef-themes
+  :disabled
+  :straight (ef-themes :host github :repo "protesilaos/ef-themes")
   :config
-  (setq flymake-no-changes-timeout nil)
-  (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
-  (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error))
-#+end_src
-+ M-x flymake-show-buffer-diagnostics
-+ M-x flymake-show-project-diagnostics 
+  ;; Disable all other themes to avoid awkward blending:
+  (mapc #'disable-theme custom-enabled-themes))
 
-* eldoc
-
-eldoc 是 echo area 显示当前 symbol 信息，如函数签名或参数类型。global-eldoc-mode 变量默认为 t，则表示 eldoc 默
-认在所有 major mode 均开启。
-
-#+begin_src emacs-lisp
-(use-package eldoc
-  :ensure t
-  :straight (:type built-in)
+;; 高亮光标移动到的行。
+(use-package pulsar
+  :disabled
+  :straight (pulsar :host github :repo "protesilaos/pulsar")
   :config
-  ;; 打开或关闭 *eldoc* 函数帮助或 hover buffer。
-  (global-set-key (kbd "M-`")
-                  (
-                   lambda()
-                   (interactive)
-                   (if (get-buffer-window "*eldoc*")
-                       (delete-window (get-buffer-window "*eldoc*"))
-                     (display-buffer "*eldoc*")))))
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 2)
+  (setq pulsar-iterations 10)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+  (pulsar-global-mode 1))
+
+(use-package modus-themes
+  :disabled
+  :init
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-region '(accented no-extend)
+        modus-themes-hl-line '(underline accented)
+        modus-themes-paren-match '(intense)
+        modus-themes-links '(neutral-underline background)
+        modus-themes-box-buttons '(variable-pitch flat faint 0.9)
+        modus-themes-prompts '(intense bold)
+        modus-themes-syntax '(alt-syntax)
+        modus-themes-mixed-fonts t
+        modus-themes-org-blocks 'gray-background ;; 'tinted-background
+        modus-themes-headings '((t . (variable-pitch background overline rainbow semibold)))
+        modus-themes-scale-1 1.1
+        modus-themes-scale-2 1.15
+        modus-themes-scale-3 1.21
+        modus-themes-scale-4 1.27
+        modus-themes-scale-title 1.33)
+  ;; 关闭 variable-pitch-ui 和添加 padding, 否则 mode-line 右侧可能溢出。
+  (setq modus-themes-variable-pitch-ui nil)
+  (setq modus-themes-mode-line (quote (borderless (padding 4) (height 0.9))))
+  ;; Load the theme files before enabling a theme
+  (modus-themes-load-themes)
+  ;;:config
+  ;;(modus-themes-load-vivendi) ;; 深色主题
+  ;;(modus-themes-load-operandi) ;; 浅色主题
+  )
 #+end_src
-+ M-x eldoc 或 eldoc-doc-buffer: 在独立的 buffer *eldoc* 中显示 eldoc 文档；
-  
+
+
 * corfu
 
 A minimal ui for completion-in-region。corfu 与 orderless 的匹配性更好，比如可以对候选词使用 orderless 的过滤
@@ -5689,6 +4803,37 @@ lsp-bridge 在开启了编译后，大概率会报错，故关闭：
 ((emacs-lisp-mode . ((no-byte-compile . t))))
 #+end_src
 
+由于 lsp-bridge mode map 将 M-./M-,/M-? 等 xref 相关命令绑定到自己的 lsp-bridge 相关函数，但是当
+lsp-bridge 的补全、跳转等不可用时，需要使用 citre-mode 的 xref 集成特性的化，就需要使用 M-x xref-xxx
+等命令。这时可以在 project root 目录创建一个 .dir-locals.el 文件来为项目所有文件关闭 lsp-mode：
+#+begin_src emacs-lisp :tangle no
+;;; Directory Local Variables
+;;; For more information see (info "(emacs) Directory Variables")
+
+;;; disable lsp-mode and enable ggtags-mode
+((nil . ((eval . (lsp-bridge-mode -1)))
+      ))
+#+end_src
+
+为了方便输入，可以在 ~/.emacs.d/snippets/prog-mode 下创建一个名为 disable-lsp-bridge 的 snippet，后
+续可以使用M-x consult-yasnippet 来快速在 .dir-locals.el 文件中插入 snippet 文件内容。
+#+begin_src emacs-lisp :tangle no
+# -*- mode: snippet -*-
+# name: disable-lsp-bridge
+# key: dlspb
+# --
+;;; Directory Local Variables
+;;; For more information see (info "(emacs) Directory Variables")
+
+;;; .dir-locals.el
+;;; disable lsp-mode and enable ggtags-mode
+((nil . ((eval . (lsp-bridge-mode -1)))
+      ))
+#+end_src
+
+通过上面的 .dir-locals.el 机制来在项目级别关闭 lsp-bridge 后，M-./M-,/M-? 恢复绑定到 consult-xref 来
+跳转和预览。
+
 修改 gopls 配置：
 + 添加 ~"verboseOutput": true~ 配置参数将打开 gopls 调试模式；
 + 去掉配置参数 ~"env": {"GOFLAGS": "-mod=mod"},~ 可以防止带有 vendor 目录的项目报错: go: inconsistent vendoring;
@@ -6005,21 +5150,6 @@ pyenv 工作流：
 + 如果文字居中失效, 可以执行 =M-x redraw-display= 命令生效。
 
 
-* marginalia
-
-#+begin_src  emacs-lisp
-(use-package marginalia
-  :init
-  ;; 显示绝对时间。
-  (setq marginalia-max-relative-age 0)
-  (marginalia-mode)
-  :config
-  ;; 文件不添加大小，修改时间等注释，防止 tramp 时卡住。
-  ;; (setq marginalia-annotator-registry (assq-delete-all 'file marginalia-annotator-registry))
-  ;; (setq marginalia-annotator-registry (assq-delete-all 'project-file marginalia-annotator-registry))
-  )
-#+end_src
-
 * gtags
 
 
@@ -6177,20 +5307,6 @@ Gtags scans that directory if needed."
     (gcmh-mode 1)
     (gcmh-set-high-threshold))
 
-#+end_src
-
-* theme
-#+begin_src emacs-lisp
-    ;; 低对比度主题。
-  (use-package color-theme-sanityinc-tomorrow)
-  (use-package zenburn-theme
-    :disabled
-    :init
-    (setq zenburn-use-variable-pitch t)
-    (setq zenburn-scale-org-headlines t)
-    (setq zenburn-scale-outline-headlines t)
-    :config
-    (load-theme 'zenburn t))
 #+end_src
 
 * font
@@ -6500,18 +5616,6 @@ elfeed-score 规则文件([[https://www.unwoundstack.com/doc/elfeed-score/curr][
 ;;         :value 750
 ;;         :comment "Add 750 points to any entry with a tag of reddit-question"))
  (mark -2500))
-#+end_src
-
-* nyan-mode
-
-modeline 显示彩虹猫：
-#+begin_src emacs-lisp
-(use-package nyan-mode
-  :config
-  (setq nyan-animate-nyancat t)
-  (setq nyan-wavy-trail nil)
-  (nyan-mode)
-  (nyan-start-animation))
 #+end_src
 
 * org
@@ -6829,74 +5933,6 @@ lsp-bridge 默认在打开 css-mode 时使用 vscode-css-language-server。
 ;;      (unless (eq ibuffer-sorting-mode 'project-file-relative)
 ;;        (ibuffer-do-sort-by-project-file-relative)))))
 
-#+end_src
-
-* tab-bar
-
-#+begin_src emacs-lisp
-(use-package tab-bar
-  :custom
-  (tab-bar-close-button-show nil)
-  (tab-bar-new-button-show nil)
-  (tab-bar-history-limit 20)
-  (tab-bar-new-tab-choice "*dashboard*")
-  (tab-bar-show 1)
-  ;; 使用 super + N 来切换 tab。
-  (tab-bar-select-tab-modifiers "super")
-  :config
-  ;; 去掉最左侧的 < 和 >
-  (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
-  ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
-  (tab-bar-history-mode t)
-  (global-set-key (kbd "s-f") 'tab-bar-history-forward)
-  (global-set-key (kbd "s-b") 'tab-bar-history-back)
-  (global-set-key (kbd "s-t") 'tab-bar-new-tab)
-  (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
-  (keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
-  (keymap-global-set "s-w" 'tab-bar-close-tab)
-  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
-
-  ;; 为 tab 添加序号，便于快速切换。
-  ;; 参考：https://christiantietze.de/posts/2022/02/emacs-tab-bar-numbered-tabs/
-  (defvar ct/circle-numbers-alist
-    '((0 . "⓪")
-      (1 . "①")
-      (2 . "②")
-      (3 . "③")
-      (4 . "④")
-      (5 . "⑤")
-      (6 . "⑥")
-      (7 . "⑦")
-      (8 . "⑧")
-      (9 . "⑨"))
-    "Alist of integers to strings of circled unicode numbers.")
-  (setq tab-bar-tab-hints t)
-  (defun ct/tab-bar-tab-name-format-default (tab i)
-    (let ((current-p (eq (car tab) 'current-tab))
-          (tab-num (if (and tab-bar-tab-hints (< i 10))
-                       (alist-get i ct/circle-numbers-alist) "")))
-      (propertize
-       (concat tab-num
-               " "
-               (alist-get 'name tab)
-               (or (and tab-bar-close-button-show
-			(not (eq tab-bar-close-button-show
-				 (if current-p 'non-selected 'selected)))
-			tab-bar-close-button)
-                   "")
-               " ")
-       'face (funcall tab-bar-tab-face-function tab))))
-  (setq tab-bar-tab-name-format-function #'ct/tab-bar-tab-name-format-default)
-
-  (global-set-key (kbd "s-1") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-2") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-3") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-4") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-5") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-6") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-7") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-8") 'tab-bar-select-tab)
-  (global-set-key (kbd "s-9") 'tab-bar-select-tab))
 #+end_src
 
 * sort-tab
@@ -7299,7 +6335,6 @@ anki-helpers 默认使用 org-mode 的强调 =*xxx*= 来生成填空型卡片。
 1. [[https://yiufung.net/post/anki-org/][Power up Anki with Emacs, Org mode, anki-editor and more]]
 2. [[https://docs.ankiweb.net/intro.html][Introduction - Anki Manual]]
 
-
 * citre
 
 eglot 运行时将 xref-backend-functions 设置为 eglot-xref-backend，而忽略已注册的其它 backend. 这里定
@@ -7362,3 +6397,16 @@ eldoc-box 在 frame 右上角或光标位置显示 eldoc-doc-buffer 的内容. �
 ;; 为 nil 时只单行显示 eldoc 信息.
 (setq eldoc-echo-area-use-multiline-p nil)
 #+end_src
+
+* nyan 
+
+nyan：modeline 彩虹猫。
+#+begin_src emacs-lisp
+(use-package nyan-mode
+  :config
+  (setq nyan-animate-nyancat t)
+  (setq nyan-wavy-trail t)
+  (nyan-mode)
+  (nyan-start-animation))
+#+end_src
+

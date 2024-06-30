@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-05-25T14:05:04+0800
+#+LASTMOD: 2024-06-30T21:06:27+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -32,7 +32,7 @@ ln -sf /opt/homebrew/opt/emacs-plus/Emacs.app /Applications/
 
 * init
 
-=early-init.el= 启动时最开始执行的文件，执行复杂逻辑可能会失败，所以该文件尽量以变量定义为主。
+=early-init.el= 是启动时第一个执行的文件，执行复杂逻辑可能会失败，所以该文件尽量以变量定义为主。
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 (when (fboundp 'native-compile-async)
   (setenv "LIBRARY_PATH"
@@ -108,7 +108,7 @@ ln -sf /opt/homebrew/opt/emacs-plus/Emacs.app /Applications/
 
 * proxy
 
-Mac 自带的 curl 不支持 socks5 代理, 这里安装支持 socks5 代理的 GNU curl 版本：
+MacOS 自带的 curl 不支持 socks5 代理, 这里安装支持 socks5 代理的 GNU curl 版本：
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 brew install curl
 export PATH="/opt/homebrew/opt/curl/bin:$PATH"
@@ -217,7 +217,7 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
     (global-unset-key (kbd key))))
 #+end_src
 
-Mac 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper。
+MacOS 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper。
 #+begin_src emacs-lisp
 ;; command 作为 Meta 键。
 (setq mac-command-modifier 'meta)
@@ -323,7 +323,7 @@ frame 设置：
                    "Shell Command Output") (0+ not-newline))
          (display-buffer-below-selected display-buffer-at-bottom)
          (inhibit-same-window . t)
-         (window-height . 0.33))))
+         (window-height . 0.25))))
 #+end_src
 
 启动后显示模式，加 t 参数让 togg-frame-XX 最后运行，这样最大化才生效：
@@ -339,49 +339,19 @@ frame 设置：
   ;; 分别为 frame 获得焦点和失去焦点的不透明度。
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90)) 
   (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
-  (add-to-list 'default-frame-alist '(alpha-background . 90)) ;; Emacs 29
-  )  
+  (add-to-list 'default-frame-alist '(alpha-background . 90)))  
 #+end_src
 
-窗口调整：
+窗口：
 #+begin_src emacs-lisp
-;; 调整窗口大小。
-(global-set-key (kbd "s-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "s-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "s-<down>") 'shrink-window)
-(global-set-key (kbd "s-<up>") 'enlarge-window)
-
 ;; 切换窗口。
 (global-set-key (kbd "s-o") #'other-window)  
-#+end_src
-
-滚动显示：
-#+begin_src emacs-lisp
-(global-set-key (kbd "s-j") (lambda () (interactive) (scroll-up 1)))
-(global-set-key (kbd "s-k") (lambda () (interactive) (scroll-down 1)))
 
 ;; 像素平滑滚动。
 (pixel-scroll-precision-mode t)
-#+end_src
 
-向下/向上翻另外的窗口。
-#+begin_src emacs-lisp
 (global-set-key (kbd "s-v") 'scroll-other-window)  
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
-#+end_src
-
-org-mode buffer 内容居中显示：
-+ 设置 olivetti body 宽度： ~C-c | (M-x olivetti-set-width)~
-+ =olivetti-body-width= 和 =fill-column= 都是 buffer local 变量，需要使用 =setq-default= 才能在所有 buffer
-  中生效。
-#+begin_src emacs-lisp
-(use-package olivetti
-  :config
-  ;; 内容区域宽度，超过后自动折行。
-  (setq-default olivetti-body-width 120)
-  (add-hook 'org-mode-hook 'olivetti-mode))
-;; fill-column 值要小于 olivetti-body-width 才能正常折行。
-(setq-default fill-column 100)     
 #+end_src
 
 dashboard：
@@ -400,7 +370,7 @@ dashboard：
   (setq dashboard-items '((recents . 15) (projects . 8) (agenda . 3))))
 #+end_src
 
-doom-modeline：它使用 Symbols Nerd Fonts Mono 字体在 modeline 上显示 icons，需要单独安装该字体。
+doom-modeline：使用 Symbols Nerd Fonts Mono 在 modeline 上显示 icons，需要单独安装该字体。
 #+begin_src emacs-lisp
 (use-package nerd-icons)
 (use-package doom-modeline
@@ -427,7 +397,7 @@ doom-modeline：它使用 Symbols Nerd Fonts Mono 字体在 modeline 上显示 i
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
-;; 为 vterm-mode 定义简化的 modeline，提升性能。
+;; 为 vterm-mode 定义简化的 modeline，避免 buffer 内容过多时影响性能。
 (doom-modeline-def-modeline 'my-term-modeline
   '(buffer-info) ;; 左侧
   '(misc-info minor-modes input-method)) ;; 右侧
@@ -490,30 +460,33 @@ doom-modeline：它使用 Symbols Nerd Fonts Mono 字体在 modeline 上显示 i
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
 	(set-fontset-font font charset font-spec)))))
 
-;; emacs 启动后或 fontaine preset 切换时设置字体。
+;; Emacs 启动后或 fontaine preset 切换时设置字体。
 (add-hook 'after-init-hook 'my/set-font)
 (add-hook 'fontaine-set-preset-hook 'my/set-font)
 
 ;; 设置字体缩放比例，设置为 1.172 可以确保 2 倍放大后对应的是 22 号偶数字体，这样表格可以对齐。16 *
 ;; 1.172 * 1.172 = 21.97（Emacs 取整为 22）。
 (setq text-scale-mode-step 1.172)
-;; table 只使用中英文严格等宽的 LXGW WenKai Mono Screen 字体, 避免中英文不对齐。
+
+;; org-table 只使用中英文严格等宽的 LXGW WenKai Mono Screen 字体, 避免中英文不对齐。
 (custom-theme-set-faces
  'user
- '(org-table ((t (:family "LXGW WenKai Mono Screen"))))
- )
+ '(org-table ((t (:family "LXGW WenKai Mono Screen")))))
   #+end_src
 
 常用命令:
 + 查看 Emacs 支持的字体名称： =(print (font-family-list))=
 + 安装、更新 Icon 字体： =M-x all-the-icons-install-fonts=
 + 查看光标处字体： =M-x describe-char=
-+ 查看 emacs 支持的字体名称： =(print (font-family-list))=;
++ 查看 Emacs 支持的字体名称： =(print (font-family-list))=;
 
 Emacs 主题列表：https://emacsthemes.com/popular/index.html
+
+ef-themes:
 #+begin_src emacs-lisp
 (use-package ef-themes
   :demand
+  :disabled
   :config
   (mapc #'disable-theme custom-enabled-themes)
   (setq ef-themes-variable-pitch-ui t)
@@ -535,20 +508,102 @@ Emacs 主题列表：https://emacsthemes.com/popular/index.html
   (setq ef-themes-region '(intense no-extend neutral)))
 #+end_src
 
-自动切换深浅主题:
-+ light: zenburn ef-elea-light ef-spring ef-day doom-one-light 
-+ dark: sanityinc-tomorrow-eighties zenburn ef-elea-dark ef-night doom-palenight
+doom-themes:
 #+begin_src emacs-lisp
-(defun my/load-theme (appearance)
-  (interactive)
-  (pcase appearance
-    ('light (load-theme 'ef-elea-light t))
-    ('dark (load-theme 'ef-maris-dark t))))
-(add-hook 'ns-system-appearance-change-functions 'my/load-theme)
-(add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
+(use-package doom-themes
+  :disabled
+  :demand
+  ;; 添加 "extensions/*" 后才支持 visual-bell/treemacs/org 配置。
+  ;;:straight (:files ("*.el" "themes/*" "extensions/*"))
+  :custom-face
+  (doom-modeline-buffer-file ((t (:inherit (mode-line bold)))))
+
+  :config
+  (setq doom-themes-enable-bold t)
+  (setq doom-themes-enable-italic t)
+  (doom-themes-visual-bell-config)
+  (load-theme 'doom-one t)
+  (doom-themes-org-config)
+  ;; 开启 variable-pitch 模式后，treemacs 字体显示异常，故关闭。
+  ;; 必须在执行 doom-themes-treemacs-config 前设置该变量为 nil, 否则不生效。
+  (setq doom-themes-treemacs-enable-variable-pitch t)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config)
+  )
+
+;; 调整 header 字体大小。
+;; ef-themes/modus-themes 主题有专门参数用于调整 header 字体，不需要配置如下参数。
+;; (dolist (face '((org-level-1 . 1.9)
+;;                 (org-level-2 . 1.8)
+;;                 (org-level-3 . 1.7)
+;;                 (org-level-4 . 1.6)
+;;                 (org-level-5 . 1.5)
+;;                 (org-level-6 . 1.4)
+;;                 (org-level-7 . 1.4)
+;;                 (org-level-8 . 1.2)))
+;;   (set-face-attribute (car face) nil :height (cdr face)))
 #+end_src
 
-pulsar：高亮光标移动到的行。
+modus-themes:
+#+begin_src emacs-lisp
+(use-package modus-themes
+  :ensure t
+  :config
+  ;; Maybe define some palette overrides, such as by using our presets
+  ;; (setq modus-themes-common-palette-overrides
+  ;;       modus-themes-preset-overrides-intense)
+
+  (setq modus-themes-common-palette-overrides
+	'(
+	  ;; Make the `tab-bar-mode' mode subtle while keepings its original gray aesthetic.
+	  (bg-tab-bar bg-main)
+          (bg-tab-current bg-active)
+          (bg-tab-other bg-dim)
+	  ;; Make the fringe invisible
+	  (fringe unspecified)
+	  ;; org-mode src block
+	  (bg-prose-block-contents bg-dim) ;; bg-magenta-nuanced
+        (bg-prose-block-delimiter unspeficied)
+        (fg-prose-block-delimiter fg-dim)
+	  ))
+
+  (setq modus-themes-italic-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-mixed-fonts t
+        modus-themes-variable-pitch-ui t
+        modus-themes-custom-auto-reload t
+        modus-themes-disable-other-themes t
+        modus-themes-prompts '(italic bold)
+        modus-themes-completions
+        '((matches . (extrabold))
+          (selection . (semibold italic text-also)))
+        modus-themes-headings
+        '(
+          ;; title
+          (0 . (variable-pitch 2.0))
+          (1 . (variable-pitch 1.8))
+          (2 . (1.5))
+          (agenda-date . (1.3))
+          (agenda-structure . (variable-pitch light 1.8))
+          (t . (1.3))))
+  (load-theme 'modus-vivendi :no-confirm) ;; modus-operandi
+  )
+#+end_src
+
+自动切换深浅主题:
++ light :: zenburn ef-elea-light ef-spring ef-day doom-one-light 
++ dark :: sanityinc-tomorrow-eighties zenburn ef-elea-dark ef-night doom-palenight ef-maris-dark
+#+begin_src emacs-lisp
+;; (defun my/load-theme (appearance)
+;;   (interactive)
+;;   (pcase appearance
+;;     ('light (load-theme 'doom-one-light t))
+;;     ('dark (load-theme 'doom-one t))))
+;; (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
+;; (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
+#+end_src
+
+pulsar：高亮光标移动到的行:
 #+begin_src emacs-lisp
 (use-package pulsar
   :config
@@ -637,16 +692,6 @@ tar-bar 命令前缀：C-x t
 + r (tab-rename) :: 重命名当前 tab 的名称，然后一直不会变。
 + d (dired-other-tab) :: 在新的 tab 中显示 dired 内容。
 
-nyan：modeline 彩虹猫。
-#+begin_src emacs-lisp
-(use-package nyan-mode
-  :config
-  (setq nyan-animate-nyancat t)
-  (setq nyan-wavy-trail t)
-  (nyan-mode)
-  (nyan-start-animation))
-#+end_src
-
 * rime
 
 安装 RIME 输入法后端引擎 [[https://github.com/rime/librime/releases][librime]] ：
@@ -654,8 +699,8 @@ nyan：modeline 彩虹猫。
 + 通过 squirrel App 同步用户配置数据，可能会导致 userdb 数据损坏（~/Library/Rime/rime_ice.userdb/LOG
   文件有日志记录），进而导致 RIME 动态词频、用户词典等功能异常。
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-wget https://github.com/rime/librime/releases/download/1.11.0/rime-76a0a16-macOS-universal.tar.bz2
-tar -xvf rime-76a0a16-macOS-universal.tar.bz2
+wget https://github.com/rime/librime/releases/download/1.11.2/rime-5b09f35-macOS-universal.tar.bz2
+tar -xvf rime-5b09f35-macOS-universal.tar.bz2
 mv ~/.emacs.d/librime/dist{,.bak}
 mv dist ~/.emacs.d/librime
 # 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
@@ -916,7 +961,7 @@ vertico 提供 minibuffer 区域的自动补全功能, 使用 orderless 的过�
 (use-package vertico
   :config
   (require 'vertico-directory) 
-  (setq vertico-count 20)
+  (setq vertico-count 25)
   ;; 默认不选中任何候选者，这样可以避免不必要的预览.
   ;;(setq vertico-preselect 'prompt)
   (vertico-mode 1)
@@ -1220,28 +1265,6 @@ which rg || brew install ripgrep
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
 #+end_src
 + =consult-buffer= 显示的 File 列表来源于变量 =recentf-list=;
-
-consult-buffer 操作： =consult-buffer (-other-window, -other-frame)= ， 支持过滤不同 buffer 类型：
-+ b Buffers (consult-buffer)
-+ SPC Hidden buffers
-+ * Modified buffers
-+ f Files (Requires recentf-mode, consult-recent-file)
-+ r File registers
-+ m Bookmarks （C-x r b, consult-bookmark）
-+ p Project (C-x p b, consult-project-buffer): 显示 project 相关的 buffers 和 files。
-
-grep 和 find: 支持异步搜索和实时过滤
-+ consult-grep, consult-ripgrep, consult-git-grep: 根据正则表达式搜索文件内容；
-+ consult-find, consult-locate: 根据正则表达式搜索文件名称；
-+ 默认在当前 project 搜索，加 C-u 前缀，可以指定搜索目录。
-
-两级搜索模式，用 # 来标识开始和结束，例如  ＃regexp1 regexp2#consult:
-+ 第一级：支持 -- 来分割搜索正则表达式和传递给 grep/riggrep/find 的参数，例如：#defun --
-   --invert-match#;
-+ 第二级：使用空格分割的 orderless 补全过滤风格，这部分补全字符串不传递给 grep/ripgrep/find, 纯粹是
-   orderless buffer 过滤；
-+ 第一级用空格分隔多个 regexp, 它们之间是 AND 关系，空格本身可以用 \ 转义， 正则表达式使用 Emacs
-  regexp 语法，例如 #\(consult\|embark\)，consult 自动转换为 grep/ripgrep/find 的正则语法；
   
 embark 为 minibuffer 或当前 buffer 选中的内容提供一个快捷操作命令（一般是单字符命令）embark-act(快捷
 键 C-;):
@@ -1268,33 +1291,6 @@ embark 为 minibuffer 或当前 buffer 选中的内容提供一个快捷操作�
   (setq wgrep-auto-save-buffer t)
   (setq wgrep-change-readonly-file t))
 #+end_src
-
-Embark Collect：在通用的 Embark collect buffer 中对一批候选对象、搜索结果列表等进行操作。
-+ embark-collect-snapshot（S）：在 Embark Collect Buffer 中显示候选情况，不更新 Buffer 内容；
-+ embark-collect-live（L)：根据候选情况，实时更新 Embark Collect Live Buffer 中的内容；
-
-Embark Collect Buffer 类似于 dired, you can =mark and unmark= candidates with m and u, you can unmark
-all marked candidates with U or toggle the marks with t. In an Embark Collect buffer =embark-act-all=
-is bound to A and will =act on all currently marked= candidates if there any, and will act on all
-candidates if none are marked.
-+ 先使用 Embark Collect 来收集候选者，使用 mark 标记多个候选者，然后使用 A 来对候选者执行 embark-act
-  操作。
-  
-Embark Export（E）：根据当前候选者的不同（可以使用 b/f/m SPC 来缩小类型范围），将结果显示在不同的
-Buffer 中：
-+ Dired： 如果候选者是文件，则将结果显示到 Dired Buffer 中；
-+ Embark Export Ibuffer: 如果候选者是 Buffer；
-+ Embark Export Grep: 对 consult-grep、consult-git-grep、consult-ripgrep 等搜索结果进行 export 时，
-  进入 Embark Export Grep buffer，使用 =C-c C-p= 切换到 =wgrep= 模式来对结果进行批量编辑；
-+ Embark Export Occur: consult-line 的结果会被 export 到 occur-mode；
-
-对于 Collect 和 Export：优选 Export, 因为它能根据候选者的类型 export 到合适的 buffer 类型中。
-  
-在显示 Act 的时候，除了按列出的快捷键外，还可以：
-+ C-; ::  切换 Act 类型；
-+ C-h ::  使用 Minibuffer 候选列表来根据输入进行过滤选择 Action；
-  
-各种缺省的 Actions: https://github.com/oantolin/embark/wiki/Default-Actions
 
 marginalia：
 #+begin_src  emacs-lisp
@@ -1730,6 +1726,20 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片:
 %\renewcommand\labelitemi{\ensuremath{\bullet}}
 #+end_src
 
+org-mode 内容居中显示：
++ 设置 olivetti body 宽度： ~C-c | (M-x olivetti-set-width)~
++ =olivetti-body-width= 和 =fill-column= 都是 buffer local 变量，需要使用 =setq-default= 才能在所有 buffer
+  中生效。
+#+begin_src emacs-lisp
+(use-package olivetti
+  :config
+  ;; 内容区域宽度，超过后自动折行。
+  (setq-default olivetti-body-width 120)
+  (add-hook 'org-mode-hook 'olivetti-mode))
+;; fill-column 值要小于 olivetti-body-width 才能正常折行。
+(setq-default fill-column 100)     
+#+end_src
+
 slide：
 + 如果文字居中失效, 可以执行 =M-x redraw-display= 命令来生效。
 #+begin_src emacs-lisp
@@ -1919,7 +1929,6 @@ ox-hugo 博客：
 
  =(setq auto-revert-check-vc-info t)= 自动 revert buffer，确保 modeline 上的分支名正确，但是 CPU
  Profile 显示比较影响性能，故暂不开启。
-
 #+begin_src emacs-lisp
 (setq vc-follow-symlinks t)
 
@@ -1939,7 +1948,6 @@ ox-hugo 博客：
 (use-package git-link
   :config
   (setq git-link-use-commit t)
-
   ;; 重写 gitlab 的 format 字符串，以匹配公司的系统。
   (defun git-link-commit-gitlab (hostname dirname commit)
     (format "https://%s/%s/commit/%s" hostname dirname commit))
@@ -1952,7 +1960,7 @@ ox-hugo 博客：
                               (if end
                                   (format "L%s-%s" start end)
 				(format "L%s" start)))))))
-)
+  )
 #+end_src
 
 * coding
@@ -2463,7 +2471,9 @@ go install golang.org/x/tools/gopls@latest
 #+begin_src emacs-lisp
 (dolist (env '(("GOPATH" "/Users/alizj/go")
                ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
-               ("GOPRIVATE" "*.alibaba-inc.com")))
+               ("GOPRIVATE" "*.alibaba-inc.com")
+	       ("GOOS" "linux")
+	       ("GOARCH" "arm64")))
   (setenv (car env) (cadr env)))  
 #+end_src
 
@@ -2492,6 +2502,10 @@ go install golang.org/x/tools/gopls@latest
 安装或更新工具：
 #+begin_src emacs-lisp
 (require 'go-ts-mode)
+
+;; (setq gofmt-command "golangci-lint")
+;; (setq gofmt-args "run --config /Users/alizj/.golangci.yml --fix")
+
 ;; go 使用 TAB 缩进.
 (add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
 
@@ -2504,6 +2518,7 @@ go install golang.org/x/tools/gopls@latest
                     "github.com/josharian/impl"
                     "github.com/cweill/gotests/..."
                     "github.com/fatih/gomodifytags"
+                    "github.com/golangci/golangci-lint/cmd/golangci-lint"
                     "github.com/davidrjenni/reftools/cmd/fillstruct"))
 
 (defun go-update-tools ()
@@ -2693,6 +2708,13 @@ eglot-x 为 Rust 提供了几个好用的命令：
     (xwidget-webkit-browse-url
      (concat "https://docs.rs/releases/search?query=" (string-replace " " "%20" query)) t))
   (define-key rust-ts-mode-map (kbd "C-c d o") 'my/browser-docsrs) ;; 助记: o -> online
+
+  ;; 在线搜索 crate 包。
+  (defun my/search-crates.io (query)
+    (interactive "ssearch: ")
+    (xwidget-webkit-browse-url
+     (concat "https://crates.io/search?q=" (string-replace " " "%20" query)) t))
+  (global-set-key (kbd "C-c s c") 'my/browser-docsrs) ;; 助记: c -> crates.io
   )
 #+end_src
 
@@ -2998,21 +3020,21 @@ bpf
 
 ** dape
 
-C/C++/Rust 语言调试: llvm 项目提供了名为 lldb-vscode(新版被重命名为 lldb-dap) 的 debug adapter, 但相
-比 codelldb 功能较弱而且和 dape 不兼容(执行失败), 会报类似错误: failed to load objfile
+C/C++/Rust 语言调试: llvm 项目提供了名为 lldb-dap(以前被命名为 lldb-dap) 的 debug adapter, 但相比
+codelldb 功能较弱而且和 dape 不兼容(执行失败), 会报类似错误: failed to load objfile
 ...lib/rustlib/x86_64-apple-darwin/lib/libcore-ef02792cbce15279.rlib, 所以需要使用 codelldb 来代替.
 #+begin_src shell :tangle no
-$ # 确保安装了 cmake 和 llvm 包且 /usr/local/opt/llvm/bin 位于 PATH 中, 参考前面的 clang 配置.
+# 确保安装了 cmake 和 llvm 包且 /usr/local/opt/llvm/bin 位于 PATH 中, 参考前面的 clang 配置.
 
-$ # 从 https://github.com/vadimcn/codelldb/releases 下载最新的 vsix 包
+# 从 https://github.com/vadimcn/codelldb/releases 下载最新的 vsix 包
 $ mkdir -p ~/.emacs.d/debug-adapters
 $ unzip codelldb-<platform>-<os>.vsix -d ~/.emacs.d/debug-adapters/codelldb
-$ # dape 后续使用安装的 codelldb 命令来进行调试(debug-adapters/codelldb/extension/adapter/codelldb)
+# dape 后续使用安装的 codelldb 命令来进行调试(debug-adapters/codelldb/extension/adapter/codelldb)
 $ ln -s ~/.emacs.d/debug-adapters/codelldb/extension/adapter/codelldb /usr/local/bin/codelldb
 
-$ # 移除 codelldb 自带的 debugserver 而是使用 xcode-select --install 提供的版本, 否则会导致调试失败
-  # 报错: Process exited with code -1. 参考:
-  # https://github.com/eecs280staff/tutorials/issues/177#issue-2151798211
+# 移除 codelldb 自带的 debugserver 而是使用 xcode-select --install 提供的版本, 否则会导致调试失败报
+# 错: Process exited with code -1. 参考:
+# https://github.com/eecs280staff/tutorials/issues/177#issue-2151798211
 $ mv debug-adapters/codelldb/extension/lldb/bin/debugserver /tmp
 #+end_src
 
@@ -3071,60 +3093,59 @@ pip install debugpy
 + 通用配置参数:program/cargo/args/cwd/env/envFile/stdio/terminal/stopOnEntry;      
 #+begin_src emacs-lisp :tangle no
 (codelldb-rust
-            modes (rust-mode rust-ts-mode)
-		ensure dape-ensure-command
-		command-cwd dape-command-cwd
-		command "~/.emacs.d/debug-adapters/codelldb/extension/adapter/codelldb"  ;;以前安装的 codelldb 位置.
-		command-args ("--port" :autoport "--settings" "{\"sourceLanguages\":[\"rust\"]}")
-		port :autoport
-		:type "lldb"
-		:request "launch"
-		:cwd "."
-		:program (lambda nil ;; 要调试的二进制可执行程序
-		  (file-name-concat "target" "debug"
-				    (thread-first
-				      (dape-cwd)
-				      (directory-file-name)
-				      (file-name-split)
-				      (last)
-				      (car))))
-		:args [] ;; 传给可执行程序的参数列表
-		:stopOnEntry nil)
+ modes (rust-mode rust-ts-mode)
+ ensure dape-ensure-command
+ command-cwd dape-command-cwd
+ command "~/.emacs.d/debug-adapters/codelldb/extension/adapter/codelldb"  ;;以前安装的 codelldb 位置.
+ command-args ("--port" :autoport "--settings" "{\"sourceLanguages\":[\"rust\"]}")
+ port :autoport
+ :type "lldb"
+ :request "launch"
+ :cwd "."
+ :program (lambda nil ;; 要调试的二进制可执行程序
+	    (file-name-concat "target" "debug"
+			      (thread-first
+				(dape-cwd)
+				(directory-file-name)
+				(file-name-split)
+				(last)
+				(car))))
+ :args [] ;; 传给可执行程序的参数列表
+ :stopOnEntry nil)
 #+end_src
 
-其他配置:
-+ 参考:  [[https://www.snamellit.com/blog/dape/][Emacs Debugging with Dape]]
+其他配置参考:  [[https://www.snamellit.com/blog/dape/][Emacs Debugging with Dape]]
 #+begin_src emacs-lisp :tangle no
 (add-to-list 'dape-configs
-    '(dlv
-      modes (go-mode go-ts-mode)
-      ensure dape-ensure-command
-      command "dlv"
-      command-args ("dap" "--listen" "127.0.0.1:5678")
-      command-cwd dape-cwd-fn
-      port 5678
-      :request "launch"
-      :type "debug"
-      :cwd dape-cwd-fn
-      :program dape-cwd-fn))
+	     '(dlv
+	       modes (go-mode go-ts-mode)
+	       ensure dape-ensure-command
+	       command "dlv"
+	       command-args ("dap" "--listen" "127.0.0.1:5678")
+	       command-cwd dape-cwd-fn
+	       port 5678
+	       :request "launch"
+	       :type "debug"
+	       :cwd dape-cwd-fn
+	       :program dape-cwd-fn))
 
 (setq dape-configs
-    '((lldb-vscode modes (c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode)
-                   command "lldb-vscode"
-                   compile "make -j10"
-                   :type "lldb-vscode" ensure dape-ensure-command
-                   :cwd "xxx/build-dbg/xxx/src/"
-                   :program "/usr/bin/python3"
-                   :args ["EdgeCondTests.py"]
-                   :MIMode "lldb" 
-                   :setupCommands [
-                                   (
-                                    :description "Enable pretty-printing for gdb"
-                                    :text "-enable-pretty-printing"
-                                    :ignoreFailures t
-                                    )
-                                   ]
-                   )))
+      '((lldb-vscode modes (c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode)
+                     command "lldb-vscode"
+                     compile "make -j10"
+                     :type "lldb-vscode" ensure dape-ensure-command
+                     :cwd "xxx/build-dbg/xxx/src/"
+                     :program "/usr/bin/python3"
+                     :args ["EdgeCondTests.py"]
+                     :MIMode "lldb" 
+                     :setupCommands [
+                                     (
+                                      :description "Enable pretty-printing for gdb"
+                                      :text "-enable-pretty-printing"
+                                      :ignoreFailures t
+                                      )
+                                     ]
+                     )))
 #+end_src
 
 dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
@@ -3149,8 +3170,7 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
         置的一致.
      3. 按 TAB 自动补全当前源码可以使用的 debug adapter, 同时显示对应的参数提示, 按 TAB 会自动补全, 例如调试 Rust 程序:
         : codelldb-rust command-cwd "/Users/zhangjun/codes/rust/mydemo/" :program "target/debug/stream" :args ["1", "2"]
-     4. 在 dape-repl 中输入 lldb 命令时需要加 ` 前缀, 比如 `help, `breakpoint list 等, lldb 命令参
-        考: [[https://lldb.llvm.org/use/tutorial.html][Tutorial;]]
+     4. dape-repl 输入 lldb 命令时需要加 ` 前缀, 如 `help, `breakpoint list, lldb 命令参考: [[https://lldb.llvm.org/use/tutorial.html][Tutorial;]]
 3. 结束调试: M-x dape-quit, 自动关闭 dape buffer 窗口.
 
 ** compilation
@@ -3952,10 +3972,10 @@ Emacs 29 xwidget-webkit 对 Mac 支持不好( [[https://github.com/d12frosted/ho
 
 (add-hook 'xwidget-webkit-mode-hook
           (lambda ()
-            (setq kill-buffer-query-functions nil)
+            ;;(setq kill-buffer-query-functions nil)
             (setq header-line-format nil)
             (display-line-numbers-mode 0)
-            (local-set-key "q" (lambda () (interactive) (kill-this-buffer)))
+            ;;(local-set-key "q" (lambda () (interactive) (kill-this-buffer)))
             (local-set-key (kbd "C-t") (lambda () (interactive) (xwidget-webkit-browse-url "https://google.com" t)))))
 
 (defun my/browser-open-at-point (url)
