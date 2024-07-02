@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-07-01T16:07:15+0800
+#+LASTMOD: 2024-07-02T12:07:56+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -116,7 +116,7 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 + [[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理。
 #+begin_src emacs-lisp
 (setq my/socks-host "127.0.0.1")
-(setq my/socks-port 1080)
+(setq my/socks-port 13659) ;; 1080
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
@@ -297,7 +297,7 @@ frame 设置：
 
 ;; 复用当前 frame。
 (setq display-buffer-reuse-frames t)
-;;(setq frame-resize-pixelwise t)
+(setq frame-resize-pixelwise t)
 
 ;; 30: 左右分屏, nil: 上下分屏。
 (setq split-width-threshold nil)
@@ -306,27 +306,30 @@ frame 设置：
 (global-set-key (kbd "<f5>") #'redraw-display)
 #+end_src
 
-在 frame 底部显示的窗口列表:
+在 frame 底部显示窗口:
 #+begin_src emacs-lisp
-(setq display-buffer-alist
-      `((,(rx bos (or
-                   "*Apropos*"
-                   "*Help*"
-                   "*helpful"
-                   "*info*"
-                   "*Summary*"
-                   "*vt"
-                   "*lsp-bridge"
-                   "*Org"
-                   "*Google Translate*"
-                   "*eldoc*"
-                   " *eglot"
-                   "*compilation*"
-                   "Shell Command Output")
-	      (0+ not-newline))
-         (display-buffer-below-selected display-buffer-at-bottom)
-         (inhibit-same-window . t)
-         (window-height . 0.35))))
+(add-to-list 'display-buffer-alist
+             `((,(regexp-opt
+                  '("\\*compilation\\*"
+                    "\\*Apropos\\*"
+                    "\\*Help\\*"
+                    "\\*helpful"
+                    "\\*info\\*"
+                    "\\*Summary\\*"
+                    "\\*vt"
+                    "\\*lsp-bridge"
+                    "\\*Org"
+                    "\\*Google Translate\\*"
+                    " \\*eglot"
+                    "Shell Command Output"))
+		;; 复用同名 buffer 窗口。
+                (display-buffer-reuse-window 
+                 . (
+		    ;; 在 frame 底部显示窗口。
+		    (side . bottom) 
+		    ;; 窗口高度比例。
+		    (window-height . 0.35) 
+		    )))))
 #+end_src
 
 启动后显示模式，加 t 参数让 togg-frame-XX 最后运行，这样才生效：
@@ -905,7 +908,7 @@ corf 在光标处显示候选者列表和文档, 可以和 orderless 结合使�
   (corfu-scroll-margin 5)
   (corfu-on-exact-match nil)     ;; 默认不选中候选者(即使只有一个)。
   (corfu-popupinfo-delay '(0.1 . 0.2)) ;; 候选者帮助文档显示延迟。
-  (corfu-popupinfo-max-width 110)
+  (corfu-popupinfo-max-width 150)
   (corfu-popupinfo-max-height 50)
   :config
   (defun corfu-enable-always-in-minibuffer ()
@@ -1062,11 +1065,7 @@ which rg || brew install ripgrep
   (setq consult-line-start-from-top t)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
-
-  ;; 使用 consult 来预览 xref 的引用定义和跳转。
-  (setq xref-show-xrefs-function #'consult-xref)
-  (setq xref-show-definitions-function #'consult-xref)
-
+  
   ;; 不搜索 go vendor 目录。
   (setq consult-ripgrep-args
         "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip -g !vendor/")
@@ -1156,6 +1155,16 @@ which rg || brew install ripgrep
 ;;:map minibuffer-local-map)
 (define-key minibuffer-local-map (kbd "M-s") #'consult-history)
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
+
+;; 使用 consult 来预览 xref 的引用定义和跳转。
+(setq xref-show-xrefs-function #'consult-xref)
+(setq xref-show-definitions-function #'consult-xref)
+
+;; xref 的 history 局限于当前窗口（默认全局）。
+(setq xref-history-storage 'xref-window-local-history)
+
+;; 快速在其他窗口查看定义。
+(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
 #+end_src
 + =consult-buffer= 显示的 File 列表来源于变量 =recentf-list=;
   
@@ -2054,12 +2063,12 @@ eldoc-doc-buffer(C-h-.) 打开的 eldoc buffer 中会显示这些信息:
   ;; 在打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 的内容会跟随显示 hover 信息, 如函数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
 
-  ;; (add-to-list 'display-buffer-alist
-  ;;                '("^\\*eldoc.*\\*"
-  ;;                 (display-buffer-reuse-window display-buffer-in-side-window)
-  ;;                 (dedicated . t)
-  ;;                 (side . right)
-  ;;                 (inhibit-same-window . t)))
+  (add-to-list 'display-buffer-alist
+               '("^\\*eldoc.*\\*"
+                 (display-buffer-reuse-window display-buffer-in-side-window)
+                 (dedicated . t)
+                 (side . right)
+                 (inhibit-same-window . t)))
 
   ;; 一键显示和关闭 eldoc buffer:
   (global-set-key (kbd "M-`")
@@ -2142,7 +2151,7 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
         '(
           ;;:hoverProvider ;; 显示光标位置信息。
           ;;:documentHighlightProvider ;; 高亮当前 symbol。
-          :inlayHintProvider ;; 显示 inlay hint 提示。
+          ;;:inlayHintProvider ;; 显示 inlay hint 提示。
           ))
 
   ;; 加强高亮的 symbol 效果。
@@ -2534,7 +2543,7 @@ cargo sweep --installed
   )
 #+end_src
 
-快速 rust 开发测试:
+快速 Rust 开发测试:
 1. BUGFIX: https://github.com/grafov/rust-playground/pull/11/files 
 2. 设置 Cargo.toml 模板文件变量中 edition 值为 2021（默认是 2018）。
 #+begin_src emacs-lisp
@@ -3054,7 +3063,8 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
 
 ;; 显示 shell 转义字符的颜色.
 (add-hook 'compilation-filter-hook
-          (lambda () (ansi-color-apply-on-region (point-min) (point-max))))
+          (lambda ()
+	    (ansi-color-apply-on-region (point-min) (point-max))))
 
 ;; 编译结束且失败时自动切换到 compilation buffer.
 (setq compilation-finish-functions
@@ -3065,11 +3075,6 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
           ;; 有错误时切换到 compilation buffer.
           (switch-to-buffer-other-window buf)
           (end-of-buffer))))
-
-;; xref 的 history 局限于当前窗口（默认全局）。
-(setq xref-history-storage 'xref-window-local-history)
-;; 快速在其他窗口查看定义。
-(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
 #+end_src
 
 编译:

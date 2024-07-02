@@ -22,7 +22,7 @@
 (setq exec-path (cons my-coreutils-path  exec-path))
 
 (setq my/socks-host "127.0.0.1")
-(setq my/socks-port 1080)
+(setq my/socks-port 13659) ;; 1080
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
@@ -175,7 +175,7 @@
 
 ;; 复用当前 frame。
 (setq display-buffer-reuse-frames t)
-;;(setq frame-resize-pixelwise t)
+(setq frame-resize-pixelwise t)
 
 ;; 30: 左右分屏, nil: 上下分屏。
 (setq split-width-threshold nil)
@@ -183,25 +183,28 @@
 ;; 刷新显示。
 (global-set-key (kbd "<f5>") #'redraw-display)
 
-(setq display-buffer-alist
-      `((,(rx bos (or
-                   "*Apropos*"
-                   "*Help*"
-                   "*helpful"
-                   "*info*"
-                   "*Summary*"
-                   "*vt"
-                   "*lsp-bridge"
-                   "*Org"
-                   "*Google Translate*"
-                   "*eldoc*"
-                   " *eglot"
-                   "*compilation*"
-                   "Shell Command Output")
-	      (0+ not-newline))
-         (display-buffer-below-selected display-buffer-at-bottom)
-         (inhibit-same-window . t)
-         (window-height . 0.35))))
+(add-to-list 'display-buffer-alist
+             `((,(regexp-opt
+                  '("\\*compilation\\*"
+                    "\\*Apropos\\*"
+                    "\\*Help\\*"
+                    "\\*helpful"
+                    "\\*info\\*"
+                    "\\*Summary\\*"
+                    "\\*vt"
+                    "\\*lsp-bridge"
+                    "\\*Org"
+                    "\\*Google Translate\\*"
+                    " \\*eglot"
+                    "Shell Command Output"))
+		;; 复用同名 buffer 窗口。
+                (display-buffer-reuse-window 
+                 . (
+		    ;; 在 frame 底部显示窗口。
+		    (side . bottom) 
+		    ;; 窗口高度比例。
+		    (window-height . 0.35) 
+		    )))))
 
 ;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
 (add-hook 'window-setup-hook 'toggle-frame-maximized t)
@@ -657,11 +660,7 @@
   (setq consult-line-start-from-top t)
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
-
-  ;; 使用 consult 来预览 xref 的引用定义和跳转。
-  (setq xref-show-xrefs-function #'consult-xref)
-  (setq xref-show-definitions-function #'consult-xref)
-
+  
   ;; 不搜索 go vendor 目录。
   (setq consult-ripgrep-args
         "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip -g !vendor/")
@@ -752,6 +751,16 @@
 (define-key minibuffer-local-map (kbd "M-s") #'consult-history)
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
 
+;; 使用 consult 来预览 xref 的引用定义和跳转。
+(setq xref-show-xrefs-function #'consult-xref)
+(setq xref-show-definitions-function #'consult-xref)
+
+;; xref 的 history 局限于当前窗口（默认全局）。
+(setq xref-history-storage 'xref-window-local-history)
+
+;; 快速在其他窗口查看定义。
+(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
+
 (use-package embark
   :init
   ;; 使用 C-h 来显示 key preifx 绑定。
@@ -780,145 +789,145 @@
   (setq marginalia-max-relative-age 0)
   (marginalia-mode))
 
-(use-package org
-  :config
-  (setq org-ellipsis "..." ;; " ⭍"
-        ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符， M-x org-entities-help 查看所有特殊字符。
-        org-pretty-entities t
-        org-highlight-latex-and-related '(latex)
-        ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
-        org-export-with-latex 'verbatim
-        org-export-with-broken-links 'mark
-        ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
-        org-export-with-sub-superscripts nil
-        org-export-default-language "zh-CN" ;; 默认是 en
-        org-export-coding-system 'utf-8
+  (use-package org
+    :config
+    (setq org-ellipsis "..." ;; " ⭍"
+          ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符， M-x org-entities-help 查看所有特殊字符。
+          org-pretty-entities t
+          org-highlight-latex-and-related '(latex)
+          ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
+          org-export-with-latex 'verbatim
+          org-export-with-broken-links 'mark
+          ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
+          org-export-with-sub-superscripts nil
+          org-export-default-language "zh-CN" ;; 默认是 en
+          org-export-coding-system 'utf-8
 
-        ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
-        org-use-sub-superscripts nil
-        ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
-	org-link-file-path-type 'relative
-	org-html-validation-link nil
-        ;; 关闭鼠标点击链接。
-        org-mouse-1-follows-link nil
+          ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
+          org-use-sub-superscripts nil
+          ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
+  	org-link-file-path-type 'relative
+  	org-html-validation-link nil
+          ;; 关闭鼠标点击链接。
+          org-mouse-1-follows-link nil
 
-        org-hide-emphasis-markers t
-        org-hide-block-startup t
-        org-hidden-keywords '(title)
-        org-hide-leading-stars t
+          org-hide-emphasis-markers t
+          org-hide-block-startup t
+          org-hidden-keywords '(title)
+          org-hide-leading-stars t
 
-        org-cycle-separator-lines 2
-        org-cycle-level-faces t
-        org-n-level-faces 4
-        org-indent-indentation-per-level 2
-        
-        ;; 内容缩进与对应 headerline 一致。
-        org-adapt-indentation t
-        org-list-indent-offset 2
-        
-        ;; 代码块缩进。
-        org-src-preserve-indentation t
-        org-edit-src-content-indentation 0
+          org-cycle-separator-lines 2
+          org-cycle-level-faces t
+          org-n-level-faces 4
+          org-indent-indentation-per-level 2
+          
+          ;; 内容缩进与对应 headerline 一致。
+          org-adapt-indentation t
+          org-list-indent-offset 2
+          
+          ;; 代码块缩进。
+          org-src-preserve-indentation t
+          org-edit-src-content-indentation 0
 
-        ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
-        org-log-into-drawer t
-        ;; TODO 状态更新时记录 note.
-        org-log-done 'note ;; note, time
+          ;; TODO 状态更新记录到 LOGBOOK Drawer 中。
+          org-log-into-drawer t
+          ;; TODO 状态更新时记录 note.
+          org-log-done 'note ;; note, time
 
-        ;; 不在线显示图片，手动点击显示更容易控制大小。
-        org-startup-with-inline-images nil
-        org-startup-folded 'content
-        ;; 如果对 headline 编号则 latext 输出时会导致 toc 缺失，故关闭。
-        org-startup-numerated nil
-        org-startup-indented t
+          ;; 不在线显示图片，手动点击显示更容易控制大小。
+          org-startup-with-inline-images nil
+          org-startup-folded 'content
+          ;; 如果对 headline 编号则 latext 输出时会导致 toc 缺失，故关闭。
+          org-startup-numerated nil
+          org-startup-indented t
 
-        ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
-        org-image-actual-width '(300)
-        org-cycle-inline-images-display nil
+          ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
+          org-image-actual-width '(300)
+          org-cycle-inline-images-display nil
 
-        ;; org-timer 到期时发送声音提示。
-        org-clock-sound t)
+          ;; org-timer 到期时发送声音提示。
+          org-clock-sound t)
 
-  ;; 关闭容易误按的 archive 命令。
-  (setq org-archive-default-command nil)
-  ;; 不自动对齐 tag。
-  (setq org-tags-column 0)
-  (setq org-auto-align-tags nil)
-  ;; 显示不可见的编辑。
-  (setq org-catch-invisible-edits 'show-and-error)
-  (setq org-fold-catch-invisible-edits t)
-  (setq org-special-ctrl-a/e t)
-  (setq org-insert-heading-respect-content t)
-  ;; 支持 ID property 作为 internal link target(默认是 CUSTOM_ID property)
-  (setq org-id-link-to-org-use-id t)
-  (setq org-M-RET-may-split-line nil)
-  (setq org-todo-keywords
-	'((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
-          (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)")))
-  (add-hook 'org-mode-hook 'turn-on-auto-fill)
-  (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
+    ;; 关闭容易误按的 archive 命令。
+    (setq org-archive-default-command nil)
+    ;; 不自动对齐 tag。
+    (setq org-tags-column 0)
+    (setq org-auto-align-tags nil)
+    ;; 显示不可见的编辑。
+    (setq org-catch-invisible-edits 'show-and-error)
+    (setq org-fold-catch-invisible-edits t)
+    (setq org-special-ctrl-a/e t)
+    (setq org-insert-heading-respect-content t)
+    ;; 支持 ID property 作为 internal link target(默认是 CUSTOM_ID property)
+    (setq org-id-link-to-org-use-id t)
+    (setq org-M-RET-may-split-line nil)
+    (setq org-todo-keywords
+  	'((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
+            (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)")))
+    (add-hook 'org-mode-hook 'turn-on-auto-fill)
+    (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
-;; 关闭与 sis 冲突的 C-, 快捷键。
-(define-key org-mode-map (kbd "C-,") nil)
-(define-key org-mode-map (kbd "C-'") nil)
+  ;; 关闭与 sis 冲突的 C-, 快捷键。
+  (define-key org-mode-map (kbd "C-,") nil)
+  (define-key org-mode-map (kbd "C-'") nil)
 
-(global-set-key (kbd "C-c l") #'org-store-link)
-(global-set-key (kbd "C-c a") #'org-agenda)
-(global-set-key (kbd "C-c c") #'org-capture)
-(global-set-key (kbd "C-c b") #'org-switchb)
+  (global-set-key (kbd "C-c l") #'org-store-link)
+  (global-set-key (kbd "C-c a") #'org-agenda)
+  (global-set-key (kbd "C-c c") #'org-capture)
+  (global-set-key (kbd "C-c b") #'org-switchb)
 
-;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
-(setq org-element-use-cache nil)
+  ;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
+  (setq org-element-use-cache nil)
 
-;; 光标位于 src block 中执行 C-c C-f 时自动格式化 block 中代码。
-(defun my/format-src-block ()
-  "Formats the code in the current src block."
-  (interactive)
-  (org-edit-special)
-  (indent-region (point-min) (point-max))
-  (org-edit-src-exit))
+  ;; 光标位于 src block 中执行 C-c C-f 时自动格式化 block 中代码。
+  (defun my/format-src-block ()
+    "Formats the code in the current src block."
+    (interactive)
+    (org-edit-special)
+    (indent-region (point-min) (point-max))
+    (org-edit-src-exit))
 
-(defun my/org-mode-keys ()
-  "Modify keymaps used in org-mode."
-  (let ((map (if (org-in-src-block-p)
-                 org-src-mode-map
-               org-mode-map)))
-    (define-key map (kbd "C-c C-f") 'my/format-src-block)))
-(add-hook 'org-mode-hook 'my/org-mode-keys)
+  (defun my/org-mode-keys ()
+    "Modify keymaps used in org-mode."
+    (let ((map (if (org-in-src-block-p)
+                   org-src-mode-map
+                 org-mode-map)))
+      (define-key map (kbd "C-c C-f") 'my/format-src-block)))
+  (add-hook 'org-mode-hook 'my/org-mode-keys)
 
-(use-package org-modern
-  :after (org)
-  :config
-  ;; 各种符号字体：https://github.com/rime/rime-prelude/blob/master/symbols.yaml
-  ;;(setq org-modern-star '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"))
-  (setq org-modern-star '("⚀" "⚁" "⚂" "⚃" "⚄" "⚅"))
-  (setq org-modern-block-fringe nil)
-  (setq org-modern-block-name
-        '((t . t)
-          ("src" "»" "«")
-          ("SRC" "»" "«")
-          ("example" "»–" "–«")
-          ("quote" "❝" "❞")))
-  ;; org-modern-table 会导致 text scale 时表格不对齐，故关闭。
-  ;; https://github.com/minad/org-modern/issues/69
-  (setq org-modern-table nil)
-  (setq org-modern-list
-	'(
-          (?* . "✤")
-          (?+ . "▶")
-          (?- . "◆")))
-  (with-eval-after-load 'org (global-org-modern-mode)))
+  (use-package org-modern
+    :after (org)
+    :config
+    ;; 各种符号字体：https://github.com/rime/rime-prelude/blob/master/symbols.yaml
+    ;;(setq org-modern-star '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"))
+    (setq org-modern-star '("⚀" "⚁" "⚂" "⚃" "⚄" "⚅"))
+    (setq org-modern-block-fringe nil)
+    (setq org-modern-block-name
+          '((t . t)
+            ("src" "»" "«")
+            ("SRC" "»" "«")
+            ("example" "»–" "–«")
+            ("quote" "❝" "❞")))
+    ;; org-modern-table 会导致 text scale 时表格不对齐，故关闭。
+    ;; https://github.com/minad/org-modern/issues/69
+    (setq org-modern-table nil)
+    (setq org-modern-list
+  	'(
+            (?* . "✤")
+            (?+ . "▶")
+            (?- . "◆")))
+    (with-eval-after-load 'org (global-org-modern-mode)))
 
-;; 显示转义字符。
-(use-package org-appear
-  :custom
-  (org-appear-autolinks t)
-  :hook (org-mode . org-appear-mode))
+  ;; 显示转义字符。
+  (use-package org-appear
+    :custom
+    (org-appear-autolinks t)
+    :hook (org-mode . org-appear-mode))
 
-;; 建立 org 相关目录。
-(dolist (dir '("~/docs/org" "~/docs/org/journal"))
-  (unless (file-directory-p dir)
-    (make-directory dir)))
+  ;; 建立 org 相关目录。
+  (dolist (dir '("~/docs/org" "~/docs/org/journal"))
+    (unless (file-directory-p dir)
+      (make-directory dir)))
 
 (use-package org-download
   :config
@@ -1319,12 +1328,12 @@
   ;; 在打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 的内容会跟随显示 hover 信息, 如函数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
 
-  ;; (add-to-list 'display-buffer-alist
-  ;;                '("^\\*eldoc.*\\*"
-  ;;                 (display-buffer-reuse-window display-buffer-in-side-window)
-  ;;                 (dedicated . t)
-  ;;                 (side . right)
-  ;;                 (inhibit-same-window . t)))
+  (add-to-list 'display-buffer-alist
+               '("^\\*eldoc.*\\*"
+                 (display-buffer-reuse-window display-buffer-in-side-window)
+                 (dedicated . t)
+                 (side . right)
+                 (inhibit-same-window . t)))
 
   ;; 一键显示和关闭 eldoc buffer:
   (global-set-key (kbd "M-`")
@@ -1385,7 +1394,7 @@
         '(
           ;;:hoverProvider ;; 显示光标位置信息。
           ;;:documentHighlightProvider ;; 高亮当前 symbol。
-          :inlayHintProvider ;; 显示 inlay hint 提示。
+          ;;:inlayHintProvider ;; 显示 inlay hint 提示。
           ))
 
   ;; 加强高亮的 symbol 效果。
@@ -1765,7 +1774,8 @@ mermaid.initialize({
 
 ;; 显示 shell 转义字符的颜色.
 (add-hook 'compilation-filter-hook
-          (lambda () (ansi-color-apply-on-region (point-min) (point-max))))
+          (lambda ()
+	    (ansi-color-apply-on-region (point-min) (point-max))))
 
 ;; 编译结束且失败时自动切换到 compilation buffer.
 (setq compilation-finish-functions
@@ -1776,11 +1786,6 @@ mermaid.initialize({
           ;; 有错误时切换到 compilation buffer.
           (switch-to-buffer-other-window buf)
           (end-of-buffer))))
-
-;; xref 的 history 局限于当前窗口（默认全局）。
-(setq xref-history-storage 'xref-window-local-history)
-;; 快速在其他窗口查看定义。
-(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
 
 (use-package mwim
   :config
