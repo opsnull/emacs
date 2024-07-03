@@ -3575,20 +3575,20 @@ doom-themes:
   :straight(awesome-pair :host github :repo "manateelazycat/awesome-pair")
   :config
   (dolist (hook (list
-               'c-mode-common-hook
-               'c-mode-hook
-               'emacs-lisp-mode-hook
-               'lisp-interaction-mode-hook
-               'lisp-mode-hook
-               'sh-mode-hook
-               'makefile-gmake-mode-hook
-               'python-mode-hook
-               'js-mode-hook
-               'go-mode-hook
-               'css-mode-hook
-               'minibuffer-inactive-mode-hook
-               ))
-  (add-hook hook '(lambda () (awesome-pair-mode 1)))))
+		 'c-mode-common-hook
+		 'c-mode-hook
+		 'emacs-lisp-mode-hook
+		 'lisp-interaction-mode-hook
+		 'lisp-mode-hook
+		 'sh-mode-hook
+		 'makefile-gmake-mode-hook
+		 'python-mode-hook
+		 'js-mode-hook
+		 'go-mode-hook
+		 'css-mode-hook
+		 'minibuffer-inactive-mode-hook
+		 ))
+    (add-hook hook '(lambda () (awesome-pair-mode 1)))))
 
 ;; 智能括号。
 (use-package smartparens
@@ -3597,6 +3597,15 @@ doom-themes:
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
+(use-package smartparens
+  :disabled
+  :config
+  (require 'smartparens-config)
+  (add-hook 'prog-mode-hook #'smartparens-mode)
+  ;;(smartparens-global-mode t)
+  ;; 不在字符串中插入转义字符（容易错误）。
+  (setq sp-escape-quotes-after-insert nil) 
+  (show-smartparens-global-mode t))
 #+end_src
 
 * winner

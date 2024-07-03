@@ -534,7 +534,7 @@
   (corfu-scroll-margin 5)
   (corfu-on-exact-match nil)     ;; 默认不选中候选者(即使只有一个)。
   (corfu-popupinfo-delay '(0.1 . 0.2)) ;; 候选者帮助文档显示延迟。
-  (corfu-popupinfo-max-width 110)
+  (corfu-popupinfo-max-width 150)
   (corfu-popupinfo-max-height 50)
   :config
   (defun corfu-enable-always-in-minibuffer ()
@@ -1232,12 +1232,27 @@
   (setq show-paren-style 'parenthesis) ;; parenthesis, expression
   (set-face-attribute 'show-paren-match nil :weight 'extra-bold))
 
-(use-package smartparens
+;; autocomplete paired brackets
+(electric-pair-mode 1)
+;; make electric-pair-mode work on more brackets
+(setq electric-pair-pairs
+      '(
+        (?\" . ?\")
+        (?\{ . ?\})))
+(setq electric-pair-preserve-balance t
+      electric-pair-delete-adjacent-pairs t
+      electric-pair-skip-self 'electric-pair-default-skip-self
+      electric-pair-open-newline-between-pairs t)
+
+(use-package treesit-fold
+  :vc (:url "https://github.com/emacs-tree-sitter/treesit-fold")
   :config
-  (require 'smartparens-config)
-  (add-hook 'prog-mode-hook #'smartparens-mode)
-  ;;(smartparens-global-mode t)
-  (show-smartparens-global-mode t))
+  (global-set-key (kbd "C-c f c") 'treesit-fold-close)
+  (global-set-key (kbd "C-c f o") 'treesit-fold-open)
+  (global-set-key (kbd "C-c f r") 'treesit-fold-open-recursively)
+  (global-set-key (kbd "C-c f C") 'treesit-fold-close-all)
+  (global-set-key (kbd "C-c f O") 'treesit-fold-open-all)
+  (global-set-key (kbd "C-c f t") 'treesit-fold-toggle))
 
 (use-package project
   :custom
@@ -1554,7 +1569,8 @@
                '((rust-ts-mode rust-mode) .
                  ("rust-analyzer"
                   :initializationOptions
-                  ( ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
+                  (
+		   ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
                    ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.                   
                    :check (
                            :command "clippy"
@@ -1564,18 +1580,23 @@
                            )
                    ;;:procMacro (:attributes (:enable t) :enable :json-false)
                    :cargo (
-                            ;;:buildScripts (:enable :json-false)
-                            ;;:extraArgs ["--offline"] ;; 不联网节省时间.
-                            ;;:features "all"
-                            ;;:noDefaultFeatures t
-                            :cfgs (:tokio_unstable "")
-                            ;;:autoreload :json-false
-                            )
-                   :diagnostics ( ;;:enable :json-false
-                                 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
-                   )
-                  )))
-  )
+                           ;;:buildScripts (:enable :json-false)
+                           ;;:extraArgs ["--offline"] ;; 不联网节省时间.
+                           ;;:features "all"
+                           ;;:noDefaultFeatures t
+                           :cfgs (:tokio_unstable "")
+                           ;;:autoreload :json-false
+                           )
+                   :diagnostics (
+				 ;;:enable :json-false
+				 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
+		   :inlayHints (
+				:closureCaptureHints (:enable t)
+				:closureReturnTypeHints (:enable t)
+				:lifetimeElisionHints (:enable t)
+				:expressionAdjustmentHints (:enable t)
+				)
+                   )))))
 
 (use-package rust-playground
   :config
@@ -2322,6 +2343,42 @@ mermaid.initialize({
 (global-set-key (kbd "C-c o") 'my-browser-prefix)
 (define-key my-browser-prefix (kbd "o") 'my/browser-open-at-point)
 (define-key my-browser-prefix (kbd "s") 'my/browser-search)
+
+;; https://github.com/syl20bnr/spacemacs/issues/6587#issuecomment-232890021
+;; make these keys behave like normal browser
+(require 'xwidget)
+(define-key xwidget-webkit-mode-map [mouse-4] 'xwidget-webkit-scroll-down)
+(define-key xwidget-webkit-mode-map [mouse-5] 'xwidget-webkit-scroll-up)
+(define-key xwidget-webkit-mode-map (kbd "<up>") 'xwidget-webkit-scroll-down)
+(define-key xwidget-webkit-mode-map (kbd "<down>") 'xwidget-webkit-scroll-up)
+(define-key xwidget-webkit-mode-map (kbd "M-w") 'xwidget-webkit-copy-selection-as-kill)
+(define-key xwidget-webkit-mode-map (kbd "C-c") 'xwidget-webkit-copy-selection-as-kill)
+
+;; adapt webkit according to window configuration chagne automatically without this hook, every time
+;; you change your window configuration, you must press 'a' to adapt webkit content to new window
+;; size
+;;
+;; 自动调整 xwidget-webkit 窗口大小（也可以手动按 a 来调整）。
+(add-hook 'window-configuration-change-hook
+	  (lambda ()
+	    (when (equal major-mode 'xwidget-webkit-mode)
+	      (xwidget-webkit-adjust-size-dispatch))))
+
+;; by default, xwidget reuses previous xwidget window, thus overriding your current website, unless
+;; a prefix argument is supplied
+;;
+;; This function always opens a new website in a new window
+(defun xwidget-browse-url-no-reuse (url &optional sessoin)
+  (interactive (progn
+                 (require 'browse-url)
+                 (browse-url-interactive-arg "xwidget-webkit URL: ")))
+  (xwidget-webkit-browse-url url t))
+
+;; make xwidget default browser
+(setq browse-url-browser-function
+      (lambda (url session)
+	(other-window 1)
+	(xwidget-webkit-browse-url url)))
 
 ;;在线搜索, 可以先选中 region 再执行搜索。
 (use-package engine-mode

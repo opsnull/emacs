@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-07-02T12:07:56+0800
+#+LASTMOD: 2024-07-03T16:07:32+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -1921,12 +1921,31 @@ c/c++/go-mode 缩进风格：总是使用 tab 而非空格：
 
 智能补全括号：
 #+begin_src emacs-lisp
-(use-package smartparens
+;; autocomplete paired brackets
+(electric-pair-mode 1)
+;; make electric-pair-mode work on more brackets
+(setq electric-pair-pairs
+      '(
+        (?\" . ?\")
+        (?\{ . ?\})))
+(setq electric-pair-preserve-balance t
+      electric-pair-delete-adjacent-pairs t
+      electric-pair-skip-self 'electric-pair-default-skip-self
+      electric-pair-open-newline-between-pairs t)
+#+end_src
+
+** fold
+
+#+begin_src emacs-lisp
+(use-package treesit-fold
+  :vc (:url "https://github.com/emacs-tree-sitter/treesit-fold")
   :config
-  (require 'smartparens-config)
-  (add-hook 'prog-mode-hook #'smartparens-mode)
-  ;;(smartparens-global-mode t)
-  (show-smartparens-global-mode t))
+  (global-set-key (kbd "C-c f c") 'treesit-fold-close)
+  (global-set-key (kbd "C-c f o") 'treesit-fold-open)
+  (global-set-key (kbd "C-c f r") 'treesit-fold-open-recursively)
+  (global-set-key (kbd "C-c f C") 'treesit-fold-close-all)
+  (global-set-key (kbd "C-c f O") 'treesit-fold-open-all)
+  (global-set-key (kbd "C-c f t") 'treesit-fold-toggle))
 #+end_src
 
 ** project
@@ -2519,7 +2538,8 @@ cargo sweep --installed
                '((rust-ts-mode rust-mode) .
                  ("rust-analyzer"
                   :initializationOptions
-                  ( ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
+                  (
+		   ;;:checkOnSave :json-false ;; 保存文件时不检查(有诊断就够了).
                    ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.                   
                    :check (
                            :command "clippy"
@@ -2529,18 +2549,23 @@ cargo sweep --installed
                            )
                    ;;:procMacro (:attributes (:enable t) :enable :json-false)
                    :cargo (
-                            ;;:buildScripts (:enable :json-false)
-                            ;;:extraArgs ["--offline"] ;; 不联网节省时间.
-                            ;;:features "all"
-                            ;;:noDefaultFeatures t
-                            :cfgs (:tokio_unstable "")
-                            ;;:autoreload :json-false
-                            )
-                   :diagnostics ( ;;:enable :json-false
-                                 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
-                   )
-                  )))
-  )
+                           ;;:buildScripts (:enable :json-false)
+                           ;;:extraArgs ["--offline"] ;; 不联网节省时间.
+                           ;;:features "all"
+                           ;;:noDefaultFeatures t
+                           :cfgs (:tokio_unstable "")
+                           ;;:autoreload :json-false
+                           )
+                   :diagnostics (
+				 ;;:enable :json-false
+				 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
+		   :inlayHints (
+				:closureCaptureHints (:enable t)
+				:closureReturnTypeHints (:enable t)
+				:lifetimeElisionHints (:enable t)
+				:expressionAdjustmentHints (:enable t)
+				)
+                   )))))
 #+end_src
 
 快速 Rust 开发测试:
@@ -2561,7 +2586,7 @@ edition = \"2021\"
 
 eglot-x 为 Rust 提供了几个好用的命令：
 1. =M-x eglot-x-reload-workspace= ：在 Cargo.toml 文件发生变化时手动执行而不需要重启 eglot；
-2. =M-x eglot-x-expand-macro= ：展开宏定义；
+2. =M-x eglot-x-expand-macro= ：展开宏定义（或者使用 cargo expand 命令来显示宏展开后的定义）；
 3. =M-x eglot-x-open-external-documentation= ：用浏览器查看光标处的 rust 文档；
 #+begin_src emacs-lisp
 (use-package eglot-x
@@ -3688,6 +3713,7 @@ buffer/file:
 Emacs 29 xwidget-webkit 对 Mac 支持不好( [[https://github.com/d12frosted/homebrew-emacs-plus/issues/519][Better support for xwidget-webkit]]), 部分功能只有 GTK/X11才
 支持, 如: buffer 内搜索 increase-search/webkit-history:
 + 如果要复制 xwidget 的内容，需要选择后右击，从上下文菜单中选择 copy。
++ 如果 window 窗口较小，可以按 a 来自动调整（对应 xwidget-webkit-adjust-size-dispatch 命令）。
 #+begin_src emacs-lisp
 (setq url-user-agent
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
@@ -3723,6 +3749,42 @@ Emacs 29 xwidget-webkit 对 Mac 支持不好( [[https://github.com/d12frosted/ho
 (global-set-key (kbd "C-c o") 'my-browser-prefix)
 (define-key my-browser-prefix (kbd "o") 'my/browser-open-at-point)
 (define-key my-browser-prefix (kbd "s") 'my/browser-search)
+
+;; https://github.com/syl20bnr/spacemacs/issues/6587#issuecomment-232890021
+;; make these keys behave like normal browser
+(require 'xwidget)
+(define-key xwidget-webkit-mode-map [mouse-4] 'xwidget-webkit-scroll-down)
+(define-key xwidget-webkit-mode-map [mouse-5] 'xwidget-webkit-scroll-up)
+(define-key xwidget-webkit-mode-map (kbd "<up>") 'xwidget-webkit-scroll-down)
+(define-key xwidget-webkit-mode-map (kbd "<down>") 'xwidget-webkit-scroll-up)
+(define-key xwidget-webkit-mode-map (kbd "M-w") 'xwidget-webkit-copy-selection-as-kill)
+(define-key xwidget-webkit-mode-map (kbd "C-c") 'xwidget-webkit-copy-selection-as-kill)
+
+;; adapt webkit according to window configuration chagne automatically without this hook, every time
+;; you change your window configuration, you must press 'a' to adapt webkit content to new window
+;; size
+;;
+;; 自动调整 xwidget-webkit 窗口大小（也可以手动按 a 来调整）。
+(add-hook 'window-configuration-change-hook
+	  (lambda ()
+	    (when (equal major-mode 'xwidget-webkit-mode)
+	      (xwidget-webkit-adjust-size-dispatch))))
+
+;; by default, xwidget reuses previous xwidget window, thus overriding your current website, unless
+;; a prefix argument is supplied
+;;
+;; This function always opens a new website in a new window
+(defun xwidget-browse-url-no-reuse (url &optional sessoin)
+  (interactive (progn
+                 (require 'browse-url)
+                 (browse-url-interactive-arg "xwidget-webkit URL: ")))
+  (xwidget-webkit-browse-url url t))
+
+;; make xwidget default browser
+(setq browse-url-browser-function
+      (lambda (url session)
+	(other-window 1)
+	(xwidget-webkit-browse-url url)))
 #+end_src
 
 在线文档和翻译:
