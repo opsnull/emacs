@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-07-03T16:07:32+0800
+#+LASTMOD: 2024-07-04T19:07:50+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -75,7 +75,8 @@ Emacs 查找外部程序时使用 =exec-path= 而非 =PATH= 变量:
 * package
 
 设置各种软件包源：
-+ =M-x use-package-report= : 查看 package 加载时间（按 S 排序）。
++ =M-x use-package-report= : 查看 package 加载时间（按 S 排序）；
++ 对于使用 :vc 从 github 安装的包，需要使用 ~M-x package-vc-upgrade-all~ 命令来更新；
 #+begin_src emacs-lisp
 (require 'package)
 (setq package-archives '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
@@ -2516,6 +2517,10 @@ cargo sweep --installed
 #+end_src
 
 配置 rust-mode:
++ 如果 buffer 显示异常, 如某些自动显示的签名一直没有消失(即使重启 eglot), 可以 kill buffer 再重新打
+  开文件;
++ 建议开启 Rust inlayHints 这样在开发时可以根据 hint 的提示提升开发效率;
++ 对于链式方法调用, 可以拆分为多行, 每行已 .xx() 开头, 这样每行结尾都显示函数返回值类型;
 #+begin_src emacs-lisp
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
@@ -2560,6 +2565,7 @@ cargo sweep --installed
 				 ;;:enable :json-false
 				 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
 		   :inlayHints (
+				:bindingModeHints (:enable t)
 				:closureCaptureHints (:enable t)
 				:closureReturnTypeHints (:enable t)
 				:lifetimeElisionHints (:enable t)
@@ -3100,6 +3106,17 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
           ;; 有错误时切换到 compilation buffer.
           (switch-to-buffer-other-window buf)
           (end-of-buffer))))
+
+;; 在 frame 右侧显示两个上下布局的 dedicated window，分别用于显示 eldoc 和 compilation 窗口。
+(defun my/setup-windows ()
+  (interactive)
+  (let ((eldoc-buffer (get-buffer-create "*eldoc*"))
+        (compilation-buffer (get-buffer-create "*compilation*")))
+    (set-window-dedicated-p 
+     (display-buffer-in-side-window eldoc-buffer '((side . right) (slot . 0))) t)
+    (set-window-dedicated-p 
+     (display-buffer-in-side-window compilation-buffer '((side . right) (slot . 1))) t)))
+(global-set-key (kbd "C-c d d") 'my/setup-windows)
 #+end_src
 
 编译:
@@ -3322,20 +3339,6 @@ eshell:
 (setenv "SHELL" shell-file-name)
 (setenv "ESHELL" "bash")
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
-
-;; 在当前窗口右侧拆分出两个子窗口并固定，分别为一个 eshell 和当前 buffer 。
-(defun my/split-windows()
-  "Split windows my way."
-  (interactive)
-  (split-window-right 150)
-  (other-window 1)
-  (split-window-below)
-  (eshell)
-  (other-window -1)
-  ;; never open any buffer in window with shell
-  (set-window-dedicated-p (nth 1 (window-list)) t)
-  (set-window-dedicated-p (nth 2 (window-list)) t))
-(global-set-key (kbd "C-s-`") 'my/split-windows)
 
 ;; 在当前 frame 下方打开或关闭 eshell buffer。
 (defun startup-eshell ()

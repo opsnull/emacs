@@ -1591,6 +1591,7 @@
 				 ;;:enable :json-false
 				 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
 		   :inlayHints (
+				:bindingModeHints (:enable t)
 				:closureCaptureHints (:enable t)
 				:closureReturnTypeHints (:enable t)
 				:lifetimeElisionHints (:enable t)
@@ -1808,6 +1809,17 @@ mermaid.initialize({
           (switch-to-buffer-other-window buf)
           (end-of-buffer))))
 
+;; 在 frame 右侧显示两个上下布局的 dedicated window，分别用于显示 eldoc 和 compilation 窗口。
+(defun my/setup-windows ()
+  (interactive)
+  (let ((eldoc-buffer (get-buffer-create "*eldoc*"))
+        (compilation-buffer (get-buffer-create "*compilation*")))
+    (set-window-dedicated-p 
+     (display-buffer-in-side-window eldoc-buffer '((side . right) (slot . 0))) t)
+    (set-window-dedicated-p 
+     (display-buffer-in-side-window compilation-buffer '((side . right) (slot . 1))) t)))
+(global-set-key (kbd "C-c d d") 'my/setup-windows)
+
 (use-package mwim
   :config
   (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
@@ -1963,20 +1975,6 @@ mermaid.initialize({
 (setenv "SHELL" shell-file-name)
 (setenv "ESHELL" "bash")
 (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
-
-;; 在当前窗口右侧拆分出两个子窗口并固定，分别为一个 eshell 和当前 buffer 。
-(defun my/split-windows()
-  "Split windows my way."
-  (interactive)
-  (split-window-right 150)
-  (other-window 1)
-  (split-window-below)
-  (eshell)
-  (other-window -1)
-  ;; never open any buffer in window with shell
-  (set-window-dedicated-p (nth 1 (window-list)) t)
-  (set-window-dedicated-p (nth 2 (window-list)) t))
-(global-set-key (kbd "C-s-`") 'my/split-windows)
 
 ;; 在当前 frame 下方打开或关闭 eshell buffer。
 (defun startup-eshell ()
