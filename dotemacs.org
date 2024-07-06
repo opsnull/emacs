@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-07-04T19:07:50+0800
+#+LASTMOD: 2024-07-06T11:07:42+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -501,6 +501,7 @@ ef-themes:
           (5 . (variable-pitch 1.4))
           (6 . (variable-pitch 1.3))
           (7 . (variable-pitch 1.2))
+	  (8 . (variable-pitch 1.1))
           (agenda-date . (semilight 1.5))
           (agenda-structure . (variable-pitch light 1.9))
           (t . (variable-pitch 1.1))))
@@ -1644,44 +1645,38 @@ org-mode 内容居中显示：
 (setq-default fill-column 100)     
 #+end_src
 
-slide：
+org-tree-slide 不再活跃维护了，dslide 是它的的替代品。
 + 如果文字居中失效, 可以执行 =M-x redraw-display= 命令来生效。
 #+begin_src emacs-lisp
-(use-package org-tree-slide
-  :after (org)
-  :commands org-tree-slide-mode
+(use-package dslide
+  :vc(:url "https://github.com/positron-solutions/dslide.git")
   :hook
-  ((org-tree-slide-play . (lambda ()
-                            (org-fold-hide-block-all)
-                            (setq-default x-stretch-cursor -1)
-                            (redraw-display)
-                            (blink-cursor-mode -1)
-                            (setq cursor-type 'bar)
-                            ;;(org-display-inline-images)
-                            ;;(hl-line-mode -1)
-                            (text-scale-increase 2)
-                            (setq org-tree-slide-slide-in-waiting 0.01)
-                            (read-only-mode 1)))
-   (org-tree-slide-stop . (lambda ()
-                            (blink-cursor-mode +1)
-                            (setq-default x-stretch-cursor t)
-                            (setq cursor-type t)
-                            (text-scale-increase 0)
-                            ;;(hl-line-mode 1)
-                            (read-only-mode -1))))
+  ((dslide-start . (lambda ()
+                     (org-fold-hide-block-all)
+                     (setq-default x-stretch-cursor -1)
+                     (redraw-display)
+                     (blink-cursor-mode -1)
+                     (setq cursor-type 'bar)
+                     ;;(org-display-inline-images)
+                     ;;(hl-line-mode -1)
+                     (text-scale-increase 2)
+                     (read-only-mode 1)))
+   (dslide-stop . (lambda ()
+                    (blink-cursor-mode +1)
+                    (setq-default x-stretch-cursor t)
+                    (setq cursor-type t)
+                    (text-scale-increase 0)
+                    ;;(hl-line-mode 1)
+                    (read-only-mode -1))))
   :config
-  (setq org-tree-slide-header t)
-  (setq org-tree-slide-content-margin-top 0)
-  (setq org-tree-slide-heading-emphasis nil)
-  (setq org-tree-slide-slide-in-effect t)
-  (setq org-tree-slide-activate-message " ")
-  (setq org-tree-slide-deactivate-message " ")
-  ;;(setq org-tree-slide-modeline-display t)
-  ;;(setq org-tree-slide-breadcrumbs " 👉 ")
-  (define-key org-mode-map (kbd "<f8>") #'org-tree-slide-mode)
-  (define-key org-tree-slide-mode-map (kbd "<f9>") #'org-tree-slide-content)
-  (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
-  (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
+  (setq dslide-margin-content 0.5)
+  (setq dslide-animation-duration 0.5)
+  (setq dslide-margin-title-above 0.3)
+  (setq dslide-margin-title-below 0.3)
+  (setq dslide-header-email nil)
+  (setq dslide-header-date nil)
+  (define-key org-mode-map (kbd "<f8>") #'dslide-deck-start)
+  (define-key dslide-mode-map (kbd "<f9>") #'dslide-deck-stop))
 #+end_src
 
 org-capture 支持 store-link 和 capture 协议：
@@ -2520,7 +2515,6 @@ cargo sweep --installed
 + 如果 buffer 显示异常, 如某些自动显示的签名一直没有消失(即使重启 eglot), 可以 kill buffer 再重新打
   开文件;
 + 建议开启 Rust inlayHints 这样在开发时可以根据 hint 的提示提升开发效率;
-+ 对于链式方法调用, 可以拆分为多行, 每行已 .xx() 开头, 这样每行结尾都显示函数返回值类型;
 #+begin_src emacs-lisp
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
@@ -2529,8 +2523,10 @@ cargo sweep --installed
   (require 'rust-ts-mode)
   (setq rust-mode-treesitter-derive t) ;; rust-mode 作为 rust-ts-mode 而非 prog-mode 的子 mode.
   :config
-  (setq rust-format-on-save t)
-  (setq rust-rustfmt-switches '("--edition" "2021"))
+
+  ;; eglot 使用 rust-analyzer 来格式化代码，故不再使用 rustfmt。
+  ;;(setq rust-format-on-save t)
+  ;;(setq rust-rustfmt-switches '("--edition" "2021"))
 
   ;; treesit-auto 默认不将 XX-mode-hook 添加到对应的 XX-ts-mode-hook 上, 需要手动指定.
   (setq rust-ts-mode-hook rust-mode-hook) 
@@ -2570,8 +2566,26 @@ cargo sweep --installed
 				:closureReturnTypeHints (:enable t)
 				:lifetimeElisionHints (:enable t)
 				:expressionAdjustmentHints (:enable t)
-				)
-                   )))))
+				))))))
+#+end_src
+
+rust-analyzer 调用 rustfmt 格式化，为代码添加 #[rustfmt::skip] 可以忽略格式化；
++ 对于链式方法调用, 可以拆分为多行, 每行以 .xx() 开头, 这样每行结尾都显示函数返回值类型;
++ 创建如下全局 rustfmt 配置文件；
+#+begin_src toml :tangle ~/.rustfmt.toml
+# 配置选项参考：https://rust-lang.github.io/rustfmt/?version=v1.7.1&search=#chain_width
+edition = "2021"
+# 确保方法链式调用时，每行一个方法调用，这样 inlayhint 会显示上一个方法的返回值类型。
+chain_width = 0
+fn_single_line = true
+
+# 以下是 unstable features，只能在 nightly channel 使用。
+wrap_comments = true
+format_code_in_doc_comments = true
+comment_width = 80
+format_strings = true
+imports_granularity = "Crate"
+enum_discrim_align_threshold = 20
 #+end_src
 
 快速 Rust 开发测试:

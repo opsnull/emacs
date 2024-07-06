@@ -6682,3 +6682,47 @@ flymake-clippy 为 flymake 添加 flymake-clippy-backend，用于对 rust 代码
 (global-set-key (kbd "s-v") 'scroll-other-window)  
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
 #+end_src
+* org-tree-slide
+
+org-tree-slide 被 dslide 取代。
+
+#+begin_src emacs-lisp
+(use-package org-tree-slide
+  :disabled
+  :after (org)
+  :commands org-tree-slide-mode
+  :hook
+  ((org-tree-slide-play . (lambda ()
+                            (org-fold-hide-block-all)
+                            (setq-default x-stretch-cursor -1)
+                            (redraw-display)
+                            (blink-cursor-mode -1)
+                            (setq cursor-type 'bar)
+                            ;;(org-display-inline-images)
+                            ;;(hl-line-mode -1)
+                            (text-scale-increase 2)
+                            (setq org-tree-slide-slide-in-waiting 0.01)
+                            (read-only-mode 1)))
+   (org-tree-slide-stop . (lambda ()
+                            (blink-cursor-mode +1)
+                            (setq-default x-stretch-cursor t)
+                            (setq cursor-type t)
+                            (text-scale-increase 0)
+                            ;;(hl-line-mode 1)
+                            (read-only-mode -1))))
+  :config
+  (setq org-tree-slide-header t)
+  (setq org-tree-slide-content-margin-top 0)
+  (setq org-tree-slide-heading-emphasis nil)
+  (setq org-tree-slide-slide-in-effect t)
+  (setq org-tree-slide-activate-message " ")
+  (setq org-tree-slide-deactivate-message " ")
+  ;;(setq org-tree-slide-modeline-display t)
+  ;;(setq org-tree-slide-breadcrumbs " 👉 ")
+  (define-key org-mode-map (kbd "<f8>") #'org-tree-slide-mode)
+  (define-key org-tree-slide-mode-map (kbd "<f9>") #'org-tree-slide-content)
+  (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
+  (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
+#+end_src
+
+

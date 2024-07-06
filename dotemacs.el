@@ -342,6 +342,7 @@
           (5 . (variable-pitch 1.4))
           (6 . (variable-pitch 1.3))
           (7 . (variable-pitch 1.2))
+	  (8 . (variable-pitch 1.1))
           (agenda-date . (semilight 1.5))
           (agenda-structure . (variable-pitch light 1.9))
           (t . (variable-pitch 1.1))))
@@ -1044,41 +1045,35 @@
 ;; fill-column 值要小于 olivetti-body-width 才能正常折行。
 (setq-default fill-column 100)
 
-(use-package org-tree-slide
-  :after (org)
-  :commands org-tree-slide-mode
+(use-package dslide
+  :vc(:url "https://github.com/positron-solutions/dslide.git")
   :hook
-  ((org-tree-slide-play . (lambda ()
-                            (org-fold-hide-block-all)
-                            (setq-default x-stretch-cursor -1)
-                            (redraw-display)
-                            (blink-cursor-mode -1)
-                            (setq cursor-type 'bar)
-                            ;;(org-display-inline-images)
-                            ;;(hl-line-mode -1)
-                            (text-scale-increase 2)
-                            (setq org-tree-slide-slide-in-waiting 0.01)
-                            (read-only-mode 1)))
-   (org-tree-slide-stop . (lambda ()
-                            (blink-cursor-mode +1)
-                            (setq-default x-stretch-cursor t)
-                            (setq cursor-type t)
-                            (text-scale-increase 0)
-                            ;;(hl-line-mode 1)
-                            (read-only-mode -1))))
+  ((dslide-start . (lambda ()
+                     (org-fold-hide-block-all)
+                     (setq-default x-stretch-cursor -1)
+                     (redraw-display)
+                     (blink-cursor-mode -1)
+                     (setq cursor-type 'bar)
+                     ;;(org-display-inline-images)
+                     ;;(hl-line-mode -1)
+                     (text-scale-increase 2)
+                     (read-only-mode 1)))
+   (dslide-stop . (lambda ()
+                    (blink-cursor-mode +1)
+                    (setq-default x-stretch-cursor t)
+                    (setq cursor-type t)
+                    (text-scale-increase 0)
+                    ;;(hl-line-mode 1)
+                    (read-only-mode -1))))
   :config
-  (setq org-tree-slide-header t)
-  (setq org-tree-slide-content-margin-top 0)
-  (setq org-tree-slide-heading-emphasis nil)
-  (setq org-tree-slide-slide-in-effect t)
-  (setq org-tree-slide-activate-message " ")
-  (setq org-tree-slide-deactivate-message " ")
-  ;;(setq org-tree-slide-modeline-display t)
-  ;;(setq org-tree-slide-breadcrumbs " 👉 ")
-  (define-key org-mode-map (kbd "<f8>") #'org-tree-slide-mode)
-  (define-key org-tree-slide-mode-map (kbd "<f9>") #'org-tree-slide-content)
-  (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
-  (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
+  (setq dslide-margin-content 0.5)
+  (setq dslide-animation-duration 0.5)
+  (setq dslide-margin-title-above 0.3)
+  (setq dslide-margin-title-below 0.3)
+  (setq dslide-header-email nil)
+  (setq dslide-header-date nil)
+  (define-key org-mode-map (kbd "<f8>") #'dslide-deck-start)
+  (define-key dslide-mode-map (kbd "<f9>") #'dslide-deck-stop))
 
 (require 'org-protocol)
 (require 'org-capture)
@@ -1555,8 +1550,10 @@
   (require 'rust-ts-mode)
   (setq rust-mode-treesitter-derive t) ;; rust-mode 作为 rust-ts-mode 而非 prog-mode 的子 mode.
   :config
-  (setq rust-format-on-save t)
-  (setq rust-rustfmt-switches '("--edition" "2021"))
+
+  ;; eglot 使用 rust-analyzer 来格式化代码，故不再使用 rustfmt。
+  ;;(setq rust-format-on-save t)
+  ;;(setq rust-rustfmt-switches '("--edition" "2021"))
 
   ;; treesit-auto 默认不将 XX-mode-hook 添加到对应的 XX-ts-mode-hook 上, 需要手动指定.
   (setq rust-ts-mode-hook rust-mode-hook) 
@@ -1596,8 +1593,7 @@
 				:closureReturnTypeHints (:enable t)
 				:lifetimeElisionHints (:enable t)
 				:expressionAdjustmentHints (:enable t)
-				)
-                   )))))
+				))))))
 
 (use-package rust-playground
   :config
