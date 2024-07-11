@@ -1044,6 +1044,11 @@
   (add-hook 'org-mode-hook 'olivetti-mode))
 ;; fill-column 值要小于 olivetti-body-width 才能正常折行。
 (setq-default fill-column 100)
+(add-hook 'text-mode-hook 'turn-on-auto-fill)
+;; 对于代码，笔记本屏幕左右分频后宽度为 100，将 fill-column 设置小一些。
+(add-hook 'prog-mode-hook (lambda ()
+			    (setq-default fill-column 90)
+			    (turn-on-auto-fill)))
 
 (use-package dslide
   :vc(:url "https://github.com/positron-solutions/dslide.git")
@@ -1239,16 +1244,6 @@
       electric-pair-skip-self 'electric-pair-default-skip-self
       electric-pair-open-newline-between-pairs t)
 
-(use-package treesit-fold
-  :vc (:url "https://github.com/emacs-tree-sitter/treesit-fold")
-  :config
-  (global-set-key (kbd "C-c f c") 'treesit-fold-close)
-  (global-set-key (kbd "C-c f o") 'treesit-fold-open)
-  (global-set-key (kbd "C-c f r") 'treesit-fold-open-recursively)
-  (global-set-key (kbd "C-c f C") 'treesit-fold-close-all)
-  (global-set-key (kbd "C-c f O") 'treesit-fold-open-all)
-  (global-set-key (kbd "C-c f t") 'treesit-fold-toggle))
-
 (use-package project
   :custom
   (project-switch-commands
@@ -1309,6 +1304,16 @@
   :config
   (setq treesit-auto-install 'prompt)
   (global-treesit-auto-mode))
+
+(use-package treesit-fold
+  :vc (:url "https://github.com/emacs-tree-sitter/treesit-fold")
+  :config
+  (global-set-key (kbd "C-c f c") 'treesit-fold-close)
+  (global-set-key (kbd "C-c f o") 'treesit-fold-open)
+  (global-set-key (kbd "C-c f r") 'treesit-fold-open-recursively)
+  (global-set-key (kbd "C-c f C") 'treesit-fold-close-all)
+  (global-set-key (kbd "C-c f O") 'treesit-fold-open-all)
+  (global-set-key (kbd "C-c f t") 'treesit-fold-toggle))
 
 (use-package flymake
   :config
@@ -1830,6 +1835,10 @@ mermaid.initialize({
   (search-forward comment-start))
 (define-key prog-mode-map (kbd "C-c C-;") 'my/goto-comment-start)
 
+(use-package vscode-icon
+  :ensure t
+  :commands (vscode-icon-for-file))
+
 (use-package dired-sidebar
   :bind (("s-0" . dired-sidebar-toggle-sidebar))
   :ensure t
@@ -1842,12 +1851,13 @@ mermaid.initialize({
   :config
   (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
   (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
-  (setq dired-sidebar-subtree-line-prefix "-")
-  (setq dired-sidebar-theme 'ascii) ;;'icons 有问题, 不能显示.
+  (setq dired-sidebar-subtree-line-prefix "")
+  (setq dired-sidebar-theme 'vscode) ;;'ascii
   (setq dired-sidebar-use-term-integration t)
   (setq dired-sidebar-use-one-instance t)
-  ;;(setq dired-sidebar-use-custom-font t)
-  )
+  (setq dired-sidebar-use-custom-font t)
+  (setq dired-sidebar-icon-scale 0.1)
+  (setq dired-sidebar-follow-file-idle-delay 1))
 
 (use-package shell-maker)
 (use-package ob-chatgpt-shell :defer t)

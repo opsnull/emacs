@@ -6606,7 +6606,6 @@ M-l 前缀快捷键：
 在 citre-jump（M-.) 的弹出时 buffer 中可以使用正则语法对候选者进行过滤（orderless 提供的支持）, 例
 如: =something kind:^member$ kind:^macro$ input:.c$=
 
-
 * eldoc-box
 
 eldoc-box 在 frame 右上角或光标位置显示 eldoc-doc-buffer 的内容. 依赖 markdown-mode 来格式化显示文档

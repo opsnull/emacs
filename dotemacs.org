@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-07-06T11:07:42+0800
+#+LASTMOD: 2024-07-11T13:07:12+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -1642,7 +1642,12 @@ org-mode 内容居中显示：
   (setq-default olivetti-body-width 120)
   (add-hook 'org-mode-hook 'olivetti-mode))
 ;; fill-column 值要小于 olivetti-body-width 才能正常折行。
-(setq-default fill-column 100)     
+(setq-default fill-column 100)
+(add-hook 'text-mode-hook 'turn-on-auto-fill)
+;; 对于代码，笔记本屏幕左右分频后宽度为 100，将 fill-column 设置小一些。
+(add-hook 'prog-mode-hook (lambda ()
+			    (setq-default fill-column 90)
+			    (turn-on-auto-fill)))
 #+end_src
 
 org-tree-slide 不再活跃维护了，dslide 是它的的替代品。
@@ -1930,20 +1935,6 @@ c/c++/go-mode 缩进风格：总是使用 tab 而非空格：
       electric-pair-open-newline-between-pairs t)
 #+end_src
 
-** fold
-
-#+begin_src emacs-lisp
-(use-package treesit-fold
-  :vc (:url "https://github.com/emacs-tree-sitter/treesit-fold")
-  :config
-  (global-set-key (kbd "C-c f c") 'treesit-fold-close)
-  (global-set-key (kbd "C-c f o") 'treesit-fold-open)
-  (global-set-key (kbd "C-c f r") 'treesit-fold-open-recursively)
-  (global-set-key (kbd "C-c f C") 'treesit-fold-close-all)
-  (global-set-key (kbd "C-c f O") 'treesit-fold-open-all)
-  (global-set-key (kbd "C-c f t") 'treesit-fold-toggle))
-#+end_src
-
 ** project
 
 1. 查看当前项目的 project root：(project-current)
@@ -2025,6 +2016,19 @@ grammer 安装位置: =~/.emacs.d/tree-sitter=, 如 =~/.emacs.d/tree-sitter/libt
 + 执行 =M-x treesit-auto-install-all= 来安装所有的 treesit modules。
 + 如果要重新安装(升级) grammer, 需要先删除 dylib 文件或 tree-sitter 目录, 重启 emacs 后再执行 =M-x
   treesit-auto-install-all=.
+
+代码折叠：
+#+begin_src emacs-lisp
+(use-package treesit-fold
+  :vc (:url "https://github.com/emacs-tree-sitter/treesit-fold")
+  :config
+  (global-set-key (kbd "C-c f c") 'treesit-fold-close)
+  (global-set-key (kbd "C-c f o") 'treesit-fold-open)
+  (global-set-key (kbd "C-c f r") 'treesit-fold-open-recursively)
+  (global-set-key (kbd "C-c f C") 'treesit-fold-close-all)
+  (global-set-key (kbd "C-c f O") 'treesit-fold-open-all)
+  (global-set-key (kbd "C-c f t") 'treesit-fold-toggle))
+#+end_src
 
 ** flymake
 
@@ -2577,10 +2581,16 @@ rust-analyzer 调用 rustfmt 格式化，为代码添加 #[rustfmt::skip] 可以
 edition = "2021"
 # 确保方法链式调用时，每行一个方法调用，这样 inlayhint 会显示上一个方法的返回值类型。
 chain_width = 0
+# 是否格式化为单行函数。	    
 fn_single_line = true
+# 最大行长度，超过后自动折行。
+max_width = 80
+# 函数各参数单独一行
+fn_args_layout = "Vertical"
 
 # 以下是 unstable features，只能在 nightly channel 使用。
 wrap_comments = true
+normalize_comments = true
 format_code_in_doc_comments = true
 comment_width = 80
 format_strings = true
@@ -3186,6 +3196,10 @@ expand-region 扩展区域：
 
 dired-sidebar 相比 treemacs/neotree 的优势是速度快, 而且复用 dired 的快捷键.
 #+begin_src emacs-lisp
+(use-package vscode-icon
+  :ensure t
+  :commands (vscode-icon-for-file))
+
 (use-package dired-sidebar
   :bind (("s-0" . dired-sidebar-toggle-sidebar))
   :ensure t
@@ -3198,12 +3212,13 @@ dired-sidebar 相比 treemacs/neotree 的优势是速度快, 而且复用 dired 
   :config
   (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
   (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
-  (setq dired-sidebar-subtree-line-prefix "-")
-  (setq dired-sidebar-theme 'ascii) ;;'icons 有问题, 不能显示.
+  (setq dired-sidebar-subtree-line-prefix "")
+  (setq dired-sidebar-theme 'vscode) ;;'ascii
   (setq dired-sidebar-use-term-integration t)
   (setq dired-sidebar-use-one-instance t)
-  ;;(setq dired-sidebar-use-custom-font t)
-  )  
+  (setq dired-sidebar-use-custom-font t)
+  (setq dired-sidebar-icon-scale 0.1)
+  (setq dired-sidebar-follow-file-idle-delay 1))  
 #+end_src
 
 * chatgpt-shell
