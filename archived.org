@@ -3227,84 +3227,84 @@ doom-themes:
 
 版本 3：使用更简洁的 neotree 包：
 #+begin_src emacs-lisp
-  (use-package treemacs
-    :init
-    (with-eval-after-load 'winum (define-key winum-keymap (kbd "s-0") #'treemacs-select-window))
-    :config
-    (setq
-     treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
-     treemacs-deferred-git-apply-delay      0.5
-     treemacs-display-in-side-window        t
-     treemacs-eldoc-display                 'simple
-     treemacs-file-event-delay              2000
-     treemacs-file-follow-delay             0.1
-     treemacs-follow-after-init             t
-     treemacs-expand-after-init             t
-     treemacs-git-command-pipe              ""
-     treemacs-goto-tag-strategy             'refetch-index
-     treemacs-indentation                   1
-     treemacs-indentation-string            " "
-     treemacs-is-never-other-window         t
-     treemacs-max-git-entries               100
-     treemacs-missing-project-action        'ask
-     treemacs-no-png-images                 nil ;; 是否显示图标
-     treemacs-no-delete-other-windows       t
-     treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-     treemacs-position                      'left
-     treemacs-read-string-input             'from-minibuffer
-     treemacs-recenter-distance             0.01 ;; 缺省 0.1 
-     treemacs-recenter-after-file-follow    'on-distance
-     treemacs-recenter-after-tag-follow     'on-distance
-     treemacs-recenter-after-project-jump   'always
-     treemacs-recenter-after-project-expand 'on-distance
-     treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
-     treemacs-shownn-cursor                 t
-     treemacs-show-hidden-files             t
-     treemacs-silent-filewatch              nil
-     treemacs-silent-refresh                nil
-     treemacs-sorting                       'alphabetic-asc
-     treemacs-select-when-already-in-treemacs 'stay
-     treemacs-space-between-root-nodes      nil
-     treemacs-tag-follow-cleanup            t
-     treemacs-tag-follow-delay              0.5
-     treemacs-width                         35
-     treemacs-width-increment               5
-     treemacs-width-is-initially-locked     nil
-     treemacs-project-follow-cleanup        t
-     treemacs-git-commit-diff-mode          t
-     treemacs-indent-guide-style  'block
-     imenu-auto-rescan                      t)
-    (treemacs-resize-icons 11)
-    ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
-    (treemacs-follow-mode t)
-    ;;(treemacs-tag-follow-mode t)
-    ;;(treemacs-project-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode 'always)
-    (treemacs-indent-guide-mode -1)
-    (treemacs-git-mode 'deferred)
-    (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
-    ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
-    (add-hook 'buffer-list-update-hook
-	      (lambda ()
-		(when (file-remote-p default-directory)
-		  (require 'treemacs)
-		  (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-		      (delete-window (treemacs-get-local-window))))))
-    ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
-    (add-hook 'ediff-before-setup-hook
-	      (lambda ()
+(use-package treemacs
+  :init
+  (with-eval-after-load 'winum (define-key winum-keymap (kbd "s-0") #'treemacs-select-window))
+  :config
+  (setq
+   treemacs-collapse-dirs                 0 ;; 不 collapse 目录（容易导致路径名过长）。
+   treemacs-deferred-git-apply-delay      0.5
+   treemacs-display-in-side-window        t
+   treemacs-eldoc-display                 'simple
+   treemacs-file-event-delay              2000
+   treemacs-file-follow-delay             0.1
+   treemacs-follow-after-init             t
+   treemacs-expand-after-init             t
+   treemacs-git-command-pipe              ""
+   treemacs-goto-tag-strategy             'refetch-index
+   treemacs-indentation                   1
+   treemacs-indentation-string            " "
+   treemacs-is-never-other-window         t
+   treemacs-max-git-entries               100
+   treemacs-missing-project-action        'ask
+   treemacs-no-png-images                 nil ;; 是否显示图标
+   treemacs-no-delete-other-windows       t
+   treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+   treemacs-position                      'left
+   treemacs-read-string-input             'from-minibuffer
+   treemacs-recenter-distance             0.01 ;; 缺省 0.1 
+   treemacs-recenter-after-file-follow    'on-distance
+   treemacs-recenter-after-tag-follow     'on-distance
+   treemacs-recenter-after-project-jump   'always
+   treemacs-recenter-after-project-expand 'on-distance
+   treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask" "/vendor")
+   treemacs-shownn-cursor                 t
+   treemacs-show-hidden-files             t
+   treemacs-silent-filewatch              nil
+   treemacs-silent-refresh                nil
+   treemacs-sorting                       'alphabetic-asc
+   treemacs-select-when-already-in-treemacs 'stay
+   treemacs-space-between-root-nodes      nil
+   treemacs-tag-follow-cleanup            t
+   treemacs-tag-follow-delay              0.5
+   treemacs-width                         35
+   treemacs-width-increment               5
+   treemacs-width-is-initially-locked     nil
+   treemacs-project-follow-cleanup        t
+   treemacs-git-commit-diff-mode          t
+   treemacs-indent-guide-style  'block
+   imenu-auto-rescan                      t)
+  (treemacs-resize-icons 11)
+  ;; 跟随打开当前打开的文件（需要鼠标在文件内点击下，才会跟随）。
+  (treemacs-follow-mode t)
+  ;;(treemacs-tag-follow-mode t)
+  ;;(treemacs-project-follow-mode t)
+  (treemacs-filewatch-mode t)
+  (treemacs-fringe-indicator-mode 'always)
+  (treemacs-indent-guide-mode -1)
+  (treemacs-git-mode 'deferred)
+  (treemacs-hide-gitignored-files-mode nil) ;; nil 开启
+  ;; 为远程 buffer 关闭 treemacs, 避免建立新连接耗时。
+  (add-hook 'buffer-list-update-hook
+	    (lambda ()
+	      (when (file-remote-p default-directory)
 		(require 'treemacs)
 		(if (string-match "visible" (symbol-name (treemacs-current-visibility)))
-		    (delete-window (treemacs-get-local-window)) ) ))
-    ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
-    ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
-    ;;(require 'treemacs-magit)
-    ;;(require 'treemacs-tar-bar)
-    ;;(treemacs-set-scope-type 'Tabs)
-    :bind
-    (:map global-map
-	      ("s-0" . treemacs-select-window)))
+		    (delete-window (treemacs-get-local-window))))))
+  ;; 启动 ediff 前关闭 treemacs frame, 否则 Control-Panel 显示异常。
+  (add-hook 'ediff-before-setup-hook
+	    (lambda ()
+	      (require 'treemacs)
+	      (if (string-match "visible" (symbol-name (treemacs-current-visibility)))
+		  (delete-window (treemacs-get-local-window)) ) ))
+  ;; treemacs-magit 和 treemacs-tab-bar 已经位于 treemacs src/extra 下，被 treemacs 加载，
+  ;; 所以没必要再用 user-package 来安装，否则 treemas-magit 会提示找不到 py 文件。
+  ;;(require 'treemacs-magit)
+  ;;(require 'treemacs-tar-bar)
+  ;;(treemacs-set-scope-type 'Tabs)
+  :bind
+  (:map global-map
+	("s-0" . treemacs-select-window)))
 
 ;; (use-package treemacs-all-the-icons
 ;;   :after (treemacs magit)
@@ -3315,9 +3315,9 @@ doom-themes:
   :after (treemacs magit)
   :ensure t)
 
-  (use-package deadgrep
-    :ensure-system-package (rg . ripgrep)
-    :bind ("<f5>" . deadgrep))
+(use-package deadgrep
+  :ensure-system-package (rg . ripgrep)
+  :bind ("<f5>" . deadgrep))
 #+end_src
 
 * sis
@@ -6723,5 +6723,6 @@ org-tree-slide 被 dslide 取代。
   (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
   (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
 #+end_src
+
 
 
