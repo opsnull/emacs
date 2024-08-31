@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+AUTHOR: 张俊(geekard@qq.com)
-#+LASTMOD: 2024-08-19T13:08:23+0800
+#+LASTMOD: 2024-08-31T17:08:41+0800
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
 #+OPTIONS: prop:t ^:nil
@@ -18,14 +18,19 @@
 #+OPTIONS: title:t
 #+HUGO_CUSTOM_FRONT_MATTER: :series '("emacs") :series_order 1
 
-更多 Emacs 内容请访问我的博客: https://blog.opsnull.com/emacs/
+Emacs 是 Hacker 的一种生活方式，而这是符合我习惯和口味的私人定制。
+
+#+hugo: more
+
+更多 Emacs 内容请访问[[https://blog.opsnull.com/emacs/][我的博客]]。
 
 * install
 
 编译安装最新 Emacs 30:
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 brew uninstall emacs-plus@30
-brew install emacs-plus@30  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll --with-dragon-icon --with-native-comp --with-poll
+brew install emacs-plus@30  --with-no-frame-refocus --with-xwidgets --with-imagemagick --with-poll  \
+     --with-dragon-icon --with-native-comp --with-poll
 brew unlink emacs-plus@30 && brew link emacs-plus@30
 ln -sf /opt/homebrew/opt/emacs-plus@30/Emacs.app /Applications/
 #+end_src
@@ -36,7 +41,9 @@ ln -sf /opt/homebrew/opt/emacs-plus@30/Emacs.app /Applications/
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 (when (fboundp 'native-compile-async)
   (setenv "LIBRARY_PATH"
-	  (concat (getenv "LIBRARY_PATH") "/opt/homebrew/opt/gcc/lib/gcc/current/:/opt/homebrew/opt/gcc/lib/gcc/current/gcc/aarch64-apple-darwin23/14/"))
+	  (concat (getenv "LIBRARY_PATH")
+		  ":/opt/homebrew/opt/gcc/lib/gcc/current/:"
+		  "/opt/homebrew/opt/gcc/lib/gcc/current/gcc/aarch64-apple-darwin23/14/"))
   (setq native-comp-speed 4)
   (setq native-comp-async-jobs-number 8)
   ;;(setq inhibit-automatic-native-compilation t)
@@ -51,20 +58,27 @@ ln -sf /opt/homebrew/opt/emacs-plus@30/Emacs.app /Applications/
 在独立文件保存自定义配置，避免污染 =~/.emacs= 文件。
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
-(add-hook 'after-init-hook (lambda () (when (file-exists-p custom-file) (load custom-file))))
+(add-hook 'after-init-hook (lambda ()
+			     (when (file-exists-p custom-file)
+			       (load custom-file))))
 #+end_src
 
 Emacs 查找外部程序时使用 =exec-path= 而非 =PATH= 变量:
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
-(setq my-bin-path '("/opt/homebrew/bin"
-                    "/opt/homebrew/opt/findutils/libexec/gnubin"
-		    "/opt/homebrew/opt/openjdk/bin"
-                    "/Users/alizj/go/bin"
-                    "/Users/alizj/.cargo/bin"))
+(setq my-bin-path
+      '("/opt/homebrew/bin"
+        "/opt/homebrew/opt/findutils/libexec/gnubin"
+	"/opt/homebrew/opt/openjdk/bin"
+        "/Users/alizj/go/bin"
+        "/Users/alizj/.cargo/bin"))
+
 ;; 设置 PATH 环境变量。
-(mapc (lambda (p)
-	(setenv "PATH" (concat p ":" (getenv "PATH"))))
+(mapc (
+       lambda (p)
+       (setenv "PATH" (concat p ":" (getenv "PATH")))
+       )
       my-bin-path)
+
 ;; 设置 Emacs 搜索路径。
 (let ((paths my-bin-path))
   (dolist (path paths)
@@ -74,15 +88,16 @@ Emacs 查找外部程序时使用 =exec-path= 而非 =PATH= 变量:
 * package
 
 设置软件包源：
-+ =M-x use-package-report= : 查看 package 加载时间（按 S 排序）；
-+ 对于使用 :vc 从 github 安装的包，使用 ~M-x package-vc-upgrade-all~ 命令来更新；
++ =M-x use-package-report= : 查看 Package 加载时间（按 S 排序）；
++ =M-x package-vc-upgrade-all~= ：更新使用 ~:vc~ 指令配置的，从 ~github~ 安装的包；
 #+begin_src emacs-lisp
 (require 'package)
-(setq package-archives '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-                         ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
-                         ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-                         ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
-                         ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
+(setq package-archives
+      '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+        ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
+        ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+        ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
+        ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
 (package-initialize)
 (when (not package-archive-contents)
   (package-refresh-contents))
@@ -93,39 +108,52 @@ Emacs 查找外部程序时使用 =exec-path= 而非 =PATH= 变量:
 (setq use-package-compute-statistics t)
 (setq use-package-vc-prefer-newest t)
 
-;; 可以升级内置包。
+;; 允许升级 Emacs 内置的 package。
 ;;(setq package-install-upgrade-built-in t)    
 #+end_src
 
 * proxy
 
-MacOS 自带的 curl 不支持 socks5 代理, 这里安装支持 socks5 代理的 GNU curl 版本：
+~MacOS~ 自带的 ~curl~ 不支持 ~socks5~ 代理, 这里安装支持 ~socks5~ 的 ~GNU curl~ 版本：
++ curl/wget/ruby/python/go 都感知 [[https://superuser.com/a/1690537][no_proxy]] 变量。
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 brew install curl
 export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 #+end_src
 
-将安装的 curl 添加到 Emacs 的 ~PATH~ 环境变量和 ~exec-path~ 变量中：
+将 ~GNU curl~ 添加到 ~Emacs~ 的 ~PATH~ 环境变量和 ~exec-path~ 变量中：
 #+begin_src emacs-lisp
 (setq my-coreutils-path "/opt/homebrew/opt/curl/bin/")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
 #+end_src
 
-[[https://emacstalk.github.io/post/007/][url-retrieve 使用 curl 作为后端实现]], 这样全局可使用 socks5 代理：
+Emacs 使用 ~url-retrieve~ 访问 URL，这里设置它使用 ~curl~ 后端，全局可使用 socks5 代理：
 #+begin_src emacs-lisp
+;; socks5 代理信息
 (setq my/socks-host "127.0.0.1")
 (setq my/socks-port 1080) ;; 1080, 13659
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port)) ;; socks5h
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
-;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
+;; + socks-noproxy: 域名是正则表达式, 如 \\.baidu.com;
+;; + NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
 ;; 所以这里使用的是同时满足两者的域名后缀形式, 如 .baidu.com;
-(setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
-                    ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
-                    ".openai.azure.com" ".baidu.com" ".aliyun-inc.com" ".aliyun-inc.test"))
+(setq my/no-proxy
+      '("0.0.0.0"
+	"127.0.0.1"
+	"localhost"
+	"10.0.0.0/8"
+	"172.0.0.0/8"
+        ".cn"
+	".alibaba-inc.com"
+	".taobao.com"
+	".antfin-inc.com"
+        ".openai.azure.com"
+	".baidu.com"
+	".aliyun-inc.com"
+	".aliyun-inc.test"))
 
-;; 设置 UA，访问 Google 等需要。
 (setq my/user-agent
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
 
@@ -140,22 +168,25 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
     (setq github-auth (concat github-user ":" github-password))
     (setq mb-url-http-backend 'mb-url-http-curl
           mb-url-http-curl-program "/opt/homebrew/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-                                      "--keepalive-time" "60"
-                                      "--keepalive"
-                                      "--max-time" "300"
-                                      ;;防止 POST 超过 1024Bytes 时发送 Expect: 100-continue 导致 1s 延迟.
-                                      "-H" "Expect: ''"
-                                      ;;"-u" ,github-auth
-                                      "--user-agent" ,my/user-agent
-                                      ))))
+          mb-url-http-curl-switches
+	  `("-k"
+	    "-x" ,my/socks-proxy
+            "--keepalive-time" "60"
+            "--keepalive"
+            "--max-time" "300"
+            ;;防止 POST 超过 1024 Bytes 时发送 Expect: 100-continue 导致 1s 延迟。
+            "-H" "Expect: ''"
+            ;;"-u" ,github-auth
+            "--user-agent" ,my/user-agent
+            ))))
+
+;; 开启 socks5 代理
 (defun proxy-socks-enable ()
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
         socks-noproxy my/no-proxy
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-  ;; curl/wget/ruby/python/go 都感知 no_proxy 变量: https://superuser.com/a/1690537
   (let ((no-proxy (mapconcat 'identity my/no-proxy ",")))
     (setenv "no_proxy" no-proxy))
   (setenv "ALL_PROXY" my/socks-proxy)
@@ -164,6 +195,7 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
   (setenv "HTTPS_PROXY" nil)
   (advice-add 'url-http :around 'mb-url-http-around-advice))
 
+;; 关闭 socks5 代理
 (defun proxy-socks-disable ()
   (interactive)
   (require 'socks)
@@ -180,7 +212,7 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 #+begin_src emacs-lisp
 (use-package epa
   :config
-  ;; gpg 私钥使用这里定义的 user 信息。
+  ;; gpg 私钥使用这里定义的用户信息。
   (setq user-full-name "zhangjun")
   (setq user-mail-address "geekard@qq.com")
   (setq auth-sources '("~/.authinfo.gpg"))
@@ -194,6 +226,7 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
    ;; 使用 minibuffer 输入 GPG 密码。
    epa-pinentry-mode 'loopback
    epa-file-cache-passphrase-for-symmetric-encryption t)
+
   (require 'epa-file)
   (epa-file-enable))
 #+end_src
@@ -226,7 +259,9 @@ MacOS 按键调整：s- 表示 Super，S- 表示 Shift, H- 表示 Hyper:
 	      "C-<wheel-up>"
 	      "C-M-<wheel-down>"
 	      "C-M-<wheel-up>"
-	      )))
+	      )
+	    )
+      )
   (dolist (key keys)
     (global-unset-key (kbd key))))
 #+end_src
@@ -280,10 +315,10 @@ Garbage Collector Magic Hack, 提升 vterm buffer、json 文件响应性能。
 (global-display-line-numbers-mode t)
 
 ;; 光标和字符宽度一致（如 TAB)
-(setq x-stretch-cursor nil)
+;;(setq x-stretch-cursor t)
 #+end_src
 
-frame 设置：
+Frame 设置：
 #+begin_src emacs-lisp
 ;; frame 边角样式
 ;; square corner: undecorated, round corner: undecorated-round
@@ -305,36 +340,35 @@ frame 设置：
 ;; 刷新显示。
 (global-set-key (kbd "<f5>") #'redraw-display)
 
-;; switch-to-buffer runs pop-to-buffer-same-window instead
 (setq switch-to-buffer-obey-display-actions t)
 
 ;; 在 frame 底部显示窗口:
-(add-to-list 'display-buffer-alist
-             `((,(regexp-opt
-                  '("\\*compilation\\*"
-                    "\\*Apropos\\*"
-                    "\\*Help\\*"
-                    "\\*helpful"
-                    "\\*info\\*"
-                    "\\*Summary\\*"
-                    "\\*vt"
-                    "\\*lsp-bridge"
-                    "\\*Org"
-                    "\\*Google Translate\\*"
-                    " \\*eglot"
-                    "Shell Command Output"))
-		;; 复用同名 buffer 窗口。
-                (display-buffer-reuse-window 
-                 . (
-		    ;; 在 frame 底部显示窗口。
-		    (side . bottom) 
-		    ;; 窗口高度比例。
-		    (window-height . 0.35) 
-		    )))))
+(add-to-list
+ 'display-buffer-alist
+ `((,(regexp-opt
+      '("\\*compilation\\*"
+        "\\*Apropos\\*"
+        "\\*Help\\*"
+        "\\*helpful"
+        "\\*info\\*"
+        "\\*Summary\\*"
+        "\\*vt"
+        "\\*lsp-bridge"
+        "\\*Org"
+        "\\*Google Translate\\*"
+        " \\*eglot"
+        "Shell Command Output"))
+    ;; 复用同名 buffer 窗口。
+    (display-buffer-reuse-window
+     . (
+	;; 在 frame 底部显示窗口。
+	(side . bottom) 
+	;; 窗口高度比例。
+	(window-height . 0.35) 
+	)))))
 
 ;; 启动后显示模式，加 t 参数让 togg-frame-XX 最后运行，这样才生效：
-;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
-(add-hook 'window-setup-hook 'toggle-frame-maximized t)
+(add-hook 'window-setup-hook 'toggle-frame-maximized t) ;; toggle-frame-fullscreen
 
 ;; 透明背景
 (defun my/toggle-transparency ()
@@ -363,7 +397,7 @@ frame 设置：
       mouse-wheel-scroll-amount-horizontal 2)
 #+end_src
 
-dashboard：
+Dashboard：
 #+begin_src emacs-lisp
 (use-package dashboard
   :config
@@ -408,7 +442,7 @@ doom-modeline：使用 =Symbols Nerd Fonts Mono= 在 modeline 上显示 icons，
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
-;; 为 vterm-mode 定义简化的 modeline，避免 vterm buffer 内容过多时影响性能。
+;; 为 vterm-mode 定义简化的 modeline，避免 vterm buffer 内容过多时更新 modeline 时影响性能。
 (doom-modeline-def-modeline 'my-term-modeline
   '(buffer-info) ;; 左侧
   '(misc-info minor-modes input-method)) ;; 右侧
@@ -482,9 +516,8 @@ doom-modeline：使用 =Symbols Nerd Fonts Mono= 在 modeline 上显示 icons，
 
 常用字体命令:
 + 查看 Emacs 支持的字体名称： =(print (font-family-list))=
-+ 安装、更新 Icon 字体： =M-x all-the-icons-install-fonts=
 + 查看光标处字体： =M-x describe-char=
-+ 查看 Emacs 支持的字体名称： =(print (font-family-list))=;
++ 查看 Emacs 支持的字体名称： =(print (font-family-list))=
 
 Emacs 主题列表：https://emacsthemes.com/popular/index.html
 
@@ -564,8 +597,7 @@ tab-bar：
   (keymap-global-set "s-w" 'tab-bar-close-tab)
   (global-set-key (kbd "s-0") 'tab-bar-close-tab)
 
-  ;; 为 tab 添加序号，便于快速切换。
-  ;; 参考：https://christiantietze.de/posts/2022/02/emacs-tab-bar-numbered-tabs/
+  ;; 为 tab 添加序号，用于快速切换。
   (defvar ct/circle-numbers-alist
     '((0 . "⓪")
       (1 . "①")
@@ -670,9 +702,9 @@ patch:
 #+end_src
 
 rime_ice 拼音方案调整(如模糊音，动态词频，自定义词语文件等):
-+ 自定义短语：向自定义短语词典文件 opsnull_custom_phrase.txt 添加自定义短语，custom_prase/db_class
-  为stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来动态调频）。
-+ 首次添加该文件后需要执行 M-x rime-deploy 和 M-x rime-sync 生效。
++ 自定义短语：向自定义短语词典文件 =opsnull_custom_phrase.txt= 添加自定义短语，custom_prase/db_class
+  为 stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来动态调频）。
++ 首次添加该文件后需要执行 =M-x rime-deploy= 和 =M-x rime-sync= 生效。
 #+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml 
 patch:
   switches:
@@ -722,56 +754,55 @@ patch:
   - derive/([jqx])ie$/$1ei/  # jei → jie    
 #+end_src
 
-Rime 输入法全局配置：
-+ 详细参考：https://github.com/iDvel/rime-ice/blob/main/default.yaml
+Rime 输入法全局配置，详细参考 [[https://github.com/iDvel/rime-ice/blob/main/default.yaml][iDvel/rime-ice]]
 #+begin_src yaml :tangle ~/Library/Rime/default.custom.yaml
 patch:
-  schema_list:
-  - schema: rime_ice  # 只启用 rime_ice 雾凇拼音输入法方案。
-  menu/page_size: 9   # 显示 9 个候选词。  
-  # 方案选单切换
-  switcher/hotkeys:
-  - F4
-  - "Control+plus" # 按 C-Shit-+ 调出方案选单。
-  switcher/fold_options: false # 呼出时不折叠。
-  switcher/abbreviate_options: false # 折叠时不缩写选项
-  ascii_composer: # 中英文切换
-    switch_key:   # 关闭左边 Shift 中西文切换，而是使用右侧 Shift（避免频繁误按）。
-      Shift_L: noop 
-      Shift_R: commit_code
-  key_binder/bindings:
-  - { when: has_menu, accept: equal, send: Page_Down }             # 下一页
-  - { when: paging, accept: minus, send: Page_Up }                 # 上一页
-  - { when: always, accept: "Control+period", toggle: ascii_mode}  # 中英文切换
-  - { when: always, accept: "Control+comma", toggle: ascii_punct}  # 中英文标点切换
-  #- { when: always, accept: "Control+comma", toggle: full_shape}  # 全角/半角切换
+schema_list:
+- schema: rime_ice  # 只启用 rime_ice 雾凇拼音输入法方案。
+menu/page_size: 9   # 显示 9 个候选词。  
+# 方案选单切换
+switcher/hotkeys:
+- F4
+- "Control+plus" # 按 C-Shit-+ 调出方案选单。
+switcher/fold_options: false # 呼出时不折叠。
+switcher/abbreviate_options: false # 折叠时不缩写选项
+ascii_composer: # 中英文切换
+switch_key:   # 关闭左边 Shift 中西文切换，而是使用右侧 Shift（避免频繁误按）。
+Shift_L: noop 
+Shift_R: commit_code
+key_binder/bindings:
+- { when: has_menu, accept: equal, send: Page_Down }             # 下一页
+- { when: paging, accept: minus, send: Page_Up }                 # 上一页
+- { when: always, accept: "Control+period", toggle: ascii_mode}  # 中英文切换
+- { when: always, accept: "Control+comma", toggle: ascii_punct}  # 中英文标点切换
+#- { when: always, accept: "Control+comma", toggle: full_shape}  # 全角/半角切换
 
-  # 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。需要将这些按键加到rime-translate-keybindings变
-  # 量里后才会生效。 composing 指的是出现候选词列表的时机。
-  - { When: composing, accept: Control+p, send: Up }
-  - { when: composing, accept: Control+n, send: Down }
-  - { when: composing, accept: Control+b, send: Left }
-  - { when: composing, accept: Control+f, send: Right }
-  - { when: composing, accept: Control+a, send: Home }
-  - { when: composing, accept: Control+e, send: End }
-  - { when: composing, accept: Control+d, send: Delete }
-  - { when: composing, accept: Control+k, send: Shift+Delete } # 从用户数据库中删除误上屏的词语
-  - { when: composing, accept: Control+h, send: BackSpace }
-  - { when: composing, accept: Control+g, send: Escape }
-  - { when: composing, accept: Control+bracketleft, send: Escape }
-  - { when: composing, accept: Control+y, send: Page_Up }
-  - { when: composing, accept: Alt+v, send: Page_Up }
-  - { when: composing, accept: Control+v, send: Page_Down }
+# 开启 emacs 绑定惯例，这样可以使用 C-x 来修正拼音。需要将这些按键加到rime-translate-keybindings变
+# 量里后才会生效。 composing 指的是出现候选词列表的时机。
+- { When: composing, accept: Control+p, send: Up }
+- { when: composing, accept: Control+n, send: Down }
+- { when: composing, accept: Control+b, send: Left }
+- { when: composing, accept: Control+f, send: Right }
+- { when: composing, accept: Control+a, send: Home }
+- { when: composing, accept: Control+e, send: End }
+- { when: composing, accept: Control+d, send: Delete }
+- { when: composing, accept: Control+k, send: Shift+Delete } # 从用户数据库中删除误上屏的词语
+- { when: composing, accept: Control+h, send: BackSpace }
+- { when: composing, accept: Control+g, send: Escape }
+- { when: composing, accept: Control+bracketleft, send: Escape }
+- { when: composing, accept: Control+y, send: Page_Up }
+- { when: composing, accept: Alt+v, send: Page_Up }
+- { when: composing, accept: Control+v, send: Page_Down }
 
 # 更多按键名称参考: https://github.com/LEOYoon-Tsaw/Rime_collections/blob/master/Rime_description.md
 #+end_src
 
 配置 Emacs:
 + =rime-disable-predicates= 定义了一组断言函数，当任一函数断言成立时，Rime 自动将输入法切换为英文
-  （inline、ascii-inline、ascii-mode 都指的是英文）。如果同时定义了 rime-inline-predicates 变量，则
-  当这两组函数都至少有一个断言成立时才会切换为英文。
-+ =rime-predicate-after-alphabet-char-p= 和 =rime-predicate-in-code-string-p= 条件都会导致不能正确的中英
-  文混排。
+  （inline、ascii-inline、ascii-mode 都指的是英文）。如果同时定义了 rime-inline-predicates 变量，
+  则当这两组函数都至少有一个断言成立时才会切换为英文。
++ =rime-predicate-after-alphabet-char-p= 和 =rime-predicate-in-code-string-p= 条件都会导致不能正确的中
+  英文混排。
 #+begin_src emacs-lisp
 (use-package rime
   :custom
@@ -807,8 +838,8 @@ patch:
   ;; support shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
   (setq rime-inline-ascii-trigger 'shift-r)
   ;; 临时英文模式, 该列表中任何一个断言返回 t 时自动切换到英文。如何 rime-inline-predicates 不为空，
-  ;; 则当其中任意一个断言也返回 t 时才会自动切换到英文（inline 等效于 ascii-mode）。
-  ;; 自定义 avy 断言函数.
+  ;; 则当其中任意一个断言也返回 t 时才会自动切换到英文（inline 等效于 ascii-mode）。自定义 avy 断
+  ;; 言函数.
   (defun rime-predicate-avy-p () (bound-and-true-p avy-command))
   (setq rime-disable-predicates
         '(rime-predicate-ace-window-p
@@ -859,12 +890,13 @@ userdb 不支持删除记录，所以不能通过清理 =*userdb.txt= 文件的�
 1. 删除 =~/Library/Rime/*.userdb/= 目录；
 2. 重启 Emacs；
 3. 再执行 M-x rime-sync 来全新同步 *userdb.txt 中记录；
-上面的步骤也适合于 userdb 文件损坏（查看文件 ~/Library/Rime/rime_ice.userdb/LOG）导致的个人词频不
+   
+上面的步骤也适合于 userdb 文件损坏（查看文件 =~/Library/Rime/rime_ice.userdb/LOG= ）导致的个人词频不
 生效的情况。
 
 * completion
 
-vertico 提供 minibuffer 自动补全功能（corfu 提供光标处的自动补全）, 可以使用 orderless 过滤候选者：
+vertico 提供 minibuffer 自动补全（corfu 提供光标处的自动补全）, 可以使用 orderless 过滤候选者：
 #+begin_src emacs-lisp
 (use-package vertico
   :config
@@ -1060,7 +1092,7 @@ cape 补全融合:
   )
 #+end_src
 
-consult：
+consult 提供候选者实时过滤和预览等功能：
 #+begin_src emacs-lisp
 (use-package consult
   :hook
@@ -1079,8 +1111,6 @@ consult：
   :config
   ;; 按 C-l 才激活预览，否则 Buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key "C-l")
-  ;; Use minibuffer completion as the UI for completion-at-point，也可以使用 Corfu 或 Company 等直
-  ;; 接在 buffer中 popup 显示补全。
   (setq completion-in-region-function #'consult-completion-in-region)
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil)
@@ -1235,8 +1265,8 @@ marginalia：
         ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
         org-use-sub-superscripts nil
         ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
-  	org-link-file-path-type 'relative
-  	org-html-validation-link nil
+        org-link-file-path-type 'relative
+        org-html-validation-link nil
         ;; 关闭鼠标点击链接。
         org-mouse-1-follows-link nil
 
@@ -1266,6 +1296,7 @@ marginalia：
         ;; 不在线显示图片，手动点击显示更容易控制大小。
         org-startup-with-inline-images nil
         org-startup-folded 'content
+	
         ;; 如果对 headline 编号则 latext 输出时会导致 toc 缺失，故关闭。
         org-startup-numerated nil
         org-startup-indented t
@@ -1291,14 +1322,10 @@ marginalia：
   (setq org-id-link-to-org-use-id t)
   (setq org-M-RET-may-split-line nil)
   (setq org-todo-keywords
-  	'((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
+        '((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
           (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)")))
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
-
-;; 关闭与 sis 冲突的 C-, 快捷键。
-(define-key org-mode-map (kbd "C-,") nil)
-(define-key org-mode-map (kbd "C-'") nil)
 
 (global-set-key (kbd "C-c l") #'org-store-link)
 (global-set-key (kbd "C-c a") #'org-agenda)
@@ -1324,6 +1351,14 @@ marginalia：
     (define-key map (kbd "C-c C-f") 'my/format-src-block)))
 (add-hook 'org-mode-hook 'my/org-mode-keys)
 
+;; 建立 org 相关目录。
+(dolist (dir '("~/docs/org" "~/docs/org/journal"))
+  (unless (file-directory-p dir)
+    (make-directory dir)))
+#+end_SRC
+
+org-modern 和 org-appear 美化 org-mode buffer：
+#+begin_src rust
 (use-package org-modern
   :after (org)
   :config
@@ -1340,7 +1375,7 @@ marginalia：
   ;; 美化表格。
   (setq org-modern-table t)
   (setq org-modern-list
-  	'(
+        '(
           (?* . "✤")
           (?+ . "▶")
           (?- . "◆")))
@@ -1351,15 +1386,10 @@ marginalia：
   :custom
   (org-appear-autolinks t)
   :hook (org-mode . org-appear-mode))
+#+end_src
 
-;; 建立 org 相关目录。
-(dolist (dir '("~/docs/org" "~/docs/org/journal"))
-  (unless (file-directory-p dir)
-    (make-directory dir)))
-#+end_SRC
-
-org-download：拖拽保存图片或 F6 保存剪贴板中图片（使用 pngpaste 命令）:
-+ 需要编译 Emacs 时指定 =--with-imagemagick= 参数，Emacs 使用 imagemagick 工具命令来实时转换图片大小。
+org-download：拖拽图片或将剪贴板中图片插入到 org-mode buffer 中（使用 pngpaste 命令）:
++ 需要编译 Emacs 时指定 =--with-imagemagick= 参数，Emacs 使用 imagemagick 命令来实时转换图片大小。
 #+begin_src emacs-lisp
 (use-package org-download
   :config
@@ -1461,8 +1491,7 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片（使用 pngpas
 
 配置 tex：
 #+begin_src emacs-lisp
-;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中，后续 Emacs 执行 xelatex 命令时
-;; 使用。
+;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中， Emacs 执行 xelatex 命令时使用。
 (setq my-tex-path "/Library/TeX/texbin")
 (setenv "PATH" (concat my-tex-path ":" (getenv "PATH")))
 (setq exec-path (cons my-tex-path  exec-path))
@@ -1515,10 +1544,10 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片（使用 pngpas
 #+end_src
 
 在线预览 LaTex fragments：
-+ 预览命令：C-c C-x C-l (org-latex-preview)，When called with a single prefix argument, clear all
-  images in the current entry. Two prefix arguments produce a preview image for all fragments in
-  the buffer, while three of them clear all the images in that buffer.
-+ 或者添加启动时自动预览：#+STARTUP: latexpreview 或  nolatexpreview
++ 预览命令： =C-c C-x C-l (org-latex-preview)= ，When called with a single prefix argument, clear
+  all images in the current entry. Two prefix arguments produce a preview image for all fragments
+  in the buffer, while three of them clear all the images in that buffer.
++ 或者添加启动时自动预览： =#+STARTUP: latexpreview=  或  =nolatexpreview=
 #+begin_src emacs-lisp
 ;; 使用 imagemagick 而非默认的 dvipng 来生成 M-x org-latex-preview 在线显式的图片。dvipng 总是报错。
 ;; 参考：https://orgmode.org/worg/org-tutorials/org-latex-preview.html
@@ -1630,10 +1659,8 @@ org-download：拖拽保存图片或 F6 保存剪贴板中图片（使用 pngpas
 %\renewcommand\labelitemi{\ensuremath{\bullet}}
 #+end_src
 
-org-mode 内容居中显示：
-+ 设置 olivetti body 宽度： ~C-c | (M-x olivetti-set-width)~
-+ =olivetti-body-width= 和 =fill-column= 都是 buffer local 变量，需要使用 =setq-default= 才能在所有
-  buffer 中生效。
+org-mode 内容居中显示： =olivetti-body-width= 和 =fill-column= 都是 buffer local 变量，需要使用
+=setq-default= 才能在所有 buffer 中生效。
 #+begin_src emacs-lisp
 (use-package olivetti
   :config
@@ -1646,29 +1673,32 @@ org-mode 内容居中显示：
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
 #+end_src
 
-org-tree-slide 不再活跃维护了，dslide 是它的的替代品。
-+ 如果文字居中失效, 可以执行 =M-x redraw-display= 命令来生效。
+org-mode slide 演示：org-tree-slide 不再活跃维护了，dslide 是它的的替代品。
 #+begin_src emacs-lisp
 (use-package dslide
   :vc(:url "https://github.com/positron-solutions/dslide.git")
   :hook
-  ((dslide-start . (lambda ()
-                     (org-fold-hide-block-all)
-                     (setq-default x-stretch-cursor -1)
-                     (redraw-display)
-                     (blink-cursor-mode -1)
-                     (setq cursor-type 'bar)
-                     ;;(org-display-inline-images)
-                     ;;(hl-line-mode -1)
-                     (text-scale-increase 2)
-                     (read-only-mode 1)))
-   (dslide-stop . (lambda ()
-                    (blink-cursor-mode +1)
-                    (setq-default x-stretch-cursor t)
-                    (setq cursor-type t)
-                    (text-scale-increase 0)
-                    ;;(hl-line-mode 1)
-                    (read-only-mode -1))))
+  ((dslide-start
+    .
+    (lambda ()
+      (org-fold-hide-block-all)
+      (setq-default x-stretch-cursor -1)
+      (redraw-display)
+      (blink-cursor-mode -1)
+      (setq cursor-type 'bar)
+      ;;(org-display-inline-images)
+      ;;(hl-line-mode -1)
+      (text-scale-increase 2)
+      (read-only-mode 1)))
+   (dslide-stop
+    .
+    (lambda ()
+      (blink-cursor-mode +1)
+      (setq-default x-stretch-cursor t)
+      (setq cursor-type t)
+      (text-scale-increase 0)
+      ;;(hl-line-mode 1)
+      (read-only-mode -1))))
   :config
   (setq dslide-margin-content 0.5)
   (setq dslide-animation-duration 0.5)
@@ -1707,7 +1737,7 @@ end open location
   </array>
 #+end_src
 
-然后执行命令：
+执行命令：
 #+begin_src shell :tangle no
 xattr -r -d com.apple.quarantine /Applications/EmacsClient-Org.app
 #+end_src
@@ -1720,7 +1750,7 @@ xattr -r -d com.apple.quarantine /Applications/EmacsClient-Org.app
 javascript:location.href='org-protocol://store-link?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title)
 #+end_src
 
-需要在浏览器分别建立对应的书签后而且 emacs 以 server 模式运行才可以使用，
+需要在浏览器分别建立对应的书签后而且 emacs 以 server 模式运行才可以使用：
 #+begin_src emacs-lisp
 (require 'org-protocol)
 (require 'org-capture)
@@ -1862,8 +1892,7 @@ ox-hugo 博客：
                       (concat "#"
                               (if end
                                   (format "L%s-%s" start end)
-				(format "L%s" start)))))))
-  )
+				(format "L%s" start))))))))
 #+end_src
 
 * coding
@@ -1886,7 +1915,7 @@ ox-hugo 博客：
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 #+end_src
 
-c/c++/go-mode 缩进风格：总是使用 tab 而非空格：
+c/c++/go-mode 缩进风格：总是使用 tab 而非空格来缩进：
 #+begin_src emacs-lisp
 ;; 默认使用 tab 缩进。
 (setq indent-tabs-mode t)
@@ -1986,7 +2015,11 @@ project 使用 top-down 方式来检查项目路径中是否存在 .project 文�
 (defun my/project-discover ()
   (interactive)
   ;; 去掉 "~/go/src/k8s.io/*" 目录。
-  (dolist (search-path '("~/go/src/github.com/*" "~/go/src/github.com/*/*" "~/go/src/gitlab.*/*/*"))
+  (dolist (search-path
+	   '(
+	     "~/go/src/github.com/*"
+	     "~/go/src/github.com/*/*"
+	     "~/go/src/gitlab.*/*/*"))
     (dolist (file (file-expand-wildcards search-path))
       (when (file-directory-p file)
         (message "dir %s" file)
@@ -2004,8 +2037,9 @@ project 使用 top-down 方式来检查项目路径中是否存在 .project 文�
 
 ** treesit
 
-treesit-auto 自动安装 grammer 和自动将 xx major-mode remap 到对应的 xx-ts-mode 上。具体参考变量:
-treesit-auto-recipe-list:
+treesit-auto 自动安装 grammer 和自动将 major-mode remap 到对应的 xx-ts-mode 上。具体参考变
+=treesit-auto-recipe-list= :
+
 #+begin_src emacs-lisp
 (use-package treesit-auto
   :demand t
@@ -2034,15 +2068,14 @@ grammer 将被安装到 =~/.emacs.d/tree-sitter=, 如 =~/.emacs.d/tree-sitter/li
 
 ** flymake
 
-flymake 在如下情况检查 buffer 是否有错误：
+flymake 为当前 buffer 提供错误检查/诊断功能，它在如下情况检查（诊断）buffer 是否有错误，错误信息直
+接显示在 buffer 区域, 同时也会发送给 eldoc：
 1. 执行 ~M-x flymake-start~;
 2. 超过 ~flymake-no-changes-timeout(默认 0.5)~ ，设置为 nil 后表示无限长;
 3. 保存 buffer 时 (除非设置 flymake-start-on-save-buffer 为 nil);
    
-错误信息直接显示在 buffer 区域, 同时也会发送给 eldoc。
-
 将 flymake-no-changes-timeout 设置为 nil 后，eglot 不会显示 LSP 实时诊断消息，而是当保存 buffer 后
-经过eglot-send-changes-idle-time 时间后才显示诊断消息，这样可以避免显示无意义的错误。
+经过 eglot-send-changes-idle-time 时间后才显示诊断消息，这样可以避免显示编码过程无意义的错误。
 #+begin_src emacs-lisp
 (use-package flymake
   :config
@@ -2068,23 +2101,24 @@ flymake 在如下情况检查 buffer 是否有错误：
 
 ** eldoc
 
-eglot 不指示 eldoc 在 echo-area 显示结构化成员或函数签名信息, 但是在 M-x eldoc-doc-buffer(C-h-.)
-打开的 eldoc buffer 中会显示这些信息:
+eldoc 在 minibuffer echo-area 或 eldoc buffer 中显示符号文档和函数签名信息。
+
+eglot 不指示 eldoc 在 echo-area 显示结构化成员或函数签名信息, 但是在 =M-x eldoc-doc-buffer(C-h-.)=
+打开的 eldoc buffer 中会显示这些信息。
+
 #+begin_src emacs-lisp
 (use-package eldoc
   :after (eglot)
   :bind
-  (:map eglot-mode-map
-        ("C-c C-d" . eldoc))
+  (:map eglot-mode-map ("C-c C-d" . eldoc))
   :config
   (setq eldoc-idle-delay 0.1)
 
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示
-  ;; 先Ready 的内容.
+  ;; 先 Ready 的内容.
   ;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
   
-  ;; 在打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 的内容会跟随显示 hover 信息, 如函数签
-  ;; 名.
+  ;; 打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 会跟随显示 hover 信息, 如函数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
 
   (add-to-list 'display-buffer-alist
@@ -2096,12 +2130,11 @@ eglot 不指示 eldoc 在 echo-area 显示结构化成员或函数签名信息, 
 
   ;; 一键显示和关闭 eldoc buffer。
   (global-set-key (kbd "M-`")
-                  (
-                   lambda()
-                   (interactive)
-                   (if (get-buffer-window "*eldoc*")
-                       (delete-window (get-buffer-window "*eldoc*"))
-                     (display-buffer "*eldoc*")))))
+                  (lambda()
+                    (interactive)
+                    (if (get-buffer-window "*eldoc*")
+			(delete-window (get-buffer-window "*eldoc*"))
+                      (display-buffer "*eldoc*")))))
 #+end_src
 
 将 minibuffer 窗口高度设为 1，可以确保只显示一行（默认为小数，表示 frame 高度占比，会导致显示多行）。
@@ -2145,7 +2178,9 @@ xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
   (:map eglot-mode-map
         ("C-c C-a" . eglot-code-actions)
         ("C-c C-f" . eglot-format-buffer)
-        ("C-c C-r" . eglot-rename))
+        ("C-c C-r" . eglot-rename)
+	("C-c C-c" . flymake-start)
+	("C-c C-d" . eldoc))
   :config
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能
   ;; 设置的太大，否则可能影响性能。
@@ -2552,7 +2587,8 @@ cargo sweep --installed
                            :command "clippy"
                            ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std                                  
                            :allTargets :json-false
-                           ;;:workspace  :json-false ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
+			   ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
+                           ;;:workspace  :json-false
                            )
                    ;;:procMacro (:attributes (:enable t) :enable :json-false)
                    :cargo (
@@ -3540,22 +3576,27 @@ which trash || brew install trash
 (use-package recentf
   :config
   (setq recentf-save-file "~/.emacs.d/recentf")
-  ;; 不自动清理 recentf 记录。
-  (setq recentf-auto-cleanup 'never)
+
+  ;; 每当 Emacs 空闲 15s 自动清理 recentf 记录（无效的、重复的、被 exclude 的等），防止已经删除的
+  ;; 文件继续出现在 consult-buffer 列表中
+  (setq recentf-auto-cleanup 15)
   ;; emacs 退出时清理 recentf 记录。
   (add-hook 'kill-emacs-hook #'recentf-cleanup)
+
   ;; 每 5min 以及 emacs 退出时保存 recentf-list。
   ;;(run-at-time nil (* 5 60) 'recentf-save-list)
   ;;(add-hook 'kill-emacs-hook #'recentf-save-list)
-  (setq recentf-max-menu-items 100)
-  (setq recentf-max-saved-items 200) ;; default 20
+
+  (setq recentf-max-menu-items 50)
+  (setq recentf-max-saved-items 100) ;; default 20
 
   ;; recentf-exclude 的参数是正则表达式列表，不支持 ~ 引用家目录。
   ;;; emacs-dashboard 不显示这里排除的文件。
   (setq recentf-exclude
 	`(
-	  ,(recentf-expand-file-name "~\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
-          ,(recentf-expand-file-name "~\\(recentf\\|bookmarks\\|archived.org\\)")
+	  ,(recentf-expand-file-name "~/.emacs.d/\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
+          ,(recentf-expand-file-name "~/.emacs.d/\\(recentf\\|bookmarks\\|archived.org\\)")
+	  ,(recentf-expand-file-name "~/go/mod/.*")
           ,tramp-file-name-regexp ;; 不在 recentf 中记录 tramp 文件，防止 tramp 扫描时卡住。
           "^/tmp"
 	  "\\.bak\\'"

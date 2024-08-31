@@ -1,9 +1,10 @@
 (require 'package)
-(setq package-archives '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-                         ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
-                         ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-                         ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
-                         ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
+(setq package-archives
+      '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+        ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
+        ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+        ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
+        ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
 (package-initialize)
 (when (not package-archive-contents)
   (package-refresh-contents))
@@ -14,25 +15,37 @@
 (setq use-package-compute-statistics t)
 (setq use-package-vc-prefer-newest t)
 
-;; 可以升级内置包。
+;; 允许升级 Emacs 内置的 package。
 ;;(setq package-install-upgrade-built-in t)
 
 (setq my-coreutils-path "/opt/homebrew/opt/curl/bin/")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
 
+;; socks5 代理信息
 (setq my/socks-host "127.0.0.1")
 (setq my/socks-port 1080) ;; 1080, 13659
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port)) ;; socks5h
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
-;; socks-noproxy: 域名是正则表达式, 如 \\.baidu.com; NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
+;; + socks-noproxy: 域名是正则表达式, 如 \\.baidu.com;
+;; + NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
 ;; 所以这里使用的是同时满足两者的域名后缀形式, 如 .baidu.com;
-(setq my/no-proxy '("0.0.0.0" "127.0.0.1" "localhost" "10.0.0.0/8" "172.0.0.0/8"
-                    ".cn" ".alibaba-inc.com" ".taobao.com" ".antfin-inc.com"
-                    ".openai.azure.com" ".baidu.com" ".aliyun-inc.com" ".aliyun-inc.test"))
+(setq my/no-proxy
+      '("0.0.0.0"
+	"127.0.0.1"
+	"localhost"
+	"10.0.0.0/8"
+	"172.0.0.0/8"
+        ".cn"
+	".alibaba-inc.com"
+	".taobao.com"
+	".antfin-inc.com"
+        ".openai.azure.com"
+	".baidu.com"
+	".aliyun-inc.com"
+	".aliyun-inc.test"))
 
-;; 设置 UA，访问 Google 等需要。
 (setq my/user-agent
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
 
@@ -47,22 +60,25 @@
     (setq github-auth (concat github-user ":" github-password))
     (setq mb-url-http-backend 'mb-url-http-curl
           mb-url-http-curl-program "/opt/homebrew/opt/curl/bin/curl"
-          mb-url-http-curl-switches `("-k" "-x" ,my/socks-proxy
-                                      "--keepalive-time" "60"
-                                      "--keepalive"
-                                      "--max-time" "300"
-                                      ;;防止 POST 超过 1024Bytes 时发送 Expect: 100-continue 导致 1s 延迟.
-                                      "-H" "Expect: ''"
-                                      ;;"-u" ,github-auth
-                                      "--user-agent" ,my/user-agent
-                                      ))))
+          mb-url-http-curl-switches
+	  `("-k"
+	    "-x" ,my/socks-proxy
+            "--keepalive-time" "60"
+            "--keepalive"
+            "--max-time" "300"
+            ;;防止 POST 超过 1024 Bytes 时发送 Expect: 100-continue 导致 1s 延迟。
+            "-H" "Expect: ''"
+            ;;"-u" ,github-auth
+            "--user-agent" ,my/user-agent
+            ))))
+
+;; 开启 socks5 代理
 (defun proxy-socks-enable ()
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
         socks-noproxy my/no-proxy
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-  ;; curl/wget/ruby/python/go 都感知 no_proxy 变量: https://superuser.com/a/1690537
   (let ((no-proxy (mapconcat 'identity my/no-proxy ",")))
     (setenv "no_proxy" no-proxy))
   (setenv "ALL_PROXY" my/socks-proxy)
@@ -71,6 +87,7 @@
   (setenv "HTTPS_PROXY" nil)
   (advice-add 'url-http :around 'mb-url-http-around-advice))
 
+;; 关闭 socks5 代理
 (defun proxy-socks-disable ()
   (interactive)
   (require 'socks)
@@ -82,7 +99,7 @@
 
 (use-package epa
   :config
-  ;; gpg 私钥使用这里定义的 user 信息。
+  ;; gpg 私钥使用这里定义的用户信息。
   (setq user-full-name "zhangjun")
   (setq user-mail-address "geekard@qq.com")
   (setq auth-sources '("~/.authinfo.gpg"))
@@ -96,6 +113,7 @@
    ;; 使用 minibuffer 输入 GPG 密码。
    epa-pinentry-mode 'loopback
    epa-file-cache-passphrase-for-symmetric-encryption t)
+
   (require 'epa-file)
   (epa-file-enable))
 
@@ -125,7 +143,9 @@
 	      "C-<wheel-up>"
 	      "C-M-<wheel-down>"
 	      "C-M-<wheel-up>"
-	      )))
+	      )
+	    )
+      )
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
@@ -165,7 +185,7 @@
 (global-display-line-numbers-mode t)
 
 ;; 光标和字符宽度一致（如 TAB)
-(setq x-stretch-cursor nil)
+;;(setq x-stretch-cursor t)
 
 ;; frame 边角样式
 ;; square corner: undecorated, round corner: undecorated-round
@@ -187,36 +207,35 @@
 ;; 刷新显示。
 (global-set-key (kbd "<f5>") #'redraw-display)
 
-;; switch-to-buffer runs pop-to-buffer-same-window instead
 (setq switch-to-buffer-obey-display-actions t)
 
 ;; 在 frame 底部显示窗口:
-(add-to-list 'display-buffer-alist
-             `((,(regexp-opt
-                  '("\\*compilation\\*"
-                    "\\*Apropos\\*"
-                    "\\*Help\\*"
-                    "\\*helpful"
-                    "\\*info\\*"
-                    "\\*Summary\\*"
-                    "\\*vt"
-                    "\\*lsp-bridge"
-                    "\\*Org"
-                    "\\*Google Translate\\*"
-                    " \\*eglot"
-                    "Shell Command Output"))
-		;; 复用同名 buffer 窗口。
-                (display-buffer-reuse-window 
-                 . (
-		    ;; 在 frame 底部显示窗口。
-		    (side . bottom) 
-		    ;; 窗口高度比例。
-		    (window-height . 0.35) 
-		    )))))
+(add-to-list
+ 'display-buffer-alist
+ `((,(regexp-opt
+      '("\\*compilation\\*"
+        "\\*Apropos\\*"
+        "\\*Help\\*"
+        "\\*helpful"
+        "\\*info\\*"
+        "\\*Summary\\*"
+        "\\*vt"
+        "\\*lsp-bridge"
+        "\\*Org"
+        "\\*Google Translate\\*"
+        " \\*eglot"
+        "Shell Command Output"))
+    ;; 复用同名 buffer 窗口。
+    (display-buffer-reuse-window
+     . (
+	;; 在 frame 底部显示窗口。
+	(side . bottom) 
+	;; 窗口高度比例。
+	(window-height . 0.35) 
+	)))))
 
 ;; 启动后显示模式，加 t 参数让 togg-frame-XX 最后运行，这样才生效：
-;;(add-hook 'window-setup-hook 'toggle-frame-fullscreen t) 
-(add-hook 'window-setup-hook 'toggle-frame-maximized t)
+(add-hook 'window-setup-hook 'toggle-frame-maximized t) ;; toggle-frame-fullscreen
 
 ;; 透明背景
 (defun my/toggle-transparency ()
@@ -281,7 +300,7 @@
   (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
-;; 为 vterm-mode 定义简化的 modeline，避免 vterm buffer 内容过多时影响性能。
+;; 为 vterm-mode 定义简化的 modeline，避免 vterm buffer 内容过多时更新 modeline 时影响性能。
 (doom-modeline-def-modeline 'my-term-modeline
   '(buffer-info) ;; 左侧
   '(misc-info minor-modes input-method)) ;; 右侧
@@ -1353,17 +1372,15 @@
 (use-package eldoc
   :after (eglot)
   :bind
-  (:map eglot-mode-map
-        ("C-c C-d" . eldoc))
+  (:map eglot-mode-map ("C-c C-d" . eldoc))
   :config
   (setq eldoc-idle-delay 0.1)
 
   ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示
-  ;; 先Ready 的内容.
+  ;; 先 Ready 的内容.
   ;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
   
-  ;; 在打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 的内容会跟随显示 hover 信息, 如函数签
-  ;; 名.
+  ;; 打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 跟随显示 hover 信息, 如函数签名.
   (setq eldoc-echo-area-prefer-doc-buffer t)
 
   (add-to-list 'display-buffer-alist
@@ -1375,12 +1392,11 @@
 
   ;; 一键显示和关闭 eldoc buffer。
   (global-set-key (kbd "M-`")
-                  (
-                   lambda()
-                   (interactive)
-                   (if (get-buffer-window "*eldoc*")
-                       (delete-window (get-buffer-window "*eldoc*"))
-                     (display-buffer "*eldoc*")))))
+                  (lambda()
+                    (interactive)
+                    (if (get-buffer-window "*eldoc*")
+			(delete-window (get-buffer-window "*eldoc*"))
+                      (display-buffer "*eldoc*")))))
 
 (setq max-mini-window-height 1) 
 ;; 为 nil 时只单行显示 eldoc 信息.
@@ -1403,7 +1419,9 @@
   (:map eglot-mode-map
         ("C-c C-a" . eglot-code-actions)
         ("C-c C-f" . eglot-format-buffer)
-        ("C-c C-r" . eglot-rename))
+        ("C-c C-r" . eglot-rename)
+	("C-c C-c" . flymake-start)
+	("C-c C-d" . eldoc))
   :config
   ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调试问题。也不能
   ;; 设置的太大，否则可能影响性能。
@@ -2162,8 +2180,9 @@ mermaid.initialize({
   ;;; emacs-dashboard 不显示这里排除的文件。
   (setq recentf-exclude
 	`(
-	  ,(recentf-expand-file-name "~\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
-          ,(recentf-expand-file-name "~\\(recentf\\|bookmarks\\|archived.org\\)")
+	  ,(recentf-expand-file-name "~/.emacs.d/\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
+          ,(recentf-expand-file-name "~/.emacs.d/\\(recentf\\|bookmarks\\|archived.org\\)")
+	  ,(recentf-expand-file-name "~/go/mod/.*")
           ,tramp-file-name-regexp ;; 不在 recentf 中记录 tramp 文件，防止 tramp 扫描时卡住。
           "^/tmp"
 	  "\\.bak\\'"

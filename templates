@@ -23,8 +23,9 @@ org-mode ;; 空格分割的多个 Mode 名称。
  	     "#+HUGO_BASE_DIR: ~/blog/blog.opsnull.com" n
 	     "#+HUGO_SECTION: posts" n
 	     "#+HUGO_BUNDLE: " (p "artile bundle name") n
-	     "#+EXPORT_file_name: index" n
+	     "#+EXPORT_FILE_NAME: index" n
  	     "#+HUGO_AUTO_SET_LASTMOD: t" n
+	     "#+HUGO_WEIGHT: auto" n
 	     "#+HUGO_TAGS: " (p "tag1 tag2") n
 	     "#+HUGO_CATEGORIES: " (p "catagory1 catagory2") n
 	     "#+HUGO_LOCALE: zh" n
@@ -43,6 +44,19 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	       " " n
 	       (format-time-string "%Y-%m-%d %a  ")  "首次创建" n
              "#+end_details" n)
+
+(my-blog-subtree ":PROPERTIES:" n
+             ":HUGO_BASE_DIR: ~/blog/blog.opsnull.com/" n
+	     ":EXPORT_HUGO_SECTION: " (p "section") n
+	     ":EXPORT_HUGO_BUNDLE: " (p "bundle") n
+	     ":EXPORT_HUGO_WEIGHT: auto" n
+	     ":EXPORT_FILE_NAME: index" n
+	     ":EXPORT_HUGO_LOCALE: zh" n 
+	     ":EXPORT_DATE: " (format-time-string "%Y-%m-%d %a") n
+	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER: :series "  "'(\"" (p "series name") "\") :series_order " (p "1") n
+	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER: :summary " (p "summary") n
+	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER: :showSummary true" n
+	     ":END:")
 
 (my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 
 	  "#+SUBTITLE: 内部资料，注意保密!
