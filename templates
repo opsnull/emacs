@@ -54,8 +54,8 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	     ":EXPORT_HUGO_LOCALE: zh" n 
 	     ":EXPORT_DATE: " (format-time-string "%Y-%m-%d %a") n
 	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER: :series "  "'(\"" (p "series name") "\") :series_order " (p "1") n
-	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER: :summary " (p "summary") n
-	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER: :showSummary true" n
+	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER+: :summary " (p "summary") n
+	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER+: :showSummary true" n
 	     ":END:")
 
 (my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 

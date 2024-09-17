@@ -5361,6 +5361,25 @@ Gtags scans that directory if needed."
 (add-hook 'find-file-hook 'my/large-file-hook)
 #+end_src
 
+* highlight-indent-guides
+
+已被更先进和活跃的 indent-bars 取代。
+
+#+begin_src emacs-lisp
+(use-package highlight-indent-guides
+  :custom
+  (highlight-indent-guides-method 'column)
+  (highlight-indent-guides-responsive 'top)
+  (highlight-indent-guides-suppress-auto-error t)
+  :config
+  (add-hook 'python-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'python-ts-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'yaml-ts-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'js-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'js-ts-mode-hook 'highlight-indent-guides-mode)
+  (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
+#+end_src
 * sort-tab
 
 #+begin_src emacs-lisp
@@ -6723,6 +6742,245 @@ org-tree-slide 被 dslide 取代。
   (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
   (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
 #+end_src
+* tramp
 
+tramp:
+#+begin_src emacs-lisp
+(use-package tramp
+  :config
+  ;; 使用远程主机自己的 PATH(默认是本地的 PATH)
+  (setq tramp-remote-path '(tramp-default-remote-path "/bin" "/usr/bin" "/sbin" "/usr/sbin" "/usr/local/bin" "/usr/local/sbin"))
+  ;;(add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  ;; 使用 ~/.ssh/config 中的 ssh 持久化配置。（Emacs 默认复用连接，但不持久化连接）
+  (setq tramp-use-ssh-controlmaster-options nil)
+  (setq  tramp-ssh-controlmaster-options nil)
+  ;; TRAMP buffers 关闭 version control, 防止卡住。
+  (setq vc-ignore-dir-regexp (format "\\(%s\\)\\|\\(%s\\)" vc-ignore-dir-regexp tramp-file-name-regexp))
+  ;; 关闭自动保存 ad-hoc proxy 代理配置, 防止为相同 IP 的 VM 配置了错误的 Proxy.
+  (setq tramp-save-ad-hoc-proxies nil)
+  ;; 调大远程文件名过期时间（默认 10s), 提高查找远程文件性能.
+  (setq remote-file-name-inhibit-cache 1800)
+  ;; 设置 tramp-verbose 10 打印详细信息。
+  (setq tramp-verbose 1)
+  ;; 增加压缩传输的文件起始大小（默认 4KB），否则容易出错： “gzip: (stdin): unexpected end of file”
+  (setq tramp-inline-compress-start-size (* 1024 8))
+  ;; 当文件大小超过 tramp-copy-size-limit 时，用 external methods(如 scp）来传输，从而大大提高拷贝效率。
+  (setq tramp-copy-size-limit (* 1024 100))
+  (setq tramp-allow-unsafe-temporary-files t)
+  ;; 本地不保存 tramp 备份文件。
+  (setq tramp-backup-directory-alist `((".*" .  nil)))
+  ;; Backup (file~) disabled and auto-save (#file#) locally to prevent delays in editing remote files
+  ;; https://stackoverflow.com/a/22077775
+  (add-to-list 'backup-directory-alist (cons tramp-file-name-regexp nil))
+  ;; 临时目录中保存 TRAMP auto-save 文件, 重启后清空，防止启动时 tramp 扫描文件卡住。
+  (setq tramp-auto-save-directory temporary-file-directory)
+  ;; 连接历史文件。
+  (setq tramp-persistency-file-name (expand-file-name "tramp-connection-history" user-emacs-directory))
+  ;; 避免在 shell history 中添加过多 vterm 自动执行的命令。
+  (setq tramp-histfile-override nil)
+  ;; 在整个 Emacs session 期间保存 SSH 密码.
+  (setq password-cache-expiry nil)
+  (setq tramp-default-method "ssh")
+  (setq tramp-default-remote-shell "/bin/bash")
+  (setq tramp-encoding-shell "/bin/bash")
+  (setq tramp-default-user "root")
+  (setq tramp-terminal-type "tramp")
+  (customize-set-variable 'tramp-encoding-shell "/bin/bash")
+  (add-to-list 'tramp-connection-properties '("/ssh:" "remote-shell" "/bin/bash"))
+  (setq tramp-connection-local-default-shell-variables
+        '((shell-file-name . "/bin/bash")
+          (shell-command-switch . "-c")))
+  
+  ;; 自定义远程环境变量。
+  (let ((process-environment tramp-remote-process-environment))
+    ;; 设置远程环境变量 VTERM_TRAMP, 远程机器的 emacs_bashrc 根据这个变量设置 VTERM 参数。
+    (setenv "VTERM_TRAMP" "true")
+    (setq tramp-remote-process-environment process-environment)))
 
+;; 切换 Buffer 时设置 VTERM_HOSTNAME 环境变量为多跳的最后一个主机名，并通过 vterm-environment 传递到
+;; 远程 vterm shell 环境变量中，这样远程机器 ~/.bashrc 读取并执行的 emacs_bashrc 脚本正确设置 Buffer
+;; 名称和 vtem_prompt_end 函数, 从而确保目录跟踪功能正常,以及通过主机名而非 IP 来打开远程 vterm
+;; shell, 确保 SSH ProxyJump 功能正常（只能通过主机名而非 IP 访问），以及避免目标 IP 重复时连接复用
+;; 错误的问题。
+(defvar my/remote-host "")
+(add-hook 'buffer-list-update-hook
+          (lambda ()
+            (when (file-remote-p default-directory)
+              (setq my/remote-host (file-remote-p default-directory 'host))
+              ;; 动态计算 ENV=VALUE.
+              (require 'vterm)
+              (setq vterm-environment `(,(concat "VTERM_HOSTNAME=" my/remote-host))))))
+
+(use-package consult-tramp
+  :vc (:url "https://github.com/Ladicle/consult-tramp")
+  :custom
+  ;; 默认为 scpx 模式，不支持 SSH 多跳 Jump。
+  (consult-tramp-method "ssh")
+  ;; 打开远程的 /root 目录，而非 ~, 避免 tramp hang。
+  ;; https://lists.gnu.org/archive/html/bug-gnu-emacs/2007-07/msg00006.html
+  (consult-tramp-path "/root/")
+  ;; 即使 ~/.ssh/config 正确 Include 了 hosts 文件，这里还是需要配置，因为 consult-tramp 不会解析 Include 配置。
+  (consult-tramp-ssh-config "~/work/proxylist/hosts_config"))
+#+end_src
++ =tramp-default-method= 缺省值为 scp, 不支持多跳（但拷贝大文件时性能更高），再打开多跳远程文件时每次
+  都需要修改/- 中的 -为 ssh，较麻烦，所以设置为 ssh。
++ tramp 打开远程文件时，避免使用 ~ 路径，而应该是绝对路径，[[https://lists.gnu.org/archive/html/bug-gnu-emacs/2007-07/msg00006.html][防止切换 buffer 时卡住]];
++ 修改 net/tramp-sh.el 中的 tramp-send-commad, 将 (concat "exec env TERM='%s' INSIDE_EMACS='%s' "
+  "ENV=%s %s PROMPT_COMMAND='' PS1=%s PS2='' PS3='' %s %s") 中最后的 "-i" 去掉， 然后删除同目录下的
+  tramp-sh.elc 文件；
+
+* 调试 dape
+
+C/C++/Rust 语言调试: llvm 项目提供了名为 lldb-dap(以前被命名为 lldb-dap) 的 debug adapter, 但相比
+codelldb 功能较弱而且和 dape 不兼容(执行失败), 会报类似错误: failed to load objfile
+...lib/rustlib/x86_64-apple-darwin/lib/libcore-ef02792cbce15279.rlib, 所以需要使用 codelldb 来代替.
+#+begin_src shell :tangle no
+# 确保安装了 cmake 和 llvm 包且 /usr/local/opt/llvm/bin 位于 PATH 中, 参考前面的 clang 配置.
+
+# 从 https://github.com/vadimcn/codelldb/releases 下载最新的 vsix 包
+$ mkdir -p ~/.emacs.d/debug-adapters
+$ unzip codelldb-<platform>-<os>.vsix -d ~/.emacs.d/debug-adapters/codelldb
+# dape 后续使用安装的 codelldb 命令来进行调试(debug-adapters/codelldb/extension/adapter/codelldb)
+$ ln -s ~/.emacs.d/debug-adapters/codelldb/extension/adapter/codelldb /usr/local/bin/codelldb
+
+# 移除 codelldb 自带的 debugserver 而是使用 xcode-select --install 提供的版本, 否则会导致调试失败报
+# 错: Process exited with code -1. 参考:
+# https://github.com/eecs280staff/tutorials/issues/177#issue-2151798211
+$ mv debug-adapters/codelldb/extension/lldb/bin/debugserver /tmp
+#+end_src
+
+Go 语言调试: 
+#+begin_src shell :tangle no
+# https://github.com/go-delve/delve/tree/master/Documentation/installation
+go install github.com/go-delve/delve/cmd/dlv@latest
+sudo /usr/sbin/DevToolsSecurity -enable
+sudo dscl . append /Groups/_developer GroupMembership $(whoami)
+#+end_src
+
+Python 语言调试:
+#+begin_src shell :tangle no
+pip install debugpy
+#+end_src
+
+配置 emacs dape:
+#+begin_src emacs-lisp
+(use-package dape
+  ;; By default dape shares the same keybinding prefix as `gud'
+  ;; If you do not want to use any prefix, set it to nil.
+  ;; :preface
+  ;; (setq dape-key-prefix "\C-x\C-a")
+  ;;
+  ;; May also need to set/change gud (gdb-mi) key prefix
+  ;; (setq gud-key-prefix "\C-x\C-a")
+
+  :hook
+  ;; Save breakpoints on quit
+  (kill-emacs . dape-breakpoint-save)
+  ;; Load breakpoints on startup
+  ;; (after-init . dape-breakpoint-load))
+
+  :config
+  (setq dape-buffer-window-arrangement 'right) ;; 'gud
+
+  ;; To not display info and/or buffers on startup
+  ;; (remove-hook 'dape-on-start-hooks 'dape-info)
+  ;; (remove-hook 'dape-on-start-hooks 'dape-repl)
+
+  ;; To display info and/or repl buffers on stopped
+  ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
+  ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
+
+  ;; Kill compile buffer on build success
+  ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+
+  ;; Save buffers on startup, useful for interpreted languages
+  ;; (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t)))
+  )
+#+end_src
+
+查看和设置 dape-configs 变量: 例如 rust-ts-mode 使用的 codelldb-rust 配置如下:
++ 各参数可以使用 :key value 的形式来配置, 具体参数列表参考: [[https://github.com/vadimcn/codelldb/blob/master/MANUAL.md][codelldb/MANUAL.md]]
++ :request "launch" 表示 Launching a New Process, 支持的参数也在上面的 MANUAL.md 中有说明.
++ 通用配置参数:program/cargo/args/cwd/env/envFile/stdio/terminal/stopOnEntry;      
+#+begin_src emacs-lisp :tangle no
+(codelldb-rust
+ modes (rust-mode rust-ts-mode)
+ ensure dape-ensure-command
+ command-cwd dape-command-cwd
+ command "~/.emacs.d/debug-adapters/codelldb/extension/adapter/codelldb"  ;;以前安装的 codelldb 位置.
+ command-args ("--port" :autoport "--settings" "{\"sourceLanguages\":[\"rust\"]}")
+ port :autoport
+ :type "lldb"
+ :request "launch"
+ :cwd "."
+ :program (lambda nil ;; 要调试的二进制可执行程序
+	    (file-name-concat "target" "debug"
+			      (thread-first
+				(dape-cwd)
+				(directory-file-name)
+				(file-name-split)
+				(last)
+				(car))))
+ :args [] ;; 传给可执行程序的参数列表
+ :stopOnEntry nil)
+#+end_src
+
+其他配置参考:  [[https://www.snamellit.com/blog/dape/][Emacs Debugging with Dape]]
+#+begin_src emacs-lisp :tangle no
+(add-to-list 'dape-configs
+	     '(dlv
+	       modes (go-mode go-ts-mode)
+	       ensure dape-ensure-command
+	       command "dlv"
+	       command-args ("dap" "--listen" "127.0.0.1:5678")
+	       command-cwd dape-cwd-fn
+	       port 5678
+	       :request "launch"
+	       :type "debug"
+	       :cwd dape-cwd-fn
+	       :program dape-cwd-fn))
+
+(setq dape-configs
+      '((lldb-vscode modes (c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode)
+                     command "lldb-vscode"
+                     compile "make -j10"
+                     :type "lldb-vscode" ensure dape-ensure-command
+                     :cwd "xxx/build-dbg/xxx/src/"
+                     :program "/usr/bin/python3"
+                     :args ["EdgeCondTests.py"]
+                     :MIMode "lldb" 
+                     :setupCommands [
+                                     (
+                                      :description "Enable pretty-printing for gdb"
+                                      :text "-enable-pretty-printing"
+                                      :ignoreFailures t
+                                      )
+                                     ]
+                     )))
+#+end_src
+
+dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
+#+begin_src emacs-lisp :tangle no
+;;; Directory Local Variables            -*- no-byte-compile: t -*-
+;;; For more information see (info "(emacs) Directory Variables")
+
+((c++-mode . ((dape-command . (codelldb-cc
+			       command-cwd "~/C++/test/"
+			       :program "main"
+			       :args ["1"]
+			       compile "g++ -g -o main main.cpp"))))) ;; 需要加 -g 来添加 debug flags
+#+end_src
+
+调试 dape: 设置 (setq dape-debug t), 然后查看 *dape-repl*, *dape-connection events*  buffer 的内容.
+
+调试程序:
+1. 在源码设置断点: ~M-x dape-breakpoint-toggle~;
+2. 调试: M-x dape, Run adapter 后面输入调试命令:
+     1. dape-configs 变量配置了各语言可以使用的 debug adapter 以及安装到的目录.
+     2. 各语言的 debug adapter 默认别安装到 =~/.emacs.d/debug-adapters= 目录下, 且需要和 dape-configs 配
+        置的一致.
+     3. 按 TAB 自动补全当前源码可以使用的 debug adapter, 同时显示对应的参数提示, 按 TAB 会自动补全, 例如调试 Rust 程序:
+        : codelldb-rust command-cwd "/Users/zhangjun/codes/rust/mydemo/" :program "target/debug/stream" :args ["1", "2"]
+     4. dape-repl 输入 lldb 命令时需要加 ` 前缀, 如 `help, `breakpoint list, lldb 命令参考: [[https://lldb.llvm.org/use/tutorial.html][Tutorial;]]
+3. 结束调试: M-x dape-quit, 自动关闭 dape buffer 窗口.
 
