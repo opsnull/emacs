@@ -262,9 +262,6 @@ mvn dependency:get -DrepoUrl=http://download.java.net/maven/2/ -DgroupId=org.pro
 (add-to-list 'org-structure-template-alist '("go" . "src go"))
 (add-to-list 'org-structure-template-alist '("yaml" . "src yaml"))
 (add-to-list 'org-structure-template-alist '("json" . "src json"))
-
-
-
 #+end_src
 
 * grammatical-edit
@@ -5380,6 +5377,7 @@ Gtags scans that directory if needed."
   (add-hook 'js-ts-mode-hook 'highlight-indent-guides-mode)
   (add-hook 'web-mode-hook 'highlight-indent-guides-mode))
 #+end_src
+
 * sort-tab
 
 #+begin_src emacs-lisp
@@ -5526,71 +5524,6 @@ bash 集成：在 =~/.bashrc= 中添加如下内容：
 #+begin_src bash :tangle no
 [ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
   source "$EAT_SHELL_INTEGRATION_DIR/bash"
-#+end_src
-
-* cargo
-
-#+begin_src emacs-lisp
-;; (use-package cargo
-;;   :commands cargo-minor-mode
-;;   :bind (:map cargo-mode-map
-;;               ("C-c C-c C-y" . cargo-process-clippy))
-;;   :hook (rust-mode . my-rust-mode-cargo-init)
-;;   :custom
-;;   (cargo-process--command-clippy "clippy") ;; rust lints
-;;   :preface
-;;   (defun my-update-cargo-path (&rest _args)
-;;     (setq cargo-process--custom-path-to-bin
-;;           (executable-find "cargo")))
-
-;;   (defun my-cargo-target-dir (path)
-;;     (replace-regexp-in-string "kadena" "Products" path))
-
-;;   (defun my-update-cargo-args (ad-do-it name command &optional last-cmd opens-external)
-;;     (let* ((cmd (car (split-string command)))
-;;            (new-args
-;;             (if (member cmd '("build" "check" "clippy" "doc" "test"))
-;;                 (let ((args
-;;                        (format "--target-dir=%s -j8"
-;;                                (my-cargo-target-dir
-;;                                 (replace-regexp-in-string
-;;                                  "target" "target--custom"
-;;                                  (regexp-quote (getenv "CARGO_TARGET_DIR")))))))
-;;                   (if (member cmd '("build"))
-;;                       (concat "--message-format=short " args)
-;;                     args))
-;;               ""))
-;;            (cargo-process--command-flags
-;;             (pcase (split-string cargo-process--command-flags " -- ")
-;;               (`(,before ,after)
-;;                (concat before " " new-args " -- " after))
-;;               (_ (concat cargo-process--command-flags new-args)))))
-;;       (funcall ad-do-it name command last-cmd opens-external)))
-
-;;   (defun my-rust-mode-cargo-init ()
-;;     (advice-add 'direnv-update-directory-environment
-;;                 :after #'my-update-cargo-path)
-;;     (advice-add 'cargo-process--start :around #'my-update-cargo-args)
-;;     (cargo-minor-mode 1))
-;;   :config
-;;   (defadvice cargo-process-clippy
-;;       (around my-cargo-process-clippy activate)
-;;     (let ((cargo-process--command-flags
-;;            (concat cargo-process--command-flags
-;;                    "--all-targets "
-;;                    "--all-features "
-;;                    "-- "
-;;                    "-D warnings "
-;;                    "-D clippy::all "
-;;                    "-D clippy::mem_forget "
-;;                    "-C debug-assertions=off")))
-;;       ad-do-it))
-
-;;   (defun cargo-fix ()
-;;     (interactive)
-;;     (async-shell-command
-;;      (concat "cargo fix"
-;;              " --clippy --tests --benches --allow-dirty --allow-staged"))))
 #+end_src
 
 * elfeed
@@ -6674,16 +6607,6 @@ nyan：modeline 彩虹猫。
   (nyan-start-animation))
 #+end_src
 
-* eglot-booster
-
-下载 [[https://github.com/blahgeek/emacs-lsp-booster][emacs-lsp-booster]] 可执行程序，然后使用 emacs-lsp-booster 来加速 eglot 的响应性能：
-#+begin_src emacs-lisp
-(use-package eglot-booster  
-  :vc (:url "https://github.com/jdtsmith/eglot-booster")
-  :disabled
-  :after (eglot)
-  :config (eglot-booster-mode))
-#+end_src
 * rust
 
 flymake-clippy 为 flymake 添加 flymake-clippy-backend，用于对 rust 代码进行丰富的 linter 规则检查：
@@ -6694,12 +6617,87 @@ flymake-clippy 为 flymake 添加 flymake-clippy-backend，用于对 rust 代码
   :hook
   (rust-ts-mode . flymake-clippy-setup-backend))  
 #+end_src
+
+下载 [[https://github.com/blahgeek/emacs-lsp-booster][emacs-lsp-booster]] 可执行程序，然后使用 emacs-lsp-booster 来加速 eglot 的响应性能：
+#+begin_src emacs-lisp
+(use-package eglot-booster  
+  :vc (:url "https://github.com/jdtsmith/eglot-booster")
+  :disabled
+  :after (eglot)
+  :config (eglot-booster-mode))
+#+end_src
+
+cargo: 
+#+begin_src emacs-lisp
+;; (use-package cargo
+;;   :commands cargo-minor-mode
+;;   :bind (:map cargo-mode-map
+;;               ("C-c C-c C-y" . cargo-process-clippy))
+;;   :hook (rust-mode . my-rust-mode-cargo-init)
+;;   :custom
+;;   (cargo-process--command-clippy "clippy") ;; rust lints
+;;   :preface
+;;   (defun my-update-cargo-path (&rest _args)
+;;     (setq cargo-process--custom-path-to-bin
+;;           (executable-find "cargo")))
+
+;;   (defun my-cargo-target-dir (path)
+;;     (replace-regexp-in-string "kadena" "Products" path))
+
+;;   (defun my-update-cargo-args (ad-do-it name command &optional last-cmd opens-external)
+;;     (let* ((cmd (car (split-string command)))
+;;            (new-args
+;;             (if (member cmd '("build" "check" "clippy" "doc" "test"))
+;;                 (let ((args
+;;                        (format "--target-dir=%s -j8"
+;;                                (my-cargo-target-dir
+;;                                 (replace-regexp-in-string
+;;                                  "target" "target--custom"
+;;                                  (regexp-quote (getenv "CARGO_TARGET_DIR")))))))
+;;                   (if (member cmd '("build"))
+;;                       (concat "--message-format=short " args)
+;;                     args))
+;;               ""))
+;;            (cargo-process--command-flags
+;;             (pcase (split-string cargo-process--command-flags " -- ")
+;;               (`(,before ,after)
+;;                (concat before " " new-args " -- " after))
+;;               (_ (concat cargo-process--command-flags new-args)))))
+;;       (funcall ad-do-it name command last-cmd opens-external)))
+
+;;   (defun my-rust-mode-cargo-init ()
+;;     (advice-add 'direnv-update-directory-environment
+;;                 :after #'my-update-cargo-path)
+;;     (advice-add 'cargo-process--start :around #'my-update-cargo-args)
+;;     (cargo-minor-mode 1))
+;;   :config
+;;   (defadvice cargo-process-clippy
+;;       (around my-cargo-process-clippy activate)
+;;     (let ((cargo-process--command-flags
+;;            (concat cargo-process--command-flags
+;;                    "--all-targets "
+;;                    "--all-features "
+;;                    "-- "
+;;                    "-D warnings "
+;;                    "-D clippy::all "
+;;                    "-D clippy::mem_forget "
+;;                    "-C debug-assertions=off")))
+;;       ad-do-it))
+
+;;   (defun cargo-fix ()
+;;     (interactive)
+;;     (async-shell-command
+;;      (concat "cargo fix"
+;;              " --clippy --tests --benches --allow-dirty --allow-staged"))))
+#+end_src
+
 * other
 
 #+begin_src emacs-lisp
 (global-set-key (kbd "s-v") 'scroll-other-window)  
 (global-set-key (kbd "C-s-v") 'scroll-other-window-down)
 #+end_src
+
 * org-tree-slide
 
 org-tree-slide 被 dslide 取代。
@@ -6742,6 +6740,7 @@ org-tree-slide 被 dslide 取代。
   (define-key org-tree-slide-mode-map (kbd "<left>") #'org-tree-slide-move-previous-tree)
   (define-key org-tree-slide-mode-map (kbd "<right>") #'org-tree-slide-move-next-tree))
 #+end_src
+
 * tramp
 
 tramp:
@@ -6983,4 +6982,219 @@ dape 不使用 launch.json 配置, 而是使用 emacs dir-local 变量, 例如:
         : codelldb-rust command-cwd "/Users/zhangjun/codes/rust/mydemo/" :program "target/debug/stream" :args ["1", "2"]
      4. dape-repl 输入 lldb 命令时需要加 ` 前缀, 如 `help, `breakpoint list, lldb 命令参考: [[https://lldb.llvm.org/use/tutorial.html][Tutorial;]]
 3. 结束调试: M-x dape-quit, 自动关闭 dape buffer 窗口.
+
+* UI
+
+#+begin_src emacs-lisp
+;; 透明背景
+(defun my/toggle-transparency ()
+  (interactive)
+  ;; 分别为 frame 获得焦点和失去焦点的不透明度。
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90)) 
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+  (add-to-list 'default-frame-alist '(alpha-background . 90)))  
+#+end_src
+
+自动切换深浅主题:
+
+#+begin_src emacs-lisp
+(defun my/load-theme (appearance)
+  (interactive)
+  (pcase appearance
+    ('light (load-theme 'ef-elea-dark t))
+    ('dark (load-theme 'ef-elea-dark t))))
+(add-hook 'ns-system-appearance-change-functions 'my/load-theme)
+(add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
+#+end_src
+
+高亮光标移动到的行:
+
+#+begin_src emacs-lisp
+(use-package pulsar
+  :config
+  (setq pulsar-pulse t)
+  (setq pulsar-delay 0.25)
+  (setq pulsar-iterations 5)
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-highlight-face 'pulsar-yellow)
+  (pulsar-global-mode 1)
+  (add-hook 'next-error-hook #'pulsar-pulse-line-red))  
+#+end_src
+
+* org capture
+
+org-capture 支持 store-link 和 capture 协议：
+1. store-link：获取浏览器的 URL 和 Title，然后在 kill-ring 中生成一个链接；
+2. capture：根据浏览器复制的内容和指定的 capture-template 名称来创建一个 capture 项目。
+
+打开 MAC “脚本编辑器” ，写入如下内容，保存为 “EmacsClient-Org”，文件格式为 “应用程序”，保存到 /Applications 目录。
+#+begin_src shell :tangle no
+on open location this_URL
+    do shell script "/opt/homebrew/bin/emacsclient \"" & this_URL & "\" && open -a Emacs"
+end open location
+#+end_src
++ 如果是自编译的 Emacs 则 emacsclient 位于 =/opt/homebrew/bin/= 目录下，否则位于 =/Applications/Emacs= 包中。
+
+编辑 "/Applications/EmacsClient-Org.app/Contents/Info.plist" 文件，在 plist->dict 部分添加如下内容：
+#+begin_src xml :tangle no
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>org-protocol handler</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>org-protocol</string>
+      </array>
+    </dict>
+  </array>
+#+end_src
+
+执行命令：
+#+begin_src shell :tangle no
+xattr -r -d com.apple.quarantine /Applications/EmacsClient-Org.app
+#+end_src
+
+双击刚才保存到应用程序目录中的 EmacsClient-Org 程序图标，激活 org-proto 协议。
+
+保存浏览器链接：新建一个浏览器书签，Location 内容如下，然后点击该书签，确认 Emacs 有反应，在 Emacs
+内按 C-c C-l 自动补全 URL 和 Title.
+#+begin_src javascript :tangle no
+javascript:location.href='org-protocol://store-link?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title)
+#+end_src
+
+需要在浏览器分别建立对应的书签后而且 emacs 以 server 模式运行才可以使用：
+#+begin_src emacs-lisp
+(require 'org-protocol)
+(require 'org-capture)
+
+(setq org-capture-templates
+      '(("c" "Capture" entry (file+headline "~/docs/org/capture.org" "Capture")
+         "* %^{Title}\nDate: %U\nSource: %:annotation\nQuote:\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\n\n"
+	 :empty-lines 1)
+        ("t" "Todo" entry (file+headline "~/docs/org/todo.org" "Tasks")
+         "* TODO %?\n %U %a\n %i"
+	 :empty-lines 1)))
+#+end_src
+
+新建一个浏览器书签，内容如下：
++ template=c 的 c 与上面定义的 capture template 名称相同。
++ 具体参考 https://orgmode.org/manual/The-capture-protocol.html  
+#+begin_src javascript :tangle no
+javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURIComponent(window.location.href)+'&title='+encodeURIComponent(document.title)+'&body='+encodeURIComponent(window.getSelection())
+#+end_src
+
+* journal
+
+  #+begin_src emacs-lisp
+  ;; org-capture 集成。
+  (defun org-journal-find-location ()
+    (org-journal-new-entry t)
+    (unless (eq org-journal-file-type 'daily)
+      (org-narrow-to-subtree))
+    (goto-char (point-max)))
+  (setq org-capture-templates
+	(cons '("j" "Journal" plain (function org-journal-find-location)
+		"** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
+		:jump-to-captured t :immediate-finish t) org-capture-templates))
+
+  ;; org-agenda 集成。
+  ;; automatically adds the current and all future journal entries to the agenda
+  ;;(setq org-journal-enable-agenda-integration t)
+  ;; When org-journal-file-pattern has the default value, this would be the regex.
+  (setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
+  (add-to-list 'org-agenda-files org-journal-dir)
+  #+end_src
+
++ 不开启 org-journal-enable-agenda-integration, 而是向 org-agenda-files 变量添加日志文件的方式。否
+  则在历史日记被删除的情况下, 可能导致 Dashbard 显示 agenda 时 hang 。
+ 
+* org-mode
+
+在线预览 LaTex fragments：
++ 预览命令： =C-c C-x C-l (org-latex-preview)= ，When called with a single prefix argument, clear
+  all images in the current entry. Two prefix arguments produce a preview image for all fragments
+  in the buffer, while three of them clear all the images in that buffer.
++ 或者添加启动时自动预览： =#+STARTUP: latexpreview=  或  =nolatexpreview=
+  
+#+begin_src emacs-lisp
+;; 使用 imagemagick 而非默认的 dvipng 来生成 M-x org-latex-preview 在线显式的图片。dvipng 总是报错。
+;; 参考：https://orgmode.org/worg/org-tutorials/org-latex-preview.html
+(setq latex-run-command "xelatex")
+(setq org-latex-create-formula-image-program 'imagemagick)
+#+end_src
+
+* others
+
+#+begin_src emacs-lisp
+(setq auth-source-cache-expiry 300)
+(setq-default epa-file-cache-passphrase-for-symmetric-encryption t)
+
+(setq bidi-inhibit-bpa t)
+(setq bidi-paragraph-direction 'left-to-right)
+(setq-default bidi-display-reordering nil)   
+
+(setq-default ad-redefinition-action 'accept)
+
+(setq auto-window-vscroll nil)
+(setq hscroll-margin 2
+      hscroll-step 1)
+
+;; doom-modeline
+(size-indication-mode t)
+(setq display-time-day-and-date t)
+
+;; vertico
+;;(require 'vertico-directory) 
+;; 默认不选中任何候选者，避免不必要的预览。
+;;(setq vertico-preselect 'prompt)
+
+;; consult
+(setq consult-ripgrep-args
+      "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip -g !vendor/")
+(setq completion-in-region-function #'consult-completion-in-region)
+
+;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示
+;; 先 Ready 的内容.
+;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
+
+
+;; 使用 yapf 格式化 python 代码。
+;;(use-package yapfify)
+
+#+end_src
+
+* cape
+
+4. cape：多源补全融合；
+
+
+cape 补全融合:
+#+begin_src emacs-lisp
+(use-package cape
+  :init
+  ;; completion-at-point 使用的函数列表，注意顺序。
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-elisp-block)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-history)
+  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+  :config
+  (setq dabbrev-check-other-buffers nil
+        dabbrev-check-all-buffers nil
+        cape-dabbrev-min-length 3)
+  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
+  (cape-wrap-prefix-length #'cape-dabbrev 3)
+  ;; 持续刷新候选者(适用于 eglot server 一次没有返回所有候选者情况).
+  ;; profiling 显示影响性能，暂时关闭。
+  ;;(advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
+  )
+#+end_src
 

@@ -15,23 +15,19 @@
 (setq use-package-compute-statistics t)
 (setq use-package-vc-prefer-newest t)
 
-;; 允许升级 Emacs 内置的 package。
+;; 允许升级 Emacs 内置的包。
 ;;(setq package-install-upgrade-built-in t)
 
-;; 认证文件。
 (setq auth-sources '("~/.authinfo.gpg"))
-(setq auth-source-cache-expiry 300)
 ;;(setq auth-source-debug t)
 
 (use-package epa
   :config
   (setq-default
    ;; 缺省使用 email 地址加密。
-   epa-file-select-keys nil
    epa-file-encrypt-to user-mail-address
    ;; 使用 minibuffer 输入 GPG 密码。
-   epa-pinentry-mode 'loopback
-   epa-file-cache-passphrase-for-symmetric-encryption t)
+   epa-pinentry-mode 'loopback)
 
   (require 'epa-file)
   (epa-file-enable))
@@ -46,41 +42,35 @@
 (setq ns-function-modifier 'hyper)
 
 ;; 关闭容易误操作的按键。
+;; s- 表示 Super，S- 表示 Shift, H- 表示 Hyper:
 (let ((keys '(
               "s-w"
               "C-z"
               "<mouse-2>"
               "s-k"
-              "s-o"
-              "s-t"
-              "s-p"
-              "s-n"
               "s-,"
               "s-."
               "s--"
-              "s-0"
               "s-+"
               "C-<wheel-down>"
               "C-<wheel-up>"
               "C-M-<wheel-down>"
               "C-M-<wheel-up>"
+              "<down-mouse-1>"
+              "<drag-mouse-1>"
               )))
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
 (setq process-adaptive-read-buffering nil)
 (setq read-process-output-max (* 1024 1024 4))
+
 (setq inhibit-compacting-font-caches t)
 (setq-default message-log-max t)
-(setq-default ad-redefinition-action 'accept)
-(setq bidi-inhibit-bpa t)
-(setq bidi-paragraph-direction 'left-to-right)
-(setq-default bidi-display-reordering nil)   
 
 ;; Garbage Collector Magic Hack, 提升 GC 性能。
 (use-package gcmh
   :init
-  ;;(setq garbage-collection-messages t)
   ;;(setq gcmh-verbose t)
   (setq gcmh-idle-delay 'auto) ;; 缺省 15s
   (setq gcmh-auto-idle-delay-factor 10)
@@ -88,16 +78,17 @@
   (gcmh-mode 1)
   (gcmh-set-high-threshold))
 
+;;(setq garbage-collection-messages t)
 (add-hook 'after-init-hook #'garbage-collect t)
 
 (setq my-coreutils-path "/opt/homebrew/opt/curl/bin/")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
 
-;; socks5 代理信息
+;; socks5 代理信息。
 (setq my/socks-host "127.0.0.1")
-(setq my/socks-port 1080) ;; 1080, 13659
-(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port)) ;; socks5h
+(setq my/socks-port 1080)
+(setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
 ;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
 ;; + socks-noproxy: 域名是正则表达式, 如 \\.baidu.com;
@@ -141,13 +132,13 @@
             "--keepalive-time" "60"
             "--keepalive"
             "--max-time" "300"
-            ;;防止 POST 超过 1024 Bytes 时发送 Expect: 100-continue 导致 1s 延迟。
+            ;;防止 POST 超过 1024 Bytes 时发送 `Expect: 100-continue` 导致 1s 延迟。
             "-H" "Expect: ''"
             ;;"-u" ,github-auth
             "--user-agent" ,my/user-agent
             ))))
 
-;; 开启 socks5 代理
+;; 开启 socks5 代理。
 (defun proxy-socks-enable ()
   (interactive)
   (require 'socks)
@@ -162,7 +153,7 @@
   (setenv "HTTPS_PROXY" nil)
   (advice-add 'url-http :around 'mb-url-http-around-advice))
 
-;; 关闭 socks5 代理
+;; 关闭 socks5 代理。
 (defun proxy-socks-disable ()
   (interactive)
   (require 'socks)
@@ -170,7 +161,7 @@
   (setenv "all_proxy" "")
   (setenv "ALL_PROXY" ""))
 
-;; 默认开启 socks5 代理
+;; 默认启动时开启 socks5 代理。
 (proxy-socks-enable)
 
 (when (memq window-system '(mac ns x))
@@ -187,11 +178,13 @@
 ;; 显示行号。
 (global-display-line-numbers-mode t)
 
-;; 光标和字符宽度一致（如 TAB)
-;;(setq x-stretch-cursor t)
+;; 设置光标样式。
+(setq-default cursor-type 'bar)
 
-;; frame 边角样式
-;; square corner: undecorated, round corner: undecorated-round
+;; 光标和字符宽度一致（如 TAB)。
+(setq x-stretch-cursor t)
+
+;; frame 边角样式：undecorated, round corner: undecorated-round
 (add-to-list 'default-frame-alist '(undecorated . t)) 
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(selected-frame) 'name nil)
@@ -212,7 +205,7 @@
 
 (setq switch-to-buffer-obey-display-actions t)
 
-;; 在 frame 底部显示窗口:
+;; 在 frame 底部显示的窗口列表。
 (add-to-list
  'display-buffer-alist
  `((,(regexp-opt
@@ -240,26 +233,15 @@
 ;; 启动后显示模式，加 t 参数让 togg-frame-XX 最后运行，这样才生效：
 (add-hook 'window-setup-hook 'toggle-frame-maximized t) ;; toggle-frame-fullscreen
 
-;; 透明背景
-(defun my/toggle-transparency ()
-  (interactive)
-  ;; 分别为 frame 获得焦点和失去焦点的不透明度。
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90)) 
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
-  (add-to-list 'default-frame-alist '(alpha-background . 90)))
-
 ;; 切换窗口。
-(global-set-key (kbd "s-o") #'other-window)  
+(global-set-key (kbd "s-o") #'other-window)
 
 ;; 像素平滑滚动。
 (pixel-scroll-precision-mode t)
 (setq fast-but-imprecise-scrolling t)
-(setq hscroll-margin 2
-      hscroll-step 1
-      scroll-conservatively 10
+(setq scroll-conservatively 10
       scroll-margin 0
       scroll-preserve-screen-position t
-      auto-window-vscroll nil
       mouse-wheel-scroll-amount '(2 ((shift) . hscroll))
       mouse-wheel-scroll-amount-horizontal 2)
 
@@ -276,7 +258,7 @@
   (setq dashboard-path-max-length 30)
   ;; 显示 org-mode agenda。
   (add-to-list 'dashboard-items '(agenda) t)
-  (setq dashboard-items '((recents . 15) (projects . 8) (agenda . 3))))
+  (setq dashboard-items '((recents . 20) (projects . 8) (agenda . 3))))
 
 ;; 使用 Symbols Nerd Fonts Mono 在 modeline 上显示 icons，需要单独下载和安装该字体。
 (use-package nerd-icons)
@@ -296,20 +278,40 @@
   :config
   (display-battery-mode 0)
   (column-number-mode t)
-  (size-indication-mode t)
   (display-time-mode t)
   (setq display-time-24hr-format t)
   (setq display-time-default-load-average nil)
   (setq display-time-load-average-threshold 20)
   (setq display-time-format "%H:%M ") ;; 默认："%m/%d[%w]%H:%M "
-  (setq display-time-day-and-date t)
   (setq indicate-buffer-boundaries (quote left)))
 
-;; 为 vterm-mode 定义简化的 modeline，避免 vterm buffer 内容过多时更新 modeline 时影响性能。
-(doom-modeline-def-modeline 'my-term-modeline
+;; 为 vterm-mode 定义简化的 modeline，避免 vterm buffer 内容过多时更新 modeline 影响性能。
+(doom-modeline-def-modeline 'my-vterm-modeline
   '(buffer-info) ;; 左侧
   '(misc-info minor-modes input-method)) ;; 右侧
-(add-to-list 'doom-modeline-mode-alist '(vterm-mode . my-term-modeline))
+(add-to-list 'doom-modeline-mode-alist '(vterm-mode . my-vterm-modeline))
+
+(use-package vscode-icon
+  :commands (vscode-icon-for-file))
+
+(use-package dired-sidebar
+  :bind (("s-0" . dired-sidebar-toggle-sidebar))
+  :commands (dired-sidebar-toggle-sidebar)
+  :init
+  (add-hook 'dired-sidebar-mode-hook
+            (lambda ()
+              (unless (file-remote-p default-directory)
+                (auto-revert-mode))))
+  :config
+  (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
+  (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
+  (setq dired-sidebar-subtree-line-prefix "-")
+  (setq dired-sidebar-theme 'vscode) ;;'ascii
+  (setq dired-sidebar-use-term-integration t)
+  (setq dired-sidebar-use-one-instance t)
+  (setq dired-sidebar-use-custom-font t)
+  (setq dired-sidebar-icon-scale 0.1)
+  (setq dired-sidebar-follow-file-idle-delay 0.5))
 
 (use-package fontaine
   :config
@@ -375,8 +377,6 @@
           (6 . (variable-pitch 1.3))
           (7 . (variable-pitch 1.2))
 	  (8 . (variable-pitch 1.1))
-          (agenda-date . (semilight 1.5))
-          (agenda-structure . (variable-pitch light 1.9))
           (t . (variable-pitch 1.1))))
   (setq ef-themes-region '(intense no-extend neutral)))
 
@@ -388,16 +388,6 @@
 (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
 (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
 
-(use-package pulsar
-  :config
-  (setq pulsar-pulse t)
-  (setq pulsar-delay 0.25)
-  (setq pulsar-iterations 5)
-  (setq pulsar-face 'pulsar-magenta)
-  (setq pulsar-highlight-face 'pulsar-yellow)
-  (pulsar-global-mode 1)
-  (add-hook 'next-error-hook #'pulsar-pulse-line-red))
-
 (use-package tab-bar
   :custom
   (tab-bar-close-button-show nil)
@@ -405,10 +395,10 @@
   (tab-bar-history-limit 20)
   (tab-bar-new-tab-choice "*dashboard*")
   (tab-bar-show 1)
-  ;; 使用 super + N 来切换 tab。
+  ;; 使用 super + N 切换 tab。
   (tab-bar-select-tab-modifiers "super")
   :config
-  ;; 去掉最左侧的 < 和 >
+  ;; 去掉最左侧的 < 和 > 。
   (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
   ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
   (tab-bar-history-mode t)
@@ -418,7 +408,6 @@
   (keymap-global-set "s-n" 'tab-bar-switch-to-next-tab)
   (keymap-global-set "s-p" 'tab-bar-switch-to-prev-tab)
   (keymap-global-set "s-w" 'tab-bar-close-tab)
-  (global-set-key (kbd "s-0") 'tab-bar-close-tab)
 
   ;; 为 tab 添加序号，用于快速切换。
   (defvar ct/circle-numbers-alist
@@ -529,10 +518,7 @@
 
 (use-package vertico
   :config
-  (require 'vertico-directory) 
-  (setq vertico-count 25)
-  ;; 默认不选中任何候选者，避免不必要的预览。
-  ;;(setq vertico-preselect 'prompt)
+  (setq vertico-count 15)
   (vertico-mode 1)
   (define-key vertico-map (kbd "<backspace>") #'vertico-directory-delete-char)
   (define-key vertico-map (kbd "RET") #'vertico-directory-enter))
@@ -551,8 +537,8 @@
   :init
   (global-corfu-mode 1)
   (corfu-popupinfo-mode 1) ;; 显示候选者文档。
-  ;; 滚动显示 corfu-popupinfo 内容的快捷键。
   :bind
+  ;; 滚动显示 corfu-popupinfo 内容的快捷键。
   (:map corfu-popupinfo-map
         ("C-M-j" . corfu-popupinfo-scroll-up)
         ("C-M-k" . corfu-popupinfo-scroll-down))
@@ -579,8 +565,7 @@
   (add-hook 'eshell-mode-hook
             (lambda ()
               (setq-local corfu-auto nil)
-              (corfu-mode)))
-  )
+              (corfu-mode))))
 
 ;; 记录 minibuffer 和 corfu 补全历史，后续显示候选者时按照频率排序。
 (use-package savehist
@@ -650,38 +635,13 @@
           (variable (styles +orderless-with-initialism))
           (symbol (styles +orderless-with-initialism))
           ;; eglot will change the completion-category-defaults to flex, BAD!
-          ;; https://github.com/minad/corfu/issues/136#issuecomment-1052843656 
-          (eglot (styles . (orderless basic))) ;;使用 M-SPC 来分隔光标处的多个筛选条件。
+          ;; https://github.com/minad/corfu/issues/136#issuecomment-eglot 
+          (1052843656 (styles . (orderless basic))) ;;使用 M-SPC 来分隔光标处的多个筛选条件。
           (eglot-capf (styles . (orderless basic)))
-	  )) 
+	  ))
+  
   ;; 使用 SPACE 来分割过滤字符串。
   (setq orderless-component-separator #'orderless-escapable-split-on-space))
-
-(use-package cape
-  :init
-  ;; completion-at-point 使用的函数列表，注意顺序。
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-elisp-block)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-history)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  :config
-  (setq dabbrev-check-other-buffers nil
-        dabbrev-check-all-buffers nil
-        cape-dabbrev-min-length 3)
-  ;; 前缀长度达到 3 时才调用 CAPF，避免频繁调用自动补全。
-  (cape-wrap-prefix-length #'cape-dabbrev 3)
-  ;; 持续刷新候选者(适用于 eglot server 一次没有返回所有候选者情况).
-  ;; profiling 显示影响性能，暂时关闭。
-  ;;(advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
-  )
 
 (use-package consult
   :hook
@@ -691,16 +651,14 @@
   (setq consult-async-min-input 3)
   ;; 从头开始搜索（而非前位置）。
   (setq consult-line-start-from-top t)
+  ;; 寄存器预览。
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
-  
-  ;; 不搜索 go vendor 目录。
-  (setq consult-ripgrep-args
-        "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip -g !vendor/")
   :config
+  ;; 不搜索 go vendor 目录。
+  (setq consult-ripgrep-args (concat consult-ripgrep-args " -g !vendor/"))
   ;; 按 C-l 才激活预览，否则 Buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key "C-l")
-  (setq completion-in-region-function #'consult-completion-in-region)
   ;; 不对 consult-line 结果进行排序（按行号排序）。
   (consult-customize consult-line :prompt "Search: " :sort nil)
   ;; Buffer 列表中不显示的 Buffer 名称。
@@ -733,45 +691,63 @@
 
 ;; 显示 mode 相关的命令。
 (global-set-key (kbd "C-c M-x") #'consult-mode-command)
+
 ;; 搜索 Emacs 各 package/mode 的 info 和 man 文档。
 (global-set-key (kbd "C-c i") #'consult-info)
 (global-set-key (kbd "C-c m") #'consult-man)
+
 ;; 使用 savehist 持久化保存的 minibuffer 历史。
-(global-set-key (kbd "C-M-;") #'consult-complex-command) 
+(global-set-key (kbd "C-M-;") #'consult-complex-command)
+
+;; consult-buffer 显示的 File 列表来源于变量 recentf-list。
 (global-set-key (kbd "C-x b") #'consult-buffer)
 (global-set-key (kbd "C-x 4 b") #'consult-buffer-other-window)
 (global-set-key (kbd "C-x 5 b") #'consult-buffer-other-frame)
 (global-set-key (kbd "C-x r b") #'consult-bookmark)
 (global-set-key (kbd "C-x p b") #'consult-project-buffer)
+
 (global-set-key (kbd "M-y") #'consult-yank-pop)
 (global-set-key (kbd "M-Y") #'consult-yank-from-kill-ring)
+
 (global-set-key (kbd "M-g g") #'consult-goto-line)
 (global-set-key (kbd "M-g o") #'consult-outline)
+
 ;; 寄存器，保存 point、file、window、frame 的位置。
 (global-set-key (kbd "C-'") #'consult-register-store)
 (global-set-key (kbd "C-M-'") #'consult-register)
+
 ;; 显示编译错误列表。
 (global-set-key (kbd "M-g e") #'consult-compile-error)
 ;; 显示 flymake 诊断错误列表。
 (global-set-key (kbd "M-g f") #'consult-flymake)
+
 ;; consult-buffer 默认已包含 recent file。
 ;;(global-set-key (kbd "M-g r") #'consult-recent-file)
+
 (global-set-key (kbd "M-g m") #'consult-mark)
 (global-set-key (kbd "M-g k") #'consult-global-mark)
+
+;; 预览当前 buffer 的 imenu。
 (global-set-key (kbd "M-g i") #'consult-imenu)
+;; 预览当前 project 打开的所有 buffer 的 imenu。
 (global-set-key (kbd "M-g I") #'consult-imenu-multi)
+
 ;; 搜索文件内容。
 (global-set-key (kbd "M-s g") #'consult-grep)
 (global-set-key (kbd "M-s G") #'consult-git-grep)
 (global-set-key (kbd "M-s r") #'consult-ripgrep) 
+
 ;; 搜索文件名（正则匹配）。
 (global-set-key (kbd "M-s d") #'consult-find)
 (global-set-key (kbd "M-s D") #'consult-locate)
+
+;; 搜索当前 buffer
 (global-set-key (kbd "M-s l") #'consult-line)
 (global-set-key (kbd "M-s M-l") #'consult-line)
-;; Search dynamically across multiple buffers. By default search across project buffers. If
-;; invoked with a prefix argument search across all buffers.
+;; 搜索多个 buffer，默认为 project 的多个 buffers。
+;; 如果使用前缀参数，则搜索所有 buffers。
 (global-set-key (kbd "M-s L") #'consult-line-multi)
+
 ;; Isearch 集成。
 (global-set-key (kbd "M-s e") #'consult-isearch-history)
 ;;:map isearch-mode-map
@@ -779,6 +755,7 @@
 (define-key isearch-mode-map (kbd "M-s e") #'consult-isearch-history)
 (define-key isearch-mode-map (kbd "M-s l") #'consult-line)
 (define-key isearch-mode-map (kbd "M-s L") #'consult-line-multi)
+
 ;; Minibuffer 历史。
 ;;:map minibuffer-local-map)
 (define-key minibuffer-local-map (kbd "M-s") #'consult-history)
@@ -826,19 +803,22 @@
   :config
   (setq
    org-ellipsis "..." ;; " ⭍"
+   
    ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符， M-x org-entities-help 查看所有特殊字符。
    org-pretty-entities t
    org-highlight-latex-and-related '(latex)
+   
    ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
    org-export-with-latex 'verbatim
    org-export-with-broken-links 'mark
-   ;; export 时不处理 super/subscripting, 等效于 #+OPTIONS: ^:nil 。
+   ;; export 时不处理 super/sub scripting, 等效于 #+OPTIONS: ^:nil 。
    org-export-with-sub-superscripts nil
-   org-export-default-language "zh-CN" ;; 默认是 en
+   org-export-default-language "zh-CN"
    org-export-coding-system 'utf-8
 
    ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
    org-use-sub-superscripts nil
+   
    ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
    org-link-file-path-type 'relative
    org-html-validation-link nil
@@ -868,9 +848,10 @@
    ;; TODO 状态更新时记录 note.
    org-log-done 'note ;; note, time
 
-   ;; 不在线显示图片，手动点击显示更容易控制大小。
+   ;; 不显示图片（手动点击显示更容易控制大小）。
    org-startup-with-inline-images nil
    org-startup-folded 'content
+   org-cycle-inline-images-display nil
    
    ;; 如果对 headline 编号则 latext 输出时会导致 toc 缺失，故关闭。
    org-startup-numerated nil
@@ -878,27 +859,34 @@
 
    ;; 先从 #+ATTR.* 获取宽度，如果没有设置则默认为 300 。
    org-image-actual-width '(300)
-   org-cycle-inline-images-display nil
 
    ;; org-timer 到期时发送声音提示。
-   org-clock-sound t)
+   org-clock-sound t
+   ;; 关闭容易误按的 archive 命令。
+   org-archive-default-command nil
 
-  ;; 关闭容易误按的 archive 命令。
-  (setq org-archive-default-command nil)
-  ;; 不自动对齐 tag。
-  (setq org-tags-column 0)
-  (setq org-auto-align-tags nil)
-  ;; 显示不可见的编辑。
-  (setq org-catch-invisible-edits 'show-and-error)
-  (setq org-fold-catch-invisible-edits t)
-  (setq org-special-ctrl-a/e t)
-  (setq org-insert-heading-respect-content t)
-  ;; 支持 ID property 作为 internal link target(默认是 CUSTOM_ID property)
-  (setq org-id-link-to-org-use-id t)
-  (setq org-M-RET-may-split-line nil)
-  (setq org-todo-keywords
-        '((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
-          (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)")))
+   ;; 不自动对齐 tag。
+   org-tags-column 0
+   org-auto-align-tags nil
+
+   ;; 显示不可见的编辑。
+   org-catch-invisible-edits 'show-and-error
+   org-fold-catch-invisible-edits t
+
+   ;; 支持 ID property 作为 internal link target(默认是 CUSTOM_ID property)
+   org-id-link-to-org-use-id t
+   org-M-RET-may-split-line nil
+
+   ;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
+   org-element-use-cache nil
+
+   org-todo-keywords
+   '((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
+     (sequence "WAITING(w@/!)" "NEXT(n!/!)" "SOMEDAY(S)" "|" "CANCELLED(c@/!)"))
+
+   org-special-ctrl-a/e t
+   org-insert-heading-respect-content t)
+  
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0))))
 
@@ -907,8 +895,10 @@
 (global-set-key (kbd "C-c c") #'org-capture)
 (global-set-key (kbd "C-c b") #'org-switchb)
 
-;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
-(setq org-element-use-cache nil)
+;; 关闭 org-mode 的 C-c C-j 快捷键, 与 journal 冲突.
+(define-key org-mode-map (kbd "C-c C-j") nil) 
+;; 关闭 org-mode 的 C-' 对应的 org-cycle-agenda-files 命令, 与 consult-register-store 冲突.
+(define-key org-mode-map (kbd "C-'") nil) 
 
 ;; 光标位于 src block 中执行 C-c C-f 时自动格式化 block 中代码。
 (defun my/format-src-block ()
@@ -930,6 +920,55 @@
 (dolist (dir '("~/docs/org" "~/docs/org/journal"))
   (unless (file-directory-p dir)
     (make-directory dir)))
+
+;; 关闭 C-c C-c 触发执行代码.
+(setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
+
+;; 确认执行代码的操作。
+(setq org-confirm-babel-evaluate t)
+
+;; 使用语言的 mode 来格式化代码.
+(setq org-src-fontify-natively t)
+
+;; 使用各语言的 Major Mode 来编辑 src block。
+(setq org-src-tab-acts-natively t)
+
+;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，
+;; 否则编辑 yaml src block 时提示找不到 yaml-mode。
+(add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
+(add-to-list 'org-src-lang-modes '("cue" . cue))
+
+(require 'org)
+;; org bable 完整支持的语言列表（ob- 开头的文件）：
+;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语言，可以通过
+;; use-pacakge 来安装。
+(use-package ob-go)
+(use-package ob-rust)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((shell . t)
+   (js . t)
+   (makefile . t)
+   (go . t)
+   (emacs-lisp . t)
+   (rust . t)
+   (python . t)
+   (C . t) ;; 支持 C/C++/D
+   (java . t)
+   (awk . t)
+   (css . t)))
+
+(use-package org-contrib)
+
+(use-package olivetti
+  :config
+  ;; 内容区域宽度，超过后自动折行。
+  (setq-default olivetti-body-width 110)
+  (add-hook 'org-mode-hook 'olivetti-mode))
+;; fill-column 值要小于 olivetti-body-width 才能正常折行。
+(setq-default fill-column 98)
+;; 由于 auto-fill 可能会打乱代码的字符串和注释，故为 prog-mode 关闭 auto-fill。
+(add-hook 'text-mode-hook 'turn-on-auto-fill)
 
 (use-package org-modern
   :after (org)
@@ -961,7 +1000,7 @@
 
 (use-package org-download
   :config
-  ;; 保存路径包含 /static/ 时, ox-hugo 在导出时保留后面的目录层次.
+  ;; 保存路径包含 /static/ 时, ox-hugo 在导出时保留后面的目录层次。
   (setq-default org-download-image-dir "./static/images/")
   (setq org-download-method 'directory
         org-download-display-inline-images 'posframe
@@ -973,49 +1012,12 @@
   ;; 不添加 #+DOWNLOADED: 注释。
   (setq org-download-annotate-function (lambda (link) (previous-line 1) "")))
 
-;; 关闭 C-c C-c 触发执行代码.
-;;(setq org-babel-no-eval-on-ctrl-c-ctrl-c t)
-
-;; 关闭确认执行代码的操作.
-(setq org-confirm-babel-evaluate nil)
-;; 使用语言的 mode 来格式化代码.
-(setq org-src-fontify-natively t)
-;; 使用各语言的 Major Mode 来编辑 src block。
-(setq org-src-tab-acts-natively t)
-
-;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，
-;; 否则编辑 yaml src block 时提示找不到 yaml-mode。
-(add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
-(add-to-list 'org-src-lang-modes '("cue" . cue))
-
-(require 'org)
-;; org bable 完整支持的语言列表（ob- 开头的文件）：
-;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语言，可以通过
-;; use-pacakge 来安装。
-(use-package ob-go)
-(use-package ob-rust)
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((shell . t)
-   (js . t)
-   (makefile . t)
-   (go . t)
-   (emacs-lisp . t)
-   (rust . t)
-   (python . t)
-   (C . t) ;; provide C, C++, and D
-   (java . t)
-   (awk . t)
-   (css . t)))
-
-(use-package org-contrib)
-
 ;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中， Emacs 执行 xelatex 命令时使用。
 (setq my-tex-path "/Library/TeX/texbin")
 (setenv "PATH" (concat my-tex-path ":" (getenv "PATH")))
 (setq exec-path (cons my-tex-path  exec-path))
 
-;; engrave-faces 相比 minted 渲染速度更快。
+;; engrave-faces 比 minted 渲染速度更快。
 (use-package engrave-faces
   :after ox-latex
   :config
@@ -1033,17 +1035,19 @@
   )
 (add-hook 'org-export-before-processing-functions #'my/export-pdf)
 
-;; ox- 为 org-mode 的导出后端。
+;; ox- 为 org-mode 的导出后端包的惯例前缀。
+
 ;;(use-package ox-reveal) ;; reveal.js
 (use-package ox-gfm :defer t) ;; github flavor markdown
+
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
   (setq org-latex-image-default-width "0.7\\linewidth")
   ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
-  ;; 不保存 LaTeX 日志文件（调试时打开）。
-  (setq org-latex-remove-logfiles nil)
+  ;; 不保存 LaTeX 日志文件（调试时设置为 nil）。
+  (setq org-latex-remove-logfiles t)
   ;; 使用支持中文的 xelatex。
   (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
   (add-to-list 'org-latex-classes
@@ -1060,21 +1064,6 @@
 
 ;; org export html 格式时需要 htmlize.el 包来格式化代码。
 (use-package htmlize)
-
-;; 使用 imagemagick 而非默认的 dvipng 来生成 M-x org-latex-preview 在线显式的图片。dvipng 总是报错。
-;; 参考：https://orgmode.org/worg/org-tutorials/org-latex-preview.html
-(setq latex-run-command "xelatex")
-(setq org-latex-create-formula-image-program 'imagemagick)
-
-(use-package olivetti
-  :config
-  ;; 内容区域宽度，超过后自动折行。
-  (setq-default olivetti-body-width 110)
-  (add-hook 'org-mode-hook 'olivetti-mode))
-;; fill-column 值要小于 olivetti-body-width 才能正常折行。
-(setq-default fill-column 98)
-;; 由于 auto-fill 可能会打乱代码的字符串和注释，故为 prog-mode 关闭 auto-fill。
-(add-hook 'text-mode-hook 'turn-on-auto-fill)
 
 (use-package dslide
   :vc(:url "https://github.com/positron-solutions/dslide.git")
@@ -1110,17 +1099,6 @@
   (define-key org-mode-map (kbd "<f8>") #'dslide-deck-start)
   (define-key dslide-mode-map (kbd "<f9>") #'dslide-deck-stop))
 
-(require 'org-protocol)
-(require 'org-capture)
-
-(setq org-capture-templates
-      '(("c" "Capture" entry (file+headline "~/docs/org/capture.org" "Capture")
-         "* %^{Title}\nDate: %U\nSource: %:annotation\nQuote:\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\n\n"
-	 :empty-lines 1)
-        ("t" "Todo" entry (file+headline "~/docs/org/todo.org" "Tasks")
-         "* TODO %?\n %U %a\n %i"
-	 :empty-lines 1)))
-
 (use-package org-journal
   :commands org-journal-new-entry
   :bind (("C-c j" . org-journal-new-entry))
@@ -1133,7 +1111,6 @@
   :config
   (define-key org-journal-mode-map (kbd "C-c C-e") #'org-journal-save-entry-and-exit)
   (define-key org-journal-mode-map (kbd "C-c C-j") #'org-journal-new-entry)
-  (define-key org-mode-map (kbd "C-c C-j") nil) ;; 关闭 org-mode 的 C-c C-j 快捷键。
   (global-set-key (kbd "C-c C-j") #'org-journal-new-entry)
 
   ;; 设置日志文件头。
@@ -1165,24 +1142,6 @@
                               (org-set-tags ":carried:"))
                            matcher org--matcher-tags-todo-only))))))
   (setq org-journal-handle-old-carryover 'my-old-carryover))
-
-  ;; org-agenda 集成。
-  ;; automatically adds the current and all future journal entries to the agenda
-  ;;(setq org-journal-enable-agenda-integration t)
-  ;; When org-journal-file-pattern has the default value, this would be the regex.
-  (setq org-agenda-file-regexp "\\`\\\([^.].*\\.org\\\|[0-9]\\\{8\\\}\\\(\\.gpg\\\)?\\\)\\'")
-  (add-to-list 'org-agenda-files org-journal-dir)
-
-  ;; org-capture 集成。
-  (defun org-journal-find-location ()
-    (org-journal-new-entry t)
-    (unless (eq org-journal-file-type 'daily)
-      (org-narrow-to-subtree))
-    (goto-char (point-max)))
-  (setq org-capture-templates
-	(cons '("j" "Journal" plain (function org-journal-find-location)
-		"** %(format-time-string org-journal-time-format)%^{Title}\n%i%?"
-		:jump-to-captured t :immediate-finish t) org-capture-templates))
 
 (use-package ox-hugo
   :demand
@@ -1255,7 +1214,6 @@
      (project-find-file "find file" ?p)
      (consult-ripgrep "rigprep" ?r)
      (vterm-toggle-cd "vterm" ?t)))
-  (compilation-always-kill t)
   (project-vc-merge-submodules nil)
   :config
   ;; project-find-file 忽略的目录或文件列表。
@@ -1305,6 +1263,7 @@
 (advice-add 'project-remember-project :around 'my/project-remember-advice)
 
 (setq vc-follow-symlinks t)
+
 ;; 自动 revert buffer，确保 modeline 上的分支名正确。
 (setq auto-revert-check-vc-info t)
 
@@ -1370,20 +1329,23 @@
   (:map eglot-mode-map ("C-c C-d" . eldoc))
   :config
   (setq eldoc-idle-delay 0.1)
-
-  ;; eldoc 支持多个 document sources, 默认当它们都 Ready 时才显示, 设置为 compose-eagerly 后会显示
-  ;; 先 Ready 的内容.
-  ;;(setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
   
-  ;; 打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 会跟随显示 hover 信息, 如函数签名.
+  ;; 打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 会跟随显示 hover 信息, 如函数签名。
   (setq eldoc-echo-area-prefer-doc-buffer t)
 
+  ;; 在屏幕右侧显示 eldoc-buffer
   (add-to-list 'display-buffer-alist
                '("^\\*eldoc.*\\*"
                  (display-buffer-reuse-window display-buffer-in-side-window)
                  (dedicated . t)
                  (side . right)
                  (inhibit-same-window . t)))
+
+  ;; 将 minibuffer 窗口高度设为 1，可以确保只显示一行（默认为小数，表示 frame 高度占比，会导致显示
+  ;; 多行）。
+  (setq max-mini-window-height 1) 
+  ;; 为 nil 时只单行显示 eldoc 信息.
+  (setq eldoc-echo-area-use-multiline-p nil)
 
   ;; 一键显示和关闭 eldoc buffer。
   (global-set-key (kbd "M-`")
@@ -1392,10 +1354,6 @@
                     (if (get-buffer-window "*eldoc*")
 			(delete-window (get-buffer-window "*eldoc*"))
                       (display-buffer "*eldoc*")))))
-
-(setq max-mini-window-height 1) 
-;; 为 nil 时只单行显示 eldoc 信息.
-(setq eldoc-echo-area-use-multiline-p nil)
 
 (use-package eglot
   :demand
@@ -1407,7 +1365,6 @@
     (setq eldoc-documentation-functions
           (cons #'flymake-eldoc-function
                 (remove #'flymake-eldoc-function eldoc-documentation-functions)))
-    ;; (setq eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
     )
   :hook ((eglot-managed-mode . my/eglot-eldoc))
   :bind
@@ -1433,7 +1390,7 @@
   ;;不给所有 prog-mode 都开启 eglot，否则当它没有 language server 时 eglot 报错。
   ;;
   ;;由于 treesit-auto 已经对 major-mode 做了 remap ，需要对 xx-ts-mode-hook 添加 hook，而不是以前
-  ;;的xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行.
+  ;;的 xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行。
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
@@ -1485,10 +1442,7 @@
       (setq python-interpreter "python3")
       (setq python-shell-interpreter-args "-i"))))
 
-;; 使用 yapf 格式化 python 代码。
-;;(use-package yapfify)
-
-;; 使用内置 python mode.
+;; 使用内置 python mode 和 LSP 来格式化代码（不适用 yapfify）
 (use-package python
   :init
   ;;(setq python-indent-guess-indent-offset t)  
@@ -1496,9 +1450,7 @@
   ;;(setq python-indent-offset 2)
   :hook
   (python-mode . (lambda ()
-                   (my/python-setup-shell)
-                   ;;(yapf-mode)
-		   )))
+                   (my/python-setup-shell))))
 
 (add-to-list 'eglot-server-programs
              '((python-mode python-ts-mode)
@@ -1561,7 +1513,7 @@
 
 (use-package go-impl)
 
-;; 自动为 struct field 添加 json tag.
+;; 自动为 struct field 添加 json tag。
 (use-package go-tag
   :init
   (setq go-tag-args (list "-transform" "camelcase"))
@@ -1997,30 +1949,6 @@ mermaid.initialize({
 (define-key eshell-hist-mode-map (kbd "M-r") nil)
 (define-key eshell-hist-mode-map (kbd "M-s") nil)
 
-(use-package vscode-icon
-  :ensure t
-  :commands (vscode-icon-for-file))
-
-(use-package dired-sidebar
-  :bind (("s-0" . dired-sidebar-toggle-sidebar))
-  :ensure t
-  :commands (dired-sidebar-toggle-sidebar)
-  :init
-  (add-hook 'dired-sidebar-mode-hook
-            (lambda ()
-              (unless (file-remote-p default-directory)
-                (auto-revert-mode))))
-  :config
-  (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
-  (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
-  (setq dired-sidebar-subtree-line-prefix "-")
-  (setq dired-sidebar-theme 'vscode) ;;'ascii
-  (setq dired-sidebar-use-term-integration t)
-  (setq dired-sidebar-use-one-instance t)
-  (setq dired-sidebar-use-custom-font t)
-  (setq dired-sidebar-icon-scale 0.1)
-  (setq dired-sidebar-follow-file-idle-delay 1))
-
 ;; 避免 undo-more: No further undo information 报错.
 ;; 10X bump of the undo limits to avoid issues with premature.
 ;; Emacs GC which truncages the undo history very aggresively
@@ -2381,3 +2309,33 @@ mermaid.initialize({
   (global-set-key (kbd "C-c C-d") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
+
+(use-package pdf-tools
+  ;; :ensure-system-package
+  ;; ((pdfinfo . poppler)
+  ;;  (automake . automake)
+  ;;  (mutool . mupdf)
+  ;;  ("/usr/local/opt/zlib" . zlib))
+  :init
+  ;; 使用 scaling 确保中文字体不模糊
+  (setq pdf-view-use-scaling t)
+  (setq pdf-view-use-imagemagick nil)
+  (setq pdf-annot-activate-created-annotations t)
+  (setq pdf-view-resize-factor 1.1)
+  (setq-default pdf-view-display-size 'fit-page)
+  (setq pdf-annot-activate-created-annotations t)
+  :hook
+  ((pdf-view-mode . pdf-view-themed-minor-mode)
+   (pdf-view-mode . pdf-view-auto-slice-minor-mode)
+   (pdf-view-mode . pdf-isearch-minor-mode))
+  :config
+  (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+  ;;(add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1)))
+  (setq pdf-info-epdfinfo-program "/opt/homebrew/bin/epdfinfo")
+  (setenv "PKG_CONFIG_PATH" "/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/pkgconfig:/opt/homebrew/lib/pkgconfig")
+  (pdf-tools-install))
+
+;; pdf 转为 png 时使用更高分辨率（默认 90）。
+(setq doc-view-resolution 144)
+
+;;(use-package org-noter)
