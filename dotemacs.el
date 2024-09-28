@@ -56,8 +56,8 @@
               "C-<wheel-up>"
               "C-M-<wheel-down>"
               "C-M-<wheel-up>"
-              "<down-mouse-1>"
-              "<drag-mouse-1>"
+              ;;"<down-mouse-1>"
+              ;;"<drag-mouse-1>"
               )))
   (dolist (key keys)
     (global-unset-key (kbd key))))
@@ -383,7 +383,7 @@
 (defun my/load-theme (appearance)
   (interactive)
   (pcase appearance
-    ('light (load-theme 'ef-elea-dark t))
+    ('light (load-theme 'ef-light t))
     ('dark (load-theme 'ef-elea-dark t))))
 (add-hook 'ns-system-appearance-change-functions 'my/load-theme)
 (add-hook 'after-init-hook (lambda () (my/load-theme ns-system-appearance)))
@@ -965,6 +965,7 @@
   ;; 内容区域宽度，超过后自动折行。
   (setq-default olivetti-body-width 110)
   (add-hook 'org-mode-hook 'olivetti-mode))
+
 ;; fill-column 值要小于 olivetti-body-width 才能正常折行。
 (setq-default fill-column 98)
 ;; 由于 auto-fill 可能会打乱代码的字符串和注释，故为 prog-mode 关闭 auto-fill。
@@ -1146,7 +1147,7 @@
 (use-package ox-hugo
   :demand
   :config
-  (setq org-hugo-base-dir (expand-file-name "~/blog/local.view"))
+  (setq org-hugo-base-dir (expand-file-name "~/blog/blog.opsnull.com/"))
   (setq org-hugo-section "posts")
   (setq org-hugo-front-matter-format "yaml")
   (setq org-hugo-export-with-section-numbers t)
@@ -1180,6 +1181,9 @@
 (setq c-default-style "linux") 
 (setq tab-width 8)
 
+;; 关闭 electric-indent-mode，而是使用 major-mode 的缩进规则。
+;;(electric-indent-mode 0)
+
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
 
@@ -1192,9 +1196,7 @@
   (setq show-paren-style 'parenthesis) ;; parenthesis, expression
   (set-face-attribute 'show-paren-match nil :weight 'extra-bold))
 
-;; autocomplete paired brackets
 (electric-pair-mode 1)
-;; make electric-pair-mode work on more brackets
 (setq electric-pair-pairs
       '(
         (?\" . ?\")
@@ -1323,38 +1325,6 @@
   (define-key flymake-mode-map (kbd "C-s-n") #'flymake-goto-next-error)
   (define-key flymake-mode-map (kbd "C-s-p") #'flymake-goto-prev-error))
 
-(use-package eldoc
-  :after (eglot)
-  :bind
-  (:map eglot-mode-map ("C-c C-d" . eldoc))
-  :config
-  (setq eldoc-idle-delay 0.1)
-  
-  ;; 打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 会跟随显示 hover 信息, 如函数签名。
-  (setq eldoc-echo-area-prefer-doc-buffer t)
-
-  ;; 在屏幕右侧显示 eldoc-buffer
-  (add-to-list 'display-buffer-alist
-               '("^\\*eldoc.*\\*"
-                 (display-buffer-reuse-window display-buffer-in-side-window)
-                 (dedicated . t)
-                 (side . right)
-                 (inhibit-same-window . t)))
-
-  ;; 将 minibuffer 窗口高度设为 1，可以确保只显示一行（默认为小数，表示 frame 高度占比，会导致显示
-  ;; 多行）。
-  (setq max-mini-window-height 1) 
-  ;; 为 nil 时只单行显示 eldoc 信息.
-  (setq eldoc-echo-area-use-multiline-p nil)
-
-  ;; 一键显示和关闭 eldoc buffer。
-  (global-set-key (kbd "M-`")
-                  (lambda()
-                    (interactive)
-                    (if (get-buffer-window "*eldoc*")
-			(delete-window (get-buffer-window "*eldoc*"))
-                      (display-buffer "*eldoc*")))))
-
 (use-package eglot
   :demand
   :after (flymake)
@@ -1416,11 +1386,79 @@
                              (usePlaceholders . :json-false)
                              ;; gopls 默认设置 GOPROXY=Off, 可能会导致 package 缺失进而引起补全异常.
                              ;; 开启 allowImplicitNetworkAccess 后将关闭 GOPROXY=Off.
-                             ;;(allowImplicitNetworkAccess . t)  
+                             (allowImplicitNetworkAccess . t)  
                              )))))
 
 (use-package consult-eglot
   :after (eglot consult))
+
+(use-package eglot-booster
+  :vc (:url "https://github.com/jdtsmith/eglot-booster")
+  :after (eglot)
+  :config (eglot-booster-mode))
+
+(use-package eldoc
+  :after (eglot)
+  :bind
+  (:map eglot-mode-map ("C-c C-d" . eldoc))
+  :config
+  (setq eldoc-idle-delay 0.1)
+  
+  ;; 打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 会跟随显示 hover 信息, 如函数签名。
+  (setq eldoc-echo-area-prefer-doc-buffer t)
+
+  ;; 在屏幕右侧显示 eldoc-buffer
+  (add-to-list 'display-buffer-alist
+               '("^\\*eldoc.*\\*"
+                 (display-buffer-reuse-window display-buffer-in-side-window)
+                 (dedicated . t)
+                 (side . right)
+                 (inhibit-same-window . t)))
+
+  ;; 将 minibuffer 窗口高度设为 1，可以确保只显示一行（默认为小数，表示 frame 高度占比，会导致显示
+  ;; 多行）。
+  (setq max-mini-window-height 1) 
+  ;; 为 nil 时只单行显示 eldoc 信息.
+  (setq eldoc-echo-area-use-multiline-p nil)
+
+  ;; 一键显示和关闭 eldoc buffer。
+  (global-set-key (kbd "M-`")
+                  (lambda()
+                    (interactive)
+                    (if (get-buffer-window "*eldoc*")
+			(delete-window (get-buffer-window "*eldoc*"))
+                      (display-buffer "*eldoc*")))))
+
+(use-package eldoc-box
+  :after (eglot eldoc)
+  :bind
+  (:map eglot-mode-map
+        ("C-M-k" . (lambda () (interactive) (scroll-eldoc-box-frame ?u)))
+        ("C-M-j" . (lambda () (interactive) (scroll-eldoc-box-frame ?d)))
+	("C-c C-d" . eldoc-box-help-at-point) ;; 按需弹出 posframe 来显示 eldoc buffer 内容。
+	)
+
+  :config
+  (setq eldoc-box-max-pixel-height 600)
+  (setq eldoc-box-max-pixel-width 1200)
+
+  ;; C-g 关闭弹出的 child frame。
+  (setq eldoc-box-clear-with-C-g t)
+
+  ;; 滚动显示 *eldoc-doc* child frame 中的内容。
+  (defun scroll-eldoc-box-frame (direction)
+    (interactive "cScroll direction (u for up, d for down): ")
+    (let ((frame (get-buffer-window " *eldoc-box*" t)))
+      (when frame
+	(with-selected-window frame
+          (cond ((eq direction ?u) (scroll-down-line))
+		((eq direction ?d) (scroll-up-line)))))))
+
+  ;; 在右上角显示 eldoc 帮助；
+  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
+  ;; 在光标位置显示 eldoc 帮助；
+  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
+  )
 
 ;; 将 ~/.venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
 (setq my-venv-path "/Users/alizj/.venv/bin")
@@ -1555,49 +1593,55 @@
   (add-hook 'rust-ts-mode-hook (lambda () (setq indent-tabs-mode nil)))
 
   ;; 参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
-  (add-to-list 'eglot-server-programs
-               '((rust-ts-mode rust-mode) .
-                 ("rust-analyzer"
-                  :initializationOptions
-                  (
-		   ;; 20240910 不能关闭 checkOnSave，否则 flymake diagnose 可能不生效。
-		   ;;:checkOnSave :json-false
-                   ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.                   
-                   :check (
-                           :command "clippy"
-                           ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std                                  
-                           :allTargets :json-false
-			   ;; 不发送 --workspace 给 cargo check, 只检查当前 package.
-			   ;; 20240910 可能导致基于 workspace 的 标准库 lsp 不生效，故不能设置。
-                           ;;:workspace :json-false
-                           )
-                   ;;:procMacro (:attributes (:enable t) :enable :json-false)
-                   :cargo (
-                           ;;:buildScripts (:enable :json-false)
-                           ;;:extraArgs ["--offline"] ;; 不联网节省时间.
-                           ;;:features "all"
-                           ;;:noDefaultFeatures t
-                           :cfgs (:tokio_unstable "")
-                           ;;:autoreload :json-false
-                           )
-                   :diagnostics (
-				 ;;:enable :json-false
-				 :disabled ["unresolved-proc-macro" "unresolved-macro-call"])
-		   :inlayHints (
-				:bindingModeHints (:enable t)
-				:closureCaptureHints (:enable t)
-				:closureReturnTypeHints (:enable t)
-				:lifetimeElisionHints (:enable t)
-				:expressionAdjustmentHints (:enable t)
-				)
-		   ;; :linkedProjects
-		   ;; [
-		   ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/Cargo.toml",
-		   ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/Cargo.toml",
-		   ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/Cargo.toml",
-		   ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/test/Cargo.toml"
-		   ;;  ]
-		   )))))
+  (add-to-list
+   'eglot-server-programs
+   '((rust-ts-mode rust-mode) .
+     ("rust-analyzer"
+      :initializationOptions
+      (
+       ;; 20240910 不能关闭 checkOnSave，否则 flymake diagnose 可能不生效。
+       ;;:checkOnSave :json-false
+       ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.                   
+       :check
+       (
+        :command "clippy"
+        ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std                                  
+        :allTargets :json-false
+	;; 不发送 --workspace 给 cargo check, 只检查当前 package.
+	;; 20240910 可能导致基于 workspace 的 标准库 lsp 不生效，故不能设置。
+        ;;:workspace :json-false
+        )
+       ;;:procMacro (:attributes (:enable t) :enable :json-false)
+       :cargo
+       (
+        ;;:buildScripts (:enable :json-false)
+        ;;:extraArgs ["--offline"] ;; 不联网节省时间.
+        ;;:features "all"
+        ;;:noDefaultFeatures t
+        :cfgs (:tokio_unstable "")
+        ;;:autoreload :json-false
+        )
+       :diagnostics
+       (
+	;;:enable :json-false
+	:disabled ["unresolved-proc-macro" "unresolved-macro-call"]
+	)
+       :inlayHints
+       (
+	:bindingModeHints (:enable t)
+	:closureCaptureHints (:enable t)
+	:closureReturnTypeHints (:enable t)
+	:lifetimeElisionHints (:enable t)
+	:expressionAdjustmentHints (:enable t)
+	)
+       ;; :linkedProjects
+       ;; [
+       ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/Cargo.toml",
+       ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/Cargo.toml",
+       ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/Cargo.toml",
+       ;;  "/Users/alizj/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/test/Cargo.toml"
+       ;;  ]
+       )))))
 
 (use-package rust-playground
   :config
@@ -1614,7 +1658,7 @@ edition = \"2021\"
   :after (eglot rust-mode)
   :vc (:url "https://github.com/nemethf/eglot-x")
   :init
-  (require 'rust-ts-mode) ;; 绑定 rust-ts-mode-map 需要.
+  (require 'rust-ts-mode) ;; 绑定 rust-ts-mode-map 需要。
   :config
   (eglot-x-setup))
 
@@ -1789,20 +1833,6 @@ mermaid.initialize({
      (display-buffer-in-side-window compilation-buffer '((side . right) (slot . 1))) t)))
 (global-set-key (kbd "C-c d d") 'my/setup-windows)
 
-(use-package mwim
-  :config
-  (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
-  (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))
-
-(use-package expand-region
-  :config
-  (global-set-key (kbd "C-=") #'er/expand-region))
-
-(defun my/goto-comment-start ()
-  (interactive)
-  (search-forward comment-start))
-(define-key prog-mode-map (kbd "C-c C-;") 'my/goto-comment-start)
-
 (use-package shell-maker)
 (use-package ob-chatgpt-shell :defer t)
 (use-package ob-dall-e-shell :defer t)
@@ -1863,7 +1893,6 @@ mermaid.initialize({
 		  (setq-local show-paren-mode nil)
 		  (setq-local global-hl-line-mode nil)
 	          (display-line-numbers-mode -1) ;; 不显示行号。
-		  ;;(font-lock-mode -1) ;; 不显示字体颜色。
 		  ;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
 		  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
 		  (buffer-face-mode t)))
@@ -1897,12 +1926,12 @@ mermaid.initialize({
   (global-set-key (kbd "C-M-`") 'vterm-toggle-cd)
   (define-key vterm-mode-map (kbd "M-RET") #'vterm-toggle-insert-cd)
   ;; 切换到一个空闲的 vterm buffer 并插入一个 cd 命令，或者创建一个新的 vterm buffer 。
-  (define-key vterm-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
-  (define-key vterm-mode-map (kbd "s-n") 'vterm-toggle-forward)
-  (define-key vterm-mode-map (kbd "s-p") 'vterm-toggle-backward)
-  (define-key vterm-copy-mode-map (kbd "s-i") 'vterm-toggle-cd-show)
-  (define-key vterm-copy-mode-map (kbd "s-n") 'vterm-toggle-forward)
-  (define-key vterm-copy-mode-map (kbd "s-p") 'vterm-toggle-backward))
+  (define-key vterm-mode-map (kbd "M-i") 'vterm-toggle-cd-show)
+  (define-key vterm-mode-map (kbd "M-n") 'vterm-toggle-forward)
+  (define-key vterm-mode-map (kbd "M-p") 'vterm-toggle-backward)
+  (define-key vterm-copy-mode-map (kbd "M-i") 'vterm-toggle-cd-show)
+  (define-key vterm-copy-mode-map (kbd "M-n") 'vterm-toggle-forward)
+  (define-key vterm-copy-mode-map (kbd "M-p") 'vterm-toggle-backward))
 
 (use-package vterm-extra
   :vc (:url "https://github.com/Sbozzolo/vterm-extra")
@@ -1986,9 +2015,6 @@ mermaid.initialize({
   (unless (and (fboundp 'server-running-p)
                (server-running-p))
     (server-start)))
-
-;; 在另一个 panel buffer 中展示按键。
-(use-package command-log-mode :commands command-log-mode)
 
 (use-package hydra :commands defhydra)
 
@@ -2180,6 +2206,15 @@ mermaid.initialize({
            filename
            (file-name-nondirectory new-name))))))))
 (global-set-key (kbd "C-x C-r") 'my/rename-this-buffer-and-file)
+
+(use-package mwim
+  :config
+  (define-key global-map [remap move-beginning-of-line] #'mwim-beginning-of-code-or-line)
+  (define-key global-map [remap move-end-of-line] #'mwim-end-of-code-or-line))
+
+(use-package expand-region
+  :config
+  (global-set-key (kbd "C-=") #'er/expand-region))
 
 (defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
 (if (not (file-exists-p backup-dir))

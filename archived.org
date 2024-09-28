@@ -6558,43 +6558,6 @@ M-l 前缀快捷键：
 在 citre-jump（M-.) 的弹出时 buffer 中可以使用正则语法对候选者进行过滤（orderless 提供的支持）, 例
 如: =something kind:^member$ kind:^macro$ input:.c$=
 
-* eldoc-box
-
-eldoc-box 在 frame 右上角或光标位置显示 eldoc-doc-buffer 的内容. 依赖 markdown-mode 来格式化显示文档
-的内容。
-+ 对于 rust，可以使用 M-x eglot-x-open-external-documentation (C-c d .) 来快速查看光标处的 web 文档，
-  而且文档中的链接都是可点击的。
-#+begin_src emacs-lisp
-(use-package eldoc-box
-  :disabled
-  :after
-  (eglot eldoc)
-  :bind (:map eglot-mode-map
-              ("C-M-k" . scroll-other-window-down)
-              ("C-M-j" . scroll-other-window)
-	      )
-
-  :config
-  ;; 滚动显示 eldoc-box frame 的文档，快捷键与 corfu-popupinfo-map 的设置一致:
-  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window)
-  (add-to-list 'eldoc-box-self-insert-command-list 'scroll-other-window-down)
-
-  (setq eldoc-box-max-pixel-height 400)
-  (setq eldoc-box-max-pixel-width 800)
-
-  ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
-  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
-  )  
-#+end_src
-将 minibuffer窗口最大高度设为 1，可以确保显示一行（默认为小数，表示 frame 高度占比，会导致显示多行）。
-#+begin_src emacs-lisp
-;; 不能设置的小于 0.5，否则影响 eldoc-box hover 不显示。
-(setq eldoc-idle-delay 0.5)
-(setq max-mini-window-height 1) 
-;; 为 nil 时只单行显示 eldoc 信息.
-(setq eldoc-echo-area-use-multiline-p nil)
-#+end_src
-
 * nyan 
 
 nyan：modeline 彩虹猫。
@@ -7161,7 +7124,15 @@ javascript:location.href='org-protocol://capture?template=c'+'&url='+encodeURICo
 
 ;; 使用 yapf 格式化 python 代码。
 ;;(use-package yapfify)
+#+end_src
 
+快速跳转到注释位置（自定义函数）：
+
+#+begin_src emacs-lisp
+(defun my/goto-comment-start ()
+  (interactive)
+  (search-forward comment-start))
+(define-key prog-mode-map (kbd "C-c C-;") 'my/goto-comment-start)
 #+end_src
 
 * cape
