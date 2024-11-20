@@ -6,7 +6,7 @@
 :END:
 #+Title: My Emacs Dotfile
 #+DATE: 2023-08-20 Sun
-#+LASTMOD: 2024-11-20T21:11:08+0800
+#+LASTMOD: 2024-11-20T22:11:21+0800
 #+AUTHOR: 张俊(geekard@qq.com)
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
@@ -343,6 +343,9 @@ Frame 设置：
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(selected-frame) 'name nil)
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
+;; 新建 frame window 的大小。
+(add-to-list 'default-frame-alist '(height . 24))
+(add-to-list 'default-frame-alist '(width . 80))
 
 ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
 (setq ns-pop-up-frames nil)
@@ -1164,7 +1167,7 @@ consult：提供候选者实时过滤和预览等功能：
 (global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
 #+end_src
 
-embark： 为选中的内容提供快捷操作命令：
+embark：为选中的内容提供快捷操作命令：
 
 #+begin_src emacs-lisp
 (use-package embark
@@ -1212,8 +1215,7 @@ marginalia：为候选者提供元数据（如 dired 风格的权限、修改时
    org-pretty-entities t
    org-highlight-latex-and-related '(latex)
 
-   ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出
-   ;; 错。
+   ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
    org-export-with-latex 'verbatim
    org-export-with-broken-links 'mark
    ;; export 时不处理 super/sub scripting, 等效于 #+OPTIONS: ^:nil 。
@@ -1302,8 +1304,7 @@ marginalia：为候选者提供元数据（如 dired 风格的权限、修改时
 
 ;; 关闭 org-mode 的 C-c C-j 快捷键, 与 journal 冲突.
 (define-key org-mode-map (kbd "C-c C-j") nil)
-;; 关闭 org-mode 的 C-' 对应的 org-cycle-agenda-files 命令, 与 consult-register-store
-;; 冲突.
+;; 关闭 org-mode 的 C-' 对应的 org-cycle-agenda-files 命令, 与 consult-register-store 冲突。
 (define-key org-mode-map (kbd "C-'") nil)
 
 ;; 光标位于 src block 中执行 C-c C-f 时自动格式化 block 中代码。
@@ -1343,15 +1344,15 @@ marginalia：为候选者提供元数据（如 dired 风格的权限、修改时
 ;; 使用各语言的 Major Mode 来编辑 src block。
 (setq org-src-tab-acts-natively t)
 
-;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，否
-;; 则编辑 yaml src block 时提示找不到 yaml-mode。
+;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，否则编辑 yaml src
+;; block 时提示找不到 yaml-mode。
 (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
 (add-to-list 'org-src-lang-modes '("cue" . cue))
 
 (require 'org)
 ;; org bable 完整支持的语言列表（ob- 开头的文件）：
-;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语
-;; 言，可以通过 use-pacakge 来安装。
+;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语言，可以通过
+;; use-pacakge 来安装。
 (use-package ob-go)
 (use-package ob-rust)
 (org-babel-do-load-languages
@@ -1381,7 +1382,7 @@ org-mode 内容居中显示：
   (add-hook 'org-mode-hook 'olivetti-mode))
 
 ;; fill-column 值要小于 olivetti-body-width 才能正常折行。
-(setq-default fill-column 85)
+(setq-default fill-column 100)
 
 ;; 由于 auto-fill 可能会打乱代码的字符串和注释，故为 prog-mode/text-mode 等全局关闭 auto-fill。
 ;;(add-hook 'text-mode-hook 'turn-on-auto-fill)
@@ -1420,8 +1421,7 @@ org-modern 和 org-appear 美化：
 #+end_src
 
 org-download：拖拽图片或将剪贴板中图片插入到 org-mode buffer 中（使用 pngpaste 命令）:
-+ 需要编译 Emacs 时指定 =--with-imagemagick= 参数，Emacs 使用 imagemagick 命令来实时转
-  换图片大小。
++ 需要编译 Emacs 时指定 =--with-imagemagick= 参数，Emacs 使用 imagemagick 命令来实时转换图片大小。
 
 #+begin_src emacs-lisp
 (use-package org-download
@@ -1442,8 +1442,7 @@ org-download：拖拽图片或将剪贴板中图片插入到 org-mode buffer 中
 tex 和 PDF 导出：
 
 #+begin_src emacs-lisp
-;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中， Emacs 执行
-;; xelatex 命令时使用。
+;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中，Emacs 执行 xelatex 命令时使用。
 (setq my-tex-path "/Library/TeX/texbin")
 (setenv "PATH" (concat my-tex-path ":" (getenv "PATH")))
 (setq exec-path (cons my-tex-path  exec-path))
@@ -1475,8 +1474,7 @@ tex 和 PDF 导出：
 (with-eval-after-load 'ox-latex
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
   (setq org-latex-image-default-width "0.7\\linewidth")
-  ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添
-  ;; 加 :booktabs t。
+  ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
   ;; 不保存 LaTeX 日志文件（调试时设置为 nil）。
   (setq org-latex-remove-logfiles t)
@@ -1498,8 +1496,8 @@ tex 和 PDF 导出：
 (use-package htmlize)
 #+end_src
 
-自定义导出 PDF 的 LaTeX 样式 mystyle.sty: 对于表格，如果列内容过宽则导出的 PDF 中该列
-的内容会被截断，可以为表格设置如下属性，将超宽列 align 设置为 X 来解决：
+自定义导出 PDF 的 LaTeX 样式 mystyle.sty: 对于表格，如果列内容过宽则导出的 PDF 中该列的内容会被截断，
+可以为表格设置如下属性，将超宽列 align 设置为 X 来解决：
 : #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|l|X
 
 #+begin_src latex :tangle  ~/emacs/mystyle.sty
@@ -1595,8 +1593,8 @@ tex 和 PDF 导出：
 % 列表
 \usepackage[shortlabels,inline]{enumitem}
 \setlist{nolistsep}
-% xeCJK 默认会把黑点用汉字显示，而 Noto 没有这个字体，所以显示效果为一个小点。解决办
-% 法是将它设置为 \bullet, 这样显示为实心黑点。Windows 带的楷体、仿宋没有这个问题。
+% xeCJK 默认会把黑点用汉字显示，而 Noto 没有这个字体，所以显示效果为一个小点。解决办法是将它设置为
+% \bullet, 这样显示为实心黑点。Windows 带的楷体、仿宋没有这个问题。
 \setlist[itemize]{label=$\bullet$}
 % 或者：
 %\renewcommand\labelitemi{\ensuremath{\bullet}}
@@ -2497,8 +2495,12 @@ cargo install cargo-information
 (setq exec-path (cons my-cargo-path  exec-path))
 
 ;; https://github.com/mozilla/sccache?tab=readme-ov-file
+
 ;; cargo install sccache --locked
-(setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
+;;(setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
+
+;; brew install sccache
+(setenv "RUSTC_WRAPPER" "/opt/homebrew/bin/sccache")
 #+end_src
 
 配置 rust-mode:
@@ -3083,6 +3085,9 @@ citre-xref-backend, 而且位于列表的开始，这样 xref 先使用 citre-xr
 
 * gptel
 
+在 ~/.authinfo.gpg 中添加 api.openai.com key，然后使用本地 socks5h 代理访问 API。
++ azure 各 region 的访问速度测试：https://www.azurespeed.com/Azure/Latency
+
 #+begin_src emacs-lisp
 (use-package gptel
   :ensure t
@@ -3094,69 +3099,10 @@ citre-xref-backend, 而且位于列表的开始，这样 xref 先使用 citre-xr
    (gptel-make-azure "Azure"         
      :protocol "https"
      :host "westus3ai.openai.azure.com"
-     :endpoint "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview" ;or equivalent
+     :endpoint "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview"
      :stream t        
      :key #'gptel-api-key
-     :models '(gpt-4o))
-   ))
-#+end_src
-
-在 ~/.authinfo.gpg 中添加 api.openai.com key，然后使用本地 socks5h 代理访问 API。
-+ azure 各 region 的访问速度测试：https://www.azurespeed.com/Azure/Latency
-+ 切换 prompt：M-x chatgpt-shell-swap-system-prompt
-
-#+begin_src emacs-lisp
-;; (use-package shell-maker)
-;; (use-package ob-chatgpt-shell :defer t)
-;; (use-package ob-dall-e-shell :defer t)
-;; (use-package chatgpt-shell
-;;   :requires shell-maker
-;;   :defer t
-;;   :config
-;;   (setq chatgpt-shell-model-version "gpt-4o")
-;;   (setq chatgpt-shell-model-temperature 0.7)
-;;   (setq chatgpt-shell-request-timeout 300)
-;;   (setq chatgpt-shell-highlight-blocks t)
-;;   (setq chatgpt-shell-insert-queries-inline t)
-;;   (setq chatgpt-shell-chatgpt-streaming t)
-;;   (setq chatgpt-shell-system-prompt 2) ;; 默认使用 Programming prompt
-
-;;   ;; (setq chatgpt-shell-system-prompts
-;;   ;;   `(("tl;dr" . "Be as succint but informative as possible and respond in tl;dr form to my queries")
-;;   ;;     ("General" . "You use org-mode format to structure responses. Always show code snippets in org-mode source code block format.")
-;;   ;;     ;; Based on https://github.com/benjamin-asdf/dotfiles/blob/8fd18ff6bd2a1ed2379e53e26282f01dcc397e44/mememacs/.emacs-mememacs.d/init.el#L768
-;;   ;;     ("Programming" . ,(chatgpt-shell--append-system-info
-;;   ;; 			 "The user is a programmer with very limited time.
-;;   ;;                       You treat their time as precious. You do not repeat obvious things, including their query.
-;;   ;;                       You are as concise as possible in responses.
-;;   ;;                       You never apologize for confusions because it would waste their time.
-;;   ;;                       You use emacs org-mode format to structure responses.
-;;   ;;                       Always show code snippets in org-mode source code block format.
-;;   ;;                       Don't explain code snippets.
-;;   ;;                       Whenever you output updated code for the user, only show diffs, instead of entire snippets."))
-;;   ;;     ("Positive Programming" . ,(chatgpt-shell--append-system-info
-;;   ;;                                 "Your goal is to help the user become an amazing computer programmer.
-;;   ;;                       You are positive and encouraging.
-;;   ;;                       You love see them learn.
-;;   ;;                       You do not repeat obvious things, including their query.
-;;   ;;                       You are as concise in responses. You always guide the user go one level deeper and help them see patterns.
-;;   ;;                       You never apologize for confusions because it would waste their time.
-;;   ;;                       You use markdown liberally to structure responses. Always show code snippets in markdown blocks with language labels.
-;;   ;;                       Don't explain code snippets. Whenever you output updated code for the user, only show diffs, instead of entire snippets."))))
-
-;;   (require 'ob-chatgpt-shell)
-;;   (ob-chatgpt-shell-setup)
-;;   (require 'ob-dall-e-shell)
-;;   (ob-dall-e-shell-setup)
-;;   ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-;;   (setq chatgpt-shell-api-url-base "https://westus3ai.openai.azure.com")
-;;   (setq chatgpt-shell-api-url-path  "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview")
-;;   (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))
-;;   ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
-;;   (setq chatgpt-shell-auth-header
-;; 	(lambda ()
-;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))))
-;;   )
+     :models '(gpt-4o))))
 #+end_src
 
 * 终端

@@ -189,6 +189,9 @@
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(selected-frame) 'name nil)
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
+;; 新建 frame window 的大小。
+(add-to-list 'default-frame-alist '(height . 24))
+(add-to-list 'default-frame-alist '(width . 80))
 
 ;; 不在新 frame 打开文件（如 Finder 的 "Open with Emacs") 。
 (setq ns-pop-up-frames nil)
@@ -815,8 +818,7 @@
    org-pretty-entities t
    org-highlight-latex-and-related '(latex)
 
-   ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出
-   ;; 错。
+   ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
    org-export-with-latex 'verbatim
    org-export-with-broken-links 'mark
    ;; export 时不处理 super/sub scripting, 等效于 #+OPTIONS: ^:nil 。
@@ -905,8 +907,7 @@
 
 ;; 关闭 org-mode 的 C-c C-j 快捷键, 与 journal 冲突.
 (define-key org-mode-map (kbd "C-c C-j") nil)
-;; 关闭 org-mode 的 C-' 对应的 org-cycle-agenda-files 命令, 与 consult-register-store
-;; 冲突.
+;; 关闭 org-mode 的 C-' 对应的 org-cycle-agenda-files 命令, 与 consult-register-store 冲突。
 (define-key org-mode-map (kbd "C-'") nil)
 
 ;; 光标位于 src block 中执行 C-c C-f 时自动格式化 block 中代码。
@@ -942,15 +943,15 @@
 ;; 使用各语言的 Major Mode 来编辑 src block。
 (setq org-src-tab-acts-natively t)
 
-;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，否
-;; 则编辑 yaml src block 时提示找不到 yaml-mode。
+;; yaml 从外部的 yaml-mode 切换到内置的 yaml-ts-mode，告诉 babel 使用该内置 mode，否则编辑 yaml src
+;; block 时提示找不到 yaml-mode。
 (add-to-list 'org-src-lang-modes '("yaml" . yaml-ts))
 (add-to-list 'org-src-lang-modes '("cue" . cue))
 
 (require 'org)
 ;; org bable 完整支持的语言列表（ob- 开头的文件）：
-;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语
-;; 言，可以通过 use-pacakge 来安装。
+;; https://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp 对于官方不支持的语言，可以通过
+;; use-pacakge 来安装。
 (use-package ob-go)
 (use-package ob-rust)
 (org-babel-do-load-languages
@@ -976,7 +977,7 @@
   (add-hook 'org-mode-hook 'olivetti-mode))
 
 ;; fill-column 值要小于 olivetti-body-width 才能正常折行。
-(setq-default fill-column 85)
+(setq-default fill-column 100)
 
 ;; 由于 auto-fill 可能会打乱代码的字符串和注释，故为 prog-mode/text-mode 等全局关闭 auto-fill。
 ;;(add-hook 'text-mode-hook 'turn-on-auto-fill)
@@ -1606,8 +1607,12 @@
 (setq exec-path (cons my-cargo-path  exec-path))
 
 ;; https://github.com/mozilla/sccache?tab=readme-ov-file
+
 ;; cargo install sccache --locked
-(setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
+;;(setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
+
+;; brew install sccache
+(setenv "RUSTC_WRAPPER" "/opt/homebrew/bin/sccache")
 
 ;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
 (use-package rust-mode
@@ -1922,63 +1927,10 @@ mermaid.initialize({
    (gptel-make-azure "Azure"         
      :protocol "https"
      :host "westus3ai.openai.azure.com"
-     :endpoint "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview" ;or equivalent
+     :endpoint "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview"
      :stream t        
      :key #'gptel-api-key
-     :models '(gpt-4o))
-   ))
-
-;; (use-package shell-maker)
-;; (use-package ob-chatgpt-shell :defer t)
-;; (use-package ob-dall-e-shell :defer t)
-;; (use-package chatgpt-shell
-;;   :requires shell-maker
-;;   :defer t
-;;   :config
-;;   (setq chatgpt-shell-model-version "gpt-4o")
-;;   (setq chatgpt-shell-model-temperature 0.7)
-;;   (setq chatgpt-shell-request-timeout 300)
-;;   (setq chatgpt-shell-highlight-blocks t)
-;;   (setq chatgpt-shell-insert-queries-inline t)
-;;   (setq chatgpt-shell-chatgpt-streaming t)
-;;   (setq chatgpt-shell-system-prompt 2) ;; 默认使用 Programming prompt
-
-;;   ;; (setq chatgpt-shell-system-prompts
-;;   ;;   `(("tl;dr" . "Be as succint but informative as possible and respond in tl;dr form to my queries")
-;;   ;;     ("General" . "You use org-mode format to structure responses. Always show code snippets in org-mode source code block format.")
-;;   ;;     ;; Based on https://github.com/benjamin-asdf/dotfiles/blob/8fd18ff6bd2a1ed2379e53e26282f01dcc397e44/mememacs/.emacs-mememacs.d/init.el#L768
-;;   ;;     ("Programming" . ,(chatgpt-shell--append-system-info
-;;   ;; 			 "The user is a programmer with very limited time.
-;;   ;;                       You treat their time as precious. You do not repeat obvious things, including their query.
-;;   ;;                       You are as concise as possible in responses.
-;;   ;;                       You never apologize for confusions because it would waste their time.
-;;   ;;                       You use emacs org-mode format to structure responses.
-;;   ;;                       Always show code snippets in org-mode source code block format.
-;;   ;;                       Don't explain code snippets.
-;;   ;;                       Whenever you output updated code for the user, only show diffs, instead of entire snippets."))
-;;   ;;     ("Positive Programming" . ,(chatgpt-shell--append-system-info
-;;   ;;                                 "Your goal is to help the user become an amazing computer programmer.
-;;   ;;                       You are positive and encouraging.
-;;   ;;                       You love see them learn.
-;;   ;;                       You do not repeat obvious things, including their query.
-;;   ;;                       You are as concise in responses. You always guide the user go one level deeper and help them see patterns.
-;;   ;;                       You never apologize for confusions because it would waste their time.
-;;   ;;                       You use markdown liberally to structure responses. Always show code snippets in markdown blocks with language labels.
-;;   ;;                       Don't explain code snippets. Whenever you output updated code for the user, only show diffs, instead of entire snippets."))))
-
-;;   (require 'ob-chatgpt-shell)
-;;   (ob-chatgpt-shell-setup)
-;;   (require 'ob-dall-e-shell)
-;;   (ob-dall-e-shell-setup)
-;;   ;;(setq chatgpt-shell-api-url-base "http://127.0.0.1:1090")
-;;   (setq chatgpt-shell-api-url-base "https://westus3ai.openai.azure.com")
-;;   (setq chatgpt-shell-api-url-path  "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview")
-;;   (setq chatgpt-shell-openai-key (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))
-;;   ;; azure 使用 api-key 而非 openai 的 Authorization: Bearer 认证头部。
-;;   (setq chatgpt-shell-auth-header
-;; 	(lambda ()
-;; 	  (format "api-key: %s" (auth-source-pick-first-password :host "westus3ai.openai.azure.com"))))
-;;   )
+     :models '(gpt-4o))))
 
 (use-package vterm
   :hook
