@@ -1,12 +1,6 @@
-:PROPERTIES:
-:GPTEL_MODEL: gpt-4o
-:GPTEL_BACKEND: Azure
-:GPTEL_SYSTEM: You are a large language model living in Emacs and a helpful assistant. Respond concisely.
-:GPTEL_BOUNDS: ((118723 . 118739) (118782 . 119759) (119815 . 121106))
-:END:
 #+Title: My Emacs Dotfile
 #+DATE: 2023-08-20 Sun
-#+LASTMOD: 2024-11-20T22:11:21+0800
+#+LASTMOD: 2025-01-05T20:01:32+0800
 #+AUTHOR: 张俊(geekard@qq.com)
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
@@ -35,8 +29,7 @@ Emacs 是 Hacker 的一种生活方式，而这是符合我口味的私人定制
 
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 brew uninstall emacs-plus@30
-brew install emacs-plus@30  --with-xwidgets --with-imagemagick --with-poll \
-     --with-dragon-icon --with-native-comp --with-poll
+brew install emacs-plus@30 --HEAD --with-xwidgets --with-imagemagick --with-dragon-icon --with-native-comp
 brew unlink emacs-plus@30 && brew link emacs-plus@30
 ln -sf /opt/homebrew/opt/emacs-plus@30/Emacs.app /Applications/
 #+end_src
@@ -85,12 +78,14 @@ export LIBRARY_PATH="${LIBRARY_PATH}:${current_gcc}:${current_gcc}/gcc/aarch64-a
 	    (when (file-exists-p custom-file)
 	      (load custom-file))))
 
-;; 非系统标准路径的二进制目录列表。
+;; 非系统标准路径的二进制目录列表（优先查找靠后目录）
 (setq my-bin-path
       '("/opt/homebrew/bin"
         "/opt/homebrew/opt/findutils/libexec/gnubin"
         "/opt/homebrew/opt/openjdk/bin"
         "/Users/alizj/go/bin"
+	;; .cargo/bin 的优先级要高于 rustup/bin，这样优先使用编译安装的命令。
+	"/opt/homebrew/opt/rustup/bin"
         "/Users/alizj/.cargo/bin"))
 
 ;; 添加到 PATH 环境变量。
@@ -470,7 +465,7 @@ dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是
   :commands (vscode-icon-for-file))
 
 (use-package dired-sidebar
-  :bind (("s-1" . dired-sidebar-toggle-sidebar))
+  :bind (("s-0" . dired-sidebar-toggle-sidebar))
   :commands (dired-sidebar-toggle-sidebar)
   :init
   (add-hook 'dired-sidebar-mode-hook
@@ -486,11 +481,13 @@ dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是
   (setq dired-sidebar-use-one-instance t)
   (setq dired-sidebar-use-custom-font t)
   (setq dired-sidebar-icon-scale 0.1)
+  ;;(setq dired-sidebar-window-fixed nil) ;; 可以手动调整宽度和高度。
+  ;;(setq dired-sidebar-resize-on-open t)
+  (setq dired-sidebar-should-follow-file t)
   (setq dired-sidebar-follow-file-idle-delay 0.5))
 #+end_src
 
-字体：英文字体 Iosevka/Sarasa 和中文字体 LxgwWenKai，按照 1:1 缩放，在偶数字号的情况
-下可以实现中英文等宽等高。
+字体：英文 Iosevka/Sarasa 和中文 LxgwWenKai，按照 1:1 缩放，在偶数字号的情况下可以实现中英文等宽等高。
 + 英文：[[https://github.com/protesilaos/iosevka-comfy][Iosevka Comfy]];
 + 中文：霞鹜文楷屏幕阅读版 [[https://github.com/lxgw/LxgwWenKai-Screen/releases][LxgwWenKai-Screen]]，对字体做了加粗，便于屏幕阅读;
 
@@ -1781,7 +1778,6 @@ ox-hugo 博客：
 缩进风格：c/c++/go-mode/kernel 均使用 tab 缩进：
 
 #+begin_src emacs-lisp
-;; 默认不使用 tab 缩进。
 ;;(setq indent-tabs-mode t)
 (setq c-ts-mode-indent-offset 8)
 (setq c-ts-common-indent-offset 8)
@@ -1790,9 +1786,6 @@ ox-hugo 博客：
 ;; https://www.kernel.org/doc/html/latest/process/coding-style.html
 (setq c-default-style "linux")
 (setq tab-width 8)
-
-;; 关闭 electric-indent-mode，同时重新定义 C-j 和 C-m 快捷键，使用 major-mode 的缩进规则。
-;;(electric-indent-mode 0)
 #+end_src
 
 ** 括号
@@ -2425,80 +2418,10 @@ go install golang.org/x/tools/gopls@latest
 
 ** rust
 
-使用 rustup 安装和管理 rust 工具链：
-#+begin_src bash :tangle ~/.emacs.d/init.sh
-# 清理旧环境
-mv ~/.cargo{,.bak}
-brew uninstall rust rust-analyzer
-
-brew install rustup-init
-echo 'export PATH=$HOME/.cargo/bin:$PATH' >>~/.bashrc
-
-rustup-init   # 下载安装 rust stable 工具链
-rustup component add rust-analyzer # 安装 rust lsp server
-rustup component add clippy  # rust lints
-rustup component add rustfmt # rust formater
-rustup component add rust-src
-rustup component add rust-docs # 添加 rust 标准库文档
-
-rustup toolchain list   # 查看已安装的工具链
-
-# 安装 nightly 工具链
-rustup toolchain install nightly
-
-# 设置缺省工具链为 nightly
-rustup default nightly
-
-# cargo 也支持在命令行上指定 toolchain 版本
-cargo +nightly expand
-#+end_src
-
-查看文档：
-#+begin_src bash :tangle no
-rustup component add rust-docs # 添加 rust 标准库文档
-rustup doc # 查看标准库文档
-rustup doc topic # 查看某个 topic 的帮助文档，如 core，fn，std:char 等。
-cargo doc --open # 查看当前项目和依赖的文档
-#+end_src
-
-清理没有使用的 crate：
-#+begin_src shell :tangle no
-cargo install cargo-sweep
-cargo sweep --time 30
-cargo sweep --installed
-#+end_src
-
-其它 cargo 插件：
-#+begin_src shell :tangle no
-cargo install cargo-watch
-# 示例：先 cargo check，再 cargo test，最后 cargo run
-cargo watch -x check -x test -x run
-
-# 提供 cargo add 命令
-cargo install cargo-edit
-cargo add actix-web --vers 4.0.0
-
-# 提供 cargo expand 宏展开命令
-cargo install cargo-expand
-
-# 提供 cargo +nightly udeps 命令，打印当前项目未使用的 crate
-cargo install cargo-udeps
-
-# 提供 cargo info 命令，查看 crate 的 features 和 version 信息
-cargo install cargo-information
-#+end_src
-
 将 Rust 工具链目录添加到 PATH 环境变量和 Emacs 变量 exec-path 中:
++ =~/.cargo/bin= 和 =/opt/homebrew/opt/rustup/bin= 目录已经在初始化时添加到 PATH 和 exec-path 中。
+
 #+begin_src emacs-lisp
-(setq my-cargo-path "/Users/alizj/.cargo/bin")
-(setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
-(setq exec-path (cons my-cargo-path  exec-path))
-
-;; https://github.com/mozilla/sccache?tab=readme-ov-file
-
-;; cargo install sccache --locked
-;;(setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
-
 ;; brew install sccache
 (setenv "RUSTC_WRAPPER" "/opt/homebrew/bin/sccache")
 #+end_src
@@ -2522,7 +2445,7 @@ cargo install cargo-information
   ;; treesit-auto 默认不将 XX-mode-hook 添加到对应的 XX-ts-mode-hook 上, 需要手动指定。
   (setq rust-ts-mode-hook rust-mode-hook)
 
-  ;; rust 建议使用空格而非 TAB 来缩进.
+  ;; rust 建议使用空格而非 TAB 来缩进。
   (add-hook 'rust-ts-mode-hook (lambda () (setq indent-tabs-mode nil)))
 
   ;; 参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
@@ -2536,9 +2459,9 @@ cargo install cargo-information
        (
 	:extraArgs ["+nightly"]
 	)
+       :completion (:fullFunctionSignatures (:enable t))
        ;; 20240910 不能关闭 checkOnSave，否则 flymake diagnose 可能不生效。
        ;;:checkOnSave :json-false
-       ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.
        :check
        (
         :command "clippy"
@@ -2546,13 +2469,12 @@ cargo install cargo-information
         :allTargets :json-false
 	;; 不发送 --workspace 给 cargo check, 只检查当前 package.
 	;; 20240910 可能导致基于 workspace 的 标准库 lsp 不生效，故不能设置。
-        ;;:workspace :json-false
+        :workspace :json-false
         )
        ;;:procMacro (:attributes (:enable t) :enable :json-false)
        :cargo
        (
         ;;:buildScripts (:enable :json-false)
-        ;;:extraArgs ["--offline"] ;; 不联网节省时间.
         ;;:features "all"
         ;;:noDefaultFeatures t
         :cfgs (:tokio_unstable "")
@@ -2581,9 +2503,6 @@ cargo install cargo-information
        )))))
 #+end_src
 
-rust-analyzer 调用 rustfmt (rustup component add rustfmt) 来格式化代码，为代码添
-加~#[rustfmt::skip]~ 可以忽略格式化。
-
 创建如下全局 rustfmt 配置文件；
 
 #+begin_src toml :tangle ~/.rustfmt.toml
@@ -2611,7 +2530,8 @@ enum_discrim_align_threshold = 20
 
 rust-playground 快速测试环境:
 1. BUGFIX: https://github.com/grafov/rust-playground/pull/11/files
-2. 设置 Cargo.toml 模板文件变量中 edition 值为 2021（默认是 2018）。
+2. 设置 Cargo.toml 模板文件变量中 edition 值为 2021（默认是 2018）;
+
 #+begin_src emacs-lisp
 (use-package rust-playground
   :config
@@ -2626,10 +2546,8 @@ edition = \"2021\"
 #+end_src
 
 eglot-x 为 Rust 提供了几个好用的命令：
-1. =M-x eglot-x-reload-workspace= ：在 Cargo.toml 文件发生变化时手动执行而不需要重启
-   eglot；
-2. =M-x eglot-x-expand-macro= ：展开宏定义（或者使用 cargo expand 命令来显示宏展开后的
-   定义）；
+1. =M-x eglot-x-reload-workspace= ：在 Cargo.toml 文件发生变化时手动执行而不需要重启 eglot；
+2. =M-x eglot-x-expand-macro= ：展开宏定义（或者使用 cargo expand 命令来显示宏展开后的定义）；
 3. =M-x eglot-x-open-external-documentation= ：用浏览器查看光标处的 rust 文档；
 #+begin_src emacs-lisp
 (use-package eglot-x
@@ -2642,10 +2560,11 @@ eglot-x 为 Rust 提供了几个好用的命令：
 #+end_src
 
 查看本地和在线文档:
+
 #+begin_src emacs-lisp
 (with-eval-after-load 'rust-ts-mode
-  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档，由于是 web 网页，链接和类型都
-  ;; 可以点击。
+  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档（需要先执行 cargo doc 命令来生成本地文档）
+  ;; RA bug 导致查看 macro 文档的链接是错的：https://github.com/rust-lang/rust-analyzer/issues/16724
   (define-key rust-ts-mode-map (kbd "C-c d .") #'eglot-x-open-external-documentation)
 
   ;; 查看本地 rust std 文档;
@@ -2671,15 +2590,14 @@ eglot-x 为 Rust 提供了几个好用的命令：
 #+end_src
 
 cargo package 不再维护, 故切换到 cargo-mode package, 它提供了 Cargo.toml 管理命令。
-+ C-c a e(cargo-execute-task) ：列出所有支持的 cargo task，如 build/test 等，同时可以
-  添加和删除依赖（需要指定 PREFIX 命令来输入依赖名称）。
++ C-c a e(cargo-execute-task) ：列出所有支持的 cargo task，如 build/test 等，同时可以添加和删除依赖
+  （需要指定 PREFIX 命令来输入依赖名称）。
 
 #+begin_src emacs-lisp
 (use-package cargo-mode
   :after (rust-mode)
   :custom
-  ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用
-  ;; compilation。
+  ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用 compilation。
   (cargo-mode-use-comint nil)
   :hook
   (rust-ts-mode . cargo-minor-mode)
@@ -2690,8 +2608,8 @@ cargo package 不再维护, 故切换到 cargo-mode package, 它提供了 Cargo.
 
 其他技巧:
 1. 创建一个 struct 对象时, 可以使用 eglot code-action 来自动填充对象成员;
-3. Cargo.toml 文件发生变化时, rust-analyzer 不会自动更新处理, 需要重启 eglot 才能自动
-   补全新的crate. 两个解决办法:
+3. Cargo.toml 文件发生变化时, rust-analyzer 不会自动更新处理, 需要重启 eglot 才能自动补全新的 crate。
+    两个解决办法:
      1. 使用 eglot-x 中的 M-x eglot-x-reload-workspace 命令;
      2. 或者先将 =所有依赖= 提前添加到 Cargo.toml 文件, 然后再启动 eglot;
 
@@ -3096,11 +3014,11 @@ citre-xref-backend, 而且位于列表的开始，这样 xref 先使用 citre-xr
    gptel-default-mode 'org-mode
    gptel-model 'gpt-4o
    gptel-backend
-   (gptel-make-azure "Azure"         
+   (gptel-make-azure "Azure"
      :protocol "https"
      :host "westus3ai.openai.azure.com"
      :endpoint "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview"
-     :stream t        
+     :stream t
      :key #'gptel-api-key
      :models '(gpt-4o))))
 #+end_src
@@ -3724,3 +3642,4 @@ brew install poppler automake mupdf
 9. [[https://config.daviwil.com/emacs][daviwil]]
 10. [[https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs][skybert/my-little-friends]]
 11. [[https://github.com/casouri/lunarymacs/commits/master][casouri/lunarymacs]]
+12. [[https://code.tecosaur.net/tec/emacs-config/src/branch/master/config.org][tec/emacs-config]]

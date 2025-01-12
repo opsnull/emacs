@@ -300,7 +300,7 @@
   :commands (vscode-icon-for-file))
 
 (use-package dired-sidebar
-  :bind (("s-1" . dired-sidebar-toggle-sidebar))
+  :bind (("s-0" . dired-sidebar-toggle-sidebar))
   :commands (dired-sidebar-toggle-sidebar)
   :init
   (add-hook 'dired-sidebar-mode-hook
@@ -316,6 +316,9 @@
   (setq dired-sidebar-use-one-instance t)
   (setq dired-sidebar-use-custom-font t)
   (setq dired-sidebar-icon-scale 0.1)
+  ;;(setq dired-sidebar-window-fixed nil) ;; 可以手动调整宽度和高度。
+  ;;(setq dired-sidebar-resize-on-open t)
+  (setq dired-sidebar-should-follow-file t)
   (setq dired-sidebar-follow-file-idle-delay 0.5))
 
 (use-package fontaine
@@ -1024,8 +1027,7 @@
   ;; 不添加 #+DOWNLOADED: 注释。
   (setq org-download-annotate-function (lambda (link) (previous-line 1) "")))
 
-;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中， Emacs 执行
-;; xelatex 命令时使用。
+;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中，Emacs 执行 xelatex 命令时使用。
 (setq my-tex-path "/Library/TeX/texbin")
 (setenv "PATH" (concat my-tex-path ":" (getenv "PATH")))
 (setq exec-path (cons my-tex-path  exec-path))
@@ -1057,8 +1059,7 @@
 (with-eval-after-load 'ox-latex
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
   (setq org-latex-image-default-width "0.7\\linewidth")
-  ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添
-  ;; 加 :booktabs t。
+  ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
   (setq org-latex-tables-booktabs t)
   ;; 不保存 LaTeX 日志文件（调试时设置为 nil）。
   (setq org-latex-remove-logfiles t)
@@ -1188,7 +1189,6 @@
     json-ts-mode
     js-ts-mode) . indent-bars-mode))
 
-;; 默认不使用 tab 缩进。
 ;;(setq indent-tabs-mode t)
 (setq c-ts-mode-indent-offset 8)
 (setq c-ts-common-indent-offset 8)
@@ -1197,9 +1197,6 @@
 ;; https://www.kernel.org/doc/html/latest/process/coding-style.html
 (setq c-default-style "linux")
 (setq tab-width 8)
-
-;; 关闭 electric-indent-mode，同时重新定义 C-j 和 C-m 快捷键，使用 major-mode 的缩进规则。
-;;(electric-indent-mode 0)
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
@@ -1602,15 +1599,6 @@
   :config
   (setq go-playground-init-command "go mod init"))
 
-(setq my-cargo-path "/Users/alizj/.cargo/bin")
-(setenv "PATH" (concat my-cargo-path ":" (getenv "PATH")))
-(setq exec-path (cons my-cargo-path  exec-path))
-
-;; https://github.com/mozilla/sccache?tab=readme-ov-file
-
-;; cargo install sccache --locked
-;;(setenv "RUSTC_WRAPPER" "/Users/alizj/.cargo/bin/sccache")
-
 ;; brew install sccache
 (setenv "RUSTC_WRAPPER" "/opt/homebrew/bin/sccache")
 
@@ -1630,7 +1618,7 @@
   ;; treesit-auto 默认不将 XX-mode-hook 添加到对应的 XX-ts-mode-hook 上, 需要手动指定。
   (setq rust-ts-mode-hook rust-mode-hook)
 
-  ;; rust 建议使用空格而非 TAB 来缩进.
+  ;; rust 建议使用空格而非 TAB 来缩进。
   (add-hook 'rust-ts-mode-hook (lambda () (setq indent-tabs-mode nil)))
 
   ;; 参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
@@ -1644,9 +1632,9 @@
        (
 	:extraArgs ["+nightly"]
 	)
+       :completion (:fullFunctionSignatures (:enable t))
        ;; 20240910 不能关闭 checkOnSave，否则 flymake diagnose 可能不生效。
        ;;:checkOnSave :json-false
-       ;;:cachePriming (:enable :json-false) ;; 启动时不预热缓存.
        :check
        (
         :command "clippy"
@@ -1654,13 +1642,12 @@
         :allTargets :json-false
 	;; 不发送 --workspace 给 cargo check, 只检查当前 package.
 	;; 20240910 可能导致基于 workspace 的 标准库 lsp 不生效，故不能设置。
-        ;;:workspace :json-false
+        :workspace :json-false
         )
        ;;:procMacro (:attributes (:enable t) :enable :json-false)
        :cargo
        (
         ;;:buildScripts (:enable :json-false)
-        ;;:extraArgs ["--offline"] ;; 不联网节省时间.
         ;;:features "all"
         ;;:noDefaultFeatures t
         :cfgs (:tokio_unstable "")
@@ -1708,8 +1695,8 @@ edition = \"2021\"
   (eglot-x-setup))
 
 (with-eval-after-load 'rust-ts-mode
-  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档，由于是 web 网页，链接和类型都
-  ;; 可以点击。
+  ;; 使用 xwidget 打开光标处 symbol 的本地 crate 文档（需要先执行 cargo doc 命令来生成本地文档）
+  ;; RA bug 导致查看 macro 文档的链接是错的：https://github.com/rust-lang/rust-analyzer/issues/16724
   (define-key rust-ts-mode-map (kbd "C-c d .") #'eglot-x-open-external-documentation)
 
   ;; 查看本地 rust std 文档;
@@ -1736,8 +1723,7 @@ edition = \"2021\"
 (use-package cargo-mode
   :after (rust-mode)
   :custom
-  ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用
-  ;; compilation。
+  ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用 compilation。
   (cargo-mode-use-comint nil)
   :hook
   (rust-ts-mode . cargo-minor-mode)
@@ -1924,11 +1910,11 @@ mermaid.initialize({
    gptel-default-mode 'org-mode
    gptel-model 'gpt-4o
    gptel-backend
-   (gptel-make-azure "Azure"         
+   (gptel-make-azure "Azure"
      :protocol "https"
      :host "westus3ai.openai.azure.com"
      :endpoint "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview"
-     :stream t        
+     :stream t
      :key #'gptel-api-key
      :models '(gpt-4o))))
 
