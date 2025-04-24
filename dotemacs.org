@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+DATE: 2023-08-20 Sun
-#+LASTMOD: 2025-01-05T20:01:32+0800
+#+LASTMOD: 2025-04-24T18:04:01+0800
 #+AUTHOR: 张俊(geekard@qq.com)
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval no :results silent :exports code
@@ -528,7 +528,7 @@ dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是
     (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
     (set-fontset-font t 'symbol (font-spec :family "Symbola")) ;; Apple Symbols, Symbola
     (let ((font (frame-parameter nil 'font))
-	  (font-spec (font-spec :family "LXGW WenKai Screen")))
+	  (font-spec (font-spec :family "LXGW WenKai Mono Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
 	(set-fontset-font font charset font-spec)))))
 

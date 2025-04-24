@@ -352,7 +352,7 @@
     (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
     (set-fontset-font t 'symbol (font-spec :family "Symbola")) ;; Apple Symbols, Symbola
     (let ((font (frame-parameter nil 'font))
-	  (font-spec (font-spec :family "LXGW WenKai Screen")))
+	  (font-spec (font-spec :family "LXGW WenKai Mono Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
 	(set-fontset-font font charset font-spec)))))
 
