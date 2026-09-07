@@ -33,10 +33,6 @@
   ;;(setq inhibit-automatic-native-compilation t)
   (setq native-comp-async-report-warnings-errors 'silent))
 
-;; 解决 cmake 和 Xcode 15.0 兼容性问题，否则后续编译 vterm-module 时报错。
-;;; 查看当前 Xcode SDK 路径：xcrun --sdk macosx --show-sdk-path
-(setenv "SDKROOT" "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
-
 ;; 确保 Emacs 加载较新 byte-compiled 的 .el 文件。
 (setq-default load-prefer-newer t)
 (setq load-prefer-newer t)
@@ -509,16 +505,16 @@
   (setq fontaine-presets
 	'((regular) ;; 使用缺省配置。
 	  (t
-	   :default-family "Iosevka Comfy"
+	   :default-family "IoskeleyMono Nerd Font Mono"
 	   :default-weight regular
 	   :default-height 180 ;; 默认字号, 需要是偶数才能实现中英文等宽等高。
-	   :fixed-pitch-family "Iosevka Comfy"
+	   :fixed-pitch-family "IoskeleyMono Nerd Font Mono"
 	   :fixed-pitch-weight nil
 	   :fixed-pitch-height 1.0
-	   :fixed-pitch-serif-family "Iosevka Comfy"
+	   :fixed-pitch-serif-family "IoskeleyMono Nerd Font Mono"
 	   :fixed-pitch-serif-weight nil
 	   :fixed-pitch-serif-height 1.0
-	   :variable-pitch-family "Iosevka Comfy Duo"
+	   :variable-pitch-family "IoskeleyMono Nerd Font Mono"
 	   :variable-pitch-weight nil
 	   :variable-pitch-height 1.0
 	   :line-spacing nil)))
@@ -947,7 +943,7 @@
 ;; 搜索当前 buffer
 (global-set-key (kbd "M-s l") #'consult-line)
 (global-set-key (kbd "M-s M-l") #'consult-line)
-;; 搜索多个 buffer，默认为 project 的多个 buffers。
+;; 搜索多个 buffers，默认为 project 的多个 buffers。
 ;; 如果使用前缀参数，则搜索所有 buffers。
 (global-set-key (kbd "M-s L") #'consult-line-multi)
 
@@ -960,7 +956,7 @@
 (define-key isearch-mode-map (kbd "M-s L") #'consult-line-multi)
 
 ;; Minibuffer 历史。
-;;:map minibuffer-local-map)
+;;:map minibuffer-local-map
 (define-key minibuffer-local-map (kbd "M-s") #'consult-history)
 (define-key minibuffer-local-map (kbd "M-r") #'consult-history)
 
@@ -997,7 +993,7 @@
   (setq
    org-ellipsis "..." ;; " ⭍"
 
-   ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符， M-x org-entities-help 查看所有特殊字符。
+   ;; 使用 UTF-8 显示 LaTeX 或 \xxx 特殊字符，M-x org-entities-help 查看所有特殊字符。
    org-pretty-entities t
    org-highlight-latex-and-related '(latex)
 

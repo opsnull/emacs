@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
  #+DATE: 2023-08-20 Sun
- #+LASTMOD: 2026-09-07T12:39:44+0800
+ #+LASTMOD: 2026-09-07T20:53:22+0800
  #+AUTHOR: 张俊(geekard@qq.com)
  #+STARTUP: overview hideblocks
  #+PROPERTY: header-args:emacs-lisp :tangle yes :eval never :results silent :exports code
@@ -136,10 +136,6 @@ export LIBRARY_PATH="${LIBRARY_PATH}:${current_gcc}"
   (setq native-comp-async-jobs-number 3)
   ;;(setq inhibit-automatic-native-compilation t)
   (setq native-comp-async-report-warnings-errors 'silent))
-
-;; 解决 cmake 和 Xcode 15.0 兼容性问题，否则后续编译 vterm-module 时报错。
-;;; 查看当前 Xcode SDK 路径：xcrun --sdk macosx --show-sdk-path
-(setenv "SDKROOT" "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
 
 ;; 确保 Emacs 加载较新 byte-compiled 的 .el 文件。
 (setq-default load-prefer-newer t)
@@ -698,16 +694,16 @@ dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是
   (setq fontaine-presets
 	'((regular) ;; 使用缺省配置。
 	  (t
-	   :default-family "Iosevka Comfy"
+	   :default-family "IoskeleyMono Nerd Font Mono"
 	   :default-weight regular
 	   :default-height 180 ;; 默认字号, 需要是偶数才能实现中英文等宽等高。
-	   :fixed-pitch-family "Iosevka Comfy"
+	   :fixed-pitch-family "IoskeleyMono Nerd Font Mono"
 	   :fixed-pitch-weight nil
 	   :fixed-pitch-height 1.0
-	   :fixed-pitch-serif-family "Iosevka Comfy"
+	   :fixed-pitch-serif-family "IoskeleyMono Nerd Font Mono"
 	   :fixed-pitch-serif-weight nil
 	   :fixed-pitch-serif-height 1.0
-	   :variable-pitch-family "Iosevka Comfy Duo"
+	   :variable-pitch-family "IoskeleyMono Nerd Font Mono"
 	   :variable-pitch-weight nil
 	   :variable-pitch-height 1.0
 	   :line-spacing nil)))
@@ -854,9 +850,9 @@ tab-bar：
 "鼠须管squirrel"。
 
 #+begin_src bash :tangle ~/.emacs.d/init.sh
-wget https://github.com/rime/librime/releases/download/1.17.0/rime-33e7814-macOS-universal.tar.bz2
+wget Https://github.com/rime/librime/releases/download/1.17.0/rime-33e7814-macOS-universal.tar.bz2
 tar -xvf rime-33e7814-macOS-universal.tar.bz2
-mv ~/.emacs.d/librime/dist{,.bak}
+#mv ~/.emacs.d/librime/dist{,.bak}
 mv dist ~/.emacs.d/librime
 # 如果 MacOS Gatekeeper 阻止第三方软件运行，可以暂时关闭它：
 sudo spctl --master-disable
