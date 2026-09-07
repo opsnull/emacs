@@ -1,13 +1,14 @@
+;;; -*- lexical-binding: t; -*-
+
 (require 'package)
 (setq package-archives
-      '(("elpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-        ("elpa-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
-        ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-        ("nongnu" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
-        ("nongnu-devel" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
+      '(("elpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+        ("elpa-devel" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
+        ("melpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+        ("nongnu" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu/")
+        ("nongnu-devel" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/nongnu-devel/")))
 (package-initialize)
-(when (not package-archive-contents)
-  (package-refresh-contents))
+;; 首次安装或更新包时手动执行 M-x package-refresh-contents，启动不刷新归档。
 
 (setq use-package-verbose t)
 (setq use-package-always-ensure t)
@@ -18,10 +19,202 @@
 ;; 允许升级 Emacs 内置的包。
 ;;(setq package-install-upgrade-built-in t)
 
+;; The following enables compilation of packages during installation; compile-angel will handle it.
+(setq package-native-compile t)
+
+(when (fboundp 'native-compile-async)
+  (setenv "LIBRARY_PATH"
+  	  (concat (getenv "LIBRARY_PATH")
+  		  ":/opt/homebrew/opt/gcc/lib/gcc/current/"
+  		  ;;":/opt/homebrew/opt/gcc/lib/gcc/current/gcc/aarch64-apple-darwin25/16/"
+		  ))
+  (setq native-comp-speed 2)
+  (setq native-comp-async-jobs-number 3)
+  ;;(setq inhibit-automatic-native-compilation t)
+  (setq native-comp-async-report-warnings-errors 'silent))
+
+;; 解决 cmake 和 Xcode 15.0 兼容性问题，否则后续编译 vterm-module 时报错。
+;;; 查看当前 Xcode SDK 路径：xcrun --sdk macosx --show-sdk-path
+(setenv "SDKROOT" "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+
+;; 确保 Emacs 加载较新 byte-compiled 的 .el 文件。
+(setq-default load-prefer-newer t)
+(setq load-prefer-newer t)
+
+;; Ensure that quitting only occurs once Emacs finishes native compiling,
+;; preventing incomplete or leftover compilation files in `/tmp`.
+(setq native-comp-async-query-on-exit t)
+(setq confirm-kill-processes t)
+
+;; Speeds up Emacs by ensuring that all Elisp libraries are both byte-compiled and native-compiled
+(use-package compile-angel
+  :config
+  ;; Set `compile-angel-verbose' to nil to disable compile-angel messages.
+  ;; (When set to nil, compile-angel won't show which file is being compiled.)
+  (setq compile-angel-verbose t)
+
+  ;; The following directive prevents compile-angel from compiling your init
+  ;; files. If you choose to remove this push to `compile-angel-excluded-path-suffixes'
+  ;; and compile your pre/post-init files, ensure you understand the
+  ;; implications and thoroughly test your code. For example, if you're using
+  ;; the `use-package' macro, you'll need to explicitly add:
+  ;; (eval-when-compile (require 'use-package))
+  ;; at the top of your init file.
+  (push "/init.el" compile-angel-excluded-path-suffixes)
+  (push "/early-init.el" compile-angel-excluded-path-suffixes)
+
+  ;; Uncomment the line below to compile automatically when an Elisp file is saved
+  (add-hook 'emacs-lisp-mode-hook #'compile-angel-on-save-local-mode)
+
+  ;; A global mode that compiles .el files when they are loaded using `load' or `require'.
+  (compile-angel-on-load-mode 1))
+
+(setq process-adaptive-read-buffering nil)
+
+;; The maximum amount of data Emacs reads from a subprocess in a single operation
+;; 对于 GNU/Linux，设置的是 /proc/sys/fs/pipe-max-size 值。
+;; 可以提升大项目的 eglot 性能（与 LSP 通过 JSON-RPC 交换数据时，一次可以读取更多数据）。
+(setq read-process-output-max (* 1024 1024 1)) ;; default: 4kb
+
+;; This reduces log clutter to improves performance.
+(setq jsonrpc-event-hook nil)
+
+;; Garbage Collector Magic Hack, 提升 GC 性能。
+(use-package gcmh
+  :init
+  ;;(setq gcmh-verbose t)
+  (setq gcmh-idle-delay 'auto) ;; 缺省 15s
+  (setq gcmh-auto-idle-delay-factor 10)
+  (setq gcmh-high-cons-threshold (* 64 1024 1024)) ;; 64mb
+  (gcmh-mode 1)
+  ;;(gcmh-set-high-threshold)
+  )
+
+;;(setq garbage-collection-messages t)
+(add-hook 'after-init-hook #'garbage-collect t)
+
+(use-package buffer-terminator
+  :custom
+  (buffer-terminator-verbose nil)
+
+  ;; Set the inactivity timeout (in seconds) after which buffers are considered
+  ;; inactive (default is 30 minutes):
+  (buffer-terminator-inactivity-timeout (* 30 60)) ; 30 minutes
+
+  ;; Define how frequently the cleanup process should run (default is every 10
+  ;; minutes):
+  (buffer-terminator-interval (* 10 60)) ; 10 minutes
+
+  :init
+  (buffer-terminator-mode 1))
+
+;; A second, case-insensitive pass over `auto-mode-alist' is time wasted.
+;; No second pass of case-insensitive search over auto-mode-alist.
+(setq auto-mode-case-fold nil)  
+
+;; Disable bidirectional text scanning for a modest performance boost.
+(setq-default bidi-display-reordering 'left-to-right
+              bidi-paragraph-direction 'left-to-right)
+
+;; Give up some bidirectional functionality for slightly faster re-display.
+(setq bidi-inhibit-bpa t)
+
+;; 用内存换取字体 redisplay CPU；macOS、Nerd Fonts、图标较多时可以保留。
+(setq inhibit-compacting-font-caches t)
+
+(setq-default message-log-max 16384)
+
+;; Resizing the Emacs frame can be costly when changing the font. Disable this
+;; to improve startup times with fonts larger than the system default.
+(setq frame-resize-pixelwise t)
+
+;; Without this, Emacs will try to resize itself to a specific column size
+(setq frame-inhibit-implied-resize t)
+
+(setq whitespace-line-column nil)  ; Use the value of `fill-column'.
+
+;; 关闭全局高亮当前行，性能优先。
+;;(global-hl-line-mode t)
+;;(setq global-hl-line-sticky-flag t)
+(global-hl-line-mode -1)
+(add-hook 'prog-mode-hook #'hl-line-mode)
+;;(add-hook 'text-mode-hook #'hl-line-mode)
+
+;; 关闭全局显示行号，性能优先。
+;;(global-display-line-numbers-mode t)
+;; 仅编程模式显示行号。
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+
+;; 避免 undo-more: No further undo information 报错.
+;; 10X bump of the undo limits to avoid issues with premature.
+;; Emacs GC which truncages the undo history very aggresively
+;; 不能设置太大，否则多个大 buffer 同时编辑时，可能显著抬高内存和 GC 压力。
+(setq undo-limit (* 1 1024 1024)
+      undo-strong-limit (* 16 1024 1024)
+      undo-outer-limit (* 64 1024 1024))
+
+(setq global-mark-ring-max 600)
+(setq mark-ring-max 600)
+(setq kill-ring-max 600)
+
+;; 大文件按当前 buffer 的字符数判断，避免每次检查都访问磁盘或 TRAMP。
+(defcustom my-large-file-threshold (* 1024 1024)
+  "启用大文件性能配置的字符数阈值。"
+  :type 'integer
+  :group 'files)
+
+(defvar-local my-large-file-saved-state nil
+  "进入大文件配置前的局部设置，退出时恢复。")
+
+(defun my-large-file-performance-setup ()
+  "按字符数切换大文件配置；重复执行不会覆盖原始状态。"
+  (let ((large (and buffer-file-name
+                    (save-restriction
+                      (widen)
+                      (> (buffer-size) my-large-file-threshold))))
+        (modes '(display-line-numbers-mode rainbow-delimiters-mode
+                 hl-line-mode show-paren-local-mode)))
+    (cond
+     (large
+      (unless my-large-file-saved-state
+        (setq my-large-file-saved-state
+              (list (list 'corfu-auto (local-variable-p 'corfu-auto)
+                          (boundp 'corfu-auto)
+                          (and (boundp 'corfu-auto) corfu-auto))
+                    (mapcar (lambda (mode)
+                              (cons mode (and (boundp mode) (symbol-value mode))))
+                            modes))))
+      (setq-local corfu-auto nil)
+      (dolist (mode modes)
+        (when (fboundp mode) (funcall mode -1))))
+     (my-large-file-saved-state
+      (let ((corfu-state (car my-large-file-saved-state))
+            (mode-state (cadr my-large-file-saved-state)))
+        (if (nth 1 corfu-state)
+            (setq-local corfu-auto (nth 3 corfu-state))
+          (kill-local-variable 'corfu-auto))
+        (dolist (entry mode-state)
+          (when (fboundp (car entry))
+            (funcall (car entry) (if (cdr entry) 1 -1))))
+        (setq my-large-file-saved-state nil))))))
+
+(dolist (hook '(find-file-hook after-revert-hook after-save-hook))
+  (add-hook hook #'my-large-file-performance-setup))
+
+;; 开启全局自动 revert。
+(global-auto-revert-mode 1)
+(setq auto-revert-remote-files nil) 
+(setq revert-without-query (list "\\.png$" "\\.svg$")
+      auto-revert-verbose nil)
+;; 自动 revert buffer（更新周期由 auto-revert-interval 配置），确保 modeline 上的分支名正确。
+(setq auto-revert-check-vc-info t)
+(setq auto-revert-interval 30) ;; 缺省：5s，对于大型项目如 zed 会引起卡顿。
+
 (setq auth-sources '("~/.authinfo.gpg"))
 ;;(setq auth-source-debug t)
 
 (use-package epa
+  :ensure nil
   :config
   (setq-default
    ;; 缺省使用 email 地址加密。
@@ -62,25 +255,6 @@
   (dolist (key keys)
     (global-unset-key (kbd key))))
 
-(setq process-adaptive-read-buffering nil)
-(setq read-process-output-max (* 1024 1024 4))
-
-(setq inhibit-compacting-font-caches t)
-(setq-default message-log-max t)
-
-;; Garbage Collector Magic Hack, 提升 GC 性能。
-(use-package gcmh
-  :init
-  ;;(setq gcmh-verbose t)
-  (setq gcmh-idle-delay 'auto) ;; 缺省 15s
-  (setq gcmh-auto-idle-delay-factor 10)
-  (setq gcmh-high-cons-threshold (* 32 1024 1024))
-  (gcmh-mode 1)
-  (gcmh-set-high-threshold))
-
-;;(setq garbage-collection-messages t)
-(add-hook 'after-init-hook #'garbage-collect t)
-
 (setq my-coreutils-path "/opt/homebrew/opt/curl/bin/")
 (setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
 (setq exec-path (cons my-coreutils-path  exec-path))
@@ -90,11 +264,8 @@
 (setq my/socks-port 1080)
 (setq my/socks-proxy (format "socks5h://%s:%d" my/socks-host my/socks-port))
 
-;; 不经过 socks 代理的 CIDR 或域名列表, 需要同时满足 socks-noproxy 和 NO_RROXY 值要求:
-;; + socks-noproxy: 域名是正则表达式, 如 \\.baidu.com;
-;; + NO_PROXY: 域名支持 *.baidu.com 或 baidu.com;
-;; 所以这里使用的是同时满足两者的域名后缀形式, 如 .baidu.com;
-(setq my/no-proxy
+;; 传给外部程序的 NO_PROXY/no_proxy 列表。curl 支持 CIDR 和域名后缀。
+(setq my/no-proxy-env
       '(
         "127.0.0.1/32"
         "10.0.0.0/8"
@@ -112,11 +283,28 @@
         ".aliyun-inc.test"
         ))
 
+;; `socks-noproxy' 只接受主机名正则表达式，不识别 CIDR。
+;; IP 段用前缀正则；域名正则同时匹配根域和子域，并锚定字符串结尾。
+(setq my/socks-noproxy
+      '("\\`127\\.0\\.0\\.1\\'"
+        "\\`10\\."
+        "\\`172\\."
+        "\\`0\\.0\\.0\\.0\\'"
+        "\\`localhost\\'"
+        "\\`192\\.168\\."
+        "\\.cn\\'"
+        "\\(?:\\`\\|\\.\\)alibaba-inc\\.com\\'"
+        "\\(?:\\`\\|\\.\\)taobao\\.com\\'"
+        "\\(?:\\`\\|\\.\\)antfin-inc\\.com\\'"
+        "\\(?:\\`\\|\\.\\)openai\\.azure\\.com\\'"
+        "\\(?:\\`\\|\\.\\)baidu\\.com\\'"
+        "\\(?:\\`\\|\\.\\)aliyun-inc\\.com\\'"
+        "\\(?:\\`\\|\\.\\)aliyun-inc\\.test\\'"))
+
 (setq my/user-agent
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
 
 (use-package mb-url-http
-  :demand
   :vc (:url "https://github.com/dochang/mb-url")
   :init
   (require 'auth-source)
@@ -127,13 +315,15 @@
     (setq mb-url-http-backend 'mb-url-http-curl
           mb-url-http-curl-program "/opt/homebrew/opt/curl/bin/curl"
           mb-url-http-curl-switches
-          `("-k"
+          `(
+	    ;;关闭服务端证书校验。
+	    "-k"
             "-x" ,my/socks-proxy
             "--keepalive-time" "60"
             "--keepalive"
             "--max-time" "300"
             ;;防止 POST 超过 1024 Bytes 时发送 `Expect: 100-continue` 导致 1s 延迟。
-            "-H" "Expect: ''"
+            "-H" "Expect:"
             ;;"-u" ,github-auth
             "--user-agent" ,my/user-agent
             ))))
@@ -143,11 +333,12 @@
   (interactive)
   (require 'socks)
   (setq url-gateway-method 'socks
-        socks-noproxy my/no-proxy
+        socks-noproxy my/socks-noproxy
         socks-server `("Default server" ,my/socks-host ,my/socks-port 5))
-  (let ((no-proxy (mapconcat 'identity my/no-proxy ",")))
-    (setenv "no_proxy" no-proxy))
-  (setenv "ALL_PROXY" my/socks-proxy)
+  (let ((no-proxy (mapconcat #'identity my/no-proxy-env ",")))
+    (setenv "no_proxy" no-proxy)
+    (setenv "NO_PROXY" no-proxy))
+  (setenv "all_proxy" my/socks-proxy)
   (setenv "ALL_PROXY" my/socks-proxy)
   (setenv "HTTP_PROXY" nil)
   (setenv "HTTPS_PROXY" nil)
@@ -168,15 +359,9 @@
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
   (menu-bar-mode -1)
+  ;; 不使用系统对话框，因为不同系统风格完全不一样。
   (setq use-file-dialog nil)
   (setq use-dialog-box nil))
-
-;; 高亮当前行。
-(global-hl-line-mode t)
-(setq global-hl-line-sticky-flag t)
-
-;; 显示行号。
-(global-display-line-numbers-mode t)
 
 ;; 设置光标样式。
 (setq-default cursor-type 'bar)
@@ -208,30 +393,15 @@
 
 (setq switch-to-buffer-obey-display-actions t)
 
-;; 在 frame 底部显示的窗口列表。
-(add-to-list
- 'display-buffer-alist
- `((,(regexp-opt
-      '("\\*compilation\\*"
-        "\\*Apropos\\*"
-        "\\*Help\\*"
-        "\\*helpful"
-        "\\*info\\*"
-        "\\*Summary\\*"
-        "\\*vt"
-        "\\*lsp-bridge"
-        "\\*Org"
-        "\\*Google Translate\\*"
-        " \\*eglot"
-        "Shell Command Output"))
-    ;; 复用同名 buffer 窗口。
-    (display-buffer-reuse-window
-     . (
-	;; 在 frame 底部显示窗口。
-	(side . bottom)
-	;; 窗口高度比例。
-	(window-height . 0.35)
-	)))))
+;; 帮助和工具 buffer 默认放在底部侧窗；传给 regexp-opt 的是未转义名称。
+(add-to-list 'display-buffer-alist
+             `(,(concat "\\`" (regexp-opt
+                               '("*compilation*" "*Apropos*" "*Help*" "*helpful"
+                                 "*info*" "*Summary*" "*vt" "*Org"
+                                 "*Google Translate*" "*EGLOT" " *eglot" "*Shell Command Output*")))
+               (display-buffer-reuse-window display-buffer-in-side-window)
+               (side . bottom)
+               (window-height . 0.35)))
 
 ;; 启动后显示模式，加 t 参数让 togg-frame-XX 最后运行，这样才生效：
 (add-hook 'window-setup-hook 'toggle-frame-maximized t) ;; toggle-frame-fullscreen
@@ -268,7 +438,8 @@
 ;; 使用 Symbols Nerd Fonts Mono 在 modeline 上显示 icons，需要单独下载和安装该字体。
 (use-package nerd-icons)
 
-(use-package doom-modeline
+(use-package doom-modeline  
+  :demand t
   :hook (after-init . doom-modeline-mode)
   :custom
   (doom-modeline-buffer-encoding nil)
@@ -297,20 +468,30 @@
 (add-to-list 'doom-modeline-mode-alist '(vterm-mode . my-vterm-modeline))
 
 (use-package vscode-icon
+  :ensure t
   :commands (vscode-icon-for-file))
 
+(use-package dired-subtree
+  :ensure t
+  :commands (dired-subtree-toggle dired-subtree-cycle)
+  :config
+  (setq dired-subtree-line-prefix " ")
+  (setq dired-subtree-use-backgrounds nil))
+
 (use-package dired-sidebar
-  :bind (("s-0" . dired-sidebar-toggle-sidebar))
+  :ensure t
+  :bind (("C-M-0" . dired-sidebar-toggle-sidebar))
   :commands (dired-sidebar-toggle-sidebar)
   :init
   (add-hook 'dired-sidebar-mode-hook
             (lambda ()
+	      (display-line-numbers-mode -1)
               (unless (file-remote-p default-directory)
                 (auto-revert-mode))))
   :config
   (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
   (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
-  (setq dired-sidebar-subtree-line-prefix "-")
+  (setq dired-sidebar-subtree-line-prefix "__")
   (setq dired-sidebar-theme 'vscode) ;;'ascii
   (setq dired-sidebar-use-term-integration t)
   (setq dired-sidebar-use-one-instance t)
@@ -318,8 +499,9 @@
   (setq dired-sidebar-icon-scale 0.1)
   ;;(setq dired-sidebar-window-fixed nil) ;; 可以手动调整宽度和高度。
   ;;(setq dired-sidebar-resize-on-open t)
+  ;; 性能优先：关闭 follow-file 或者调大 idly-delay。
   (setq dired-sidebar-should-follow-file t)
-  (setq dired-sidebar-follow-file-idle-delay 0.5))
+  (setq dired-sidebar-follow-file-idle-delay 1.5))
 
 (use-package fontaine
   :config
@@ -341,7 +523,6 @@
 	   :variable-pitch-height 1.0
 	   :line-spacing nil)))
   (fontaine-mode 1)
-  (add-hook 'enable-theme-functions #'fontaine-apply-current-preset)
   (fontaine-set-preset (or (fontaine-restore-latest-preset) 'regular))
   (add-hook 'kill-emacs-hook #'fontaine-store-latest-preset))
 
@@ -404,11 +585,13 @@
   (tab-bar-new-tab-choice "*dashboard*")
   (tab-bar-show 1)
   ;; 使用 super + N 切换 tab。
-  (tab-bar-select-tab-modifiers "super")
+  (tab-bar-select-tab-modifiers '(super))
   :config
   ;; 去掉最左侧的 < 和 > 。
   (setq tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
+  
   ;; 开启 tar-bar history mode 后才支持 history-back/forward 命令。
+  ;; tab-bar-history-mode 可以替换老的 winner mode（它不感知 tab 切换）。
   (tab-bar-history-mode t)
   (global-set-key (kbd "s-f") 'tab-bar-history-forward)
   (global-set-key (kbd "s-b") 'tab-bar-history-back)
@@ -462,7 +645,7 @@
   :custom
   (rime-user-data-dir "~/Library/Rime/")
   (rime-librime-root "~/.emacs.d/librime/dist")
-  (rime-emacs-module-header-root "/opt/homebrew/opt/emacs-plus@30/include")
+  (rime-emacs-module-header-root "/opt/homebrew/opt/emacs-plus@31/include")
   :hook
   (emacs-startup . (lambda () (setq default-input-method "rime")))
   :bind
@@ -475,16 +658,15 @@
    ("M-j" . 'rime-force-enable)
    ;; 下面这些快捷键需要发送给 rime 来处理, 需要与 default.custom.yaml 文件中的
    ;; key_binder/bindings配置相匹配。
-   ("C-." . 'rime-send-keybinding)      ;; 中英文切换
    ("C-+" . 'rime-send-keybinding)      ;; 输入法菜单
+   ("C-." . 'rime-send-keybinding)      ;; 中英文切换
    ("C-," . 'rime-send-keybinding)      ;; 中英文标点切换
    ;;("C-," . 'rime-send-keybinding)    ;; 全半角切换
    )
   :config
   ;; 在 modline 高亮输入法图标, 可用来快速分辨分中英文输入状态。
   (setq mode-line-mule-info '((:eval (rime-lighter))))
-  ;; 将如下快捷键发送给 rime，同时需要在 rime 的 key_binder/bindings 的部分配置才会生
-  ;; 效。
+  ;; 将如下快捷键发送给 rime，同时需要在 rime 的 key_binder/bindings 的部分配置才会生效。
   (add-to-list 'rime-translate-keybindings "C-h") ;; 删除拼音字符
   (add-to-list 'rime-translate-keybindings "C-d")
   (add-to-list 'rime-translate-keybindings "C-k") ;; 删除误上屏的词语
@@ -492,6 +674,7 @@
   (add-to-list 'rime-translate-keybindings "C-e") ;; 跳转到最后一个拼音字符support
   ;; shift-l, shift-r, control-l, control-r, 只有当使用系统 RIME 输入法时才有效。
   (setq rime-inline-ascii-trigger 'shift-r)
+  
   ;; 临时英文模式, 该列表中任何一个断言返回 t 时自动切换到英文。如果
   ;; rime-inline-predicates 不为空，则当其中任意一个断言也返回 t 时才会自动切换到英文
   ;; （inline 等效于 ascii-mode）。自定义 avy 断言函数。
@@ -506,24 +689,23 @@
           ;;rime-predicate-prog-in-code-p
           ;;rime-predicate-avy-p
           ))
+  
   (setq rime-show-candidate 'posframe)
   (setq default-input-method "rime")
 
+  ;;设置输入法 frame 样式。
   (setq rime-posframe-properties
         (list :background-color "#333333"
               :foreground-color "#dcdccc"
               :internal-border-width 2))
 
-  ;; 部分 mode 关闭 RIME 输入法。
-  (defadvice switch-to-buffer (after activate-input-method activate)
-    (if (or (string-match "vterm-mode" (symbol-name major-mode))
-            (string-match "dired-mode" (symbol-name major-mode))
-            (string-match "image-mode" (symbol-name major-mode))
-            (string-match "compilation-mode" (symbol-name major-mode))
-            (string-match "isearch-mode" (symbol-name major-mode))
-            (string-match "minibuffer-mode" (symbol-name major-mode)))
-        (activate-input-method nil)
-      (activate-input-method "rime"))))
+  ;; 只在进入模式时设置初始状态；切换 buffer 不覆盖用户手动选择。
+  (defun my/rime-disable-in-special-buffer ()
+    ;; 保留 default-input-method，用户仍可用 C-\\ 手动开启 Rime。
+    (deactivate-input-method))
+  
+  (dolist (hook '(vterm-mode-hook dired-mode-hook image-mode-hook compilation-mode-hook))
+    (add-hook hook #'my/rime-disable-in-special-buffer)))
 
 (use-package vertico
   :config
@@ -547,7 +729,7 @@
   (global-corfu-mode 1)
   (corfu-popupinfo-mode 1) ;; 显示候选者文档。
   :bind
-  ;; 滚动显示 corfu-popupinfo 内容的快捷键。
+  ;; 滚动显示 corfu-popupinfo 内容。
   (:map corfu-popupinfo-map
         ("C-M-j" . corfu-popupinfo-scroll-up)
         ("C-M-k" . corfu-popupinfo-scroll-down))
@@ -555,12 +737,12 @@
   (corfu-cycle t)                ;; 自动轮转。
   (corfu-auto t)                 ;; 自动补全(不需要按 TAB)。
   (corfu-auto-prefix 2)          ;; 触发自动补全的前缀长度。
-  (corfu-auto-delay 0.1)         ;; 触发自动补全的延迟, 当满足前缀长度或延迟时, 都会自动补全。
+  (corfu-auto-delay 0.25)        ;; 触发自动补全的延迟, 当满足前缀长度或延迟时, 都会自动补全。
   (corfu-separator ?\s)          ;; 使用 Orderless 过滤分隔符。
   (corfu-preselect 'prompt)      ;; Preselect the prompt
   (corfu-scroll-margin 5)
   (corfu-on-exact-match nil)     ;; 默认不选中候选者(即使只有一个)。
-  (corfu-popupinfo-delay '(0.1 . 0.2)) ;; 候选者帮助文档显示延迟。
+  (corfu-popupinfo-delay '(0.5 . 0.2)) ;; 候选者帮助文档显示延迟。
   (corfu-popupinfo-max-width 80)
   (corfu-popupinfo-max-height 50)
   (corfu-popupinfo-direction '(force-right)) ;; 强制在右侧显示文档。
@@ -600,7 +782,7 @@
   :config
   ;; https://github.com/minad/consult/wiki#minads-orderless-configuration
   (defun +orderless--consult-suffix ()
-    "Regexp which matches the end of string with Consult tofu support."
+    "Regexp which matches the end of string with Consult to support."
     (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
         (format "[%c-%c]*$"
                 consult--tofu-char
@@ -668,8 +850,15 @@
   (setq register-preview-function #'consult-register-format)
   (advice-add #'register-preview :override #'consult-register-window)
   :config
-  ;; 不搜索 go vendor 目录。
-  (setq consult-ripgrep-args (concat consult-ripgrep-args " -g !vendor/"))
+  ;; 不搜索常见语言的缓存目录。
+  (setq consult-ripgrep-args
+        (concat consult-ripgrep-args
+                " --glob !vendor/**"
+                " --glob !target/**"
+                " --glob !node_modules/**"
+                " --glob !**/vendor/**"
+                " --glob !**/target/**"
+                " --glob !**/node_modules/**"))
   ;; 按 C-l 才激活预览，否则 Buffer 列表中有大文件或远程文件时会卡住。
   (setq consult-preview-key "C-l")
   ;; 不对 consult-line 结果进行排序（按行号排序）。
@@ -689,7 +878,8 @@
      "\\*sort-tab"
      "\\*Google Translate\\*"
      "\\*straight-process\\*"
-     "\\*Native-compile-Log\\*"
+     "\\*[Nn]ative-compile-[Ll]og\\*"
+     "\\*Async-native-compile-log\\*"
      "\\*EGLOT"
      "[0-9]+.gpg")))
 
@@ -697,7 +887,7 @@
 ;; https://github.com/minad/consult/issues/563#issuecomment-1186612641
 (defun my/org-show-entry (fn &rest args)
   (interactive)
-  (when-let ((pos (apply fn args)))
+  (when-let* ((pos (apply fn args)))
     (when (derived-mode-p 'org-mode)
       (org-fold-show-entry))))
 (advice-add 'consult-line :around #'my/org-show-entry)
@@ -778,12 +968,6 @@
 (setq xref-show-xrefs-function #'consult-xref)
 (setq xref-show-definitions-function #'consult-xref)
 
-;; 限制 xref history 仅局限于当前窗口（默认全局）。
-(setq xref-history-storage 'xref-window-local-history)
-
-;; 在其它窗口查看定义。
-(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
-
 (use-package embark
   :init
   ;; 使用 C-h 显示 key preifx 绑定。
@@ -794,17 +978,13 @@
   ;; 根据当前 buffer 的 mode，显示可以使用的快捷键。
   (define-key global-map [remap describe-bindings] #'embark-bindings))
 
-;; embark-consult 支持 embark 和 consult 集成，使用 wgrep 编辑 consult grep/line 的 export 的结果。
+;; embark-consult 导出的 grep/line 结果使用内置 Grep/Occur Edit 编辑。
 (use-package embark-consult
   :after (embark consult)
   :hook  (embark-collect-mode . consult-preview-at-point-mode))
 
-;; 编辑 grep buffers, 可以和 consult-grep 和 embark-export 联合使用。
-(use-package wgrep
-  :config
-  ;; 执行 wgre-finished-edit 时保存所有修改的 buffer。
-  (setq wgrep-auto-save-buffer t)
-  (setq wgrep-change-readonly-file t))
+;; Emacs 31：Grep 结果按 e 编辑，C-c C-c 返回 Grep 模式。
+;; 修改即时同步到源 buffer；用 C-x s 选择保存，不自动写盘或绕过只读保护。
 
 (use-package marginalia
   :init
@@ -830,7 +1010,7 @@
    org-export-coding-system 'utf-8
 
    ;; 使用 R_{s} 形式的下标（默认是 R_s, 容易与正常内容混淆) 。
-   org-use-sub-superscripts nil
+   org-use-sub-superscripts '{}
 
    ;; 文件链接使用相对路径, 解决 hugo 等 image 引用的问题。
    org-link-file-path-type 'relative
@@ -891,7 +1071,7 @@
    org-M-RET-may-split-line nil
 
    ;; 关闭频繁弹出的 org-element-cache 警告 buffer 。
-   org-element-use-cache nil
+   ;;org-element-use-cache nil
 
    org-todo-keywords
    '((sequence "TODO(t!)" "DOING(d@)" "|" "DONE(D)")
@@ -913,21 +1093,16 @@
 ;; 关闭 org-mode 的 C-' 对应的 org-cycle-agenda-files 命令, 与 consult-register-store 冲突。
 (define-key org-mode-map (kbd "C-'") nil)
 
-;; 光标位于 src block 中执行 C-c C-f 时自动格式化 block 中代码。
+;; C-c C-f 保留 Org 同级标题导航；C-c d f 格式化当前源码块。
 (defun my/format-src-block ()
-  "Formats the code in the current src block."
+  "缩进当前 Org 源码块，保留编辑异常时的源码编辑 buffer。"
   (interactive)
+  (unless (org-in-src-block-p)
+    (user-error "光标不在 Org 源码块中"))
   (org-edit-special)
   (indent-region (point-min) (point-max))
   (org-edit-src-exit))
-
-(defun my/org-mode-keys ()
-  "Modify keymaps used in org-mode."
-  (let ((map (if (org-in-src-block-p)
-                 org-src-mode-map
-               org-mode-map)))
-    (define-key map (kbd "C-c C-f") 'my/format-src-block)))
-(add-hook 'org-mode-hook 'my/org-mode-keys)
+(define-key org-mode-map (kbd "C-c d f") #'my/format-src-block)
 
 ;; 建立 org 相关目录。
 (dolist (dir '("~/docs/org" "~/docs/org/journal"))
@@ -1044,10 +1219,9 @@
   (setq org-latex-engraved-theme 'ef-light))
 
 (defun my/export-pdf (backend)
-  (progn
-    ;;(setq org-export-with-toc nil)
-    (setq org-export-headline-levels 2))
-  )
+  "仅为 LaTeX/PDF 导出设置标题深度。"
+  (when (org-export-derived-backend-p backend 'latex)
+    (setq-local org-export-headline-levels 2)))
 (add-hook 'org-export-before-processing-functions #'my/export-pdf)
 
 ;; ox- 为 org-mode 的导出后端包的惯例前缀。
@@ -1238,21 +1412,30 @@
   (add-to-list 'vc-directory-exclusion-list "target") ;; rust
   )
 
+(defun my/project-try-explicit-marker (dir)
+  (when-let* ((root (locate-dominating-file dir ".project")))
+    (cons 'local root)))
+
 (defun my/project-try-local (dir)
   "Determine if DIR is a non-Git project."
   (catch 'ret
     (let ((pr-flags '(
 		      ;; 顺着目录 top-down 查找第一个匹配的文件。所以中间目录不能有
 		      ;; .project 等文件，否则判断 project root 错误。
-		      ("go.mod" "Cargo.toml" "pom.xml" "package.json" ".project" )
+		      ("go.mod" "Cargo.toml" "pom.xml" "package.json")
                       ;; 以下文件容易导致 project root 判断错误, 故不添加。
                       ;; ("Makefile" "README.org" "README.md")
                       )))
       (dolist (current-level pr-flags)
         (dolist (f current-level)
-          (when-let ((root (locate-dominating-file dir f)))
+          (when-let* ((root (locate-dominating-file dir f)))
             (throw 'ret (cons 'local root))))))))
-(setq project-find-functions '(my/project-try-local project-try-vc))
+
+;; 先查找 .project 文件，然后根据 git 查找项目 root，最后使用自定义逻辑。
+(setq project-find-functions
+      '(my/project-try-explicit-marker
+        project-try-vc
+        my/project-try-local))
 
 (cl-defmethod project-root ((project (head local)))
   (cdr project))
@@ -1272,18 +1455,13 @@
         (project-remember-projects-under file nil)
         (message "added project %s" file)))))
 
-;; 不将 tramp 项目记录到 projects 文件中，防止 emacs-dashboard 启动时检查 project 卡
-;; 住。
-(defun my/project-remember-advice (fn pr &optional no-write)
-  (let* ((remote? (file-remote-p (project-root pr)))
-         (no-write (if remote? t no-write)))
-    (funcall fn pr no-write)))
-(advice-add 'project-remember-project :around 'my/project-remember-advice)
+;; 在记录前排除远程项目，避免 dashboard 扫描远程路径。
+(defun my/project-remote-p (project)
+  "判断 PROJECT 是否位于远程文件系统。"
+  (file-remote-p (project-root project)))
+(add-to-list 'project-list-exclude #'my/project-remote-p)
 
 (setq vc-follow-symlinks t)
-
-;; 自动 revert buffer，确保 modeline 上的分支名正确。
-(setq auto-revert-check-vc-info t)
 
 (use-package magit
   :custom
@@ -1302,9 +1480,9 @@
   (setq git-link-use-commit t)
   ;; 重写 gitlab 的 format 字符串以匹配内部系统。
   (defun git-link-commit-gitlab (hostname dirname commit)
-    (format "https://%s/%s/commit/%s" hostname dirname commit))
+    (format "%s/%s/commit/%s" hostname dirname commit))
   (defun git-link-gitlab (hostname dirname filename branch commit start end)
-    (format "https://%s/%s/blob/%s/%s" hostname dirname
+    (format "%s/%s/blob/%s/%s" hostname dirname
 	    (or branch commit)
             (concat filename
                     (when start
@@ -1313,21 +1491,23 @@
                                   (format "L%s-%s" start end)
 				(format "L%s" start))))))))
 
-(use-package treesit-auto
+(use-package treesit
+  :ensure nil
   :demand t
-  :config
-  (setq treesit-auto-install 'prompt)
-  (global-treesit-auto-mode))
+  :custom
+  (treesit-auto-install-grammar 'ask)
+  (treesit-enabled-modes t))
 
-(use-package treesit-fold
-  :vc (:url "https://github.com/emacs-tree-sitter/treesit-fold")
-  :config
-  (global-set-key (kbd "C-c f f") 'treesit-fold-close)
-  (global-set-key (kbd "C-c f o") 'treesit-fold-open)
-  (global-set-key (kbd "C-c f O") 'treesit-fold-open-recursively)
-  (global-set-key (kbd "C-c f F") 'treesit-fold-close-all)
-  (global-set-key (kbd "C-c f u") 'treesit-fold-open-all)
-  (global-set-key (kbd "C-c f t") 'treesit-fold-toggle))
+(use-package hideshow
+  :ensure nil
+  :hook ((c-ts-mode c++-ts-mode go-ts-mode rust-ts-mode
+          python-ts-mode bash-ts-mode) . hs-minor-mode)
+  :bind (("C-c f f" . hs-hide-block)
+         ("C-c f o" . hs-show-block)
+         ("C-c f O" . hs-show-block)
+         ("C-c f F" . hs-hide-all)
+         ("C-c f u" . hs-show-all)
+         ("C-c f t" . hs-toggle-hiding)))
 
 (use-package flymake
   :config
@@ -1339,7 +1519,7 @@
   (setq flymake-show-diagnostics-at-end-of-line 'short)
 
   ;; 如果 buffer 出现错误的诊断消息，执行 flymake-start 重新触发诊断。
-  (define-key flymake-mode-map (kbd "C-c C-c") #'flymake-start)
+  (define-key flymake-mode-map (kbd "C-c d e") #'flymake-start)
 
   ;; 显示诊断错误列表
   (global-set-key (kbd "C-s-l") #'consult-flymake)
@@ -1351,7 +1531,7 @@
 ;; (cl-defmethod eglot-handle-notification :after
 ;;   (_server (_method (eql textDocument/publishDiagnostics)) &key uri
 ;;            &allow-other-keys)
-;;   (when-let ((buffer (find-buffer-visiting (eglot-uri-to-path uri))))
+;;   (when-let* ((buffer (find-buffer-visiting (eglot-uri-to-path uri))))
 ;;     (with-current-buffer buffer
 ;;       (if (and (eq nil flymake-no-changes-timeout)
 ;;                (not (buffer-modified-p)))
@@ -1369,56 +1549,74 @@
     (setq completion-category-defaults nil)
 
     ;; 在 eldoc buffer 开始优先显示 flymake 诊断信息。
-    (setq eldoc-documentation-functions
-          (cons #'flymake-eldoc-function
-                (remove #'flymake-eldoc-function eldoc-documentation-functions)))
+    ;; 自动 Eldoc 保留诊断/签名；hover 由 C-c d d 显式请求。
+    (setq-local eldoc-documentation-functions
+                (cons #'flymake-eldoc-function
+                      (remq #'eglot-hover-eldoc-function
+                            (remq #'flymake-eldoc-function eldoc-documentation-functions))))
     )
   :hook ((eglot-managed-mode . my/eglot-eldoc))
   :bind
   (:map eglot-mode-map
         ("C-c C-a" . eglot-code-actions)
         ("C-c C-f" . eglot-format-buffer)
-        ("C-c C-r" . eglot-rename)
-	("C-c C-c" . flymake-start)
-	("C-c C-d" . eldoc))
+        ("C-c C-r" . eglot-rename))
   :config
-  ;; 将 eglot-events-buffer-size 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调
-  ;; 试问题。也不能设置的太大，否则可能影响性能。
-  (setq eglot-events-buffer-size (* 1024 1024 1))
+  
+  ;;; 性能优化：https://www.jamescherti.com/emacs-eglot-performance/
+  ;; 将 eglot event log buffer 设置为 0 后将关闭显示 *EGLOT event* bufer，不便于调
+  ;; 试问题。但不能设置的太大，否则影响性能。
+  ;; 注意：需要直接设置 :size 的数值，而不能使用 :size (* 1024 1) 的计算方式。
+  (setq eglot-events-buffer-config '(:size 1048576 :format short))
+  ;; 降低最大文件 watch 数量，节省资源。
+  (setq eglot-max-file-watches 5000) ;; 缺省：10000
+  ;; 当 project 的最后一个源码 buffer 关闭时自动关闭 eglot server，节省资源。
+  (customize-set-variable 'eglot-autoshutdown t)
+  ;; xref 打开的项目外源码复用来源项目的服务器，避免为依赖另启服务器，加快代码文件打开和关闭时间。
+  (setq eglot-extend-to-xref t)
+  ;; 不在 mode-line 上显示进展。
+  (setq eglot-report-progress nil)
+  ;; 关闭后台的自动 code action 查询（按需手动触发 code action）。
+  (setq eglot-code-action-indications nil)
+  ;; 关闭一些 LSP 服务端能力。
+  (setq eglot-ignored-server-capabilities
+        '(
+  	     :documentOnTypeFormattingProvider ;; 自动格式化
+         :semanticTokensProvider ;; 使用 Tree-sitter 提供的语法高亮
+         :documentHighlightProvider ;; 高亮当前符号
+         :inlayHintProvider ;; 显示 inlay hint 提示
+	 
+	 ;;忽略 :hoverProvider 后，内置 hover 文档函数不会请求文档；即使手动按
+	 ;; eldoc-box-help-at-point，也不会自动恢复这项能力
+        ))
 
   ;; 将 flymake-no-changes-timeout 设置为 nil 后，eglot 保存 buffer 内容后，经过 idle
-  ;; time 才会向LSP 发送诊断请求。
-  (setq eglot-send-changes-idle-time 0.1)
+  ;; time 才会向 LSP 发送诊断请求。
+  (setq eglot-send-changes-idle-time 0.5)
 
-  ;; 当最后一个源码 buffer 关闭时自动关闭 eglot server。
-  (customize-set-variable 'eglot-autoshutdown t)
+  ;; eglot-sync-connect 设置为 nil 表示 LSP 初始化是不 block Emacs UI。
+  ;; 缺省：3。先 block UI 3s，然后后台初始化，等待 eglot-connect-timeout 后超时。
+  (setq eglot-sync-connect nil)
   (customize-set-variable 'eglot-connect-timeout 60)
-
+  
   ;;不给所有 prog-mode 都开启 eglot，否则当它没有 language server 时 eglot 报错。
   ;;
-  ;;由于 treesit-auto 已经对 major-mode 做了 remap ，需要对 xx-ts-mode-hook 添加 hook，
+  ;;由于内置 treesit 已经对 major-mode 做了 remap ，需要对 xx-ts-mode-hook 添加 hook，
   ;;而不是以前的 xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行。
   (add-hook 'c-ts-mode-hook #'eglot-ensure)
+  (add-hook 'c++-ts-mode-hook #'eglot-ensure)
   (add-hook 'go-ts-mode-hook #'eglot-ensure)
   (add-hook 'bash-ts-mode-hook #'eglot-ensure)
   (add-hook 'python-mode-hook #'eglot-ensure)
   (add-hook 'python-ts-mode-hook #'eglot-ensure)
   (add-hook 'rust-ts-mode-hook #'eglot-ensure)
-  (add-hook 'rust-mode-hook #'eglot-ensure)
   (add-hook 'yaml-mode-hook #'eglot-ensure)
   (add-hook 'yaml-ts-mode-hook #'eglot-ensure)
-
-  (setq eglot-ignored-server-capabilities
-        '(
-          ;;:hoverProvider ;; 显示光标位置信息。
-          ;;:documentHighlightProvider ;; 高亮当前 symbol。
-          ;;:inlayHintProvider ;; 显示 inlay hint 提示。
-          ))
 
   ;; 加强高亮的 symbol 效果。
   ;;(set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
 
-  ;; t: true, false: :json-false(不是 nil)。
+  ;; t: true, false: :json-false(注意：不是 nil)。
   ;; gopls 配置参数: https://github.com/golang/tools/blob/master/gopls/doc/settings.setq
   (setq-default eglot-workspace-configuration
                 '((:gopls . ((staticcheck . t)
@@ -1433,52 +1631,93 @@
   :after (eglot consult))
 
 (use-package eglot-booster
+  :disabled
   :vc (:url "https://github.com/jdtsmith/eglot-booster")
   :after (eglot)
   :config (eglot-booster-mode))
 
+;; 限制 xref history 仅局限于当前窗口（默认全局）。
+(setq xref-history-storage 'xref-window-local-history)
+
+;; xref 返回项目后，关闭刚离开的项目外源码 buffer。
+;; 需要设置 (setq eglot-extend-to-xref t)，否则每次都打开和新建 LSP Server，关闭 buffer 时延迟较大。
+(defun my/xref-back-and-close-external-buffer (orig-fun &rest args)
+  "返回后关闭项目外、未修改且不再显示的文件 buffer。
+以返回位置的 project.el 根目录为边界；无法识别项目时保留。"
+  (let ((source (current-buffer))
+        (file buffer-file-name))
+    (prog1 (apply orig-fun args)
+      (when (and file
+                 (buffer-live-p source)
+                 (not (eq source (current-buffer)))
+                 (not (buffer-modified-p source))
+                 (not (get-buffer-window source t))
+                 (ignore-errors
+                   (when-let* ((project (project-current nil)))
+                     (not (file-in-directory-p file (project-root project))))))
+        (kill-buffer source)))))
+
+(with-eval-after-load 'xref
+  (require 'project)
+  (unless (advice-member-p #'my/xref-back-and-close-external-buffer
+                          'xref-go-back)
+    (advice-add 'xref-go-back :around
+                #'my/xref-back-and-close-external-buffer)))
+
+
+;; 在其它窗口查看定义。
+(global-set-key (kbd "C-M-.") 'xref-find-definitions-other-window)
+
 (use-package eldoc
   :after (eglot)
-  :bind
-  (:map eglot-mode-map ("C-c C-d" . eldoc))
   :config
-  (setq eldoc-idle-delay 0.1)
+  (setq eldoc-idle-delay 0.4)
 
-  ;; 打开 eldoc-buffer 时关闭 echo-area 显示, eldoc-buffer 会跟随显示 hover 信息, 如
-  ;; 函数签名。
+  ;;; 设置默认在 minibuffer 的 echo-area 单行显示 eldoc 信息，防止多行信息
+  ;; 打开 eldoc-buffer 时关闭 echo-area 显示,
   (setq eldoc-echo-area-prefer-doc-buffer t)
+  ;; 将 minibuffer 窗口高度设为 1，确保只显示一行（默认为小数，表示 frame 高度占比，会导致显示多行）。
+  (setq max-mini-window-height 1)
+  ;; 为 nil 时只单行显示 eldoc 信息.
+  (setq eldoc-echo-area-use-multiline-p nil)
 
-  ;; 在屏幕右侧显示 eldoc-buffer
+  ;; 在屏幕右侧显示 eldoc-buffer，这样内容比较多时方便查看。
+  ;; eldoc-buffer 会跟随显示当前光标出的信息, 如函数签名。
   (add-to-list 'display-buffer-alist
                '("^\\*eldoc.*\\*"
                  (display-buffer-reuse-window display-buffer-in-side-window)
                  (dedicated . t)
                  (side . right)
                  (inhibit-same-window . t)))
-
-  ;; 将 minibuffer 窗口高度设为 1，可以确保只显示一行（默认为小数，表示 frame 高度占
-  ;; 比，会导致显示多行）。
-  (setq max-mini-window-height 1)
-  ;; 为 nil 时只单行显示 eldoc 信息.
-  (setq eldoc-echo-area-use-multiline-p nil)
-
-  ;; 一键显示和关闭 eldoc buffer。
+  ;; 使用实际文档 buffer，不依赖会随文档内容变化的名字。
   (global-set-key (kbd "M-`")
-                  (lambda()
+                  (lambda ()
                     (interactive)
-                    (if (get-buffer-window "*eldoc*")
-			(delete-window (get-buffer-window "*eldoc*"))
-                      (display-buffer "*eldoc*")))))
+                    (let* ((buffer (eldoc-doc-buffer))
+                           (window (get-buffer-window buffer)))
+                      (if window (quit-window nil window)
+                        (eldoc-doc-buffer t))))))
 
 (use-package eldoc-box
   :after (eglot eldoc)
-  :bind
-  (:map eglot-mode-map
-        ("C-M-k" . (lambda () (interactive) (eldoc-box-scroll-down 1)))
-        ("C-M-j" . (lambda () (interactive) (eldoc-box-scroll-up 1)))
-	;; 按需弹出 posframe 来显示 eldoc buffer 内容。
-	("C-c C-d" . eldoc-box-help-at-point)
-	)
+  :bind (:map eglot-mode-map ("C-c d d" . my/eglot-documentation))
+  :preface
+  (defun my/eglot-documentation ()
+    "按需请求 hover 文档；在原位置显示 Eldoc 浮窗。"
+    (interactive)
+    (let ((buffer (current-buffer)) (position (point))
+          (tick (buffer-chars-modified-tick)))
+      (unless (eglot-hover-eldoc-function
+               (lambda (doc &rest properties)
+                 (when (and doc (buffer-live-p buffer))
+                   (with-current-buffer buffer
+                     (when (and (= (point) position)
+                                (= (buffer-chars-modified-tick) tick)
+                                (eq (window-buffer (selected-window)) buffer))
+                       (eldoc-display-in-buffer (list (cons doc properties)) nil)
+                       (eldoc-box-quit-frame)
+                       (eldoc-box-help-at-point))))))
+        (user-error "当前语言服务器不提供 hover 文档"))))
 
   :config
   (setq eldoc-box-max-pixel-height 600)
@@ -1487,11 +1726,16 @@
   ;; C-g 关闭弹出的 child frame。
   (setq eldoc-box-clear-with-C-g t)
 
+  ;; 美化 TypeScript 报错信息。
+  (add-hook 'eldoc-box-buffer-setup-hook #'eldoc-box-prettify-ts-errors)
+
   ;; 在右上角显示 eldoc 帮助；
   ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-mode t)
 
   ;; 在光标位置显示 eldoc 帮助；
   ;;(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
+
+  ;; eldoc-box 还支持 eldoc-box-mouse-mode(需要启用 track-mouse)，但是可能会让 Emacs 变慢。
   )
 
 ;; 将 ~/.venv/bin 添加到 PATH 环境变量和 exec-path 变量中。
@@ -1521,8 +1765,7 @@
   ;;(setq python-indent-guess-indent-offset-verbose nil)
   ;;(setq python-indent-offset 2)
   :hook
-  (python-mode . (lambda ()
-                   (my/python-setup-shell))))
+  (python-base-mode . my/python-setup-shell))
 
 (add-to-list 'eglot-server-programs
              '((python-mode python-ts-mode)
@@ -1595,36 +1838,26 @@
   (define-key go-ts-mode-map (kbd "C-c t r") #'go-tag-remove))
 
 (use-package go-playground
-  :commands (go-playground-mode)
+  :demand nil
+  :defer t
+  :commands (go-playground go-playground-mode)
   :config
   (setq go-playground-init-command "go mod init"))
 
-;; brew install sccache
-(setenv "RUSTC_WRAPPER" "/opt/homebrew/bin/sccache")
-
-;; https://github.com/jwiegley/dot-emacs/blob/master/init.org#rust-mode
-(use-package rust-mode
-  :after (eglot)
+(use-package rust-ts-mode
+  :ensure nil
+  :mode ("\\.rs\\'" . rust-ts-mode)
   :init
-  (require 'rust-ts-mode)
-  ;; rust-mode 作为 rust-ts-mode 而非 prog-mode 的子 mode。
-  (setq rust-mode-treesitter-derive t)
+  (add-to-list 'major-mode-remap-alist '(rust-mode . rust-ts-mode))
   :config
-
-  ;; rust-analyzer 使用 rustfmt 来格式化代码
-  ;;(setq rust-format-on-save t)
-  (setq rust-rustfmt-switches '("--edition" "2021"))
-
-  ;; treesit-auto 默认不将 XX-mode-hook 添加到对应的 XX-ts-mode-hook 上, 需要手动指定。
-  (setq rust-ts-mode-hook rust-mode-hook)
-
-  ;; rust 建议使用空格而非 TAB 来缩进。
-  (add-hook 'rust-ts-mode-hook (lambda () (setq indent-tabs-mode nil)))
+  (require 'eglot)
+  ;; Rust 建议使用空格而非 TAB 来缩进。
+  (add-hook 'rust-ts-mode-hook (lambda () (setq-local indent-tabs-mode nil)))
 
   ;; 参数列表参考：https://rust-analyzer.github.io/manual.html#configuration
   (add-to-list
    'eglot-server-programs
-   '((rust-ts-mode rust-mode) .
+   '(rust-ts-mode .
      ("rust-analyzer"
       :initializationOptions
       (
@@ -1632,12 +1865,12 @@
        (
 	:extraArgs ["+nightly"]
 	)
-       :completion (:fullFunctionSignatures (:enable t))
+       ;;:completion (:fullFunctionSignatures (:enable t)) ;; 默认关闭，启用后会增加补全文档，影响性能。
        ;; 20240910 不能关闭 checkOnSave，否则 flymake diagnose 可能不生效。
        ;;:checkOnSave :json-false
        :check
        (
-        :command "clippy"
+        :command "check" ;; clippy 比 cargo check 更重，影响性能。
         ;;https://esp-rs.github.io/book/tooling/visual-studio-code.html#using-rust-analyzer-with-no_std
         :allTargets :json-false
 	;; 不发送 --workspace 给 cargo check, 只检查当前 package.
@@ -1650,7 +1883,7 @@
         ;;:buildScripts (:enable :json-false)
         ;;:features "all"
         ;;:noDefaultFeatures t
-        :cfgs (:tokio_unstable "")
+        :cfgs ["tokio_unstable"]
         ;;:autoreload :json-false
         )
        :diagnostics
@@ -1676,6 +1909,9 @@
        )))))
 
 (use-package rust-playground
+  :demand nil
+  :defer t
+  :commands rust-playground
   :config
   (setq rust-playground-cargo-toml-template
         "[package]
@@ -1687,10 +1923,8 @@ edition = \"2021\"
 [dependencies]"))
 
 (use-package eglot-x
-  :after (eglot rust-mode)
+  :after (eglot rust-ts-mode)
   :vc (:url "https://github.com/nemethf/eglot-x")
-  :init
-  (require 'rust-ts-mode) ;; 绑定 rust-ts-mode-map 需要。
   :config
   (eglot-x-setup))
 
@@ -1717,11 +1951,11 @@ edition = \"2021\"
     (interactive "ssearch: ")
     (xwidget-webkit-browse-url
      (concat "https://crates.io/search?q=" (string-replace " " "%20" query)) t))
-  (global-set-key (kbd "C-c d c") 'my/browser-docsrs) ;; 助记: c -> crates.io
+  (global-set-key (kbd "C-c d c") 'my/search-crates.io) ;; 助记: c -> crates.io
   )
 
 (use-package cargo-mode
-  :after (rust-mode)
+  :after (rust-ts-mode)
   :custom
   ;; cargo-mode 缺省为 compilation buffer 使用 comint mode, 设置为 nil 使用 compilation。
   (cargo-mode-use-comint nil)
@@ -1731,77 +1965,40 @@ edition = \"2021\"
   ;; 自动滚动显示 compilation buffer 内容。
   (setq compilation-scroll-output t))
 
-(use-package markdown-mode
-  :commands (markdown-mode gfm-mode)
-  :mode
-  (("README\\.md\\'" . gfm-mode)
-   ("\\.md\\'" . markdown-mode)
-   ("\\.markdown\\'" . markdown-mode))
+(use-package markdown-ts-mode
+  :ensure nil ;; Emacs 31 内置。
+  :mode (("\\.md\\'" . markdown-ts-mode)
+         ("\\.markdown\\'" . markdown-ts-mode))
   :init
-  (when (executable-find "multimarkdown")
-    (setq markdown-command "multimarkdown"))
-  (setq markdown-enable-wiki-links t)
-  (setq markdown-italic-underscore t)
-  (setq markdown-asymmetric-header t)
-  (setq markdown-make-gfm-checkboxes-buttons t)
-  (setq markdown-gfm-uppercase-checkbox t)
-  (setq markdown-fontify-code-blocks-natively t)
-  (setq markdown-gfm-additional-languages "Mermaid")
-  (setq markdown-content-type "application/xhtml+xml")
-  (setq markdown-css-paths
-	'("https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css"
-          "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github.min.css"))
-  (setq markdown-xhtml-header-content "
-<meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
-<style>
-body {
-  box-sizing: border-box;
-  max-width: 740px;
-  width: 100%;
-  margin: 40px auto;
-  padding: 0 10px;
-}
-</style>
-<link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/default.min.css'>
-<script src='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js'></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.body.classList.add('markdown-body');
-  document.querySelectorAll('pre code').forEach((code) => {
-    if (code.className != 'mermaid') {
-      hljs.highlightBlock(code);
-    }
-  });
-});
-</script>
-<script src='https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js'></script>
-<script>
-mermaid.initialize({
-  theme: 'default',  // default, forest, dark, neutral
-  startOnLoad: true
-});
-</script>
-"))
+  (add-to-list 'major-mode-remap-alist '(markdown-mode . markdown-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(gfm-mode . markdown-ts-mode))
+  :custom
+  (markdown-ts-unchecked-checkbox '("󰄱" . "□"))
+  (markdown-ts-checked-checkbox '("󰄲" . "■"))
+  (markdown-ts-fontify-code-blocks-natively t))
 
-(use-package grip-mode
-  :defer
-  :after (markdown-mode)
-  :config
-  (setq grip-preview-use-webkit nil)
-  (setq grip-preview-host "127.0.0.1")
-  ;; 保存文件时才更新预览。
-  (setq grip-update-after-change nil)
-  ;; 从 ~/.authinfo 文件获取认证信息。
-  (require 'auth-source)
-  (let ((credential (auth-source-user-and-password "api.github.com")))
-    (setq grip-github-user (car credential)
-          grip-github-password (cadr credential)))
-  (define-key markdown-mode-command-map (kbd "g") #'grip-mode))
+(use-package markdown-ts-mode-x
+  :ensure nil
+  :after markdown-ts-mode
+  :commands markdown-ts-toc-insert-template
+  :bind (:map markdown-ts-mode-map
+              ("C-c r" . markdown-ts-toc-generate)))
 
-(use-package markdown-toc
-  :after(markdown-mode)
+(use-package markdown-ts-appear
+  :vc (markdown-ts-appear
+       :url "https://github.com/Thysrael/markdown-ts-appear"
+       :rev :newest)
+  :hook (markdown-ts-mode . markdown-ts-appear-mode)
   :config
-  (define-key markdown-mode-command-map (kbd "r") #'markdown-toc-generate-or-refresh-toc))
+  (setq markdown-ts-appear-link-icon '("" . "↗")
+      markdown-ts-appear-image-icon '("" . "▧")
+      markdown-ts-appear-code-fence-style 'connected
+      markdown-ts-appear-label-caps '("" . "")
+      markdown-ts-appear-wikilink-icon "◆"
+      markdown-ts-appear-render-callouts t
+      markdown-ts-appear-block-quote-marker "▎"
+      markdown-ts-appear-table-style 'unicode)
+  )
 
 (setq sh-basic-offset 4)
 (setq sh-indentation 4)
@@ -1811,24 +2008,26 @@ mermaid.initialize({
 (setq exec-path (cons my-llvm-path  exec-path))
 
 (use-package tempel
+  :disabled
   :bind
   (("M-+" . tempel-complete)
    ("M-*" . tempel-insert))
   :init
+  (defun tempel-setup-capf ()
+    (setq-local completion-at-point-functions (cons #'tempel-expand completion-at-point-functions)))
+
   ;; 自定义模板文件。
   (setq tempel-path "/Users/alizj/emacs/templates")
   (add-hook 'conf-mode-hook 'tempel-setup-capf)
   (add-hook 'prog-mode-hook 'tempel-setup-capf)
   (add-hook 'text-mode-hook 'tempel-setup-capf)
-
-  (defun tempel-setup-capf ()
-    (setq-local completion-at-point-functions (cons #'tempel-expand completion-at-point-functions)))
   ;; 确保 tempel-setup-capf 位于 eglot-managed-mode-hook 前，这样 corfu 才会显示
   ;; tempel 的自动补全。
   ;; https://github.com/minad/tempel/issues/103#issuecomment-1543510550
   (add-hook #'eglot-managed-mode-hook 'tempel-setup-capf))
 
-(use-package tempel-collection)
+(use-package tempel-collection
+  :disabled)
 
 ;; https://gitlab.com/skybert/my-little-friends/-/blob/master/emacs/.emacs#L295
 (setq compilation-ask-about-save nil
@@ -1843,8 +2042,7 @@ mermaid.initialize({
 
 ;; 显示 shell 转义字符的颜色。
 (add-hook 'compilation-filter-hook
-          (lambda ()
-	    (ansi-color-apply-on-region (point-min) (point-max))))
+          #'ansi-color-compilation-filter)
 
 ;; 编译结束且失败时自动切换到 compilation buffer。
 (setq compilation-finish-functions
@@ -1877,7 +2075,6 @@ mermaid.initialize({
 	'(
 	  c-mode
 	  c-ts-mode
-	  rust-mode
 	  rust-ts-mode
 	  ;; go-mode
 	  ;; go-ts-mode
@@ -1897,7 +2094,7 @@ mermaid.initialize({
   (define-key citre-mode-map (kbd "s-.") 'citre-jump)
   (define-key citre-mode-map (kbd "s-,") 'citre-jump-back)
   (define-key citre-mode-map (kbd "s-?") 'citre-peek-reference)
-  (define-key citre-mode-map (kbd "s-p") 'citre-peek)
+  (define-key citre-mode-map (kbd "C-c d p") 'citre-peek)
   (define-key citre-peek-keymap (kbd "s-n") 'citre-peek-next-line)
   (define-key citre-peek-keymap (kbd "s-p") 'citre-peek-prev-line)
   (define-key citre-peek-keymap (kbd "s-N") 'citre-peek-next-tag)
@@ -1919,27 +2116,33 @@ mermaid.initialize({
      :models '(gpt-4o))))
 
 (use-package vterm
-  :hook
-  (vterm-mode . (lambda ()
-		  ;; 关闭一些 mode，提升显示性能。
-		  (setf truncate-lines nil)
-		  (setq-local show-paren-mode nil)
-		  (setq-local global-hl-line-mode nil)
-	          (display-line-numbers-mode -1) ;; 不显示行号。
-		  ;;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之
-		  ;;; 类的程序会对不齐。
-		  (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
-		  (buffer-face-mode t)))
   :config
+
+  ;; 关闭一些 mode，提升显示性能。
+  (defun my-vterm-performance-setup ()
+    (setq-local truncate-lines t) ;; 
+    (show-paren-local-mode -1) ;; 不显示括号匹配
+    (hl-line-mode -1) ;; 不高亮当前行
+    (display-line-numbers-mode -1) ;; 不显示行号。
+    ;;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
+    (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
+    (buffer-face-mode t))    
+  
+  (add-hook 'vterm-mode-hook #'my-vterm-performance-setup)
+
   (setq vterm-set-bold-hightbright t)
   (setq vterm-always-compile-module t)
-  (setq vterm-max-scrollback 100000)
-  (setq vterm-timer-delay 0.01) ;; nil: no delay
+
+  ;; scrollback 设置太大时，对于长时间将 shell 或大量日子输出会占用大量 LISP 对象内存，增加 GC。
+  (setq vterm-max-scrollback 10000)
+  (setq vterm-timer-delay 0.05) ;; nil: no delay
+
   (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash"))
   ;; vterm buffer 名称，%s 为 shell 的 PROMPT_COMMAND 变量的输出。
   (setq vterm-buffer-name-string "*vt: %s")
   ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
   (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
+  
   (define-key vterm-mode-map (kbd "C-l") nil)
   ;; 防止输入法切换冲突。
   (define-key vterm-mode-map (kbd "C-\\") nil))
@@ -2012,21 +2215,6 @@ mermaid.initialize({
 (define-key eshell-hist-mode-map (kbd "M-r") nil)
 (define-key eshell-hist-mode-map (kbd "M-s") nil)
 
-;; 避免 undo-more: No further undo information 报错.
-;; 10X bump of the undo limits to avoid issues with premature.
-;; Emacs GC which truncages the undo history very aggresively
-(setq undo-limit 800000)
-(setq undo-strong-limit 12000000)
-(setq undo-outer-limit 120000000)
-
-(global-auto-revert-mode 1)
-(setq revert-without-query (list "\\.png$" "\\.svg$")
-      auto-revert-verbose nil)
-
-(setq global-mark-ring-max 600)
-(setq mark-ring-max 600)
-(setq kill-ring-max 600)
-
 (use-package emacs
   :init
   ;; 粘贴于光标处, 而不是鼠标指针处。
@@ -2034,8 +2222,7 @@ mermaid.initialize({
   (setq initial-major-mode 'fundamental-mode)
   ;; 按中文折行。
   (setq word-wrap-by-category t)
-  ;; 退出自动杀掉进程。
-  (setq confirm-kill-processes nil)
+  ;; 退出时保留前文的进程确认设置 confirm-kill-processes=t。
   (setq use-short-answers t)
   (setq confirm-kill-emacs #'y-or-n-p)
   (setq ring-bell-function 'ignore)
@@ -2043,8 +2230,10 @@ mermaid.initialize({
   (add-hook 'artist-mode-hook (lambda () (display-line-numbers-mode -1)))
   ;; bookmark 发生变化时自动保存（默认是 Emacs 正常退出时保存）。
   (setq bookmark-save-flag 1)
+
   ;; 不创建 lock 文件。
-  (setq create-lockfiles nil)
+  ;;(setq create-lockfiles nil)
+  
   ;; 启动 Server 。
   (unless (and (fboundp 'server-running-p)
                (server-running-p))
@@ -2061,43 +2250,60 @@ mermaid.initialize({
   (setq recentf-auto-cleanup 'mode)
 
   ;; 每 5min 以及 emacs 退出时保存 recentf-list。
-  ;; 20241017: 配置这两个参数后，recentf 将被清空。
   ;;(run-at-time nil (* 5 60) 'recentf-save-list)
   ;;(add-hook 'kill-emacs-hook #'recentf-save-list)
 
   (setq recentf-max-menu-items 100)
   (setq recentf-max-saved-items 100)
 
-  ;; recentf-exclude 的参数是正则表达式列表，不支持 ~ 引用家目录。
+  ;; 排除规则使用正则表达式；家目录路径按 recentf 的文件名格式规范化。
   ;;; emacs-dashboard 不显示这里排除的文件。
   (setq recentf-exclude
-	`(
-	  ,(recentf-expand-file-name "~/.emacs.d/\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
+        `(
+          ,(recentf-expand-file-name "~/.emacs.d/\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
           ,(recentf-expand-file-name "~/.emacs.d/\\(recentf\\|bookmarks\\|archived.org\\)")
-	  ,(recentf-expand-file-name "~/go/mod/.*")
-	  ;; 不在 recentf 中记录 tramp 文件，防止 tramp 扫描时卡住。
+          ,(recentf-expand-file-name "~/go/pkg/mod/.*")
+          ;; 安装的软件包及 Rust 工具链不进入最近文件记录。
+          "\\`/opt/homebrew/Cellar/"
+          ,(concat "\\`"
+                   (regexp-quote
+                    (recentf-expand-file-name "~/.rustup/toolchains/")))
+          ;; Homebrew Go SDK 源码：兼容版本升级及 opt 符号链接路径。
+          "/Cellar/go/[^/]+/libexec/src/"
+          "/opt/go/libexec/src/"
+          ;; 第三方依赖源码：不进入最近文件记录（包括 xref 访问）。
+          ,(concat "\\`"
+                   (regexp-quote
+                    (file-name-as-directory
+                     (recentf-expand-file-name (or (getenv "CARGO_HOME") "~/.cargo"))))
+                   "\\(registry/src\\|git/checkouts\\)/")
+          "/\\(site-packages\\|dist-packages\\)/"
+          "/\\(\\.venv\\|venv\\|\\.virtualenvs\\|\\.tox\\|\\.nox\\)/"
+          "/node_modules/"
+          ;; 不在 recentf 中记录 tramp 文件，防止 tramp 扫描时卡住。
           ,tramp-file-name-regexp
           "^/tmp"
-	  "\\.bak\\'"
-	  "\\.gpg\\'"
-	  "\\.gz\\'"
-	  "\\.tgz\\'"
-	  "\\.xz\\'"
-	  "\\.zip\\'"
-	  "^/ssh:"
-	  "\\.png\\'"
+          "\\.bak\\'"
+          "\\.gpg\\'"
+          "\\.gz\\'"
+          "\\.tgz\\'"
+          "\\.xz\\'"
+          "\\.zip\\'"
+          "^/ssh:"
+          "\\.png\\'"
           "\\.jpg\\'"
-	  "/\\.git/"
-	  "\\.gitignore\\'"
-	  "\\.log\\'"
-	  "COMMIT_EDITMSG"
-	  "\\.pyi\\'"
-	  "\\.pyc\\'"
+          "/\\.git/"
+          "\\.gitignore\\'"
+          "\\.log\\'"
+          "COMMIT_EDITMSG"
+	  ".DS_Store"
+          "\\.pyi\\'"
+          "\\.pyc\\'"
           "/private/var/.*"
-	  "^/usr/local/Cellar/.*"
-	  ".*/vendor/.*"
-	  ".*/target/.*"
-	  "/Applications/.*"
+          "^/usr/local/Cellar/.*"
+          ".*/vendor/.*"
+          ".*/target/.*"
+          "/Applications/.*"
           ,(concat package-user-dir "/.*-autoloads\\.egl\\'")))
   (recentf-mode 1))
 
@@ -2142,6 +2348,15 @@ mermaid.initialize({
   (setq diff-update-on-the-fly t))
 
 (use-package ediff
+  :ensure nil
+  
+  ;; Emacs 31.1 Ediff 循环加载兼容：
+  ;; ediff-diff-options 的 :set setter 会在这两个变量定义前运行。
+  ;; 上游修复后可删除。
+  :preface
+  (defvar ediff-ignore-case nil)
+  (defvar ediff-diff3-options "")
+
   :config
   (setq ediff-keep-variants nil)
   (setq ediff-split-window-function 'split-window-horizontally)
@@ -2177,7 +2392,7 @@ mermaid.initialize({
 ;; 保存 Buffer 时自动更新 #+LASTMOD: 时间戳。
 (setq time-stamp-start "#\\+\\(LASTMOD\\|lastmod\\):[ \t]*")
 (setq time-stamp-end "$")
-(setq time-stamp-format "%Y-%m-%dT%02H:%02m:%02S%5z")
+(setq time-stamp-format "%Y-%m-%dT%H:%M:%S%5z")
 ;; #+LASTMOD: 必须位于文件开头的 line-limit 行内, 否则自动更新不生效。
 (setq time-stamp-line-limit 30)
 (add-hook 'before-save-hook 'time-stamp t)
@@ -2191,14 +2406,19 @@ mermaid.initialize({
       (json-pretty-print-buffer))))
 
 (defun my/delete-file-and-buffer (buffername)
-  "Delete the file visited by the buffer named BUFFERNAME."
-  (interactive "bDelete file")
-  (let* ((buffer (get-buffer buffername))
-         (filename (buffer-file-name buffer)))
-    (when filename
-      (delete-file filename)
-      (message "Deleted file %s" filename)
-      (kill-buffer))))
+  "确认后删除 BUFFERNAME 访问的文件，并关闭该 buffer。"
+  (interactive "b删除文件及 buffer: ")
+  (let ((buffer (get-buffer buffername)))
+    (unless (buffer-live-p buffer)
+      (user-error "Buffer 不存在: %s" buffername))
+    (with-current-buffer buffer
+      (unless buffer-file-name
+        (user-error "该 buffer 没有访问文件"))
+      (when (buffer-modified-p)
+        (user-error "请先保存或撤销该 buffer 的修改，再删除文件"))
+      (when (yes-or-no-p (format "删除文件 %s 并关闭 buffer？ " buffer-file-name))
+        (delete-file buffer-file-name t)
+        (kill-buffer buffer)))))
 
 (defun my/diff-buffer-with-file ()
   "Compare the current modified buffer with the saved version."
@@ -2210,7 +2430,7 @@ mermaid.initialize({
 (defun my/copy-current-filename-to-clipboard ()
   "Copy `buffer-file-name' to system clipboard."
   (interactive)
-  (let ((filename (if-let (f buffer-file-name)
+  (let ((filename (if-let* (f buffer-file-name)
                       f
                     default-directory)))
     (if filename
@@ -2219,28 +2439,19 @@ mermaid.initialize({
           (kill-new filename))
       (message "Not a file..."))))
 
-;; https://gitlab.com/skybert/my-little-friends/-/blob/2022-emacs-from-scratch/emacs/.emacs
-;; Rename current buffer, as well as doing the related version control commands to
-;; rename the file.
-(defun my/rename-this-buffer-and-file ()
-  "Renames current buffer and file it is visiting."
-  (interactive)
-  (let ((filename (buffer-file-name)))
-    (if (not (and filename (file-exists-p filename)))
-        (message "Buffer is not visiting a file!")
-      (let ((new-name (read-file-name "New name: " filename)))
-        (cond
-         ((vc-backend filename) (vc-rename-file filename new-name))
-         (t
-          (rename-file filename new-name t)
-          (rename-buffer new-name)
-          (set-visited-file-name new-name)
-          (set-buffer-modified-p nil)
-          (message
-           "File '%s' successfully renamed to '%s'"
-           filename
-           (file-name-nondirectory new-name))))))))
-(global-set-key (kbd "C-x C-r") 'my/rename-this-buffer-and-file)
+;; 普通文件使用内置重命名；VC 文件保留 backend 的重命名行为。
+(defun my/rename-this-buffer-and-file (new-location)
+  "安全重命名当前文件；VC 文件须先保存，目标文件不得已存在。"
+  (interactive (list (read-file-name "重命名为: ")))
+  (require 'vc)
+  (if (and buffer-file-name (vc-backend buffer-file-name))
+      (progn
+        (when (buffer-modified-p)
+          (user-error "请先保存 VC 文件，再执行重命名"))
+        (vc-rename-file buffer-file-name new-location))
+    (rename-visited-file new-location)))
+(global-set-key (kbd "C-c f r") #'my/rename-this-buffer-and-file)
+;; C-x C-r 保留内置 find-file-read-only。
 
 (use-package mwim
   :config
@@ -2325,10 +2536,14 @@ mermaid.initialize({
 (define-key xwidget-webkit-mode-map (kbd "C-c") 'xwidget-webkit-copy-selection-as-kill)
 
 ;; 自动调整 xwidget-webkit 窗口大小（也可以手动按 a 来调整）。
-(add-hook 'window-configuration-change-hook
-	  (lambda ()
-	    (when (equal major-mode 'xwidget-webkit-mode)
-	      (xwidget-webkit-adjust-size-dispatch))))
+(defun my-xwidget-webkit-performance-setup ()
+  (add-hook 'window-configuration-change-hook
+            #'xwidget-webkit-adjust-size-dispatch
+            nil
+            t))
+
+(add-hook 'xwidget-webkit-mode-hook
+          #'my-xwidget-webkit-performance-setup)
 
 ;; make xwidget default browser
 (setq browse-url-browser-function
@@ -2348,18 +2563,16 @@ mermaid.initialize({
 
 ;; Google 翻译
 (use-package google-translate
-  :config
+  :demand nil
+  :defer t
+  :bind ("C-c d t" . google-translate-smooth-translate)
+  :init
   ;; C-n/p 切换翻译类型。
   (setq google-translate-translation-directions-alist
-        '(("en" . "zh-CN") ("zh-CN" . "en")))
-  (global-set-key (kbd "C-c d t") #'google-translate-smooth-translate))
+        '(("en" . "zh-CN") ("zh-CN" . "en"))))
 
-;; 删除文件时, 将文件移动到回收站。
-(use-package osx-trash
-  :config
-  (when (eq system-type 'darwin)
-    (osx-trash-setup))
-  (setq-default delete-by-moving-to-trash t))
+;; 删除本地文件时，使用 Emacs 内置的系统回收站支持。
+(setq-default delete-by-moving-to-trash t)
 
 ;; 在 Finder 中打开当前文件。
 (use-package reveal-in-osx-finder
@@ -2377,17 +2590,23 @@ mermaid.initialize({
   (global-set-key (kbd "C-h f") #'helpful-callable)
   (global-set-key (kbd "C-h v") #'helpful-variable)
   (global-set-key (kbd "C-h k") #'helpful-key)
-  (global-set-key (kbd "C-c C-d") #'helpful-at-point)
+  (global-set-key (kbd "C-c d h") #'helpful-at-point)
   (global-set-key (kbd "C-h F") #'helpful-function)
   (global-set-key (kbd "C-h C") #'helpful-command))
 
 (use-package pdf-tools
+  :demand nil
+  :defer t
+  :commands pdf-tools-install
   ;; :ensure-system-package
   ;; ((pdfinfo . poppler)
   ;;  (automake . automake)
   ;;  (mutool . mupdf)
   ;;  ("/usr/local/opt/zlib" . zlib))
   :init
+  ;; 使用包自带的轻量 loader，支持 magic/大小写后缀及异步 epdfinfo 初始化。
+  (require 'pdf-loader)
+  (pdf-loader-install)
   ;; 使用 scaling 确保中文字体不模糊
   (setq pdf-view-use-scaling t)
   (setq pdf-view-use-imagemagick nil)
@@ -2404,7 +2623,7 @@ mermaid.initialize({
   ;;(add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1)))
   (setq pdf-info-epdfinfo-program "/opt/homebrew/bin/epdfinfo")
   (setenv "PKG_CONFIG_PATH" "/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/pkgconfig:/opt/homebrew/lib/pkgconfig")
-  (pdf-tools-install))
+)
 
 ;; pdf 转为 png 时使用更高分辨率（默认 90）。
 (setq doc-view-resolution 144)
