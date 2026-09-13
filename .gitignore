@@ -5,3 +5,16 @@
 !early-init.el
 !elfeed.score
 !snippets/
+!/templates-pdf
+!/tests/
+!/tests/pdf-export/
+!/tests/pdf-export/*.el
+!/tests/pdf-export/*.org
+!/tests/pdf-export/*.py
+!/tests/pdf-export/README.md
+!/tests/pdf-copy/
+!/tests/pdf-copy/*.py
+!/tests/pdf-copy/*.swift
+!/tests/pdf-copy/*.tex
+!/tests/pdf-copy/*-expected.txt
+!/tests/pdf-copy/README.md

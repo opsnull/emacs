@@ -1,0 +1,49 @@
+org-mode
+
+(my-latex "#+TITLE: " (p "标题") n
+ "#+SUBTITLE: " (p "副标题（可留空）") n
+ "#+AUTHOR: 张俊(zj@opsnull.com)" n
+ "#+DATE: " (format-time-string "%Y-%m-%d") n
+ "#+LANGUAGE: zh-CN
+#+OPTIONS: prop:nil title:nil H:3 num:3 toc:nil tex:t ^:nil
+#+LATEX_COMPILER: lualatex
+#+LATEX_CLASS: ctexart
+"
+ (format "#+LATEX_HEADER: \\usepackage{%s}\n"
+         (file-name-sans-extension (expand-file-name "mystyle.sty" my/org-pdf-style-directory)))
+ "
+#+begin_export latex
+% 空参数省略封面图，也可填入图片路径。Org 默认将 SUBTITLE 合入标题。
+\\hypersetup{pageanchor=false}
+\\MakeDocumentCover{}
+\\pagenumbering{roman}
+\\hypersetup{pageanchor=true}
+\\begin{abstract}
+这是一个摘要。
+\\end{abstract}
+\\clearpage
+% 编号深度由 num 控制；目录深度单独控制。
+\\setcounter{tocdepth}{2}
+\\DocumentContents
+\\clearpage
+\\pagenumbering{arabic}
+#+end_export
+
+"
+ "代码复制：折行代码请从逻辑行的第一显示行开始选择，续行或局部选择可能不完整；完整示例见 [["
+ (p "配套源码 URL（发布前填写）") "][配套源码]]。" n n q)
+
+
+(my-latex-short "#+TITLE: " (p "标题") n
+ "#+AUTHOR: 张俊(zj@opsnull.com)" n
+ "#+DATE: " (format-time-string "%Y-%m-%d") n
+ "#+LANGUAGE: zh-CN
+#+OPTIONS: prop:nil title:t H:3 num:3 toc:nil tex:t ^:nil
+#+LATEX_COMPILER: lualatex
+#+LATEX_CLASS: ctexart
+"
+ (format "#+LATEX_HEADER: \\usepackage{%s}\n"
+         (file-name-sans-extension (expand-file-name "mystyle.sty" my/org-pdf-style-directory)))
+ n
+ "代码复制：折行代码请从逻辑行的第一显示行开始选择，续行或局部选择可能不完整；完整示例见 [["
+ (p "配套源码 URL（发布前填写）") "][配套源码]]。" n n q)

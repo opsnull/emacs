@@ -1,0 +1,37 @@
+\documentclass{article}
+\usepackage{fontspec}
+\usepackage{org-pdf-copy}
+\fvset{numbers=left,breaklines=true,commandchars=\\\{\}}
+\begin{document}
+Normal text: let n = 1.
+\begin{Verbatim}
+fn main() \{
+    \textcolor{blue}{let} n = 1;
+    if n > 0 \{
+        println!("hello");
+    \}
+\}
+\end{Verbatim}
+Normal text: let n = 1.
+\begin{Verbatim}
+fn spaces() \{
+    let columns = "a    b";
+
+    let next = 2;
+\}
+\end{Verbatim}
+\begin{Verbatim}
+    // two  spaces, three   spaces, four    spaces
+    x  >  y;  x  =  2;  x  +  y;  x  .  y;
+\end{Verbatim}
+\begin{minipage}{180pt}
+\begin{Verbatim}
+    let message = "this is a long line with enough words to trigger automatic line wrapping within a narrow code block";
+\end{Verbatim}
+\end{minipage}
+\begin{Verbatim}
+	let tab = 1;
+    	let mixed = 2;
+    x	= 3;
+\end{Verbatim}
+\end{document}

@@ -58,41 +58,4 @@ org-mode ;; 空格分割的多个 Mode 名称。
 	     ":EXPORT_HUGO_CUSTOM_FRONT_MATTER+: :showSummary true" n
 	     ":END:")
 
-(my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n 
-	  "#+SUBTITLE: 内部资料，注意保密!
-#+AUTHOR: 张俊(zj@opsnull.com)
-# 中文语言环境（目录等用中文显示）。
-#+LANGUAGE: zh-CN
-# 不自动输出 titile 和 toc，后续定制输出。
-# 但是需要明确设置 num 来控制输出的目录级别。
-#+OPTIONS: prop:t title:nil num:2 toc:nil ^:nil
-#+LATEX_COMPILER: xelatex
-#+LATEX_CLASS: ctexart
-# 引用自定义 latext style 文件，需要去掉 .sty 后缀。
-#+LATEX_HEADER: \\usepackage{/Users/alizj/emacs/mystyle}
-
-# 定制 PDF 封面和目录。
-#+begin_export latex
-% 封面页
-\\begin{titlepage}
-% 插入标题
-\\maketitle
-% 插入封面图
-%\\ThisCenterWallPaper{0.4}{/path/to/image.png}
-% 封面页不编号
-\\noindent\\fboxsep=0pt
-\\setcounter{page}{0}
-\\thispagestyle{empty}
-\\end{titlepage}
-
-% 摘要页
-\\begin{abstract}
-这是一个摘要。
-\\end{abstract}
-
-% 目录页
-\\newpage
-\\tableofcontents
-\\newpage
-#+end_export
-")
+;; PDF 模板由 dotemacs.org 生成到 templates-pdf。

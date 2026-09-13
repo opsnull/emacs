@@ -1,97 +1,158 @@
-\usepackage{wallpaper} % 显示封面图片或页面图片。
-
-\usepackage{color}
+% 技术讲义样式。支持中英文混排、emoji 字符、代码块原样复制和长行复制。
+\usepackage{iftex}
+\RequireLuaTeX
 \usepackage{xcolor}
 \definecolor{winered}{rgb}{0.5,0,0}
-\definecolor{lightgrey}{rgb}{0.9,0.9,0.9}
+\definecolor{lightgrey}{gray}{0.96}
 \definecolor{tableheadcolor}{gray}{0.92}
 \definecolor{commentcolor}{RGB}{0,100,0}
 \definecolor{frenchplum}{RGB}{190,20,83}
+\definecolor{documentlink}{HTML}{245A81}
 
-% 提示 title
-\usepackage[explicit]{titlesec}
-% 每个 chapter 另起一页
-\newcommand{\sectionbreak}{\clearpage}
-\usepackage{titling}
-\setlength{\droptitle}{-6em}
-
-% 超链接和书签
-\usepackage[colorlinks]{hyperref}
-\hypersetup{
-  pdfborder={0 0 0},
-  colorlinks=true,
-  bookmarksopen=true,
-  bookmarksnumbered=true, % 书签目录显示编号。
-  linkcolor={winered},
-  urlcolor={winered},
-  filecolor={winered},
-  citecolor={winered},
-  linktoc=all}
-
-% 安装 noto-cjk 中文字体: git clone https://github.com/googlefonts/noto-cjk.git
 \usepackage{fontspec}
-\usepackage[utf8x]{inputenc}
-\setmainfont{Noto Serif SC}
-\setsansfont{Noto Sans SC}[Scale=MatchLowercase]
-\setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
-\setCJKmainfont[BoldFont=Noto Serif SC]{Noto Serif SC}
-\setCJKsansfont{Noto Sans SC}
-\setCJKmonofont{Noto Sans Mono CJK SC}
+% 定义 emoji fallback 字体指令：appleemoji
+\directlua{
+  luaotfload.add_fallback("appleemoji", {
+    "Apple Color Emoji:mode=harf;script=DFLT;"
+  })
+}
 
-\XeTeXlinebreaklocale "zh"
-\XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt
+% 设置英文字体
+% Noto CJK 字体没有原生西文斜体：明确使用合成倾斜，避免隐式字形替代。
+% Noto CJK 也没有 emoji 字体，需要 fallback 到 appleemoji。
+\setmainfont{Noto Serif CJK SC}[
+  ItalicFont=*, ItalicFeatures={FakeSlant=0.15},
+  SlantedFont=*, SlantedFeatures={FakeSlant=0.15},
+  BoldItalicFont=* Bold, BoldItalicFeatures={FakeSlant=0.15},
+  BoldSlantedFont=* Bold, BoldSlantedFeatures={FakeSlant=0.15},
+  RawFeature={fallback=appleemoji}
+]
+\setsansfont{Noto Sans CJK SC}[
+  Scale=MatchLowercase,
+  ItalicFont=*, ItalicFeatures={FakeSlant=0.15},
+  SlantedFont=*, SlantedFeatures={FakeSlant=0.15},
+  BoldItalicFont=* Bold, BoldItalicFeatures={FakeSlant=0.15},
+  BoldSlantedFont=* Bold, BoldSlantedFeatures={FakeSlant=0.15},
+  RawFeature={fallback=appleemoji}
+]
+% 英文 mono（如格式化代码块场景）使用苹果的 Menlo 字体。
+\setmonofont{Menlo}[Scale=MatchLowercase,RawFeature={fallback=appleemoji}]
 
-% 添加 email 命令。
-\newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+% 设置中文字体。
+% 中文强调使用粗体，不伪造中文斜体。
+\setCJKmainfont{Noto Serif CJK SC}[ItalicFont=* Bold,SlantedFont=* Bold]
+\setCJKsansfont{Noto Sans CJK SC}[ItalicFont=* Bold,SlantedFont=* Bold]
+\setCJKmonofont{Noto Sans Mono CJK SC}[Scale=0.9,ItalicFont=*,SlantedFont=*]
+\ltjdefcharrange{100}{"2600-"27BF,"1F000-"1FAFF,"FE0E-"FE0F,"200D}
+\ltjsetparameter{jacharrange={-100}}
 
-% sidewaytable 依赖 rotfloat
-\usepackage {rotfloat}
-
-% tabularx 的特殊 align 参数 X 用来对指定列内容自动换行，否则该列内容有可能被截断，
-% 解决办法是：在 org-mode 表格前需要加如下属性：
-% #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|X
-\usepackage{tabularx}
-% 美化表格显示效果
-\usepackage{booktabs}
-% 表格隔行颜色, {1} 开始行, {lightgrep} 奇数行颜色, {} 偶数行颜色(空表示白色)
-\rowcolors{1}{lightgrey}{}
-
+\usepackage[left=18mm,right=18mm,top=22mm,bottom=22mm,headheight=15pt]{geometry}
 \usepackage{parskip}
-\setlength{\parskip}{1em}
+\setlength{\parskip}{0.5em plus 0.1em minus 0.1em}
 \setlength{\parindent}{0pt}
-
+\linespread{1.1}
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+\setlength{\emergencystretch}{1.5em}
 \usepackage{etoolbox}
+\usepackage{needspace}
+% 普通节连续排版；需要另起页的大篇章在正文显式调用 \DocumentPartBreak。
+\newcommand{\DocumentPartBreak}{\clearpage}
+\newcommand{\DocumentContents}{\begingroup\setlength{\parskip}{0pt}\linespread{1}\selectfont\tableofcontents\endgroup}
+\ctexset{
+  section={format=\normalfont\Large\bfseries,beforeskip=1.2ex plus .3ex,afterskip=.8ex},
+  subsection={format=\normalfont\large\bfseries,beforeskip=1ex plus .2ex,afterskip=.6ex},
+  subsubsection={format=\normalfont\normalsize\bfseries,beforeskip=.8ex,afterskip=.4ex}
+}
+\AddToHook{cmd/section/before}{\Needspace{5\baselineskip}}
+\AddToHook{cmd/subsection/before}{\Needspace{4\baselineskip}}
+\AddToHook{cmd/subsubsection/before}{\Needspace{4\baselineskip}}
+
+\usepackage{hyperref}
+\usepackage{xurl}
+\hypersetup{pdfborder={0 0 0},colorlinks=true,
+  bookmarksopen=false,bookmarksnumbered=true,
+  linkcolor=black,urlcolor=documentlink,filecolor=documentlink,
+  citecolor=documentlink,linktoc=all}
+\urlstyle{same}
+\newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+\usepackage{graphicx}
+\usepackage{wallpaper} % 兼容已有文档的封面命令。
+\graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
+\usepackage{titling}
+\makeatletter
+% title:nil 仅抑制 Org 自动封面，不应清空 PDF 的标题元数据。
+% Org 把副标题格式合入 \@title；元数据中将其转为空格，避免 hyperref 警告。
+\pdfstringdefDisableCommands{\def\\{ }\def\medskip{}\def\large{}}
+\AtBeginDocument{\hypersetup{pdftitle={\@title},pdfauthor={\@author},
+  pdfcreator={Org mode / LuaLaTeX}}}
+\newcommand{\MakeDocumentCover}[1]{%
+  \begin{titlepage}\thispagestyle{empty}\centering
+  \vspace*{0.10\textheight}
+  {\fontsize{24}{34}\selectfont\bfseries\@title\par}
+  \vspace{1.5em}
+  {\normalsize\@author\par\vspace{0.5em}\@date\par}
+  \ifstrempty{#1}{}{\vspace{3em}%
+    \includegraphics[width=0.72\linewidth,height=0.35\textheight,keepaspectratio]{#1}\par}
+  \vfill
+  \end{titlepage}}
+\makeatother
+
+\usepackage{rotfloat}
+\usepackage{tabularx}
+\usepackage{longtable} % 跨页表格；tabularx 本身不支持跨页。
+\usepackage{wrapfig} % Org :float wrap 图片。
+\usepackage{booktabs}
+% 隔行底色只在显式选择的表格分组内生效，不污染标题内部的 tabular。
+% 用法：\begin{DocumentTable} ... tabular/tabularx ... \end{DocumentTable}
+\newenvironment{DocumentTable}{\begingroup\rowcolors{2}{lightgrey}{white}}{\endgroup}
+\renewcommand{\arraystretch}{1.15}
 \usepackage{calc}
-
-\usepackage[scale=0.85]{geometry}
-%\setlength{\headsep}{5pt}
-
 \usepackage{amsthm}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{indentfirst}
 \usepackage{multicol}
 \usepackage{multirow}
-\usepackage{linegoal}
-\usepackage{graphicx}
 \usepackage{fancyvrb}
 \usepackage{abstract}
+\renewcommand{\abstractnamefont}{\normalfont\Large\bfseries}
+\renewcommand{\abstracttextfont}{\normalfont\normalsize}
+\setlength{\abstitleskip}{0.8em}
 \usepackage{hologo}
-
-\linespread{1}
-\graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
-
-\usepackage[font=small,labelfont={bf}]{caption}
-\captionsetup[table]{skip=3pt}
-\captionsetup[figure]{skip=3pt}
-
-% 下划线、强调和删除线等
+\usepackage[font=small,labelfont=bf]{caption}
+\captionsetup{skip=6pt,hypcap=false}
 \usepackage[normalem]{ulem}
-% 列表
 \usepackage[shortlabels,inline]{enumitem}
-\setlist{nolistsep}
-% xeCJK 默认会把黑点用汉字显示，而 Noto 没有这个字体，所以显示效果为一个小点。解决办法是将它设置为
-% \bullet, 这样显示为实心黑点。Windows 带的楷体、仿宋没有这个问题。
+\setlist{topsep=0.4em,itemsep=0.2em,parsep=0.1em,
+  beginpenalty=10000,midpenalty=2000}
 \setlist[itemize]{label=$\bullet$}
-% 或者：
-%\renewcommand\labelitemi{\ensuremath{\bullet}}
+
+% Org 在样式包之后声明 Code；这里只调整代码框，保留主题的高亮宏。
+\makeatletter
+\AtBeginDocument{%
+  \@ifundefined{Code}{}{%
+    % 默认在空格和标点处折行，但是对于 URL 和路径，可能不满足该要求，导致不会被折行而显示溢出。
+    % 解决办法：设置在空格、/ 和 - 字符处折行。
+    \fvset{breaklines=true,breakanywhere=false,breakafter={/-},breaknonspaceingroup=true}%
+    \RenewTColorBox{Code}{o}{%
+      colback=EfD,colframe=EfD!80!EFD,colupper=EFD,
+      fontupper=\fontsize{9.5}{12}\selectfont\setlength{\fboxsep}{0pt},
+      boxsep=2pt,arc=2pt,boxrule=0.4pt,left=4pt,right=4pt,top=3pt,bottom=3pt,
+      before skip=0.6em,after skip=0.6em,breakable,lines before break=5,
+      title after break={代码（续）},fonttitle=\normalfont\small,
+      coltitle=EFD,colbacktitle=EfD!90!EFD,
+      IfNoValueTF={#1}{}{boxrule=0pt,leftrule=1pt}}
+  }%
+}
+\makeatother
+
+% 从 mystle.sty 所在目录加载自定义的 org-pdf-copy package。
+% org-pdf-copy 提供代码块复制能力：
+% 1. 不复制行号；
+% 2. 保留代码的缩进和换行;
+% 3. 支持长行复制(视觉显示换行,但是拷贝后是物理单行);
+% 文档可在加载样式前用 \newcommand{\OrgPDFCopyDisabled}{} 关闭复制特性。
+\makeatletter
+\@ifundefined{OrgPDFCopyDisabled}{\RequirePackage{\@currpath org-pdf-copy}}{}
+\makeatother

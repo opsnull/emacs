@@ -1,0 +1,11 @@
+    //array[0] = 2; // error[E0594]: cannot assign to `array[_]`, as `array` is not declared as mutable
+    let next = 1;
+    match tuple {
+        (3, _, f) if f > 4.0 => println!("The integer is three, and the float is greater than 4.0"),
+        (_, s, _) => println!("The string is '{}'", s),
+    }
+
+    println!("中文字符串 💥! 很长的中文字符串，  连续空格和 emoji 需要保留，不能在复制时插入换行。还有最后的内容。");
+    let after = 42;
+    let unbroken = "abc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZabc012XYZ";
+    let final = 7;

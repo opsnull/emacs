@@ -1,0 +1,217 @@
+% Created 2026-09-12 Sat 18:00
+% Intended LaTeX compiler: lualatex
+\documentclass[lang=cn,11pt,a4paper,table,fontset=none]{ctexart}
+                                        \setcounter{tocdepth}{3}
+\usepackage{mystyle}
+\setcounter{secnumdepth}{3}
+\author{于行(张俊，mingduo.zj)}
+\date{2024-05-09}
+\title{Rust 介绍: 安全、性能和生产力}
+\hypersetup{
+ pdfauthor={于行(张俊，mingduo.zj)},
+ pdftitle={Rust 介绍: 安全、性能和生产力},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdflang={Zh-Cn}}
+
+% Setup for code blocks [1/2]
+
+\usepackage{fvextra}
+
+\fvset{%
+  numbers=left,
+  commandchars=\\\{\},
+  highlightcolor=white!95!black!80!blue,
+  breaklines=true,
+  breaksymbol=\color{white!60!black}\tiny\ensuremath{\hookrightarrow}}
+
+% Make line numbers smaller and grey.
+\renewcommand\theFancyVerbLine{\footnotesize\color{black!40!white}\arabic{FancyVerbLine}}
+
+\usepackage{xcolor}
+
+% In case engrave-faces-latex-gen-preamble has not been run.
+\providecolor{EfD}{HTML}{f7f7f7}
+\providecolor{EFD}{HTML}{28292e}
+
+% Define a Code environment to prettily wrap the fontified code.
+\usepackage[breakable,xparse]{tcolorbox}
+\DeclareTColorBox[]{Code}{o}%
+{colback=EfD!98!EFD, colframe=EfD!95!EFD,
+  fontupper=\footnotesize\setlength{\fboxsep}{0pt},
+  colupper=EFD,
+  IfNoValueTF={#1}%
+  {boxsep=2pt, arc=2.5pt, outer arc=2.5pt,
+    boxrule=0.5pt, left=2pt}%
+  {boxsep=2.5pt, arc=0pt, outer arc=0pt,
+    boxrule=0pt, leftrule=1.5pt, left=0.5pt},
+  right=2pt, top=1pt, bottom=0.5pt,
+  breakable}
+
+% Support listings with captions
+\usepackage{float}
+\floatstyle{plain}
+\newfloat{listing}{htbp}{lst}
+\newcommand{\listingsname}{Listing}
+\floatname{listing}{\listingsname}
+\newcommand{\listoflistingsname}{List of Listings}
+\providecommand{\listoflistings}{\listof{listing}{\listoflistingsname}}
+
+
+% Setup for code blocks [2/2]: syntax highlighting colors
+
+\newcommand\efstrut{\vrule height 2.1ex depth 0.8ex width 0pt}
+\definecolor{EFD}{HTML}{202020}
+\definecolor{EfD}{HTML}{ffffff}
+\newcommand{\EFD}[1]{\textcolor{EFD}{#1}} % default
+\newcommand{\EFvp}[1]{#1} % variable-pitch
+\definecolor{EFh}{HTML}{68759f}
+\newcommand{\EFh}[1]{\textcolor{EFh}{#1}} % shadow
+\definecolor{EFsc}{HTML}{217a3c}
+\newcommand{\EFsc}[1]{\textcolor{EFsc}{\textbf{#1}}} % success
+\definecolor{EFw}{HTML}{b6532f}
+\newcommand{\EFw}[1]{\textcolor{EFw}{\textbf{#1}}} % warning
+\definecolor{EFe}{HTML}{e00033}
+\newcommand{\EFe}[1]{\textcolor{EFe}{\textbf{#1}}} % error
+\definecolor{EFl}{HTML}{4250ef}
+\newcommand{\EFl}[1]{\textcolor{EFl}{#1}} % link
+\definecolor{EFlv}{HTML}{ba35af}
+\newcommand{\EFlv}[1]{\textcolor{EFlv}{#1}} % link-visited
+\definecolor{Efhi}{HTML}{aaeccf}
+\newcommand{\EFhi}[1]{\colorbox{Efhi}{\efstrut{}#1}} % highlight
+\definecolor{EFc}{HTML}{a65f6a}
+\newcommand{\EFc}[1]{\textcolor{EFc}{\textit{#1}}} % font-lock-comment-face
+\definecolor{EFcd}{HTML}{a65f6a}
+\newcommand{\EFcd}[1]{\textcolor{EFcd}{\textit{#1}}} % font-lock-comment-delimiter-face
+\definecolor{EFs}{HTML}{4250ef}
+\newcommand{\EFs}[1]{\textcolor{EFs}{#1}} % font-lock-string-face
+\definecolor{EFd}{HTML}{506fa0}
+\newcommand{\EFd}[1]{\textcolor{EFd}{\textit{#1}}} % font-lock-doc-face
+\definecolor{EFm}{HTML}{af5a80}
+\newcommand{\EFm}[1]{\textcolor{EFm}{\textit{#1}}} % font-lock-doc-markup-face
+\definecolor{EFk}{HTML}{6052cf}
+\newcommand{\EFk}[1]{\textcolor{EFk}{\textbf{#1}}} % font-lock-keyword-face
+\definecolor{EFb}{HTML}{ba35af}
+\newcommand{\EFb}[1]{\textcolor{EFb}{\textbf{#1}}} % font-lock-builtin-face
+\definecolor{EFf}{HTML}{cf25aa}
+\newcommand{\EFf}[1]{\textcolor{EFf}{#1}} % font-lock-function-name-face
+\definecolor{EFv}{HTML}{1f77bb}
+\newcommand{\EFv}[1]{\textcolor{EFv}{#1}} % font-lock-variable-name-face
+\definecolor{EFt}{HTML}{008858}
+\newcommand{\EFt}[1]{\textcolor{EFt}{\textbf{#1}}} % font-lock-type-face
+\definecolor{EFo}{HTML}{065fff}
+\newcommand{\EFo}[1]{\textcolor{EFo}{#1}} % font-lock-constant-face
+\definecolor{EFwr}{HTML}{b6532f}
+\newcommand{\EFwr}[1]{\textcolor{EFwr}{\textbf{#1}}} % font-lock-warning-face
+\definecolor{EFnc}{HTML}{e00033}
+\newcommand{\EFnc}[1]{\textcolor{EFnc}{#1}} % font-lock-negation-char-face
+\definecolor{EFpp}{HTML}{d3303a}
+\newcommand{\EFpp}[1]{\textcolor{EFpp}{#1}} % font-lock-preprocessor-face
+\definecolor{EFrc}{HTML}{ba35af}
+\newcommand{\EFrc}[1]{\textcolor{EFrc}{\textbf{#1}}} % font-lock-regexp-grouping-construct
+\definecolor{EFrb}{HTML}{008858}
+\newcommand{\EFrb}[1]{\textcolor{EFrb}{\textbf{#1}}} % font-lock-regexp-grouping-backslash
+\definecolor{Efob}{HTML}{cee3f7}
+\newcommand{\EFob}[1]{\colorbox{Efob}{\efstrut{}#1}} % org-block
+\definecolor{EFobb}{HTML}{1f77bb}
+\definecolor{Efobb}{HTML}{cee3f7}
+\newcommand{\EFobb}[1]{\colorbox{Efobb}{\efstrut{}\textcolor{EFobb}{#1}}} % org-block-begin-line
+\definecolor{EFobe}{HTML}{1f77bb}
+\definecolor{Efobe}{HTML}{cee3f7}
+\newcommand{\EFobe}[1]{\colorbox{Efobe}{\efstrut{}\textcolor{EFobe}{#1}}} % org-block-end-line
+\definecolor{EFOa}{HTML}{3740cf}
+\newcommand{\EFOa}[1]{\textcolor{EFOa}{#1}} % outline-1
+\definecolor{EFOb}{HTML}{1f6fbf}
+\newcommand{\EFOb}[1]{\textcolor{EFOb}{#1}} % outline-2
+\definecolor{EFOc}{HTML}{217a3c}
+\newcommand{\EFOc}[1]{\textcolor{EFOc}{#1}} % outline-3
+\definecolor{EFOd}{HTML}{b65050}
+\newcommand{\EFOd}[1]{\textcolor{EFOd}{#1}} % outline-4
+\definecolor{EFOe}{HTML}{4250ef}
+\newcommand{\EFOe}[1]{\textcolor{EFOe}{\textbf{#1}}} % outline-5
+\definecolor{EFOf}{HTML}{008858}
+\newcommand{\EFOf}[1]{\textcolor{EFOf}{\textbf{#1}}} % outline-6
+\definecolor{EFOg}{HTML}{6052cf}
+\newcommand{\EFOg}[1]{\textcolor{EFOg}{\textbf{#1}}} % outline-7
+\definecolor{EFOh}{HTML}{a45f22}
+\newcommand{\EFOh}[1]{\textcolor{EFOh}{\textbf{#1}}} % outline-8
+\newcommand{\EFhn}[1]{#1} % highlight-numbers-number
+\newcommand{\EFhq}[1]{#1} % highlight-quoted-quote
+\newcommand{\EFhs}[1]{#1} % highlight-quoted-symbol
+\definecolor{EFrda}{HTML}{008858}
+\newcommand{\EFrda}[1]{\textcolor{EFrda}{#1}} % rainbow-delimiters-depth-1-face
+\definecolor{EFrdb}{HTML}{4f54aa}
+\newcommand{\EFrdb}[1]{\textcolor{EFrdb}{#1}} % rainbow-delimiters-depth-2-face
+\definecolor{EFrdc}{HTML}{ba35af}
+\newcommand{\EFrdc}[1]{\textcolor{EFrdc}{#1}} % rainbow-delimiters-depth-3-face
+\definecolor{EFrdd}{HTML}{1f77bb}
+\newcommand{\EFrdd}[1]{\textcolor{EFrdd}{#1}} % rainbow-delimiters-depth-4-face
+\definecolor{EFrde}{HTML}{b65050}
+\newcommand{\EFrde}[1]{\textcolor{EFrde}{#1}} % rainbow-delimiters-depth-5-face
+\definecolor{EFrdf}{HTML}{4250ef}
+\newcommand{\EFrdf}[1]{\textcolor{EFrdf}{#1}} % rainbow-delimiters-depth-6-face
+\definecolor{EFrdg}{HTML}{008858}
+\newcommand{\EFrdg}[1]{\textcolor{EFrdg}{#1}} % rainbow-delimiters-depth-7-face
+\definecolor{EFrdh}{HTML}{6052cf}
+\newcommand{\EFrdh}[1]{\textcolor{EFrdh}{#1}} % rainbow-delimiters-depth-8-face
+\definecolor{EFrdi}{HTML}{a45f22}
+\newcommand{\EFrdi}[1]{\textcolor{EFrdi}{#1}} % rainbow-delimiters-depth-9-face
+\definecolor{EFany}{HTML}{a45f22}
+\definecolor{Efany}{HTML}{a45f22}
+\newcommand{\EFany}[1]{\colorbox{Efany}{\efstrut{}\textcolor{EFany}{#1}}} % ansi-color-yellow
+\definecolor{EFanr}{HTML}{d3303a}
+\definecolor{Efanr}{HTML}{d3303a}
+\newcommand{\EFanr}[1]{\colorbox{Efanr}{\efstrut{}\textcolor{EFanr}{#1}}} % ansi-color-red
+\definecolor{Efanb}{HTML}{202020}
+\newcommand{\EFanb}[1]{\colorbox{Efanb}{\efstrut{}#1}} % ansi-color-black
+\definecolor{EFang}{HTML}{217a3c}
+\definecolor{Efang}{HTML}{217a3c}
+\newcommand{\EFang}[1]{\colorbox{Efang}{\efstrut{}\textcolor{EFang}{#1}}} % ansi-color-green
+\definecolor{EFanB}{HTML}{3740cf}
+\definecolor{EfanB}{HTML}{3740cf}
+\newcommand{\EFanB}[1]{\colorbox{EfanB}{\efstrut{}\textcolor{EFanB}{#1}}} % ansi-color-blue
+\definecolor{EFanc}{HTML}{1f6fbf}
+\definecolor{Efanc}{HTML}{1f6fbf}
+\newcommand{\EFanc}[1]{\colorbox{Efanc}{\efstrut{}\textcolor{EFanc}{#1}}} % ansi-color-cyan
+\definecolor{EFanw}{HTML}{b3b3b3}
+\definecolor{Efanw}{HTML}{b3b3b3}
+\newcommand{\EFanw}[1]{\colorbox{Efanw}{\efstrut{}\textcolor{EFanw}{#1}}} % ansi-color-white
+\definecolor{EFanm}{HTML}{ba35af}
+\definecolor{Efanm}{HTML}{ba35af}
+\newcommand{\EFanm}[1]{\colorbox{Efanm}{\efstrut{}\textcolor{EFanm}{#1}}} % ansi-color-magenta
+\definecolor{EFANy}{HTML}{b6532f}
+\definecolor{EfANy}{HTML}{b6532f}
+\newcommand{\EFANy}[1]{\colorbox{EfANy}{\efstrut{}\textcolor{EFANy}{#1}}} % ansi-color-bright-yellow
+\definecolor{EFANr}{HTML}{e00033}
+\definecolor{EfANr}{HTML}{e00033}
+\newcommand{\EFANr}[1]{\colorbox{EfANr}{\efstrut{}\textcolor{EFANr}{#1}}} % ansi-color-bright-red
+\definecolor{EFANb}{HTML}{68759f}
+\definecolor{EfANb}{HTML}{68759f}
+\newcommand{\EFANb}[1]{\colorbox{EfANb}{\efstrut{}\textcolor{EFANb}{#1}}} % ansi-color-bright-black
+\definecolor{EFANg}{HTML}{008858}
+\definecolor{EfANg}{HTML}{008858}
+\newcommand{\EFANg}[1]{\colorbox{EfANg}{\efstrut{}\textcolor{EFANg}{#1}}} % ansi-color-bright-green
+\definecolor{EFANB}{HTML}{4250ef}
+\definecolor{EfANB}{HTML}{4250ef}
+\newcommand{\EFANB}[1]{\colorbox{EfANB}{\efstrut{}\textcolor{EFANB}{#1}}} % ansi-color-bright-blue
+\definecolor{EFANc}{HTML}{1f77bb}
+\definecolor{EfANc}{HTML}{1f77bb}
+\newcommand{\EFANc}[1]{\colorbox{EfANc}{\efstrut{}\textcolor{EFANc}{#1}}} % ansi-color-bright-cyan
+\definecolor{EFANw}{HTML}{ffffff}
+\newcommand{\EFANw}[1]{\textcolor{EFANw}{#1}} % ansi-color-bright-white
+\definecolor{EFANm}{HTML}{6052cf}
+\definecolor{EfANm}{HTML}{6052cf}
+\newcommand{\EFANm}[1]{\colorbox{EfANm}{\efstrut{}\textcolor{EFANm}{#1}}} % ansi-color-bright-magenta
+\begin{document}
+\begin{Code}
+\begin{Verbatim}
+\color{EFD}fn main() \EFrda{\{}
+    \EFk{let} 中文 = \textcolor[HTML]{202020}{3};
+    \EFb{println}!\EFrdb{(}\EFs{"Hello, Rust 💥! \{\}"}, 中文\EFrdb{)};
+
+    \EFc{// 中文注释  和连续空格}
+\EFrda{\}}
+\end{Verbatim}
+\end{Code}
+\end{document}

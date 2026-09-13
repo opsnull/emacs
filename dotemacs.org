@@ -1,27 +1,50 @@
 #+Title: My Emacs Dotfile
- #+DATE: 2023-08-20 Sun
- #+LASTMOD: 2026-09-07T20:53:22+0800
- #+AUTHOR: 张俊(geekard@qq.com)
- #+STARTUP: overview hideblocks
- #+PROPERTY: header-args:emacs-lisp :tangle yes :eval never :results silent :exports code
- #+HUGO_BASE_DIR: ~/blog/blog.opsnull.com
- #+HUGO_SECTION: emacs
- #+HUGO_BUNDLE: my-emacs-dotfile
- #+EXPORT_FILE_NAME: index
- #+HUGO_AUTO_SET_LASTMOD: t
- #+HUGO_TAGS: emacs
- #+HUGO_LOCALE: zh
- #+OPTIONS: title:t prop:t ^:nil
- #+HUGO_WEIGHT: -1
+#+DATE: 2023-08-20 Sun
+#+LASTMOD: 2026-09-13T15:56:04+0800
+#+AUTHOR: 张俊(geekard@qq.com)
+#+STARTUP: overview hideblocks
+#+PROPERTY: header-args:emacs-lisp :tangle yes :eval never :results silent :exports code
+#+HUGO_BASE_DIR: ~/blog/blog.opsnull.com
+#+HUGO_SECTION: emacs
+#+HUGO_BUNDLE: my-emacs-dotfile
+#+EXPORT_FILE_NAME: index
+#+HUGO_AUTO_SET_LASTMOD: t
+#+HUGO_TAGS: emacs
+#+HUGO_LOCALE: zh2
+#+OPTIONS: title:t prop:t ^:nil
+#+HUGO_WEIGHT: -1
 
- Emacs 是 Hacker 的一种生活方式，而这是符合我口味的私人定制。
+#+LANGUAGE: zh-CN
+#+OPTIONS: prop:nil H:3 num:3 toc:nil tex:t ^:nil
+#+LATEX_COMPILER: lualatex
+#+LATEX_CLASS: ctexart
+#+LATEX_HEADER: \usepackage{/Users/alizj/emacs/mystyle}
 
- #+hugo: more
+#+begin_export latex
+% 空参数省略封面图，也可填入图片路径。Org 默认将 SUBTITLE 合入标题。
+\hypersetup{pageanchor=false}
+\MakeDocumentCover{./static/images/2024-09-03_10-55-30_screenshot.png}
+\pagenumbering{roman}
+\hypersetup{pageanchor=true}
+\begin{abstract}
+Emacs 是 Hacker 的一种生活方式，而这是符合我口味的私人定制。
+\end{abstract}
+\clearpage
+% 编号深度由 num 控制；目录深度单独控制。
+\setcounter{tocdepth}{2}
+\DocumentContents
+\clearpage
+\pagenumbering{arabic}
+#+end_export
 
- 更多 Emacs 内容请访问[[https://blog.opsnull.com/emacs/][我的博客]]。
+Emacs 是 Hacker 的一种生活方式，而这是符合我口味的私人定制。
 
- #+ATTR_HTML: :width 400 :align center
- [[file:static/images/2024-09-03_10-55-30_screenshot.png]]
+#+hugo: more
+
+更多 Emacs 内容请访问[[https://blog.opsnull.com/emacs/][我的博客]]。
+
+#+ATTR_HTML: :width 400 :align center
+[[file:static/images/2024-09-03_10-55-30_screenshot.png]]
 
 * 编译安装
 :PROPERTIES:
@@ -64,6 +87,8 @@ export LIBRARY_PATH="${LIBRARY_PATH}:${current_gcc}"
 
 (setq-default lexical-binding t)
 (setq lexical-binding t)
+;; 不报告缺少 lexical-binding 文件头的警告。
+(add-to-list 'warning-suppress-types '(files missing-lexbind-cookie))
 
 ;; 在独立文件保存 Emacs 自动写入的配置参数，避免污染 ~/.emacs 文件。
 (setq custom-file (expand-file-name "~/.emacs.d/custom.el"))
@@ -93,14 +118,19 @@ export LIBRARY_PATH="${LIBRARY_PATH}:${current_gcc}"
     (setq exec-path (cons path exec-path))))
 #+end_src
 
-设置软件包源：
+设置软件源：
 + =M-x use-package-report= : 查看包加载时间（按 S 排序）；
-+ =M-x package-vc-upgrade-all= ：更新使用 ~:vc~ 指令配置的，从 ~github~ 安装的包；
++ =M-x package-vc-upgrade-all= ：更新使用 ~:vc~ 指令配置 ~github~ 包；
 
 #+begin_src emacs-lisp
 ;;; -*- lexical-binding: t; -*-
 
 (require 'package)
+;; (setq package-archive-priorities '(("gnu" . 10)
+;;                                    ("melpa" . 5))
+;;       package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
+;;                          ("melpa" . "https://stable.melpa.org/packages/")
+;;                          ("melpa-devel" . "https://melpa.org/packages/")))
 (setq package-archives
       '(("elpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
         ("elpa-devel" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
@@ -576,11 +606,6 @@ frame 设置：
 ;; 像素平滑滚动。
 (pixel-scroll-precision-mode t)
 (setq fast-but-imprecise-scrolling t)
-(setq scroll-conservatively 10
-      scroll-margin 2
-      scroll-preserve-screen-position t
-      mouse-wheel-scroll-amount '(2 ((shift) . hscroll))
-      mouse-wheel-scroll-amount-horizontal 2)
 #+end_src
 
 dashboard：
@@ -602,12 +627,27 @@ dashboard：
   (setq dashboard-items '((recents . 20) (projects . 8) (agenda . 3))))
 #+end_src
 
-doom-modeline：
+nerd-icons:
 
 #+begin_src emacs-lisp
-;; 使用 Symbols Nerd Fonts Mono 在 modeline 上显示 icons，需要单独下载和安装该字体。
-(use-package nerd-icons)
+;; doom-modeline 使用 nerd-icons 显示图标。
+;; 默认使用 "Symbols Nerd Font Mono" 字体(需要单独安装)。
+(use-package nerd-icons
+  :custom
+  ;; 使用统一的 IoskeleyMonoTerm Nerd Font Mono 字体，它包含的 Nerd Font 含有常见图标和符号。
+  (nerd-icons-font-family "IoskeleyMonoTerm Nerd Font Mono")) 
 
+;; nerd-icons-dired 为 dired 和 dired-sidebar 提供图标显示能力。
+(use-package nerd-icons-dired
+  :hook ((dired-mode . nerd-icons-dired-mode)
+         ;; 子树展开/收起时执行 nerd-icons-dired 刷新，这样才为子树显示图标。
+         (dired-subtree-after-insert . nerd-icons-dired--refresh)
+         (dired-subtree-after-remove . nerd-icons-dired--refresh)))
+#+end_src
+
+doom-modeline：
+  
+#+begin_src emacs-lisp
 (use-package doom-modeline  
   :demand t
   :hook (after-init . doom-modeline-mode)
@@ -630,28 +670,41 @@ doom-modeline：
   (setq display-time-load-average-threshold 20)
   (setq display-time-format "%H:%M ") ;; 默认："%m/%d[%w]%H:%M "
   (setq indicate-buffer-boundaries (quote left)))
-
-;; 为 vterm-mode 定义简化的 modeline，避免 vterm buffer 内容过多时更新 modeline 影响性能。
-(doom-modeline-def-modeline 'my-vterm-modeline
-  '(buffer-info) ;; 左侧
-  '(misc-info minor-modes input-method)) ;; 右侧
-(add-to-list 'doom-modeline-mode-alist '(vterm-mode . my-vterm-modeline))
 #+end_src
 
 dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是速度快和使用 dired 按键：
 
 #+begin_src emacs-lisp
-(use-package vscode-icon
-  :ensure t
-  :commands (vscode-icon-for-file))
+;;; dired
+;; MacOS 安装 gnu coreutils 提供的 ls 命令。
+(setq my-coreutils-path "/opt/homebrew/opt/coreutils/libexec/gnubin")
+(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
+(setq exec-path (cons my-coreutils-path  exec-path))
+(use-package emacs
+  :config
+  (setq dired-dwim-target t)
+  ;; @see
+  ;; https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
+  ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
+  (setq dired-listing-switches "-laGh1v --group-directories-first"))
 
+;; diredfl 为 dired 提供丰富的高亮特性（如文件时间、扩展名等高亮）。
+(use-package diredfl :config (diredfl-global-mode))
+
+;; dired-subtree 提供目录的原地展开能力，像文件树一样浏览，而不用进入另一个目录 buffer。
+;; 在 dired-mode，可以按 ( 来关闭 dired detail mode，从而只显示目录树。
 (use-package dired-subtree
   :ensure t
   :commands (dired-subtree-toggle dired-subtree-cycle)
+  :bind (:map dired-mode-map
+	      ;; 在 dire-mode 中使用 subtree 显示目录。
+              ("TAB" . dired-subtree-toggle)
+	      ;; 循环递归展开或收起子树目录。<backtab> 对应 Shift-TAB。
+              ("<backtab>" . dired-subtree-cycle)))
   :config
-  (setq dired-subtree-line-prefix " ")
-  (setq dired-subtree-use-backgrounds nil))
-
+  (setq dired-subtree-line-prefix " ") ;;子层级缩进前缀
+  (setq dired-subtree-use-backgrounds nil)
+  
 (use-package dired-sidebar
   :ensure t
   :bind (("C-M-0" . dired-sidebar-toggle-sidebar))
@@ -665,27 +718,26 @@ dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是
   :config
   (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
   (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
-  (setq dired-sidebar-subtree-line-prefix "__")
-  (setq dired-sidebar-theme 'vscode) ;;'ascii
+  ;; 使用 nerd-icons 和 nerd-icons-dired 显示图标。
+  (setq dired-sidebar-theme 'nerd-icons) 
   (setq dired-sidebar-use-term-integration t)
   (setq dired-sidebar-use-one-instance t)
   (setq dired-sidebar-use-custom-font t)
-  (setq dired-sidebar-icon-scale 0.1)
-  ;;(setq dired-sidebar-window-fixed nil) ;; 可以手动调整宽度和高度。
-  ;;(setq dired-sidebar-resize-on-open t)
+  ;; 可以手动调整宽度和高度。
+  (setq dired-sidebar-window-fixed nil) 
+  (setq dired-sidebar-resize-on-open t)
   ;; 性能优先：关闭 follow-file 或者调大 idly-delay。
   (setq dired-sidebar-should-follow-file t)
   (setq dired-sidebar-follow-file-idle-delay 1.5))
 #+end_src
 
-字体：英文 Iosevka/Sarasa 和中文 LxgwWenKai，按照 1:1 缩放，在偶数字号的情况下可以实现中英文等宽等高。
-+ 英文：[[https://github.com/protesilaos/iosevka-comfy][Iosevka Comfy]];
-+ 中文：霞鹜文楷屏幕阅读版 [[https://github.com/lxgw/LxgwWenKai-Screen/releases][LxgwWenKai-Screen]]，对字体做了加粗，便于屏幕阅读;
+字体：
++ 英文和图标符号等缺省字体： =IoskeleyMonoTerm Nerd Font Mono= 。
++ 中文：霞鹜文楷屏幕阅读版 [[https://github.com/lxgw/LxgwWenKai-Screen/releases][LxgwWenKai-Screen]]，对字体做了加粗，便于屏幕阅读。
 
 常用字体命令:
 + 查看 Emacs 支持的字体名称： =M-: (print (font-family-list))=
 + 查看光标处字体： =M-x describe-char=
-+ 查看 Emacs 支持的字体名称： =M-: (print (font-family-list))=
 
 #+begin_src emacs-lisp
 (use-package fontaine
@@ -694,16 +746,16 @@ dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是
   (setq fontaine-presets
 	'((regular) ;; 使用缺省配置。
 	  (t
-	   :default-family "IoskeleyMono Nerd Font Mono"
+	   :default-family "IoskeleyMonoTerm Nerd Font Mono"
 	   :default-weight regular
-	   :default-height 180 ;; 默认字号, 需要是偶数才能实现中英文等宽等高。
-	   :fixed-pitch-family "IoskeleyMono Nerd Font Mono"
+	   :default-height 160 ;; 默认字号, 需要是偶数才能实现中英文等宽等高。
+	   :fixed-pitch-family "IoskeleyMonoTerm Nerd Font Mono"
 	   :fixed-pitch-weight nil
 	   :fixed-pitch-height 1.0
-	   :fixed-pitch-serif-family "IoskeleyMono Nerd Font Mono"
+	   :fixed-pitch-serif-family "IoskeleyMonoTerm Nerd Font Mono"
 	   :fixed-pitch-serif-weight nil
 	   :fixed-pitch-serif-height 1.0
-	   :variable-pitch-family "IoskeleyMono Nerd Font Mono"
+	   :variable-pitch-family "IoskeleyMonoTerm Nerd Font Mono"
 	   :variable-pitch-weight nil
 	   :variable-pitch-height 1.0
 	   :line-spacing nil)))
@@ -713,10 +765,13 @@ dired-sidebar：使用 dired 显示目录，相比 treemacs/neotree 的优势是
 
 ;; 设置 emoji/symbol 和中文字体。
 (defun my/set-font ()
+  (interactive)
   (when window-system
     (setq use-default-font-for-symbols nil)
-    (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) ;; Noto Color Emoji
-    (set-fontset-font t 'symbol (font-spec :family "Symbola")) ;; Apple Symbols, Symbola
+    ;; Noto Color Emoji
+    (set-fontset-font t 'emoji (font-spec :family "Apple Color Emoji")) 
+    ;; Apple Symbols, Symbola，Symbols Nerd Font Mono, IoskeleyMonoTerm Nerd Font Mono
+    (set-fontset-font t 'symbol (font-spec :family "Symbols Nerd Font Mono")) 
     (let ((font (frame-parameter nil 'font))
 	  (font-spec (font-spec :family "LXGW WenKai Mono Screen")))
       (dolist (charset '(kana han hangul cjk-misc bopomofo))
@@ -738,25 +793,59 @@ ef-themes: Emacs 主题列表：https://emacsthemes.com/popular/index.html
 
 #+begin_src emacs-lisp
 (use-package ef-themes
-  :demand
+  :ensure t
+  :init
+  ;; 最新的 ef-theme 基于 modus theme 重构。
+  ;; 启用后，所有 modus theme 命令只考虑 Ef themes。
+  (ef-themes-take-over-modus-themes-mode 1)
   :config
-  (mapc #'disable-theme custom-enabled-themes)
-  (setq ef-themes-variable-pitch-ui t)
-  (setq ef-themes-mixed-fonts t)
-  (setq ef-themes-headings
+  (setq modus-themes-italic-constructs t)
+  (setq modus-themes-bold-constructs t)
+  ;;使用混合字体（variable-pitch-mode）显示空格敏感的内容，如 org-mode 或 code block。
+  ;;需要事先在 fontaine 中设置 default, fixed-pitch 和 variable-pitch 字体类型。
+  (setq modus-themes-mixed-fonts t)
+  ;;使用 variable-pitch font 来显示 UI 元素，如 modeline/headline/tabbar/tabline 等。
+  (setq modus-themes-variable-pitch-ui t)
+  ;; 启用 ef/modus theme 时关闭其他 theme，防止不同 theme 间冲突。
+  (setq modus-themes-disable-other-themes t)
+  (setq modus-themes-headings
         '(
-          ;; level 0 是文档 title，1-8 是文档 header。
-          (0 . (variable-pitch light 1.9))
-          (1 . (variable-pitch light 1.8))
-          (2 . (variable-pitch regular 1.7))
-          (3 . (variable-pitch regular 1.6))
-          (4 . (variable-pitch regular 1.5))
-          (5 . (variable-pitch 1.4))
-          (6 . (variable-pitch 1.3))
+          ;; level 0 是文档 title，1-8 是文档 header，t 是缺省。
+          (0 . (variable-pitch light 1.8))
+          (1 . (variable-pitch light 1.7))
+          (2 . (variable-pitch regular 1.6))
+          (3 . (variable-pitch regular 1.5))
+          (4 . (variable-pitch regular 1.4))
+          (5 . (variable-pitch 1.6))
+          (4 . (variable-pitch 1.3))
           (7 . (variable-pitch 1.2))
           (8 . (variable-pitch 1.1))
+          (agenda-date . (1.3))
+          (agenda-structure . (variable-pitch light 1.8))
+          (section-minibuffer . (variable-pitch light 0.9))
+          (section-other . (regular 1.3))
+          (commit-summary . (bold 1.1))
           (t . (variable-pitch 1.1))))
-  (setq ef-themes-region '(intense no-extend neutral)))
+  (modus-themes-load-theme 'ef-summer))
+
+;; 定制 modus/tf theme 显示效果。
+(setq modus-themes-common-palette-overrides
+      '(
+	;; tab-bar 
+	(bg-tab-bar bg-cyan-nuanced)
+        (bg-tab-current bg-cyan-intense)
+        (bg-tab-other bg-cyan-subtle)
+
+	;; header
+	(fg-heading-1 blue)
+        (fg-heading-2 cyan)
+        (fg-heading-3 green)
+
+	;; code block
+	(bg-prose-block-contents bg-cyan-nuanced)
+        (bg-prose-block-delimiter bg-cyan-nuanced)
+        (fg-prose-block-delimiter cyan-cooler)
+	))
 #+end_src
 
 自动切换深浅主题:
@@ -846,8 +935,8 @@ tab-bar：
 
 使用 ~RIME~ 输入法 + ~iDevel/rime-ice~ 雾凇拼音输入法方案。
 
-安装 ~RIME~ 输入法后端引擎 [[https://github.com/rime/librime/releases][librime]] ： ~emacs-rime~ 直接和该引擎打交道，不需要安装前端程序
-"鼠须管squirrel"。
+安装 ~RIME~ 输入法后端引擎 [[https://github.com/rime/librime/releases][librime]] ： ~emacs-rime~ 直接和该引擎打交道，不需要安装前端程序"鼠须管
+squirrel"。
 
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 wget Https://github.com/rime/librime/releases/download/1.17.0/rime-33e7814-macOS-universal.tar.bz2
@@ -874,9 +963,8 @@ sed -i -e 's/custom_phrase.txt/opsnull_custom_phrase/g' opsnull_custom_phrase.tx
 #+end_src
 
 rime_ice 如模糊音(拼音方案调整，动态词频，自定义词语文件等):
-+ 自定义短语：向自定义短语词典文件 =opsnull_custom_phrase.txt= 添加自定义短语，
-  custom_prase/db_class 为 stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来
-  动态调频）。
++ 自定义短语：向自定义短语词典文件 =opsnull_custom_phrase.txt= 添加自定义短语，custom_prase/db_class
+  为 stabledb，是只读的，不会动态调频。（可以设置为 tabledb 来动态调频）。
 + 首次添加该文件后需要执行 =M-x rime-deploy= 和 =M-x rime-sync= 生效。
 
 #+begin_src yaml :tangle ~/Library/Rime/rime_ice.custom.yaml
@@ -974,11 +1062,11 @@ patch:
 #+end_src
 
 配置 Emacs:
-+ =rime-disable-predicates= 定义了一组断言函数，当任一函数断言成立时，Rime 自动将输入法
-  切换为英文（inline、ascii-inline、ascii-mode 都指的是英文）。如果同时定义了
-  rime-inline-predicates 变量，则当这两组函数都至少有一个断言成立时才会切换为英文。
-+ =rime-predicate-after-alphabet-char-p= 和 =rime-predicate-in-code-string-p= 条件都会导
-  致不能正确的中英文混排。
++ =rime-disable-predicates= 定义了一组断言函数，当任一函数断言成立时，Rime 自动将输入法切换为英文
+  （inline、ascii-inline、ascii-mode 都指的是英文）。如果同时定义了rime-inline-predicates 变量，则当
+  这两组函数都至少有一个断言成立时才会切换为英文。
++ =rime-predicate-after-alphabet-char-p= 和 =rime-predicate-in-code-string-p= 条件都会导致不能正确的中英
+  文混排。
 
 #+begin_src emacs-lisp
 (use-package rime
@@ -1044,7 +1132,7 @@ patch:
     ;; 保留 default-input-method，用户仍可用 C-\\ 手动开启 Rime。
     (deactivate-input-method))
   
-  (dolist (hook '(vterm-mode-hook dired-mode-hook image-mode-hook compilation-mode-hook))
+  (dolist (hook '(ghostel-mode-hook dired-mode-hook image-mode-hook compilation-mode-hook))
     (add-hook hook #'my/rime-disable-in-special-buffer)))
 #+end_src
 
@@ -1074,6 +1162,8 @@ vertico 提供 minibuffer 自动补全（corfu 提供光标处的自动补全）
   :config
   (setq vertico-count 15)
   (vertico-mode 1)
+  ;;使用鼠标滚动选择列表中的候选项，左键点击确认（相当于 RET），右键插入候选（相当于 TAB）。
+  (vertico-mouse-mode 1)
   (define-key vertico-map (kbd "<backspace>") #'vertico-directory-delete-char)
   (define-key vertico-map (kbd "RET") #'vertico-directory-enter))
 
@@ -1154,10 +1244,9 @@ orderless 默认使用 =orderless-matching-styles= 变量配置的 =正则和字
 + ~^~ : =orderless-literal-prefix= ，前缀匹配；
 + ~&~ : =orderless-annotation= ，使用 marginalia 等提供的 meta 信息来过滤；
 + ~,~ : =orderless-initialism=, 首字母缩写，如 ,abc 实际对应正则 \<a.*\<b.*\c;
-+ ~!~ : makes the rest of the component match using =orderless-without-literal=, that is, both =!bad
-  and bad!= will match strings that =do not contain the substring bad=.
-+ ~%~ : makes the string match ignoring diacritics and similar inflections on characters (it uses
-  the function =char-fold-to-regexp= to do this).
++ ~!~ : 使用 =orderless-without-literal= 对模式的其余部分进行匹配，即 =!bad= 和 =bad!= 都会匹配不包含字面量子
+  串 =bad= 的字符串。
++ ~%~ : 匹配时忽略变音符号及类似的字符变体，内部使用 =char-fold-to-regexp= 函数实现。
 
 ! 只能对 =字面量= 匹配取反（orderless-without-literal) ，和其他 dispatch 字符连用时, ! 需要前缀形式，
 如 ~!=.go~ 将不匹配含有字面量 .go 的候选者。
@@ -1399,10 +1488,12 @@ marginalia：为候选者提供元数据（如 dired 风格的权限、修改时
   (marginalia-mode))
 #+end_src
 
-* org-mode
+* org
 :PROPERTIES:
 :ID:       523ED588-DACF-410F-8AB0-D657A8946FE5
 :END:
+
+配置 org-mode：
 
 #+begin_src emacs-lisp
 (use-package org
@@ -1414,8 +1505,8 @@ marginalia：为候选者提供元数据（如 dired 风格的权限、修改时
    org-pretty-entities t
    org-highlight-latex-and-related '(latex)
 
-   ;; 只显示而不处理和解释 latex 标记，例如 \xxx 或 \being{xxx}, 避免 export pdf 时出错。
-   org-export-with-latex 'verbatim
+   ;; 技术文档默认排版公式；展示 LaTeX 源码时使用代码块或文档级 tex:verbatim。
+   org-export-with-latex t
    org-export-with-broken-links 'mark
    ;; export 时不处理 super/sub scripting, 等效于 #+OPTIONS: ^:nil 。
    org-export-with-sub-superscripts nil
@@ -1459,7 +1550,7 @@ marginalia：为候选者提供元数据（如 dired 风格的权限、修改时
    org-startup-folded 'content
    org-cycle-inline-images-display nil
 
-   ;; 如果对 headline 编号则 latext 输出时会导致 toc 缺失，故关闭。
+   ;; 只控制编辑器中的 org-num-mode，与导出编号和目录无关。
    org-startup-numerated nil
    org-startup-indented t
 
@@ -1479,7 +1570,8 @@ marginalia：为候选者提供元数据（如 dired 风格的权限、修改时
    org-catch-invisible-edits 'show-and-error
    org-fold-catch-invisible-edits t
 
-   ;; 支持 ID property 作为 internal link target(默认是 CUSTOM_ID property)
+   ;; 使用 ID property 作为 internal link target(默认是 CUSTOM_ID 属性)
+   ;; 这会在格 section 下面自动添加 :ID: 属性。
    org-id-link-to-org-use-id t
    org-M-RET-may-split-line nil
 
@@ -1614,8 +1706,9 @@ org-modern 和 org-appear 美化：
   :hook (org-mode . org-appear-mode))
 #+end_src
 
-org-download：拖拽图片或将剪贴板中图片插入到 org-mode buffer 中（使用 pngpaste 命令）:
+org-download：拖拽图片或将剪贴板中图片插入到 org-mode buffer 中：
 + 需要编译 Emacs 时指定 =--with-imagemagick= 参数，Emacs 使用 imagemagick 命令来实时转换图片大小。
++ 安装依赖的 pngpaste 工具： =brew install pngpaste=
 
 #+begin_src emacs-lisp
 (use-package org-download
@@ -1633,15 +1726,92 @@ org-download：拖拽图片或将剪贴板中图片插入到 org-mode buffer 中
   (setq org-download-annotate-function (lambda (link) (previous-line 1) "")))
 #+end_src
 
-tex 和 PDF 导出：
+** PDF 导出
 
+使用 LuaLaTeX + CTeX，代码高亮由 engrave-faces 提供，固定使用 ef-light 主题。安装、模板、写作和排错
+见 [[file:~/docs/emacs/emacs.org::#org-pdf-export][Org 导出 PDF 使用手册]]。
+
+回归命令与样张见 [[file:tests/pdf-export/README.md][PDF 导出回归说明]]；字体或复制层变更还需在阅读器中验证选择与复制。
+
+在 macOS 安装 TeX Live： =brew install texlive= 和缩放图片需要的 ImageMagick： =brew install
+imagemagick=
+
+安装如下 PDF 使用的字体，注意 Noto 需要下载和安装静态 OTC 字体（而不能是可变字体）：
+
+| 字体家族              | 需要的字重           | 用途与来源                                        |
+|-----------------------+----------------------+---------------------------------------------------|
+| Noto Serif CJK SC     | Regular、Bold        | 中文及西文正文；[[https://github.com/notofonts/noto-cjk/tree/main/Serif][Noto CJK Serif]] 的简体中文静态 OTF |
+| Noto Sans CJK SC      | Regular、Bold        | 无衬线文字；[[https://github.com/notofonts/noto-cjk/tree/main/Sans][Noto CJK Sans]] 的简体中文静态 OTF      |
+| Noto Sans Mono CJK SC | Regular、Bold        | 中文代码与复制层；同一 Sans 下载页中的 Mono 字体  |
+| Menlo                 | 系统常规、粗体及斜体 | macOS 西文代码字体                                |
+| Apple Color Emoji     | 系统字形             | macOS emoji 回退                                  |
+
+
+*** 导出配置
+:PROPERTIES:
+:ID:       F836A0B7-B814-40AF-AE21-B8241331A319
+:END:
+
+使用 lualatex 编译器，需要在文档 header 指定： =#+LATEX_COMPILER: lualatex= 和 =#+LATEX_CLASS: ctexart=
+(见后文的 Tempel 模板)。
+
+#+name: org-pdf-export-config
 #+begin_src emacs-lisp
-;; 将安装的 tex 二进制目录添加到 PATH 环境变量和 exec-path 变量中，Emacs 执行 xelatex 命令时使用。
+;; MacTeX 使用此目录；Homebrew TeX Live 使用已有的 /opt/homebrew/bin。
 (setq my-tex-path "/Library/TeX/texbin")
-(setenv "PATH" (concat my-tex-path ":" (getenv "PATH")))
-(setq exec-path (cons my-tex-path  exec-path))
+(when (file-directory-p my-tex-path)
+  (add-to-list 'exec-path my-tex-path)
+  (unless (member my-tex-path (parse-colon-path (getenv "PATH")))
+    (setenv "PATH" (concat my-tex-path path-separator (getenv "PATH")))))
 
-;; engrave-faces 比 minted 渲染速度更快。
+(defcustom my/org-pdf-style-directory (expand-file-name "~/emacs/")
+  "PDF 样式和模板的加载目录；迁移时还需修改对应 :tangle 目标。"
+  :type 'directory :group 'org-export-latex)
+
+(defun my/org-pdf-preflight ()
+  "检查讲义导出的工具、样式和 LuaLaTeX 字体。"
+  (interactive)
+  (dolist (tool '("latexmk" "lualatex" "luaotfload-tool"))
+    (unless (executable-find tool)
+      (user-error "缺少 %s；请安装 TeX Live 并检查 exec-path" tool)))
+  (dolist (file '("mystyle.sty" "org-pdf-copy.sty" "org-pdf-copy.lua"))
+    (unless (file-readable-p (expand-file-name file my/org-pdf-style-directory))
+      (user-error "缺少 %s；请先 tangle dotemacs.org 的 PDF 样式" file)))
+  (dolist (font '("Noto Serif CJK SC" "Noto Sans CJK SC"
+                  "Noto Sans Mono CJK SC" "Menlo" "Apple Color Emoji"))
+    ;; luaotfload-tool 找不到字体也可能返回 0，必须检查实际解析结果。
+    (unless (with-temp-buffer
+              (and (eq 0 (call-process "luaotfload-tool" nil (list t t) nil
+                                      "--no-reload" (concat "--find=" font)))
+                   (progn (goto-char (point-min))
+                          (search-forward "Resolved file name" nil t))))
+      (user-error "LuaLaTeX 找不到字体 %s；安装后运行 luaotfload-tool --update" font)))
+  (message "PDF 导出预检通过"))
+
+(defun my/org-export-pdf (&optional publish)
+  "预检后导出当前讲义并打开 PDF。
+带前缀参数 PUBLISH 时，Org 无法解析的内部引用立即报错。
+不检查外部网址或扫描排版警告；编译日志始终保留。"
+  (interactive "P")
+  (require 'ox-latex)
+  (unless (derived-mode-p 'org-mode) (user-error "请在 Org 文档中执行"))
+  (my/org-pdf-preflight)
+  (let* ((info (org-export-get-environment 'latex))
+         (org-export-with-broken-links (if publish nil org-export-with-broken-links))
+         (org-export-filter-options-functions
+          (if publish
+              (cons (lambda (options _backend)
+                      (plist-put options :with-broken-links nil))
+                    org-export-filter-options-functions)
+            org-export-filter-options-functions)))
+    (unless (and (equal (plist-get info :latex-class) "ctexart")
+                 (equal (plist-get info :latex-compiler) "lualatex"))
+      (user-error "讲义需要 LATEX_CLASS: ctexart 和 LATEX_COMPILER: lualatex；请插入 my-latex 模板"))
+    (let ((pdf (org-latex-export-to-pdf nil nil nil nil
+                 (when publish '(:with-broken-links nil)))))
+      (when pdf (org-open-file pdf)))))
+
+;; 使用各语言模式的 font-lock 高亮，不需要外部语法着色程序。
 (use-package engrave-faces
   :after ox-latex
   :config
@@ -1649,33 +1819,90 @@ tex 和 PDF 导出：
   (setq org-latex-src-block-backend 'engraved)
   ;; 代码块左侧添加行号。
   (add-to-list 'org-latex-engraved-options '("numbers" . "left"))
-  ;; 代码块主题。
+  ;; PDF 始终默认使用 ef-light 原始语法高亮，与编辑器主题无关。
   (setq org-latex-engraved-theme 'ef-light))
 
 (defun my/export-pdf (backend)
-  "仅为 LaTeX/PDF 导出设置标题深度。"
+  "保留 LaTeX/PDF 的三级标题，避免三级标题退化成列表项。"
   (when (org-export-derived-backend-p backend 'latex)
-    (setq-local org-export-headline-levels 2)))
+    (setq-local org-export-headline-levels 3)))
 (add-hook 'org-export-before-processing-functions #'my/export-pdf)
 
-;; ox- 为 org-mode 的导出后端包的惯例前缀。
+;; 仅对明确标为照片/装饰图的图片生成 PDF 用 JPEG；保留原图和 HTML 导出。
+;; 用法：图片前添加 #+ATTR_LATEX: :pdf-photo t :width 0.7\linewidth
+;; 依赖 ImageMagick；未安装时继续使用原图。缓存可随时删除。
+(defun my/org-pdf-optimize-photos (backend)
+  "仅在导出副本中压缩显式标记的照片；失败时提示并保留原图。"
+  (when (org-export-derived-backend-p backend 'latex)
+    (let (photos)
+      (org-element-map (org-element-parse-buffer) 'link
+        (lambda (link)
+          (when (and (equal (org-element-property :type link) "file")
+                     (equal "t" (org-export-read-attribute
+                                 :attr_latex (org-export-get-parent-element link) :pdf-photo)))
+            (push (list (org-element-property :begin link)
+                        (org-element-property :end link)
+                        (org-element-property :path link)) photos))))
+      (if (and photos (not (executable-find "magick")))
+          (display-warning 'org-pdf "未安装 ImageMagick；照片使用原图。")
+        ;; 从后向前替换，保持尚未处理链接的位置有效。
+        (dolist (photo photos)
+          (pcase-let* ((`(,beg ,end ,path) photo)
+                       (source (expand-file-name (org-link-unescape path))))
+            (condition-case err
+                (let* ((attrs (file-attributes source))
+                       (cache (expand-file-name ".org-pdf-images/"))
+                       (key (secure-hash 'sha256
+                              (format "%s:%s:%s:1800:88" (file-truename source)
+                                      (file-attribute-size attrs)
+                                      (file-attribute-modification-time attrs))))
+                       (target (expand-file-name (concat key ".jpg") cache)))
+                  (unless (file-readable-p source) (error "原图不可读"))
+                  (make-directory cache t)
+                  (unless (file-exists-p target)
+                    (let ((tmp (make-temp-file (expand-file-name "photo-" cache) nil ".jpg")))
+                      (unwind-protect
+                          (if (eq 0 (call-process "magick" nil nil nil source
+                                      "-auto-orient" "-resize" "1800x1800>"
+                                      "-background" "white" "-alpha" "remove"
+                                      "-alpha" "off" "-strip" "-quality" "88" tmp))
+                              (rename-file tmp target t)
+                            (error "ImageMagick 转换失败"))
+                        (when (file-exists-p tmp) (delete-file tmp)))))
+                  (goto-char beg)
+                  (when (search-forward (concat "file:" path) end t)
+                    (replace-match (concat "file:" (org-link-escape
+                                                   (file-relative-name target))) t t)))
+              (error (display-warning 'org-pdf
+                       (format "照片 %s 未优化，保留原图：%s" path (error-message-string err)))))))))))
+(add-hook 'org-export-before-parsing-functions #'my/org-pdf-optimize-photos)
 
-;;(use-package ox-reveal) ;; reveal.js
+
+;; ox- 为 org-mode 的导出后端包的惯例前缀。
 (use-package ox-gfm :defer t) ;; github flavor markdown
 
 (require 'ox-latex)
 (with-eval-after-load 'ox-latex
+  ;; Org 的 longtable 续页提示缺少中文翻译；仅补充中文，不改变其它语言。
+  (dolist (entry '(("Continued from previous page" . "接上页")
+                   ("Continued on next page" . "续下页")))
+    (let ((translations (assoc (car entry) org-export-dictionary)))
+      (dolist (language '("zh" "zh-CN" "zh-TW"))
+        (setf (alist-get language (cdr translations) nil nil #'equal)
+              (list :default (cdr entry))))))
   ;; latex image 的默认宽度, 可以通过 #+ATTR_LATEX :width xx 配置。
   (setq org-latex-image-default-width "0.7\\linewidth")
-  ;; 使用 booktabs style 来显示表格，例如支持隔行颜色, 这样 #+ATTR_LATEX: 中不需要添加 :booktabs t。
+  ;; 默认使用 booktabs 横线；隔行底色通过 DocumentTable 环境按需启用。
   (setq org-latex-tables-booktabs t)
-  ;; 不保存 LaTeX 日志文件（调试时设置为 nil）。
-  (setq org-latex-remove-logfiles t)
-  ;; 使用支持中文的 xelatex。
-  (setq org-latex-pdf-process '("latexmk -xelatex -quiet -shell-escape -f %f"))
+  ;; 保留日志，便于检查缺字、溢出、未解析引用等编译警告。
+  (setq org-latex-remove-logfiles nil)
+  ;; 模板指定 LuaLaTeX；engraved 和当前字体回退不需要 unrestricted shell escape。
+  ;; %o/%f 的 shell 引用由 Org 负责，支持带空格的导出路径。
+  (setq org-latex-pdf-process
+	'("latexmk -%latex -interaction=nonstopmode -halt-on-error -output-directory=%o %f"))
   (add-to-list 'org-latex-classes
 	       '("ctexart"
-                 "\\documentclass[lang=cn,11pt,a4paper,table]{ctexart}
+                 "\\documentclass[11pt,a4paper,table,fontset=none]{ctexart}
                     [NO-DEFAULT-PACKAGES]
                     [PACKAGES]
                     [EXTRA]"
@@ -1685,156 +1912,641 @@ tex 和 PDF 导出：
                  ("\\paragraph{%s}" . "\\paragraph*{%s}")
                  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
 
-;; org export html 格式时需要 htmlize.el 包来格式化代码。
+;; org export html 时需要 htmlize.el 包来格式化代码。
 (use-package htmlize)
 #+end_src
 
-自定义导出 PDF 的 LaTeX 样式 mystyle.sty: 对于表格，如果列内容过宽则导出的 PDF 中该列的内容会被截断，
-可以为表格设置如下属性，将超宽列 align 设置为 X 来解决：
-: #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|l|X
+*** LaTeX 样式
+:PROPERTIES:
+:ID:       0682B7CA-21CD-4F9F-A844-FD0A8996DED9
+:END:
 
-#+begin_src latex :tangle  ~/emacs/mystyle.sty
-\usepackage{wallpaper} % 显示封面图片或页面图片。
+样式控制字体、版心、图表和代码框；高亮颜色由 Org 提供。
 
-\usepackage{color}
+需要在文档 header 指定使用该样式： =#+LATEX_HEADER: \usepackage{/Users/alizj/emacs/mystyle}= (见后文的 Tempel 模板)。
+
+#+begin_src latex :tangle ~/emacs/mystyle.sty
+% 技术讲义样式。支持中英文混排、emoji 字符、代码块原样复制和长行复制。
+\usepackage{iftex}
+\RequireLuaTeX
 \usepackage{xcolor}
 \definecolor{winered}{rgb}{0.5,0,0}
-\definecolor{lightgrey}{rgb}{0.9,0.9,0.9}
+\definecolor{lightgrey}{gray}{0.96}
 \definecolor{tableheadcolor}{gray}{0.92}
 \definecolor{commentcolor}{RGB}{0,100,0}
 \definecolor{frenchplum}{RGB}{190,20,83}
+\definecolor{documentlink}{HTML}{245A81}
 
-% 提示 title
-\usepackage[explicit]{titlesec}
-% 每个 chapter 另起一页
-\newcommand{\sectionbreak}{\clearpage}
-\usepackage{titling}
-\setlength{\droptitle}{-6em}
-
-% 超链接和书签
-\usepackage[colorlinks]{hyperref}
-\hypersetup{
-  pdfborder={0 0 0},
-  colorlinks=true,
-  bookmarksopen=true,
-  bookmarksnumbered=true, % 书签目录显示编号。
-  linkcolor={winered},
-  urlcolor={winered},
-  filecolor={winered},
-  citecolor={winered},
-  linktoc=all}
-
-% 安装 noto-cjk 中文字体: git clone https://github.com/googlefonts/noto-cjk.git
 \usepackage{fontspec}
-\usepackage[utf8x]{inputenc}
-\setmainfont{Noto Serif SC}
-\setsansfont{Noto Sans SC}[Scale=MatchLowercase]
-\setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
-\setCJKmainfont[BoldFont=Noto Serif SC]{Noto Serif SC}
-\setCJKsansfont{Noto Sans SC}
-\setCJKmonofont{Noto Sans Mono CJK SC}
+% 定义 emoji fallback 字体指令：appleemoji
+\directlua{
+  luaotfload.add_fallback("appleemoji", {
+    "Apple Color Emoji:mode=harf;script=DFLT;"
+  })
+}
 
-\XeTeXlinebreaklocale "zh"
-\XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt
+% 设置英文字体
+% Noto CJK 字体没有原生西文斜体：明确使用合成倾斜，避免隐式字形替代。
+% Noto CJK 也没有 emoji 字体，需要 fallback 到 appleemoji。
+\setmainfont{Noto Serif CJK SC}[
+  ItalicFont=*, ItalicFeatures={FakeSlant=0.15},
+  SlantedFont=*, SlantedFeatures={FakeSlant=0.15},
+  BoldItalicFont=* Bold, BoldItalicFeatures={FakeSlant=0.15},
+  BoldSlantedFont=* Bold, BoldSlantedFeatures={FakeSlant=0.15},
+  RawFeature={fallback=appleemoji}
+]
+\setsansfont{Noto Sans CJK SC}[
+  Scale=MatchLowercase,
+  ItalicFont=*, ItalicFeatures={FakeSlant=0.15},
+  SlantedFont=*, SlantedFeatures={FakeSlant=0.15},
+  BoldItalicFont=* Bold, BoldItalicFeatures={FakeSlant=0.15},
+  BoldSlantedFont=* Bold, BoldSlantedFeatures={FakeSlant=0.15},
+  RawFeature={fallback=appleemoji}
+]
+% 英文 mono（如格式化代码块场景）使用苹果的 Menlo 字体。
+\setmonofont{Menlo}[Scale=MatchLowercase,RawFeature={fallback=appleemoji}]
 
-% 添加 email 命令。
-\newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+% 设置中文字体。
+% 中文强调使用粗体，不伪造中文斜体。
+\setCJKmainfont{Noto Serif CJK SC}[ItalicFont=* Bold,SlantedFont=* Bold]
+\setCJKsansfont{Noto Sans CJK SC}[ItalicFont=* Bold,SlantedFont=* Bold]
+\setCJKmonofont{Noto Sans Mono CJK SC}[Scale=0.9,ItalicFont=*,SlantedFont=*]
+\ltjdefcharrange{100}{"2600-"27BF,"1F000-"1FAFF,"FE0E-"FE0F,"200D}
+\ltjsetparameter{jacharrange={-100}}
 
-% sidewaytable 依赖 rotfloat
-\usepackage {rotfloat}
-
-% tabularx 的特殊 align 参数 X 用来对指定列内容自动换行，否则该列内容有可能被截断，
-% 解决办法是：在 org-mode 表格前需要加如下属性：
-% #+ATTR_LATEX: :environment tabularx :booktabs t :width \linewidth :align l|X
-\usepackage{tabularx}
-% 美化表格显示效果
-\usepackage{booktabs}
-% 表格隔行颜色, {1} 开始行, {lightgrep} 奇数行颜色, {} 偶数行颜色(空表示白色)
-\rowcolors{1}{lightgrey}{}
-
+\usepackage[left=18mm,right=18mm,top=22mm,bottom=22mm,headheight=15pt]{geometry}
 \usepackage{parskip}
-\setlength{\parskip}{1em}
+\setlength{\parskip}{0.5em plus 0.1em minus 0.1em}
 \setlength{\parindent}{0pt}
-
+\linespread{1.1}
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+\setlength{\emergencystretch}{1.5em}
 \usepackage{etoolbox}
+\usepackage{needspace}
+% 普通节连续排版；需要另起页的大篇章在正文显式调用 \DocumentPartBreak。
+\newcommand{\DocumentPartBreak}{\clearpage}
+\newcommand{\DocumentContents}{\begingroup\setlength{\parskip}{0pt}\linespread{1}\selectfont\tableofcontents\endgroup}
+\ctexset{
+  section={format=\normalfont\Large\bfseries,beforeskip=1.2ex plus .3ex,afterskip=.8ex},
+  subsection={format=\normalfont\large\bfseries,beforeskip=1ex plus .2ex,afterskip=.6ex},
+  subsubsection={format=\normalfont\normalsize\bfseries,beforeskip=.8ex,afterskip=.4ex}
+}
+\AddToHook{cmd/section/before}{\Needspace{5\baselineskip}}
+\AddToHook{cmd/subsection/before}{\Needspace{4\baselineskip}}
+\AddToHook{cmd/subsubsection/before}{\Needspace{4\baselineskip}}
+
+\usepackage{hyperref}
+\usepackage{xurl}
+\hypersetup{pdfborder={0 0 0},colorlinks=true,
+  bookmarksopen=false,bookmarksnumbered=true,
+  linkcolor=black,urlcolor=documentlink,filecolor=documentlink,
+  citecolor=documentlink,linktoc=all}
+\urlstyle{same}
+\newcommand\email[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+\usepackage{graphicx}
+\usepackage{wallpaper} % 兼容已有文档的封面命令。
+\graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
+\usepackage{titling}
+\makeatletter
+% title:nil 仅抑制 Org 自动封面，不应清空 PDF 的标题元数据。
+% Org 把副标题格式合入 \@title；元数据中将其转为空格，避免 hyperref 警告。
+\pdfstringdefDisableCommands{\def\\{ }\def\medskip{}\def\large{}}
+\AtBeginDocument{\hypersetup{pdftitle={\@title},pdfauthor={\@author},
+  pdfcreator={Org mode / LuaLaTeX}}}
+\newcommand{\MakeDocumentCover}[1]{%
+  \begin{titlepage}\thispagestyle{empty}\centering
+  \vspace*{0.10\textheight}
+  {\fontsize{24}{34}\selectfont\bfseries\@title\par}
+  \vspace{1.5em}
+  {\normalsize\@author\par\vspace{0.5em}\@date\par}
+  \ifstrempty{#1}{}{\vspace{3em}%
+    \includegraphics[width=0.72\linewidth,height=0.35\textheight,keepaspectratio]{#1}\par}
+  \vfill
+  \end{titlepage}}
+\makeatother
+
+\usepackage{rotfloat}
+\usepackage{tabularx}
+\usepackage{longtable} % 跨页表格；tabularx 本身不支持跨页。
+\usepackage{wrapfig} % Org :float wrap 图片。
+\usepackage{booktabs}
+% 隔行底色只在显式选择的表格分组内生效，不污染标题内部的 tabular。
+% 用法：\begin{DocumentTable} ... tabular/tabularx ... \end{DocumentTable}
+\newenvironment{DocumentTable}{\begingroup\rowcolors{2}{lightgrey}{white}}{\endgroup}
+\renewcommand{\arraystretch}{1.15}
 \usepackage{calc}
-
-\usepackage[scale=0.85]{geometry}
-%\setlength{\headsep}{5pt}
-
 \usepackage{amsthm}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{indentfirst}
 \usepackage{multicol}
 \usepackage{multirow}
-\usepackage{linegoal}
-\usepackage{graphicx}
 \usepackage{fancyvrb}
 \usepackage{abstract}
+\renewcommand{\abstractnamefont}{\normalfont\Large\bfseries}
+\renewcommand{\abstracttextfont}{\normalfont\normalsize}
+\setlength{\abstitleskip}{0.8em}
 \usepackage{hologo}
-
-\linespread{1}
-\graphicspath{{image/}{figure/}{fig/}{img/}{images/}}
-
-\usepackage[font=small,labelfont={bf}]{caption}
-\captionsetup[table]{skip=3pt}
-\captionsetup[figure]{skip=3pt}
-
-% 下划线、强调和删除线等
+\usepackage[font=small,labelfont=bf]{caption}
+\captionsetup{skip=6pt,hypcap=false}
 \usepackage[normalem]{ulem}
-% 列表
 \usepackage[shortlabels,inline]{enumitem}
-\setlist{nolistsep}
-% xeCJK 默认会把黑点用汉字显示，而 Noto 没有这个字体，所以显示效果为一个小点。解决办法是将它设置为
-% \bullet, 这样显示为实心黑点。Windows 带的楷体、仿宋没有这个问题。
+\setlist{topsep=0.4em,itemsep=0.2em,parsep=0.1em,
+  beginpenalty=10000,midpenalty=2000}
 \setlist[itemize]{label=$\bullet$}
-% 或者：
-%\renewcommand\labelitemi{\ensuremath{\bullet}}
+
+% Org 在样式包之后声明 Code；这里只调整代码框，保留主题的高亮宏。
+\makeatletter
+\AtBeginDocument{%
+  \@ifundefined{Code}{}{%
+    % 默认在空格和标点处折行，但是对于 URL 和路径，可能不满足该要求，导致不会被折行而显示溢出。
+    % 解决办法：设置在空格、/ 和 - 字符处折行。
+    \fvset{breaklines=true,breakanywhere=false,breakafter={/-},breaknonspaceingroup=true}%
+    \RenewTColorBox{Code}{o}{%
+      colback=EfD,colframe=EfD!80!EFD,colupper=EFD,
+      fontupper=\fontsize{9.5}{12}\selectfont\setlength{\fboxsep}{0pt},
+      boxsep=2pt,arc=2pt,boxrule=0.4pt,left=4pt,right=4pt,top=3pt,bottom=3pt,
+      before skip=0.6em,after skip=0.6em,breakable,lines before break=5,
+      title after break={代码（续）},fonttitle=\normalfont\small,
+      coltitle=EFD,colbacktitle=EfD!90!EFD,
+      IfNoValueTF={#1}{}{boxrule=0pt,leftrule=1pt}}
+  }%
+}
+\makeatother
+
+% 从 mystle.sty 所在目录加载自定义的 org-pdf-copy package。
+% org-pdf-copy 提供代码块复制能力：
+% 1. 不复制行号；
+% 2. 保留代码的缩进和换行;
+% 3. 支持长行复制(视觉显示换行,但是拷贝后是物理单行);
+% 文档可在加载样式前用 \newcommand{\OrgPDFCopyDisabled}{} 关闭复制特性。
+\makeatletter
+\@ifundefined{OrgPDFCopyDisabled}{\RequirePackage{\@currpath org-pdf-copy}}{}
+\makeatother
 #+end_src
 
-创建一个 tempel 模板，便于在 org-mode 文件中快速插入导出 PDF 的 tex 配置参数：
-+ 如果生成的 pdf 不显示目录，检查文档 ~#+OPTIONS~ 参数中的 ~toc:nil~ 和 ~num: 2~ 是否生效；
+*** 代码复制层
 
-#+begin_src emacs-lisp :tangle no
-(my-latex "#+DATE: " (format-time-string "%Y-%m-%d %a") n
-	  "#+SUBTITLE: 内部资料，注意保密!
-,#+AUTHOR: 张俊(zj@opsnull.com)
-# 中文语言环境（目录等用中文显示）。
-,#+LANGUAGE: zh-CN
-# 不自动输出 titile 和 toc，后续 latext mystyle 中定制输出。
-# 但是需要明确通过 num 控制输出的目录级别。
-,#+OPTIONS: prop:t title:nil num:2 toc:nil ^:nil
-,#+LATEX_COMPILER: xelatex
+代码复制层包含 =org-pdf-copy.sty= 和 =org-pdf-copy.lua= ，它们由 =mystyle.sty= 自动加载（位于同一个目录下）。
+
+自定义的 =org-pdf-copy package= 提供代码块原样复制能力：
+1. 不复制行号；
+2. 保留代码的缩进和换行;
+3. 支持长行复制(视觉显示换行, 但拷贝后是物理单行);
+
+#+name: org-pdf-copy-latex
+#+begin_src latex :tangle ~/emacs/org-pdf-copy.sty :comments no :padline no :mkdirp yes
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{org-pdf-copy}[2026/09/12 Copyable numbered code]
+% Load from mystyle.sty; no changes to Org source blocks are required.
+\RequirePackage{iftex}
+\RequireLuaTeX
+\RequirePackage{fvextra}
+\RequirePackage{xcolor}
+\directlua{orgpdfcopy=dofile("\luaescapestring{\@currpath}org-pdf-copy.lua")}
+\RequirePackage{fontspec}
+\newfontfamily\OrgPDFCopyAnchorFont{Noto Sans Mono CJK SC}[Scale=0.7]
+\begingroup\OrgPDFCopyAnchorFont
+\directlua{orgpdfcopy.anchorfont=font.current()}
+\endgroup
+\newcount\OrgPDFCopyBlock
+\AddToHook{env/Verbatim/before}{\global\advance\OrgPDFCopyBlock by 1 }
+\AtBeginDocument{%
+  \fvset{breaksymbolleft={\hbox{\directlua{orgpdfcopy.arrow()}}},breaksymbolright={},breakanywheresymbolpre={},breakbeforesymbolpre={},breakaftersymbolpre={}}%
+  \let\OrgPDFCopyFormatText\FancyVerbFormatText
+  \renewcommand\FancyVerbFormatText[1]{%
+    \begingroup
+    \directlua{tex.setattribute(orgpdfcopy.block_attr,\number\OrgPDFCopyBlock)
+      tex.setattribute(orgpdfcopy.line_attr,\number\c@FancyVerbLine)}%
+    \directlua{orgpdfcopy.begin_line()}%
+    \let\OrgPDFCopySpace\FV@Space
+    % Flush TeX's pending character before writing a marker (notably after >).
+    \def\FV@Space{\relax\directlua{orgpdfcopy.space()}\OrgPDFCopySpace}%
+    \let\OrgPDFCopyTab\FV@Tab
+    \def\FV@Tab{\relax\directlua{orgpdfcopy.space(true)}\OrgPDFCopyTab}%
+    \OrgPDFCopyFormatText{#1}%
+    \endgroup}%
+  \renewcommand\theFancyVerbLine{%
+    \footnotesize\color{black!40!white}%
+    \directlua{orgpdfcopy.number("\arabic{FancyVerbLine}")}}%
+}
+\AddToHook{shipout/before}{\directlua{orgpdfcopy.shipout(tex.box[\number\ShipoutBox])}}
+\endinput
+#+end_src
+
+#+name: org-pdf-copy-lua
+#+begin_src lua :tangle ~/emacs/org-pdf-copy.lua :comments no :padline no :mkdirp yes
+-- Copyable code for Org's engraved/fvextra backend (LuaLaTeX).
+-- Only attributed code glyphs are changed, after shaping and page breaking.
+-- Preview ignores ActualText, so whitespace is carried by private ToUnicode
+-- mappings. Original fonts and ordinary document text are never mutated.
+local M = {}
+local glyph_id, hlist_id, vlist_id = node.id('glyph'), node.id('hlist'), node.id('vlist')
+local marker_id = luatexbase.new_whatsit('orgpdfcopy.space')
+M.block_attr = luatexbase.new_attribute('orgpdfcopy.block')
+M.line_attr = luatexbase.new_attribute('orgpdfcopy.line')
+M.unit_attr = luatexbase.new_attribute('orgpdfcopy.spacewidth')
+local copies, shapes, states, blocks = {}, {}, {}, {}
+local serial = 0
+local generatedfonts = {}
+local sources = {}
+local outline
+local bitmapfonts = {}
+local function linekey(b,l) return b .. ":" .. l end
+local function shallow(t)
+  local c = {}; for k, v in pairs(t) do c[k] = v end; return c
+end
+local function hex(cp)
+  if cp < 0x10000 then return string.format('%04X', cp) end
+  cp = cp - 0x10000
+  return string.format('%04X%04X', 0xD800 + (cp // 1024), 0xDC00 + (cp % 1024))
+end
+local function prefix_glyph(n, prefix, suffix)
+  suffix = suffix or ''
+  if prefix == '' and suffix == '' then return end
+  local key = n.font .. ':' .. n.char .. ':' .. prefix .. ':' .. suffix
+  local fid = copies[key]
+  if not fid then
+    local old = generatedfonts[n.font] or font.getfont(n.font)
+    assert(old, 'org-pdf-copy: missing source font ' .. tostring(n.font))
+    local char = old.characters[n.char]
+    if not char or char.commands then return end
+    local f, c = shallow(old), shallow(char)
+    c.tounicode = prefix .. (type(c.tounicode) == 'string' and c.tounicode or hex(n.char)) .. suffix
+    -- A sparse, uniquely named font prevents mappings for different indentation
+    -- levels from being merged. Keep generated tables: getfont() can return nil
+    -- for a newly defined font before the PDF backend has initialized it.
+    f.characters = {[n.char] = c}
+    -- LuaTeX derives fallback ascent/cap height/descent/stem width from h/H/y/.
+    -- Keep those metrics even when their glyphs are not drawn by this font.
+    for _, cp in ipairs({72, 104, 121, 46}) do
+      if cp ~= n.char and old.characters[cp] then
+        f.characters[cp] = shallow(old.characters[cp])
+      end
+    end
+    serial = serial + 1
+    f.name = 'OrgCodeCopy' .. serial
+    f.fullname, f.psname = f.name, f.name
+    f.shared, f.resources, f.descriptions, f.hb, f.properties = nil, nil, nil, nil, nil
+    f.specification, f.unscaled = nil, nil
+    fid = font.define(f)
+    generatedfonts[fid] = f
+    copies[key] = fid
+  end
+  n.font = fid
+end
+function M.space(tab)
+  -- Marker values: 0 = source-line start, 1 = space, -1 = rendered tab.
+  local n = node.new('whatsit', 'user_defined')
+  n.user_id, n.type, n.value = marker_id, 100, tab and -1 or 1
+  n.attr = node.current_attr()
+  node.set_attribute(n, M.unit_attr, math.floor(font.getfont(font.current()).parameters.space + 0.5))
+  node.write(n)
+end
+function M.begin_line()
+  local n = node.new('whatsit', 'user_defined')
+  n.user_id, n.type, n.value = marker_id, 100, 0
+  n.attr = node.current_attr()
+  node.write(n)
+end
+local function state(n)
+  local b, l = node.has_attribute(n, M.block_attr), node.has_attribute(n, M.line_attr)
+  if not b or not l or b < 1 then return end
+  local key = b .. ':' .. l
+  if not states[key] then states[key] = {spaces = 0, started = false} end
+  return states[key], b, l
+end
+local function unicodechar(n)
+ local f=font.getfont(n.font)
+ local c=f.characters[n.char]
+ local h=c and c.tounicode
+ if type(h) ~= 'string' then return utf8.char(n.char) end
+ local out={};local high
+ for chunk in h:gmatch('%x%x%x%x') do
+  local cp=tonumber(chunk,16)
+  if cp>=0xD800 and cp<=0xDBFF then high=cp
+  elseif cp>=0xDC00 and cp<=0xDFFF and high then
+   out[#out+1]=utf8.char(0x10000+(high-0xD800)*1024+cp-0xDC00);high=nil
+  else out[#out+1]=utf8.char(cp) end
+ end
+ return table.concat(out)
+end
+local function capture(head, parts)
+ for n in node.traverse(head) do
+  local st,b,l=state(n)
+  if st then
+   local k=linekey(b,l);parts[k]=parts[k] or {}
+   if n.id==glyph_id then parts[k][#parts[k]+1]=unicodechar(n)
+   elseif n.id==node.id('whatsit') and n.subtype==node.subtype('user_defined') and n.user_id==marker_id then
+    if n.value==1 then parts[k][#parts[k]+1]=' '
+    elseif n.value==-1 then parts[k][#parts[k]+1]='\t' end
+   end
+  end
+  if (n.id==hlist_id or n.id==vlist_id) and n.head then capture(n.head,parts)
+  elseif n.id==node.id('disc') and n.replace then capture(n.replace,parts) end
+ end
+end
+luatexbase.add_to_callback('pre_linebreak_filter', function(head)
+ local parts={};capture(head,parts)
+ for k,p in pairs(parts) do sources[k]=table.concat(p) end
+ return head
+end, 'orgpdfcopy.capture')
+local function countrows(head,row)
+ for n in node.traverse(head) do
+  if n.id==hlist_id or n.id==vlist_id then
+   local childrow=n.id==hlist_id and n.subtype==1 and n or row
+   if n.head then countrows(n.head,childrow) end
+  elseif n.id==glyph_id then
+   local st,b,l=state(n)
+   if st and row then
+    st.rows=st.rows or {};st.rows[row]=true
+    local count=0;for _ in pairs(st.rows) do count=count+1 end
+    if count>1 then st.wraptext=sources[linekey(b,l)] end
+   end
+  end
+ end
+end
+local function literal(data)
+ local n=node.new('whatsit','pdf_literal');n.mode=0;n.data=data;return n
+end
+-- Short mappings keep horizontal font stretching within LuaTeX's limits.
+-- Keep surrogate pairs together and avoid whitespace-only chunks, which
+-- PDFKit may discard (in particular the source line's indentation).
+local function chunks(text)
+ local result,part,units={}, {}, 0
+ for _,cp in utf8.codes(text) do
+  local size=cp>0xFFFF and 2 or 1
+  if units+size>6 and table.concat(part):match("%S") then result[#result+1]=table.concat(part);part={};units=0 end
+  part[#part+1]=utf8.char(cp);units=units+size
+ end
+ if #part>0 then result[#result+1]=table.concat(part) end
+ return result
+end
+-- luaotfload paints bitmap emoji with image commands plus a searchable dummy
+-- glyph. Keep the image and omit the duplicate text in the display layer.
+local function bitmaponly(n)
+ local f=font.getfont(n.font);local c=f.characters[n.char]
+ if not c.commands then return false end
+ local image=false
+ for _,cmd in ipairs(c.commands) do if cmd[1]=='image' then image=true end end
+ if not image then return false end
+ local key=n.font..':'..n.char
+ local fid=bitmapfonts[key]
+ if not fid then
+  local commands={}
+  for _,cmd in ipairs(c.commands) do
+   if cmd[1]~='char' and cmd[1]~='slot' then commands[#commands+1]=cmd end
+  end
+  local ch=shallow(c);ch.commands=commands
+  serial=serial+1
+  fid=font.define{type='virtual',name='OrgCopyImage'..serial,size=f.size,
+    parameters=f.parameters,characters={[n.char]=ch},fonts={}}
+  bitmapfonts[key]=fid
+ end
+ n.font=fid;return true
+end
+-- Reuse Noto's full-block glyph (U+2588) as invisible copy geometry.
+-- Its ink fills the advance width, avoiding inferred spaces between chunks.
+-- Separate font instances give the same glyph different Unicode mappings.
+local function wrapanchors(n,parts,width)
+ local old=font.getfont(M.anchorfont)
+ local step=math.floor(width/#parts)
+ local result={}
+ for _,part in ipairs(parts) do
+  local f=shallow(old);local c=shallow(old.characters[0x2588])
+  c.tounicode='';for _,u in utf8.codes(part) do c.tounicode=c.tounicode..hex(u) end
+  f.characters={[0x2588]=c}
+  for _,cp in ipairs({72,104,121,46}) do f.characters[cp]=shallow(old.characters[cp]) end
+  f.extend=math.ceil(step/c.width*1000)
+  serial=serial+1;f.name='OrgCopyLine'..serial;f.fullname=f.name;f.psname=f.name
+  f.shared,f.resources,f.descriptions,f.hb,f.properties=nil,nil,nil,nil,nil
+  f.specification,f.unscaled=nil,nil
+  local g=node.new('glyph');g.font=font.define(f);g.char=0x2588;result[#result+1]=g
+ end
+ return result
+end
+
+local function walk(head, x, parent, row)
+  x = x or 0
+  local n=head
+  while n do
+    local nextnode=n.next
+    local originalwidth=n.width
+    local removed=false
+    if n.id == hlist_id or n.id == vlist_id then
+      local childx = x + (parent and parent.id == vlist_id and n.shift or 0)
+      local childrow = n.id == hlist_id and n.subtype == 1 and n or row
+      if n.head then n.head=walk(n.head, childx, n, childrow) end
+    elseif n.id == node.id('disc') then
+      if n.replace then n.replace=walk(n.replace, x, parent, row) end
+    elseif n.id == node.id('whatsit') and n.subtype == node.subtype('user_defined') and n.user_id == marker_id then
+      local s,b,l = state(n)
+      if s then
+        if n.value == 0 then
+          s.origin = s.origin or x
+          local block = blocks[b] or {blank = 0}
+          if block.line ~= l then
+            if block.previous and not block.previous.started then block.blank = block.blank + 1 end
+            block.line, block.previous = l, s
+          end
+          blocks[b] = block
+        else
+          if n.value < 0 then s.tab = true else s.spaces = s.spaces + n.value end
+          s.unit = node.has_attribute(n, M.unit_attr) or s.unit
+        end
+      end
+    elseif n.id == glyph_id then
+      local s,b = state(n)
+      if s then
+        local block = blocks[b]
+        local blanks = not s.started and block and block.blank or 0
+        if s.wraptext then
+          if not s.started then
+            local prefix=string.rep('\n',blanks)
+            local width=(row and row.width or 200*65536)-(x-(s.origin or x))
+            -- Do not wrap these text nodes in q/Q: that would invalidate
+            -- LuaTeX's cached text matrix and misplace subsequent contents.
+            head=node.insert_before(head,n,literal('3 Tr'))
+            local parts=chunks(prefix..s.wraptext)
+            local usedwidth=0
+            for _,anchor in ipairs(wrapanchors(n,parts,width)) do
+              head=node.insert_before(head,n,anchor);usedwidth=usedwidth+anchor.width
+              local k=node.new('kern');k.kern=math.floor(width/#parts)-anchor.width
+              head=node.insert_before(head,n,k);usedwidth=usedwidth+k.kern
+            end
+            head=node.insert_before(head,n,literal('0 Tr'))
+            local k=node.new('kern');k.kern=-usedwidth;head=node.insert_before(head,n,k)
+          end
+          if not bitmaponly(n) then
+            local path,scale=outline(n.font,n.char)
+            head=node.insert_before(head,n,literal(string.format('q %.10f 0 0 %.10f 0 0 cm\n%s\nf Q',scale,scale,path)))
+            local k=node.new('kern');k.kern=n.width;head=node.insert_before(head,n,k)
+            head=node.remove(head,n);removed=true
+          end
+          if block then block.blank=0 end
+          s.started=true;s.spaces=0;s.row=row
+        else
+        if s.tab then
+          s.spaces = math.max(0, math.floor((x - (s.last_end or s.origin)) / s.unit + 0.5))
+          s.tab = false
+        end
+        -- A soft-wrapped line copies as displayed, including its visual indent.
+        -- It is intentionally not reconstructed as a single source-code line.
+        local continuation = s.started and row ~= s.row
+        if continuation then
+          local unit = s.unit or font.getfont(n.font).parameters.space
+          local indent = math.max(0, math.floor((x - s.origin) / unit + 0.5))
+          prefix_glyph(n, string.rep('0020', indent))
+        elseif s.started and s.lastglyph then
+          -- A suffix prevents PDFKit from synthesizing an additional gap before
+          -- the next glyph. Leading whitespace instead belongs to that glyph.
+          -- PDFKit reconstructs ordinary ASCII single spaces. Mapping those
+          -- too creates unnecessary font runs and can strand punctuation.
+          -- CJK gaps and repeated spaces still need explicit Unicode mappings.
+          if s.spaces > 1 or (s.spaces > 0 and s.lastglyph.char > 127) then prefix_glyph(s.lastglyph, '', string.rep('0020', s.spaces)) end
+        else
+          prefix_glyph(n, string.rep('000A', blanks) .. string.rep('0020', s.spaces))
+        end
+        if block then block.blank = 0 end
+        s.spaces = 0
+        s.started = true
+        s.lastglyph = n
+        s.last_end = x + n.width
+        s.row = row
+        end
+      end
+    end
+    if parent and parent.id == hlist_id then
+      if n.id == node.id('glue') then x = x + node.effective_glue(n, parent)
+      elseif n.id == node.id('kern') then x = x + n.kern
+      elseif n.id == node.id('math') then x = x + n.surround
+      elseif originalwidth and originalwidth > -1000000000 then x = x + originalwidth end
+    end
+    if removed then node.free(n) end
+    n=nextnode
+  end
+  return head
+end
+function M.shipout(box)
+  if box and box.head then countrows(box.head,nil);box.head=walk(box.head, 0, box, nil) end
+  -- The engine frees shipped nodes; never retain their pointers across pages.
+  for _,s in pairs(states) do s.lastglyph, s.row, s.rows = nil, nil, nil end
+end
+function M.arrow()
+  local literal = node.new('whatsit', 'pdf_literal')
+  literal.mode = 0
+  literal.data = 'q 0.65 G 0.4 w 0 3 m 0 0 l 5 0 l 3.5 1.5 m 5 0 l 3.5 -1.5 l S Q'
+  node.write(literal)
+  local k = node.new('kern'); k.kern = math.floor(6 * 65536 * 72.27 / 72); node.write(k)
+end
+outline = function(fid, ch)
+  -- Preserve the existing number font using its actual vector outlines.
+  local f = font.getfont(fid)
+  assert(f.filename, 'no outline file: '..tostring(f.name)..' char '..ch)
+  local key = f.filename .. ':' .. tostring(f.subfont)
+  local data = shapes[key]
+  if not data then
+    data = fonts.handlers.otf.readers.loadshapes(f.filename, f.subfont)
+    shapes[key] = data
+  end
+  local glyph = data.glyphs[f.characters[ch].index]
+  assert(glyph and glyph.segments, 'org-pdf-copy: font has no outlines for character '..ch)
+  local ops, x, y = {}, 0, 0
+  for _, s in ipairs(glyph.segments) do
+    local op = s[#s]
+    if op == 'm' or op == 'l' then
+      ops[#ops+1] = string.format('%g %g %s', s[1], s[2], op)
+      x, y = s[1], s[2]
+    elseif op == 'c' then
+      ops[#ops+1] = string.format('%g %g %g %g %g %g c', table.unpack(s,1,6))
+      x, y = s[5], s[6]
+    elseif op == 'q' then
+      ops[#ops+1] = string.format('%g %g %g %g %g %g c', x+2*(s[1]-x)/3, y+2*(s[2]-y)/3,
+        s[3]+2*(s[1]-s[3])/3, s[4]+2*(s[2]-s[4])/3, s[3], s[4])
+      x, y = s[3], s[4]
+    end
+  end
+  return table.concat(ops, '\n'), f.size / data.units / (65536 * 72.27 / 72), f.characters[ch]
+end
+function M.number(s)
+  for _, ch in utf8.codes(s) do
+    local path, scale, c = outline(font.current(), ch)
+    local literal = node.new('whatsit', 'pdf_literal')
+    literal.mode = 0
+    literal.data = string.format('q %.10f 0 0 %.10f 0 0 cm\n%s\nf Q', scale, scale, path)
+    node.write(literal)
+    local k = node.new('kern'); k.kern = c.width; node.write(k)
+  end
+end
+return M
+#+end_src
+
+*** 文档模板
+
+为了方便为 org-mode 文档添加导出 pdf 的 latex header，如 =#+LATEX_COMPILER: lualatex= ，
+=#+LATEX_CLASS: ctexart=， =#+LATEX_HEADER: \usepackage{/Users/alizj/emacs/mystyle}= 等，这里定义两个
+Tempel 模板（保存到 =~/emacs/templates-pdf= 文件）：
+1. =my-latex= ：插入长技术文档 pdf 配置（如包含封面图片、摘要、目录）；
+2. =my-latex-short= ：插入短技术文档 pdf 配置；
+
+#+name: org-pdf-templates
+#+begin_src emacs-lisp :tangle ~/emacs/templates-pdf :comments no :padline no
+org-mode
+
+(my-latex "#+TITLE: " (p "标题") n
+ "#+SUBTITLE: " (p "副标题（可留空）") n
+ "#+AUTHOR: 张俊(zj@opsnull.com)" n
+ "#+DATE: " (format-time-string "%Y-%m-%d") n
+ "#+LANGUAGE: zh-CN
+,#+OPTIONS: prop:nil title:nil H:3 num:3 toc:nil tex:t ^:nil
+,#+LATEX_COMPILER: lualatex
 ,#+LATEX_CLASS: ctexart
-,#+LATEX_HEADER: \\usepackage{/Users/alizj/emacs/mystyle}
-
-# 定制 PDF 封面和目录。
+"
+ (format "#+LATEX_HEADER: \\usepackage{%s}\n"
+         (file-name-sans-extension (expand-file-name "mystyle.sty" my/org-pdf-style-directory)))
+ "
 ,#+begin_export latex
-% 封面页
-\\begin{titlepage}
-% 插入标题
-\\maketitle
-% 插入封面图
-%\\ThisCenterWallPaper{0.4}{/path/to/image.png}
-% 封面页不编号
-\\noindent\\fboxsep=0pt
-\\setcounter{page}{0}
-\\thispagestyle{empty}
-\\end{titlepage}
-
-% 摘要页
+% 空参数省略封面图，也可填入图片路径。Org 默认将 SUBTITLE 合入标题。
+\\hypersetup{pageanchor=false}
+\\MakeDocumentCover{}
+\\pagenumbering{roman}
+\\hypersetup{pageanchor=true}
 \\begin{abstract}
 这是一个摘要。
 \\end{abstract}
-
-% 目录页
-\\newpage
-\\tableofcontents
-\\newpage
+\\clearpage
+% 编号深度由 num 控制；目录深度单独控制。
+\\setcounter{tocdepth}{2}
+\\DocumentContents
+\\clearpage
+\\pagenumbering{arabic}
 ,#+end_export
-")
+
+"
+ "代码复制：折行代码请从逻辑行的第一显示行开始选择，续行或局部选择可能不完整；完整示例见 [["
+ (p "配套源码 URL（发布前填写）") "][配套源码]]。" n n q)
+
+
+(my-latex-short "#+TITLE: " (p "标题") n
+ "#+AUTHOR: 张俊(zj@opsnull.com)" n
+ "#+DATE: " (format-time-string "%Y-%m-%d") n
+ "#+LANGUAGE: zh-CN
+,#+OPTIONS: prop:nil title:t H:3 num:3 toc:nil tex:t ^:nil
+,#+LATEX_COMPILER: lualatex
+,#+LATEX_CLASS: ctexart
+"
+ (format "#+LATEX_HEADER: \\usepackage{%s}\n"
+         (file-name-sans-extension (expand-file-name "mystyle.sty" my/org-pdf-style-directory)))
+ n
+ "代码复制：折行代码请从逻辑行的第一显示行开始选择，续行或局部选择可能不完整；完整示例见 [["
+ (p "配套源码 URL（发布前填写）") "][配套源码]]。" n n q)
 #+end_src
+
+** 幻灯片与其它导出
+:PROPERTIES:
+:ID:       E90EA8B2-33DC-4E20-8815-4300F4CF359B
+:END:
 
 slide 演示：org-tree-slide 不再活跃维护了，dslide 是它的的替代品。
 
@@ -1850,7 +2562,6 @@ slide 演示：org-tree-slide 不再活跃维护了，dslide 是它的的替代�
       (redraw-display)
       (blink-cursor-mode -1)
       (setq cursor-type 'bar)
-      ;;(org-display-inline-images)
       ;;(hl-line-mode -1)
       (text-scale-increase 2)
       (read-only-mode 1)))
@@ -1864,7 +2575,26 @@ slide 演示：org-tree-slide 不再活跃维护了，dslide 是它的的替代�
       ;;(hl-line-mode 1)
       (read-only-mode -1))))
   :config
-  (setq dslide-margin-content 0.5)
+  ;; 隐藏整行区域时，首个可见行仍需使用它自己的 Org 缩进。
+  ;; 不切换 org-indent-mode：它会在间接缓冲区重启 font-lock 并导致着色失效。
+  (defun my/dslide-preserve-indentation (overlay)
+    "Preserve the next visible line's indentation after a hidden OVERLAY."
+    (when (and (bound-and-true-p org-indent-mode)
+               (equal (overlay-get overlay 'display) "")
+               (save-excursion (goto-char (overlay-end overlay)) (bolp)))
+      (dolist (property '(line-prefix wrap-prefix))
+        (overlay-put overlay property
+                     (get-text-property (overlay-end overlay) property))))
+    overlay)
+  (advice-add 'dslide-hide-region :filter-return #'my/dslide-preserve-indentation)
+  
+  ;; 演示时只展示代码而不提示执行 babel 代码块。
+  (setq dslide-default-actions
+        (remq 'dslide-action-babel dslide-default-actions))
+  
+  ;; 默认的 U+1F892 箭头在当前字体中缺字。
+  (setq dslide-breadcrumb-separator " > ")
+  (setq dslide-margin-content 0.9)
   (setq dslide-animation-duration 0.5)
   (setq dslide-margin-title-above 0.3)
   (setq dslide-margin-title-below 0.3)
@@ -1940,6 +2670,7 @@ ox-hugo 博客：
   (setq org-hugo-front-matter-format "yaml")
   (setq org-hugo-export-with-section-numbers t)
   (setq org-export-backends '(go md gfm html latex man hugo))
+  (setq org-export-with-properties nil) ;; 不导出 section 下的 property，如 ID。
   (setq org-hugo-auto-set-lastmod t))
 #+end_src
 
@@ -2048,8 +2779,7 @@ project 使用 top-down 方式来检查项目路径中是否存在 .project 文�
      (project-dired "dired" ?d)
      (magit-project-status "magit status" ?g)
      (project-find-file "find file" ?p)
-     (consult-ripgrep "rigprep" ?r)
-     (vterm-toggle-cd "vterm" ?t)))
+     (consult-ripgrep "rigprep" ?r)))
   (project-vc-merge-submodules nil)
   :config
   ;; project-find-file 忽略的目录或文件列表。
@@ -2179,12 +2909,18 @@ Emacs 31 的 =hs-minor-mode= 支持 tree-sitter 语法节点折叠。为主要�
 #+begin_src emacs-lisp
 (use-package hideshow
   :ensure nil
-  :hook ((c-ts-mode c++-ts-mode go-ts-mode rust-ts-mode
-          python-ts-mode bash-ts-mode) . hs-minor-mode)
-  :bind (("C-c f f" . hs-hide-block)
+  :hook ((c-ts-mode
+	  c++-ts-mode
+	  go-ts-mode
+	  rust-ts-mode
+          python-ts-mode
+	  yaml-ts-mode
+	  bash-ts-mode) . hs-minor-mode)
+  :bind (("C-c f f" . hs-hide-block) ;; hide 当前 block
          ("C-c f o" . hs-show-block)
-         ("C-c f O" . hs-show-block)
-         ("C-c f F" . hs-hide-all)
+         ("C-c f c" . hs-cycle) ;; Cycle the visibility state of the current block.
+	 ("C-c f l" . hs-hide-level) ;;Hide all blocks ARG levels below this block.
+         ("C-c f F" . hs-hide-all) ;; hide 所有 top level 的 blocks
          ("C-c f u" . hs-show-all)
          ("C-c f t" . hs-toggle-hiding)))
 #+end_src
@@ -2210,8 +2946,7 @@ flymake 为当前 buffer 提供错误检查/诊断功能，它在如下情况检
   ;; 不自动检查 buffer 错误。
   (setq flymake-no-changes-timeout nil)
 
-  ;; 在行尾显示诊断消息（Emacs 30 开始支持）, 'short 只显示一条最重要信息，t 显示所有
-  ;; 信息。
+  ;; 在行尾显示诊断消息（Emacs 30 开始支持）, 'short 只显示一条最重要信息，t 显示所有信息。
   (setq flymake-show-diagnostics-at-end-of-line 'short)
 
   ;; 如果 buffer 出现错误的诊断消息，执行 flymake-start 重新触发诊断。
@@ -2271,7 +3006,7 @@ flymake backends，但后续需要添加 hook 来手动启动和配置 eglot-fly
   :bind
   (:map eglot-mode-map
         ("C-c C-a" . eglot-code-actions)
-        ("C-c C-f" . eglot-format-buffer)
+        ("C-c C-f" . my/format-buffer)
         ("C-c C-r" . eglot-rename))
   :config
   
@@ -2293,7 +3028,7 @@ flymake backends，但后续需要添加 hook 来手动启动和配置 eglot-fly
   ;; 关闭一些 LSP 服务端能力。
   (setq eglot-ignored-server-capabilities
         '(
-  	     :documentOnTypeFormattingProvider ;; 自动格式化
+  	     ;;:documentOnTypeFormattingProvider ;; 自动格式化
          :semanticTokensProvider ;; 使用 Tree-sitter 提供的语法高亮
          :documentHighlightProvider ;; 高亮当前符号
          :inlayHintProvider ;; 显示 inlay hint 提示
@@ -2400,6 +3135,10 @@ xref 配置：
 
 ** eldoc
 :PROPERTIES:
+:ID:       1FCE63BB-C38D-43EE-8051-608D2064A944
+:END:
+
+:PROPERTIES:
 :ID:       42001BF2-8B96-44F6-A92A-86412A702603
 :END:
 
@@ -2414,10 +3153,12 @@ eldoc 在 minibuffer echo-area 或 eldoc buffer 中显示文档和函数签名�
   ;;; 设置默认在 minibuffer 的 echo-area 单行显示 eldoc 信息，防止多行信息
   ;; 打开 eldoc-buffer 时关闭 echo-area 显示,
   (setq eldoc-echo-area-prefer-doc-buffer t)
+
+  ;;; 将窗口设置为 1 后，很多场景显示的信息不全，故关闭。
   ;; 将 minibuffer 窗口高度设为 1，确保只显示一行（默认为小数，表示 frame 高度占比，会导致显示多行）。
-  (setq max-mini-window-height 1)
+  ;;(setq max-mini-window-height 1)
   ;; 为 nil 时只单行显示 eldoc 信息.
-  (setq eldoc-echo-area-use-multiline-p nil)
+  ;;(setq eldoc-echo-area-use-multiline-p nil)
 
   ;; 在屏幕右侧显示 eldoc-buffer，这样内容比较多时方便查看。
   ;; eldoc-buffer 会跟随显示当前光标出的信息, 如函数签名。
@@ -2488,31 +3229,9 @@ eldoc-box 在 frame 右上角或光标位置显示 eldoc-doc-buffer 的内容。
 :ID:       9F362FA5-4E9F-4373-8063-312877EC58E9
 :END:
 
-=brew install python= 目前(2024.03.17)安装的是 python@12 版本，从该版本开始, 如果要 pip
-安装 python 包, 必须安装到用户自己的 venv 环境, 否则报错(error:
-externally-managed-environment)。具体参考: https://docs.brew.sh/Homebrew-and-Python
-
-#+begin_src shell :tangle no
-$ brew reinstall python
-$ brew unlink python@3.12 && brew link python@3.12
-# 查看安装的位置
-$ ls -l $(brew --prefix python)/libexec/bin
-
-$ pip3 install  pygments
-error: externally-managed-environment
-#+end_src
+使用 uv 管理 python 环境和项目。
 
 创建一个 =~/.venv= python 虚拟环境, 然后将 pip 包安装到该环境中:
-
-#+begin_src shell :tangle no
-zj@a:~$ python3 -m venv .venv
-zj@a:~$ source ~/.venv/bin/activate
-# 安装相关的包到虚拟环境中
-(.venv) zj@a:~$ pip3 install pygments jinji2 ipython markdown flake8 yapf pyright grip debugpy
-
-# 将 /Users/alizj/.venv/bin 添加到 PATH 中，这样后续不需要每次手动 active
-# 更新 ~/.bashrc 中的 PATH： PATH=/Users/alizj/.venv/bin:$PATH
-#+end_src
 
 配置 Emacs 使用内置的 python-ts-mode 和 venv 虚拟环境:
 
@@ -2547,13 +3266,18 @@ zj@a:~$ source ~/.venv/bin/activate
   (python-base-mode . my/python-setup-shell))
 #+end_src
 
-Python LSP Server 使用 basedpyright，它是微软 VSCode 使用的 pyright 和 pyglance 的开
-源 fork 版本。
+Python LSP Server 使用 basedpyright，它是微软 VSCode 使用的 pyright 和 pyglance 的开源 fork 版本。
 
 安装 basepyright:
 
 #+begin_src shell :tangle no
-which  basedpyright || pip install basedpyright
+❯ uv tool install basedpyright
+
+❯ which basedpyright
+/Users/alizj/.local/bin/basedpyright
+
+❯ ls -l /Users/alizj/.local/bin/basedpyright
+lrwxr-xr-x 1 alizj 64  9月  7 14:07 /Users/alizj/.local/bin/basedpyright -> /Users/alizj/.local/share/uv/tools/basedpyright/bin/basedpyright*
 #+end_src
 
 配置 eglot 使用 basedpyright：
@@ -2563,56 +3287,6 @@ which  basedpyright || pip install basedpyright
              '((python-mode python-ts-mode)
                "basedpyright-langserver" "--stdio"))
 #+end_src
-
-pyright _不使用_ pyenv ~.python-version~ 指定的 python 版本或 venv 来搜索依赖的 module，
-而是使用=pyrightconfig.json= 文件中配置的 venv 和 venvPath:
-+ venvPath：指定查找 venv 目录的上级目录，可以包含多个 venv 环境；
-+ venv：指定 venvPath 目录下的、使用的虚拟环境名称, pyright 在该 venv 中搜索依赖的
-  package;
-
-安装 =pyenv-pyright= 插件来方便的创建和更新 =pyrightconfig.json= 文件：
-
-#+begin_src bash :tangle ~/.emacs.d/init.sh
-git clone https://github.com/alefpereira/pyenv-pyright.git $(pyenv root)/plugins/pyenv-pyright
-#+end_src
-
-使用方法：
-1. 使用 =pyenv local= 为项目指定 ~pyenv virtualenv~;
-2. 使用 =pyenv pyright= 来自动配置 =pyrightconfig.json= 使用上一步指定的 virtualenv；
-
-pyright 假设源文件位于项目 scr 目录下，但实际可能会在多个其它子目录（甚至嵌套情况）中
-放置项目源码，即 =multi-root= 模式（对应于 vscode 中的多 worksapce 目录)，这时可能出现
-大量 import 错误，可以通过在项目根目录配置 =pyrightconfig.json= 文件来解决，例如（参考：
-python module [[https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md][Import Resolution]]）：
-#+begin_src javascript :tangle no
-{
-    "venv": "venv-2.7.18",
-    "venvPath": "/Users/zhangjun/.pyenv/versions",
-    "verboseOutput": true,
-    "reportMissingTypeStubs": false,
-    "executionEnvironments": [
-        {
-            "root": "scripts",
-            "extraPaths": [
-                ".",  // scripts 目录下 py 文件导入同级 py 文件的情况
-                "scripts/appinstance_apply"
-            ]
-        }
-    ]
-}
-#+end_src
-
-executionEnvironments：
-1. 列表中 root 指定各 workspace 的子目录，是有搜索优先级的，所以如果有相同路径前缀的
-   情况，应该从长到短依列出来：根据 python 文件的 from/import 语句来确定root 路径：即
-   从项目根目录（pyrightconfig.json 文件所在目录）开始到文件中导入路径最开始所在目录
-   之间的目录，都应该是 root。
-2. extraPaths 列表中的路径可以是绝对路径或相对路径（相对于 pyrightconfig.json 文件），
-   用于添加额外的 python module 搜索路径；
-   + 添加 "." 是因为需要将 scripts 所在的目录也添加到 module 搜索路径，而不仅仅是 scripts 下的子目录；
-3. 官方的实例参考：[[https://github.com/microsoft/pyright/blob/main/docs/configuration.md#sample-config-file][Sample Config File]] 和 [[https://github.com/microsoft/pyright/blob/main/packages/pyright-internal/src/tests/testState.test.ts][testState.test.ts]]；
-
-[[https://github.com/Microsoft/pyright/issues/21][pyright 不支持 python 2.x]]，如果在上面文件配置 ="pythonVersion": "2.7"= 则会报错。
 
 ** go
 :PROPERTIES:
@@ -2637,8 +3311,8 @@ go install golang.org/x/tools/gopls@latest
 
 #+begin_src emacs-lisp
 (dolist (env '(("GOPATH" "/Users/alizj/go")
-               ("GOPROXY" "https://goproxy.cn,https://goproxy.io,direct")
-               ("GOPRIVATE" "*.alibaba-inc.com")
+               ("GOPROXY" "http://goproxy.alibaba-inc.com,direct")
+               ("GONOSUMDB" "*.alibaba-inc.com")
 	       ("GOOS" "linux")
 	       ("GOARCH" "arm64")))
   (setenv (car env) (cadr env)))
@@ -2666,6 +3340,7 @@ go install golang.org/x/tools/gopls@latest
 #+end_src
 
 安装或更新工具：
+
 #+begin_src emacs-lisp
 ;; (setq gofmt-command "golangci-lint")
 ;; (setq gofmt-args "run --config /Users/alizj/.golangci.yml --fix")
@@ -2937,8 +3612,8 @@ Markdown 编辑使用内置模式：
   (markdown-ts-fontify-code-blocks-natively t))
 #+end_src
 
-使用内置目录功能：先在目录位置执行 =M-x markdown-ts-toc-insert-template= ，
-选择 basic，再按 =C-c r= 生成或刷新目录。
+使用内置目录功能：先在目录位置执行 =M-x markdown-ts-toc-insert-template= ，选择 basic，再按 =C-c r= 生成
+或刷新目录。
 
 #+begin_src emacs-lisp
 (use-package markdown-ts-mode-x
@@ -2949,25 +3624,7 @@ Markdown 编辑使用内置模式：
               ("C-c r" . markdown-ts-toc-generate)))
 #+end_src
 
-markdown 在线渲染：
-
-#+begin_src emacs-lisp
-(use-package markdown-ts-appear
-  :vc (markdown-ts-appear
-       :url "https://github.com/Thysrael/markdown-ts-appear"
-       :rev :newest)
-  :hook (markdown-ts-mode . markdown-ts-appear-mode)
-  :config
-  (setq markdown-ts-appear-link-icon '("" . "↗")
-      markdown-ts-appear-image-icon '("" . "▧")
-      markdown-ts-appear-code-fence-style 'connected
-      markdown-ts-appear-label-caps '("" . "")
-      markdown-ts-appear-wikilink-icon "◆"
-      markdown-ts-appear-render-callouts t
-      markdown-ts-appear-block-quote-marker "▎"
-      markdown-ts-appear-table-style 'unicode)
-  )
-#+end_src
+markdown 在线渲染： =M-x markdown-ts-view-mode=
 
 ** yaml
 
@@ -3012,6 +3669,124 @@ brew install shellcheck
 
 参考：
 1. [[https://google.github.io/styleguide/shellguide.html][Google Shell Style Guide]]
+
+** format
+:PROPERTIES:
+:ID:       859BDD8B-1B1B-48C3-9CDB-9C165D71A7C8
+:END:
+
+Python 使用 Ruff；前端代码、YAML、JSON、Markdown 使用 Prettier；其他语言使用 Eglot。
+
+| 语言 | LSP 服务端           | 格式化方式       |
+|------+----------------------+------------------|
+| Bash | bash-language-server | 默认使用 shfmt   |
+| Go   | gopls                | 默认使用 gofmt   |
+| Rust | rust-analyzer        | 默认调用 rustfmt |
+
+安装相关工具：
+
+#+begin_src shell :tangle no
+brew install shfmt shellcheck
+rustup component add rustfmt
+uv tool install ruff
+npm install -g prettier
+#+end_src
+
+配置：
+
+#+begin_src  emacs-lisp
+(require 'cl-lib)
+
+(defconst my/prettier-mode-extensions
+  '((tsx-ts-mode . "tsx") (typescript-ts-mode . "ts")
+    (typescript-mode . "ts") (js-jsx-mode . "jsx")
+    (js-ts-mode . "js") (js-mode . "js") (js2-mode . "js")
+    (json-ts-mode . "json") (json-mode . "json")
+    (scss-mode . "scss") (less-css-mode . "less")
+    (css-ts-mode . "css") (css-mode . "css")
+    (html-ts-mode . "html") (html-mode . "html")
+    (mhtml-mode . "html") (vue-mode . "vue")
+    (yaml-ts-mode . "yaml") (yaml-mode . "yaml")
+    (markdown-ts-mode . "md") (markdown-mode . "md")
+    (gfm-mode . "md"))
+  "使用 Prettier 的模式，以及无文件 buffer 使用的扩展名。")
+
+(defun my/prettier-extension ()
+  "返回当前 buffer 对应的 Prettier 扩展名，不适用时返回 nil。"
+  (let ((extension (and buffer-file-name
+                        (file-name-extension buffer-file-name))))
+    (if (member extension '("js" "mjs" "cjs" "jsx" "ts" "mts" "cts"
+                            "tsx" "html" "htm" "css" "scss" "less" "vue"
+                            "yaml" "yml" "json" "jsonc" "json5" "md"
+                            "markdown" "mdx"))
+        extension
+      (cdr (cl-find-if (lambda (entry) (derived-mode-p (car entry)))
+                       my/prettier-mode-extensions)))))
+
+(defun my/format-with-command (program &rest args)
+  "将整个 buffer 送入 PROGRAM，成功后用其标准输出替换内容。"
+  (barf-if-buffer-read-only)
+  (when (file-remote-p default-directory)
+    (user-error "此格式化命令仅支持本地 buffer"))
+  (unless (executable-find program)
+    (user-error "找不到 %s，请检查 exec-path" program))
+  (let ((output (generate-new-buffer " *formatter-output*"))
+        (errors (make-temp-file "formatter-errors-"))
+        (coding-system-for-read 'utf-8-unix)
+        (coding-system-for-write 'utf-8-unix))
+    (unwind-protect
+        (save-restriction
+          (widen)
+          (let ((status (apply #'call-process-region
+                               (point-min) (point-max) program
+                               nil (list output errors) nil args)))
+            (if (equal status 0)
+                (atomic-change-group (replace-buffer-contents output))
+              (user-error "%s 格式化失败（%s）：%s" program status
+                          (with-temp-buffer
+                            (insert-file-contents errors)
+                            (buffer-string))))))
+      (kill-buffer output)
+      (delete-file errors))))
+
+(defun my/python-ruff-format-buffer ()
+  "用 Ruff 格式化当前 Python buffer。"
+  (interactive)
+  (my/format-with-command
+   "ruff" "format" "--stdin-filename"
+   (or buffer-file-name (expand-file-name "stdin.py" default-directory))
+   "-"))
+
+(defun my/prettier-format-buffer ()
+  "用 Prettier 格式化当前 buffer，读取项目格式化配置。"
+  (interactive)
+  (let ((extension (my/prettier-extension)))
+    (unless extension (user-error "当前 buffer 不属于已配置的 Prettier 类型"))
+    (my/format-with-command
+     "prettier" "--stdin-filepath"
+     (or buffer-file-name
+         (expand-file-name (concat "stdin." extension) default-directory)))))
+
+(defun my/format-buffer ()
+  "Python 用 Ruff，前端、YAML、JSON、Markdown 用 Prettier，其余用 Eglot。"
+  (interactive)
+  (cond
+   ((derived-mode-p 'python-mode 'python-ts-mode)
+    (my/python-ruff-format-buffer))
+   ((my/prettier-extension) (my/prettier-format-buffer))
+   (t (call-interactively #'eglot-format-buffer))))
+
+(defun my/setup-format-key ()
+  "在支持的 buffer 中绑定统一格式化快捷键。"
+  (when (or (derived-mode-p 'python-mode 'python-ts-mode)
+            (my/prettier-extension))
+    (local-set-key (kbd "C-c C-f") #'my/format-buffer)))
+
+;; 未启动 Eglot 的 Markdown、YAML 等 buffer 也能使用此快捷键。
+(add-hook 'after-change-major-mode-hook #'my/setup-format-key)
+(with-eval-after-load 'eglot
+  (define-key eglot-mode-map (kbd "C-c C-f") #'my/format-buffer))
+#+end_src
 
 ** clang
 :PROPERTIES:
@@ -3102,11 +3877,10 @@ Standard:        Cpp11  # 使用 C++11 标准
 :ID:       76C9B53A-390B-4B37-8301-53C19449D530
 :END:
 
- 每次补全时都会调用，可能影响 xref 性能，先关闭。
+ 每次补全时都会调用，可能影响 xref 性能。
 
 #+begin_src emacs-lisp
 (use-package tempel
-  :disabled
   :bind
   (("M-+" . tempel-complete)
    ("M-*" . tempel-insert))
@@ -3115,7 +3889,8 @@ Standard:        Cpp11  # 使用 C++11 标准
     (setq-local completion-at-point-functions (cons #'tempel-expand completion-at-point-functions)))
 
   ;; 自定义模板文件。
-  (setq tempel-path "/Users/alizj/emacs/templates")
+  (setq tempel-path (list (expand-file-name "templates" my/org-pdf-style-directory)
+                         (expand-file-name "templates-pdf" my/org-pdf-style-directory)))
   (add-hook 'conf-mode-hook 'tempel-setup-capf)
   (add-hook 'prog-mode-hook 'tempel-setup-capf)
   (add-hook 'text-mode-hook 'tempel-setup-capf)
@@ -3270,29 +4045,283 @@ citre-xref-backend, 而且位于列表的开始，这样 xref 先使用 citre-xr
   (define-key citre-peek-keymap (kbd "s-P") 'citre-peek-prev-tag))
 #+end_src
 
-* gptel
+* agent-shell
 :PROPERTIES:
-:ID:       397C3A35-A04A-4D91-B454-A12A1C92DBF9
+:ID:       7C81B2C1-7733-4204-BA5B-A0AF1F4E51EF
 :END:
 
-在 ~/.authinfo.gpg 中添加 api.openai.com key，然后使用本地 socks5h 代理访问 API。
-+ azure 各 region 的访问速度测试：https://www.azurespeed.com/Azure/Latency
+agent-shell 使用 ACP 来连接 code agent。
+
+安装 codex acp： ~npm install -g @agentclientprotocol/codex-acp~
+
+Qoder CLI 使用 =qoder --acp= 接入，先在终端运行 =qoder login= 登录，ACP 会复用登录状态。
+
+=agent-shell= :
++ =/rename session-name= ：自定义 codex 保存的 session 名称，这样后续新建 shell 时可以方便的识别和恢复历史回话。
 
 #+begin_src emacs-lisp
-(use-package gptel
+(use-package agent-shell
+  :ensure t
+  :config  
+  (setq agent-shell-openai-authentication (agent-shell-openai-make-authentication :login t))
+
+  ;; 配置 qoder agent 支持。
+  (defun my/agent-shell-qoder-make-config ()
+    "Create a Qoder ACP agent configuration."
+    (agent-shell-make-agent-config
+     :identifier 'qoder
+     :mode-line-name "Qoder"
+     :buffer-name "Qoder"
+     :shell-prompt "Qoder> "
+     :shell-prompt-regexp "Qoder> "
+     :welcome-function (lambda (_config) "Qoder CLI via ACP")
+     :needs-authentication nil
+     :client-maker
+     (lambda (buffer)
+       (agent-shell--make-acp-client
+        :command "qoder"
+        :command-params '("--acp")
+        :environment-variables
+        (agent-shell-make-environment-variables :inherit-env t)
+        :context-buffer buffer))))
+
+  ;; 只启用 codex 和 qoder agent 类型。
+  (setq agent-shell-agent-configs
+        '(agent-shell-openai-make-codex-config
+          my/agent-shell-qoder-make-config))
+  
+  (setq agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t))
+  (setq agent-shell-session-strategy 'prompt
+        agent-shell-session-restore-verbosity 'first-last ;; 恢复回话时默认显示第一个和最后一个消息。
+        agent-shell-show-session-id t)
+  (setq agent-shell-activity-group-expand-by-default 'latest))
+
+;; Agent 主缓冲区和 viewport 依赖活动会话，不能作为普通 buffer 恢复。
+(with-eval-after-load 'persp-mode
+  (defun my/persp-agent-shell-buffer-p (buffer)
+    "Return non-nil when BUFFER requires a live Agent Shell session."
+    (with-current-buffer buffer
+      (derived-mode-p 'agent-shell-mode
+                      'agent-shell-viewport-view-mode
+                      'agent-shell-viewport-edit-mode)))
+
+  (defun my/persp-skip-saved-agent-shell-buffer (savelist)
+    "Skip Agent Shell session buffers in existing perspective save files."
+    (when (and (eq (car-safe savelist) 'def-buffer)
+               (memq (nth 3 savelist)
+                     '(agent-shell-mode
+                       agent-shell-viewport-view-mode
+                       agent-shell-viewport-edit-mode)))
+      'skip))
+
+  (add-hook 'persp-filter-save-buffers-functions
+            #'my/persp-agent-shell-buffer-p)
+  (add-hook 'persp-load-buffer-functions
+            #'my/persp-skip-saved-agent-shell-buffer))
+
+
+(use-package agent-shell-hq
+  :vc (:url "https://github.com/sreenivasvrao/agent-shell-hq" :rev :newest :lisp-dir ".")
+  :bind (
+	 ("C-c C-;" . agent-shell-hq-toggle)
+	 ("C-c C-:" . agent-shell-hq-peek)
+	 )
+  )
+#+end_src
+
+agent-shell 将 input 历史以 ASCII 编码的方式保存到 =~/.emacs.d/agent/history= 文件, 这会导致后续
+M-n/M-p 修改历史输入时, 历史输入中的中文会被以转移序列的方式显示，不可读。这里将中文以 UTF8 格式存入
+历史文件并解码为中文显示：
+
+#+name: agent-shell-history-encoding
+#+begin_src emacs-lisp
+(defun my/agent-shell-byte-in-range-p (string index minimum maximum)
+  (and (< index (length string))
+       (<= minimum (aref string index) maximum)))
+
+(defun my/agent-shell-valid-utf-8-bytes-p (string)
+  (let ((index 0)
+        (length (length string)))
+    (catch 'invalid
+      (while (< index length)
+        (let ((byte (aref string index)))
+          (cond
+           ((<= byte #x7f)
+            (setq index (1+ index)))
+           ((and (<= #xc2 byte #xdf)
+                 (my/agent-shell-byte-in-range-p string (1+ index) #x80 #xbf))
+            (setq index (+ index 2)))
+           ((and (= byte #xe0)
+                 (my/agent-shell-byte-in-range-p string (1+ index) #xa0 #xbf)
+                 (my/agent-shell-byte-in-range-p string (+ index 2) #x80 #xbf))
+            (setq index (+ index 3)))
+           ((and (or (<= #xe1 byte #xec) (<= #xee byte #xef))
+                 (my/agent-shell-byte-in-range-p string (1+ index) #x80 #xbf)
+                 (my/agent-shell-byte-in-range-p string (+ index 2) #x80 #xbf))
+            (setq index (+ index 3)))
+           ((and (= byte #xed)
+                 (my/agent-shell-byte-in-range-p string (1+ index) #x80 #x9f)
+                 (my/agent-shell-byte-in-range-p string (+ index 2) #x80 #xbf))
+            (setq index (+ index 3)))
+           ((and (= byte #xf0)
+                 (my/agent-shell-byte-in-range-p string (1+ index) #x90 #xbf)
+                 (my/agent-shell-byte-in-range-p string (+ index 2) #x80 #xbf)
+                 (my/agent-shell-byte-in-range-p string (+ index 3) #x80 #xbf))
+            (setq index (+ index 4)))
+           ((and (<= #xf1 byte #xf3)
+                 (my/agent-shell-byte-in-range-p string (1+ index) #x80 #xbf)
+                 (my/agent-shell-byte-in-range-p string (+ index 2) #x80 #xbf)
+                 (my/agent-shell-byte-in-range-p string (+ index 3) #x80 #xbf))
+            (setq index (+ index 4)))
+           ((and (= byte #xf4)
+                 (my/agent-shell-byte-in-range-p string (1+ index) #x80 #x8f)
+                 (my/agent-shell-byte-in-range-p string (+ index 2) #x80 #xbf)
+                 (my/agent-shell-byte-in-range-p string (+ index 3) #x80 #xbf))
+            (setq index (+ index 4)))
+           (t (throw 'invalid nil)))))
+      t)))
+
+(defun my/agent-shell-history-entry (entry)
+  (if (and (stringp entry)
+           (not (multibyte-string-p entry))
+           (string-match-p "[\200-\377]" entry)
+           (my/agent-shell-valid-utf-8-bytes-p entry))
+      (condition-case nil
+          (decode-coding-string entry 'utf-8)
+        (error entry))
+    entry))
+
+(defun my/agent-shell-normalize-input-ring ()
+  (when (ring-p comint-input-ring)
+    (let* ((ring comint-input-ring)
+           (entries (mapcar #'my/agent-shell-history-entry (ring-elements ring)))
+           (normalized (make-ring (ring-size ring))))
+      (dolist (entry (reverse entries))
+        (ring-insert normalized entry))
+      (setq comint-input-ring normalized))))
+
+(with-eval-after-load 'agent-shell
+  (add-hook 'agent-shell-mode-hook #'my/agent-shell-normalize-input-ring))
+#+end_src
+
+配置 Transcript 和 Screenshots 统一保存到 =~/aiwork/projects/<项目名>/.agent-shell/= ，文件名包含启动
+时间和会话标题。标题尚未生成时使用 =untitled= ；收到标题更新（包括 =/rename= ）后重命名同一份文件，保留
+原时间戳和内容。文件名格式为 =20261123T1223-<session name>.md= （本地时间，精确到分钟）；同一分钟内同
+名会话追加 =-1=、 =-2= 等序号，避免覆盖。
+
+#+name: agent-shell-transcript-storage
+#+begin_src emacs-lisp
+(defvar my/agent-shell-transcript-root "~/aiwork/projects/"
+  "Root directory for Agent Shell data grouped by project.")
+(defvar-local my/agent-shell-transcript-stamp nil)
+(defvar-local my/agent-shell-transcript-path nil)
+
+(defun my/agent-shell-transcript-component (text)
+  "Turn TEXT into a bounded, safe filename component, preserving Chinese."
+  (let ((name (string-trim
+               (replace-regexp-in-string
+                "[[:cntrl:][:space:]/\\\\:*?\"<>|]+" "-" (or text ""))
+               "[ .-]+" "[ .-]+")))
+    (if (string-empty-p name) "untitled"
+      (truncate-string-to-width name 60))))
+
+(defun my/agent-shell-dot-subdir (subdir)
+  "Resolve Agent Shell SUBDIR under the centralized project data directory."
+  (expand-file-name
+   subdir
+   (expand-file-name
+    ".agent-shell/"
+    (expand-file-name
+     (my/agent-shell-transcript-component (agent-shell--project-name))
+     (expand-file-name my/agent-shell-transcript-root)))))
+
+(defun my/agent-shell-transcript-title-updated (event)
+  "Keep the transcript filename in sync with session title EVENT."
+  (when (and (memq (map-elt event :event)
+                   '(session-title-changed init-session session-restored))
+             my/agent-shell-transcript-path
+             (equal agent-shell--transcript-file my/agent-shell-transcript-path))
+    (let* ((title (map-nested-elt agent-shell--state '(:session :title)))
+           (base (expand-file-name
+                  (concat my/agent-shell-transcript-stamp "-"
+                          (my/agent-shell-transcript-component title))
+                  (file-name-directory my/agent-shell-transcript-path)))
+           (target (concat base ".md"))
+           (suffix 1))
+      ;; Never overwrite a transcript belonging to another shell.
+      (while (and (file-exists-p target)
+                  (not (equal target my/agent-shell-transcript-path)))
+        (setq target (format "%s-%d.md" base suffix)
+              suffix (1+ suffix)))
+      (unless (equal target my/agent-shell-transcript-path)
+        (condition-case err
+            (progn
+              (when (file-exists-p my/agent-shell-transcript-path)
+                (rename-file my/agent-shell-transcript-path target))
+              (setq my/agent-shell-transcript-path target
+                    agent-shell--transcript-file target))
+          (file-error
+           (message "Could not rename Agent Shell transcript: %s"
+                    (error-message-string err))))))))
+
+(defun my/agent-shell-transcript-file-path ()
+  "Allocate a project transcript and follow subsequent session title changes."
+  (or my/agent-shell-transcript-path
+      (let* ((directory (agent-shell--dot-subdir "transcripts"))
+             (title (map-nested-elt agent-shell--state '(:session :title))))
+        (setq my/agent-shell-transcript-stamp (format-time-string "%Y%m%dT%H%M"))
+        (let* ((base (expand-file-name
+                      (concat my/agent-shell-transcript-stamp "-"
+                              (my/agent-shell-transcript-component title))
+                      directory))
+               (target (concat base ".md"))
+               (suffix 1))
+          (while (file-exists-p target)
+            (setq target (format "%s-%d.md" base suffix)
+                  suffix (1+ suffix)))
+          ;; Reserve the filename before another shell starts in the same minute.
+          (write-region "" nil target nil 'silent nil 'excl)
+          (setq my/agent-shell-transcript-path target))
+        (agent-shell-subscribe-to
+         :shell-buffer (current-buffer)
+         :on-event #'my/agent-shell-transcript-title-updated)
+        my/agent-shell-transcript-path)))
+
+(with-eval-after-load 'agent-shell
+  ;; 配置 agent-shell 使用上面自定义的 transcript 文件路径函数。
+  (setq agent-shell-dot-subdir-function #'my/agent-shell-dot-subdir
+        agent-shell-transcript-file-path-function
+        #'my/agent-shell-transcript-file-path))
+#+end_src
+
+agent-shell 的项目会话列表来自后端 agent。你当前使用 Codex，因此历史保存在 Codex 的本地存储中；刚配
+置的 Markdown transcript 目录是另外一份可读记录。
+
+获取流程如下：
+1. agent-shell 用 agent-shell-cwd 获取项目工作目录，通常是项目根目录，例如 /Users/alizj/emacs。
+2. 通过 ACP 发送 session/list，携带 cwd 和分页游标。
+3. 你安装的 codex-acp 1.11.0 调用 Codex App Server 的 thread/list，再按工作目录过滤结果。
+4. 返回 session ID、标题、工作目录和更新时间；agent-shell 按最近更新时间排序，显示选择列表。本地适配器实现
+
+这里匹配的是项目路径，不是 emacs 这样的项目简称。 =移动项目目录后，原会话可能不会出现在新路径的列表中
+（因为用新的目录过滤失败）= 。选择历史会话后，agent-shell 会请求后端加载或恢复对应 session。Codex 的
+thread/list、thread/resume 等接口负责这类操作。因此，修改 transcript 保存目录不会改变历史会话列表或
+恢复机制；单独保存这些 .md 文件，也不能替代 Codex 原始会话数据的备份。
+
+=agent-rcall= 搜索和恢复 transcript：
+- M-x agent-recall-reindex :: 索引
+- M-x agent-recall-search :: 搜索
+- M-x agent-recall-browse :: 浏览
+- M-x agent-recall-resume :: 恢复回话
+
+#+begin_src emacs-lisp
+;; transcripts 搜索和恢复。
+(use-package agent-recall
   :ensure t
   :config
-  (setq
-   gptel-default-mode 'org-mode
-   gptel-model 'gpt-4o
-   gptel-backend
-   (gptel-make-azure "Azure"
-     :protocol "https"
-     :host "westus3ai.openai.azure.com"
-     :endpoint "/openai/deployments/4fouro/chat/completions?api-version=2024-02-15-preview"
-     :stream t
-     :key #'gptel-api-key
-     :models '(gpt-4o))))
+  ;; 在该目录下递归搜索 .agent-shell/transcripts 目录中的 markdown 文件。
+  (setq agent-recall-search-paths '("~/aiwork/projects"))
+  (setq agent-recall-search-function 'consult-ripgrep)) 
 #+end_src
 
 * 终端
@@ -3300,83 +4329,131 @@ citre-xref-backend, 而且位于列表的开始，这样 xref 先使用 citre-xr
 :ID:       AF7EB914-C55D-47F0-B5BD-B609813C3975
 :END:
 
-安装 vterm 依赖:
+使用性能和功能支持更好的 [[https://dakra.github.io/ghostel/#quick-start][ghostel]]。
 
-#+begin_src bash :tangle ~/.emacs.d/init.sh
-brew install cmake libtool exiftran
-#+end_src
+需要先安装编译 ghostty 的 zig 编译器: ~brew install zig~
 
-配置 vterm:
+安装和配置 ghostel 包：
 
 #+begin_src emacs-lisp
-(use-package vterm
+(use-package ghostel
+  :vc (:url "https://github.com/dakra/ghostel"
+	    :lisp-dir "lisp"
+	    :rev :newest)
+  :init
+  (defun my/toggle-ghostel-panel ()
+    "Toggle a ghostel terminal in a regular window along the bottom of the frame."
+    (interactive)
+    (if-let* ((win (seq-find (lambda (w)
+                               (with-current-buffer (window-buffer w)
+                                 (derived-mode-p 'ghostel-mode)))
+                             (window-list))))
+        (delete-window win)
+      (let ((display-buffer-overriding-action
+             '((display-buffer-at-bottom)
+               (window-height . 0.33)
+               (dedicated . t)
+               (preserve-size . (nil . t)))))
+        (consult-ghostel-project))))
+  :bind (
+	 ("C-`" . my/toggle-ghostel-panel)
+	 ("C-x m" . ghostel)
+         :map ghostel-semi-char-mode-map
+         ("C-s"  . consult-line)
+         ("C-k"  . my/ghostel-send-C-k-and-kill)
+         ;; I'm used to go up/down the shell history with M-n/p from eshell
+         ;; Simulate this behavior in ghostel by sending C-p and C-n
+         ("M-p" . (lambda () (interactive) (ghostel-send-key "p" "ctrl")))
+         ("M-n" . (lambda () (interactive) (ghostel-send-key "n" "ctrl")))
+         :map project-prefix-map
+         ("m" . ghostel-project)
+         ("M" . ghostel-project-list-buffers))
   :config
+  (defun my/ghostel-send-C-k-and-kill ()
+    "Send `C-k' to ghostel.
+Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
+    (interactive)
+    (kill-ring-save (point) (line-end-position))
+    (ghostel-send-key "k" "ctrl"))
 
-  ;; 关闭一些 mode，提升显示性能。
-  (defun my-vterm-performance-setup ()
-    (setq-local truncate-lines t) ;; 
-    (show-paren-local-mode -1) ;; 不显示括号匹配
-    (hl-line-mode -1) ;; 不高亮当前行
-    (display-line-numbers-mode -1) ;; 不显示行号。
-    ;;; vterm buffer 使用 fixed pitch 的 mono 字体，否则部分终端表格之类的程序会对不齐。
-    (set (make-local-variable 'buffer-face-mode-face) 'fixed-pitch)
-    (buffer-face-mode t))    
-  
-  (add-hook 'vterm-mode-hook #'my-vterm-performance-setup)
+  (add-to-list 'project-switch-commands '(ghostel-project "Ghostel") t)
+  (add-to-list 'project-switch-commands '(ghostel-project-list-buffers "Ghostel buffers") t)
+  (add-to-list 'ghostel-eval-cmds '("magit-status-setup-buffer" magit-status-setup-buffer)))
 
-  (setq vterm-set-bold-hightbright t)
-  (setq vterm-always-compile-module t)
+;; 下面这些 ghostel-* package 是 ghostel 内置的，不需要额外安装。
+(use-package ghostel-eshell
+  :ensure nil
+  :hook (eshell-load . ghostel-eshell-visual-command-mode))
 
-  ;; scrollback 设置太大时，对于长时间将 shell 或大量日子输出会占用大量 LISP 对象内存，增加 GC。
-  (setq vterm-max-scrollback 10000)
-  (setq vterm-timer-delay 0.05) ;; nil: no delay
+(use-package ghostel-compile
+  :ensure nil
+  :hook (after-init . ghostel-compile-global-mode))
 
-  (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash"))
-  ;; vterm buffer 名称，%s 为 shell 的 PROMPT_COMMAND 变量的输出。
-  (setq vterm-buffer-name-string "*vt: %s")
-  ;; 使用 M-y(consult-yank-pop) 粘贴剪贴板历史中的内容。
-  (define-key vterm-mode-map [remap consult-yank-pop] #'vterm-yank-pop)
-  
-  (define-key vterm-mode-map (kbd "C-l") nil)
-  ;; 防止输入法切换冲突。
-  (define-key vterm-mode-map (kbd "C-\\") nil))
+(use-package ghostel-comint
+  :ensure nil
+  :hook (after-init . ghostel-comint-global-mode))
 
-(use-package multi-vterm
-  :after (vterm)
-  :config
-  (define-key vterm-mode-map  [(control return)] #'multi-vterm))
+(use-package ghostel-ime
+  :ensure nil
+  :hook (ghostel-mode . ghostel-ime-mode))
+
+;; consult-ghostel 是 ghostel 项目自带的 extention
+(use-package consult-ghostel
+  :vc (:url "https://github.com/dakra/ghostel"
+	    :lisp-dir "extensions/consult-ghostel"
+	    :rev :newest)
+  :after (ghostel consult)
+  :demand t
+  :bind (("C-x m" . consult-ghostel)
+         :map project-prefix-map
+         ("m" . consult-ghostel-project)
+         :map ghostel-semi-char-mode-map
+         ("C-c h" . consult-ghostel-history)))
 #+end_src
 
-vterm-toggle:
+ghostel 提供如下几种输入模式（input mode）：
+1. semi-char mode (C-c C-j): 缺省模式，几乎转发所有按键到 terminal(除了 C-c，M-x，C-h 等少数位于
+   ghostel-keymap-exceptions 中定义的按键)。
+2. char mode (C-c M-d): 所有按键都会发送给 terminal（适用于捕获 C-c，M-x，C-h 等按键的终端程序）, 按 M-RET 退
+   出并返回到 semi-char mode。
+3. line mode (C-c C-l): 和 M-x 类似, 处于正常的 emacs buffer 编辑模式, 不会发送给 terminal 和 shell,
+   直到按了回车才把内容发送给 terminal。
+4. emacs (C-c C-e) and copy mode (C-c C-t): 都将 buffer 置为 readonly 模式, 区别是: emacs buffer 的
+   terminal 还在运行，有 live 输出。而 copy mode 的 buffer 的 terminal 则被冻结，终端没有新输出。
+   - 处于 emacs 模式下，可以使用 emacs 正常 edit buffer mode 的各种快捷键，如 isearch-forward,
+     occur, M-x, C-SPC + M-w。
 
-#+begin_src emacs-lisp
-(use-package vterm-toggle
-  :after (vterm)
-  :custom
-  ;; 由于 TRAMP 模式下关闭了 projectile，scope 不能设置为 'project。
-  ;;(vterm-toggle-scope 'dedicated)
-  (vterm-toggle-scope 'project)
-  :config
-  (global-set-key (kbd "C-`") 'vterm-toggle)
-  (global-set-key (kbd "C-M-`") 'vterm-toggle-cd)
-  (define-key vterm-mode-map (kbd "M-RET") #'vterm-toggle-insert-cd)
-  ;; 切换到空闲的 vterm buffer 并插入一个 cd 命令，或者创建一个新的 vterm buffer。
-  (define-key vterm-mode-map (kbd "M-i") 'vterm-toggle-cd-show)
-  (define-key vterm-mode-map (kbd "M-n") 'vterm-toggle-forward)
-  (define-key vterm-mode-map (kbd "M-p") 'vterm-toggle-backward)
-  (define-key vterm-copy-mode-map (kbd "M-i") 'vterm-toggle-cd-show)
-  (define-key vterm-copy-mode-map (kbd "M-n") 'vterm-toggle-forward)
-  (define-key vterm-copy-mode-map (kbd "M-p") 'vterm-toggle-backward))
-#+end_src
+按 ~C-c C-q~ 自动进入（默认为 copy mode）或退出 readonly mode。
 
-vterm-extra 提供了 vterm buffer 命令行编辑的能力，结束后按 C-c C-c 自动粘贴到对应的 vterm 中：
+ghostel 自动启用 copy mode 的场景：1. 鼠标选择；2. 超链接导航 (C-c C-n/p)； 3. 激活 mark。
 
-#+begin_src emacs-lisp
-(use-package vterm-extra
-  :vc (:url "https://github.com/Sbozzolo/vterm-extra")
-  :config
-  (define-key vterm-mode-map (kbd "C-c C-e") #'vterm-extra-edit-command-in-new-buffer))
-#+end_src
+ghostel 在启用 copy mode 的场景下，如果 copy 了一些内容，或输入一些内容，则会自动关闭 copy mode。
+
+在 ghostel buffer 中支持鼠标操作：
+1. 单击点击鼠标，然后拖动，会进入 copy mode 并选择一个区域。
+2. 双击鼠标，选择一个 word；
+3. 三击鼠标，选择一行；      
+
+semi-char mode 下的快捷键：
+
+ Key 	Action
+Most keys 	Sent directly to the terminal
+C-c C-c 	Send interrupt (C-c)
+C-c C-z 	Send suspend (C-z)
+C-c C-d 	Send EOF (C-d)
+C-c C-\ 	Send quit (C-\)
+C-c M-w 	Copy entire scrollback to kill ring
+C-y 	Yank from kill ring (bracketed paste)
+M-y 	Yank-pop (cycle through kill ring)
+C-c C-y 	Paste from kill ring
+C-c M-l 	Clear scrollback
+C-c C-n 	Jump to next hyperlink
+C-c C-p 	Jump to previous hyperlink
+C-c M-n 	Enter read-only mode, jump to next prompt
+C-c M-p 	Enter read-only mode, jump to prev. prompt
+C-x C-q 	Enter ghostel-readonly-default-mode
+C-q (also C-c C-q) 	Send next key literally (escape hatch)
+Mouse wheel 	Scroll through scrollback
 
 eshell:
 
@@ -3484,9 +4561,11 @@ which trash || brew install trash
   ;;; emacs-dashboard 不显示这里排除的文件。
   (setq recentf-exclude
         `(
-          ,(recentf-expand-file-name "~/.emacs.d/\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\)/.*")
+          ,(recentf-expand-file-name "~/.emacs.d/\\(straight\\|ln-cache\\|etc\\|var\\|.cache\\|backup\\|elfeed\\|elpa\\)/.*")
           ,(recentf-expand-file-name "~/.emacs.d/\\(recentf\\|bookmarks\\|archived.org\\)")
           ,(recentf-expand-file-name "~/go/pkg/mod/.*")
+	  ;;忽略 agent-shell生成的文件。
+          ,(recentf-expand-file-name "~/aiwork/projects/[^/]+/\\.agent-shell/.*")
           ;; 安装的软件包及 Rust 工具链不进入最近文件记录。
           "\\`/opt/homebrew/Cellar/"
           ,(concat "\\`"
@@ -3524,31 +4603,13 @@ which trash || brew install trash
           "\\.pyi\\'"
           "\\.pyc\\'"
           "/private/var/.*"
+          "/var/folders/.*"
           "^/usr/local/Cellar/.*"
           ".*/vendor/.*"
           ".*/target/.*"
           "/Applications/.*"
           ,(concat package-user-dir "/.*-autoloads\\.egl\\'")))
   (recentf-mode 1))
-#+end_src
-
-dired:
-
-#+begin_src emacs-lisp
-;; dired
-(setq my-coreutils-path "/opt/homebrew/opt/coreutils/libexec/gnubin")
-(setenv "PATH" (concat my-coreutils-path ":" (getenv "PATH")))
-(setq exec-path (cons my-coreutils-path  exec-path))
-
-(use-package emacs
-  :config
-  (setq dired-dwim-target t)
-  ;; @see
-  ;; https://emacs.stackexchange.com/questions/5649/sort-file-names-numbered-in-dired/5650#5650
-  ;; 下面的参数只对安装了 coreutils (brew install coreutils) 的包有效，否则会报错。
-  (setq dired-listing-switches "-laGh1v --group-directories-first"))
-
-(use-package diredfl :config (diredfl-global-mode))
 #+end_src
 
 搜索 grep/isearch:
@@ -3903,13 +4964,29 @@ brew install poppler automake mupdf
   (setq pdf-view-use-imagemagick nil)
   (setq pdf-annot-activate-created-annotations t)
   (setq pdf-view-resize-factor 1.1)
-  (setq-default pdf-view-display-size 'fit-page)
-  (setq pdf-annot-activate-created-annotations t)
+  (setq-default pdf-view-display-size 'fit-width)
   :hook
   ((pdf-view-mode . pdf-view-themed-minor-mode)
    (pdf-view-mode . pdf-view-auto-slice-minor-mode)
    (pdf-view-mode . pdf-isearch-minor-mode))
   :config
+  (defun my/pdf-proof-view ()
+    "使用原始颜色、完整页边距和整页缩放检查 PDF 排版。"
+    (interactive)
+    (pdf-view-themed-minor-mode -1)
+    (pdf-view-midnight-minor-mode -1)
+    (pdf-view-auto-slice-minor-mode -1)
+    (pdf-view-reset-slice)
+    (pdf-view-fit-page-to-window))
+
+  (defun my/pdf-reading-view ()
+    "恢复主题配色、自动裁边和按页宽阅读。"
+    (interactive)
+    (pdf-view-midnight-minor-mode -1)
+    (pdf-view-themed-minor-mode 1)
+    (pdf-view-auto-slice-minor-mode 1)
+    (pdf-view-fit-width-to-window))
+
   (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
   ;;(add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1)))
   (setq pdf-info-epdfinfo-program "/opt/homebrew/bin/epdfinfo")
