@@ -1,6 +1,6 @@
 #+Title: My Emacs Dotfile
 #+DATE: 2023-08-20 Sun
-#+LASTMOD: 2026-09-13T15:56:04+0800
+#+LASTMOD: 2026-09-13T21:00:17+0800
 #+AUTHOR: 张俊(geekard@qq.com)
 #+STARTUP: overview hideblocks
 #+PROPERTY: header-args:emacs-lisp :tangle yes :eval never :results silent :exports code
@@ -656,7 +656,8 @@ doom-modeline：
   (doom-modeline-env-version nil)
   (doom-modeline-env-enable-rust nil)
   (doom-modeline-env-enable-go nil)
-  (doom-modeline-buffer-file-name-style 'truncate-nil)
+  ;;显示文件相对于项目的精简路径（鼠标 hover 时显示完整路径）。truncate-nil 显示完整路径。
+  (doom-modeline-buffer-file-name-style 'truncate-with-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
   (doom-modeline-time-icon nil)
@@ -3062,17 +3063,7 @@ flymake backends，但后续需要添加 hook 来手动启动和配置 eglot-fly
 
   ;; 加强高亮的 symbol 效果。
   ;;(set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
-
-  ;; t: true, false: :json-false(注意：不是 nil)。
-  ;; gopls 配置参数: https://github.com/golang/tools/blob/master/gopls/doc/settings.setq
-  (setq-default eglot-workspace-configuration
-                '((:gopls . ((staticcheck . t)
-                             (usePlaceholders . :json-false)
-                             ;; gopls 默认设置 GOPROXY=Off, 可能会导致 package 缺失进
-                             ;; 而引起补全异常. 开启 allowImplicitNetworkAccess 后将
-                             ;; 关闭 GOPROXY=Off.
-                             ;;(allowImplicitNetworkAccess . t)
-                             )))))
+)
 #+end_src
 
 consult-eglot 提供 ~consult-eglot-symbols~ 函数，方便选择 workspace 中的 symbol：
@@ -3231,7 +3222,7 @@ eldoc-box 在 frame 右上角或光标位置显示 eldoc-doc-buffer 的内容。
 
 使用 uv 管理 python 环境和项目。
 
-创建一个 =~/.venv= python 虚拟环境, 然后将 pip 包安装到该环境中:
+创建一个用户级别的 python 虚拟环境目录 =~/.venv= , 然后将 pip 包安装到该环境中: =uv venv ~/.venv=
 
 配置 Emacs 使用内置的 python-ts-mode 和 venv 虚拟环境:
 
@@ -3286,6 +3277,26 @@ lrwxr-xr-x 1 alizj 64  9月  7 14:07 /Users/alizj/.local/bin/basedpyright -> /Us
 (add-to-list 'eglot-server-programs
              '((python-mode python-ts-mode)
                "basedpyright-langserver" "--stdio"))
+
+;;设置 basedpyright 的 eglot 规则。
+;;这里设置全局诊断检查规则。也可以在项目的 pyproject.toml 中的 [tool.basedpyright] 部分配置检查规则。
+(with-eval-after-load 'eglot
+  (setq-default
+   eglot-workspace-configuration
+   (cons
+    '(:basedpyright
+      . (:analysis
+         (:typeCheckingMode "standard" ;; 缺省检查基准
+			    
+          :diagnosticSeverityOverrides ;; 覆盖默认基准的规则。这些 reportXX 规则名称可以从 flymake 错误列表中查看。
+          (:reportUnusedImport "warning" ;; 未使用的导入：警告
+           :reportMissingTypeStubs "none" ;; 缺少类型存根：不报告
+           :reportUnknownMemberType "none" ;; 成员类型未知：不报告
+           :reportArgumentType "error" ;; 参数类型不匹配：错误
+	   ))))
+    (assq-delete-all
+     :basedpyright
+     (default-value 'eglot-workspace-configuration)))))
 #+end_src
 
 ** go
@@ -3305,6 +3316,24 @@ go install golang.org/x/tools/gopls@latest
 (require 'go-ts-mode)
 ;; go 使用 TAB 缩进。
 (add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
+
+;; t: true, false: :json-false(注意：不是 nil)。
+;; gopls 配置参数: https://github.com/golang/tools/blob/master/gopls/doc/settings.setq
+(with-eval-after-load 'eglot
+  (setq-default
+   eglot-workspace-configuration
+   (cons
+    '(:gopls
+      . ((staticcheck . t)
+         (usePlaceholders . :json-false)
+         ;; gopls 默认设置 GOPROXY=Off, 可能会导致 package 缺失进
+         ;; 而引起补全异常. 开启 allowImplicitNetworkAccess 后将
+         ;; 关闭 GOPROXY=Off.
+         ;;(allowImplicitNetworkAccess . t)
+         ))
+    (assq-delete-all
+     :gopls
+     (default-value 'eglot-workspace-configuration)))))
 #+end_src
 
 设置 go 环境变量, eglot 启动 gopls 时传递它们:
@@ -3397,8 +3426,7 @@ go work init
 go work use ./path/to/module1 ./path/to/module2
    #+end_src
 
-2. 如果补全或自动提示异常, 执行 ~M-x eglot-events-buffer~ 看是否有报错(例如 GOPROXY=Off
-   导致的问题.)
+2. 如果补全或自动提示异常, 执行 ~M-x eglot-events-buffer~ 看是否有报错(例如 GOPROXY=Off导致的问题.)
 
 ** rust
 :PROPERTIES:
@@ -3593,10 +3621,8 @@ cargo package 不再维护, 故切换到 cargo-mode package, 它提供了 Cargo.
 :ID:       E28B38FF-FA6A-473F-86BB-FD4D8A3EE673
 :END:
 
-使用 Emacs 31 内置的 =markdown-ts-mode= 打开 Markdown 文件（含 README.md）。需要 =markdown= 和
+使用 Emacs 31 内置的 =markdown-ts-mode= 打开 Markdown 文件（含 README.md）。会自动安装 =markdown= 和
 =markdown-inline= 两个 tree-sitter grammar。
-
-Markdown 编辑使用内置模式：
 
 #+begin_src emacs-lisp
 (use-package markdown-ts-mode
@@ -3626,11 +3652,13 @@ Markdown 编辑使用内置模式：
 
 markdown 在线渲染： =M-x markdown-ts-view-mode=
 
+后续使用 ruff 来格式化 markdown 文件。
+
 ** yaml
 
-使用 emacs 内置的 yaml-ts-mode。
+使用 Emacs 31 内置的 yaml-ts-mode 打开 YAML 文件。
 
-安装 yaml 语言服务器：
+eglot 对于 YAML 使用 yaml-language-server 语言服务器：
 
 #+begin_src shell :tangle no
 which yaml-language-server || npm install -g yaml-language-server
@@ -3638,9 +3666,10 @@ which yaml-language-server || npm install -g yaml-language-server
 
 yaml 格式说明：
 1. 不使用 TAB 而使用空格缩进；
-2. 对于多行字符串，使用 name: | 格式，后续第一行缩进必须大于 name: 所在行，而且以后续
-   以第一行缩进为准来删除后续各行前面的空白，所以各行的缩进必须大于等于第一行的缩进，
-   超过的部分空白得以保留；
+2. 对于多行字符串，使用 name: | 格式，后续第一行缩进必须大于 name: 所在行，而且以后续以第一行缩进为
+   准来删除后续各行前面的空白，所以各行的缩进必须大于等于第一行的缩进，超过的部分空白得以保留；
+
+后续使用 ruff 来格式化 YAML 文件。
 
 ** shell
 :PROPERTIES:
@@ -3649,22 +3678,53 @@ yaml 格式说明：
 
 Emacs 使用 =bash-ts-mode= 来编辑 shell 脚本。
 
-安装 bash language server:
+安装 bash-language-server:
 
 #+begin_src bash :tangle ~/.emacs.d/init.sh
 npm i -g bash-language-server
 #+end_src
 
-bash language server 使用 shellcheck 工具来做语法检查和静态分析:
+配置 eglot 给 bash-language-server 传递的 shfmt 格式化规则：
 
-#+begin_src bash ~/.emacs.d/init.sh
-brew install shellcheck
+#+begin_src emacs-lisp
+(with-eval-after-load 'eglot
+  (setq-default
+   eglot-workspace-configuration
+   (cons
+    '(:bashIde ;; bashIde 对应的 sh/bash 代码配置。
+      . (:shfmt ;; 配置 shfmt
+         (
+	  ;;:ignoreEditorconfig t 表示统一采用语言服务器配置；设为 :json-false 则允许使用 .editorconfig
+	  :ignoreEditorconfig t
+
+          ;;设置格式化规则。
+          :indent_style "space" ;; 使用空格缩进（默认是 TAB）
+          :indent_size 4
+          :binaryNextLine t
+          :caseIndent t
+          :spaceRedirects t)))
+    (assq-delete-all
+     :bashIde
+     (default-value 'eglot-workspace-configuration)))))
 #+end_src
 
-设置脚本缩进规则：
+bash-language-server 使用 shellcheck 工具来做语法检查和静态分析，使用 shfmt 做格式化:
+
+#+begin_src bash :tangle ~/.emacs.d/init.sh
+brew install shellcheck shfmt
+#+end_src
+
+设置 shell 脚本缩进规则：
+
 #+begin_src emacs-lisp
-(setq sh-basic-offset 4)
-(setq sh-indentation 4)
+(defun my/shell-indent-setup ()
+  (setq-local indent-tabs-mode nil)
+  (setq-local tab-width 4)
+  (setq-local sh-basic-offset 4)
+  (setq-local sh-indentation 4))
+
+(add-hook 'sh-mode-hook #'my/shell-indent-setup)
+(add-hook 'bash-ts-mode-hook #'my/shell-indent-setup)
 #+end_src
 
 参考：
@@ -3694,7 +3754,7 @@ npm install -g prettier
 
 配置：
 
-#+begin_src  emacs-lisp
+#+begin_src emacs-lisp
 (require 'cl-lib)
 
 (defconst my/prettier-mode-extensions

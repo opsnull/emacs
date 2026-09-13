@@ -453,7 +453,8 @@
   (doom-modeline-env-version nil)
   (doom-modeline-env-enable-rust nil)
   (doom-modeline-env-enable-go nil)
-  (doom-modeline-buffer-file-name-style 'truncate-nil)
+  ;;显示文件相对于项目的精简路径（鼠标 hover 时显示完整路径）。truncate-nil 显示完整路径。
+  (doom-modeline-buffer-file-name-style 'truncate-with-project)
   (doom-modeline-vcs-max-length 30)
   (doom-modeline-github nil)
   (doom-modeline-time-icon nil)
@@ -1804,17 +1805,7 @@
 
   ;; 加强高亮的 symbol 效果。
   ;;(set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
-
-  ;; t: true, false: :json-false(注意：不是 nil)。
-  ;; gopls 配置参数: https://github.com/golang/tools/blob/master/gopls/doc/settings.setq
-  (setq-default eglot-workspace-configuration
-                '((:gopls . ((staticcheck . t)
-                             (usePlaceholders . :json-false)
-                             ;; gopls 默认设置 GOPROXY=Off, 可能会导致 package 缺失进
-                             ;; 而引起补全异常. 开启 allowImplicitNetworkAccess 后将
-                             ;; 关闭 GOPROXY=Off.
-                             ;;(allowImplicitNetworkAccess . t)
-                             )))))
+)
 
 (use-package consult-eglot
   :after (eglot consult))
@@ -1962,9 +1953,47 @@
              '((python-mode python-ts-mode)
                "basedpyright-langserver" "--stdio"))
 
+;;设置 basedpyright 的 eglot 规则。
+;;这里设置全局诊断检查规则。也可以在项目的 pyproject.toml 中的 [tool.basedpyright] 部分配置检查规则。
+(with-eval-after-load 'eglot
+  (setq-default
+   eglot-workspace-configuration
+   (cons
+    '(:basedpyright
+      . (:analysis
+         (:typeCheckingMode "standard" ;; 缺省检查基准
+			    
+          :diagnosticSeverityOverrides ;; 覆盖默认基准的规则。这些 reportXX 规则名称可以从 flymake 错误列表中查看。
+          (:reportUnusedImport "warning" ;; 未使用的导入：警告
+           :reportMissingTypeStubs "none" ;; 缺少类型存根：不报告
+           :reportUnknownMemberType "none" ;; 成员类型未知：不报告
+           :reportArgumentType "error" ;; 参数类型不匹配：错误
+	   ))))
+    (assq-delete-all
+     :basedpyright
+     (default-value 'eglot-workspace-configuration)))))
+
 (require 'go-ts-mode)
 ;; go 使用 TAB 缩进。
 (add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
+
+;; t: true, false: :json-false(注意：不是 nil)。
+;; gopls 配置参数: https://github.com/golang/tools/blob/master/gopls/doc/settings.setq
+(with-eval-after-load 'eglot
+  (setq-default
+   eglot-workspace-configuration
+   (cons
+    '(:gopls
+      . ((staticcheck . t)
+         (usePlaceholders . :json-false)
+         ;; gopls 默认设置 GOPROXY=Off, 可能会导致 package 缺失进
+         ;; 而引起补全异常. 开启 allowImplicitNetworkAccess 后将
+         ;; 关闭 GOPROXY=Off.
+         ;;(allowImplicitNetworkAccess . t)
+         ))
+    (assq-delete-all
+     :gopls
+     (default-value 'eglot-workspace-configuration)))))
 
 (dolist (env '(("GOPATH" "/Users/alizj/go")
                ("GOPROXY" "http://goproxy.alibaba-inc.com,direct")
@@ -2175,8 +2204,34 @@ edition = \"2021\"
   :bind (:map markdown-ts-mode-map
               ("C-c r" . markdown-ts-toc-generate)))
 
-(setq sh-basic-offset 4)
-(setq sh-indentation 4)
+(with-eval-after-load 'eglot
+  (setq-default
+   eglot-workspace-configuration
+   (cons
+    '(:bashIde ;; bashIde 对应的 sh/bash 代码配置。
+      . (:shfmt ;; 配置 shfmt
+         (
+	  ;;:ignoreEditorconfig t 表示统一采用语言服务器配置；设为 :json-false 则允许使用 .editorconfig
+	  :ignoreEditorconfig t
+
+          ;;设置格式化规则。
+          :indent_style "space" ;; 使用空格缩进（默认是 TAB）
+          :indent_size 4
+          :binaryNextLine t
+          :caseIndent t
+          :spaceRedirects t)))
+    (assq-delete-all
+     :bashIde
+     (default-value 'eglot-workspace-configuration)))))
+
+(defun my/shell-indent-setup ()
+  (setq-local indent-tabs-mode nil)
+  (setq-local tab-width 4)
+  (setq-local sh-basic-offset 4)
+  (setq-local sh-indentation 4))
+
+(add-hook 'sh-mode-hook #'my/shell-indent-setup)
+(add-hook 'bash-ts-mode-hook #'my/shell-indent-setup)
 
 (require 'cl-lib)
 
@@ -2398,7 +2453,6 @@ edition = \"2021\"
           my/agent-shell-qoder-make-config))
   
   (setq agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t))
-
   (setq agent-shell-session-strategy 'prompt
         agent-shell-session-restore-verbosity 'first-last ;; 恢复回话时默认显示第一个和最后一个消息。
         agent-shell-show-session-id t)
