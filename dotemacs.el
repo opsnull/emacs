@@ -1,11 +1,8 @@
 ;;; -*- lexical-binding: t; -*-
 
 (require 'package)
-;; (setq package-archive-priorities '(("gnu" . 10)
-;;                                    ("melpa" . 5))
-;;       package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
-;;                          ("melpa" . "https://stable.melpa.org/packages/")
-;;                          ("melpa-devel" . "https://melpa.org/packages/")))
+
+;; gnu 软件源由限速，这里替换为清华镜像源。
 (setq package-archives
       '(("elpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
         ("elpa-devel" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
@@ -31,7 +28,6 @@
   (setenv "LIBRARY_PATH"
   	  (concat (getenv "LIBRARY_PATH")
   		  ":/opt/homebrew/opt/gcc/lib/gcc/current/"
-  		  ;;":/opt/homebrew/opt/gcc/lib/gcc/current/gcc/aarch64-apple-darwin25/16/"
 		  ))
   (setq native-comp-speed 2)
   (setq native-comp-async-jobs-number 3)
@@ -50,21 +46,7 @@
 ;; Speeds up Emacs by ensuring that all Elisp libraries are both byte-compiled and native-compiled
 (use-package compile-angel
   :config
-  ;; Set `compile-angel-verbose' to nil to disable compile-angel messages.
-  ;; (When set to nil, compile-angel won't show which file is being compiled.)
   (setq compile-angel-verbose t)
-
-  ;; The following directive prevents compile-angel from compiling your init
-  ;; files. If you choose to remove this push to `compile-angel-excluded-path-suffixes'
-  ;; and compile your pre/post-init files, ensure you understand the
-  ;; implications and thoroughly test your code. For example, if you're using
-  ;; the `use-package' macro, you'll need to explicitly add:
-  ;; (eval-when-compile (require 'use-package))
-  ;; at the top of your init file.
-  (push "/init.el" compile-angel-excluded-path-suffixes)
-  (push "/early-init.el" compile-angel-excluded-path-suffixes)
-
-  ;; Uncomment the line below to compile automatically when an Elisp file is saved
   (add-hook 'emacs-lisp-mode-hook #'compile-angel-on-save-local-mode)
 
   ;; A global mode that compiles .el files when they are loaded using `load' or `require'.
@@ -97,13 +79,7 @@
 (use-package buffer-terminator
   :custom
   (buffer-terminator-verbose nil)
-
-  ;; Set the inactivity timeout (in seconds) after which buffers are considered
-  ;; inactive (default is 30 minutes):
   (buffer-terminator-inactivity-timeout (* 30 60)) ; 30 minutes
-
-  ;; Define how frequently the cleanup process should run (default is every 10
-  ;; minutes):
   (buffer-terminator-interval (* 10 60)) ; 10 minutes
 
   :init
@@ -211,6 +187,7 @@
 (setq auto-revert-check-vc-info t)
 (setq auto-revert-interval 30) ;; 缺省：5s，对于大型项目如 zed 会引起卡顿。
 
+;;保存 tramp 登录 machine 等的认证信息（账号密码）。
 (setq auth-sources '("~/.authinfo.gpg"))
 ;;(setq auth-source-debug t)
 
@@ -606,22 +583,23 @@
           (section-other . (regular 1.3))
           (commit-summary . (bold 1.1))
           (t . (variable-pitch 1.1))))
-  (modus-themes-load-theme 'ef-summer))
+  ;;(modus-themes-load-theme 'ef-summer)
+  )
 
 ;; 定制 modus/tf theme 显示效果。
 (setq modus-themes-common-palette-overrides
       '(
-	;; tab-bar 
+	;; tab-bar：浅蓝色背景。
 	(bg-tab-bar bg-cyan-nuanced)
         (bg-tab-current bg-cyan-intense)
         (bg-tab-other bg-cyan-subtle)
 
-	;; header
+	;; header：彩色标题。
 	(fg-heading-1 blue)
         (fg-heading-2 cyan)
         (fg-heading-3 green)
 
-	;; code block
+	;; code block：使用浅蓝色背景。
 	(bg-prose-block-contents bg-cyan-nuanced)
         (bg-prose-block-delimiter bg-cyan-nuanced)
         (fg-prose-block-delimiter cyan-cooler)
@@ -1789,19 +1767,24 @@
   (setq eglot-sync-connect nil)
   (customize-set-variable 'eglot-connect-timeout 60)
   
+  (defun my/eglot-ensure-local ()
+    "本地自动启动 Eglot，远程由用户按需启动。"
+    (unless (file-remote-p default-directory)
+      (eglot-ensure)))
+
   ;;不给所有 prog-mode 都开启 eglot，否则当它没有 language server 时 eglot 报错。
   ;;
   ;;由于内置 treesit 已经对 major-mode 做了 remap ，需要对 xx-ts-mode-hook 添加 hook，
   ;;而不是以前的 xx-mode-hook, 否则添加到 xx-mode-hook 的内容不会被自动执行。
-  (add-hook 'c-ts-mode-hook #'eglot-ensure)
-  (add-hook 'c++-ts-mode-hook #'eglot-ensure)
-  (add-hook 'go-ts-mode-hook #'eglot-ensure)
-  (add-hook 'bash-ts-mode-hook #'eglot-ensure)
-  (add-hook 'python-mode-hook #'eglot-ensure)
-  (add-hook 'python-ts-mode-hook #'eglot-ensure)
-  (add-hook 'rust-ts-mode-hook #'eglot-ensure)
-  (add-hook 'yaml-mode-hook #'eglot-ensure)
-  (add-hook 'yaml-ts-mode-hook #'eglot-ensure)
+  (add-hook 'c-ts-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'c++-ts-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'go-ts-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'bash-ts-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'python-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'python-ts-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'rust-ts-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'yaml-mode-hook #'my/eglot-ensure-local)
+  (add-hook 'yaml-ts-mode-hook #'my/eglot-ensure-local)
 
   ;; 加强高亮的 symbol 效果。
   ;;(set-face-attribute 'eglot-highlight-symbol-face nil :background "#b3d7ff")
@@ -2634,7 +2617,33 @@ edition = \"2021\"
          :on-event #'my/agent-shell-transcript-title-updated)
         my/agent-shell-transcript-path)))
 
+(defun my/agent-shell-initialize-reserved-transcript ()
+  "Initialize only this shell's empty reservation before upstream appends.
+Defer metadata collection until the first write, when session/model are known.
+Never rewrite a nonempty transcript or a file owned by another path provider."
+  (when (and (derived-mode-p 'agent-shell-mode)
+             my/agent-shell-transcript-path
+             (equal agent-shell--transcript-file my/agent-shell-transcript-path)
+             (file-regular-p agent-shell--transcript-file)
+             (zerop (file-attribute-size
+                     (file-attributes agent-shell--transcript-file))))
+    (let ((agent-name (or (map-nested-elt agent-shell--state '(:agent-config :mode-line-name))
+                          (map-nested-elt agent-shell--state '(:agent-config :buffer-name))
+                          "Unknown Agent"))
+          (session-id (map-nested-elt agent-shell--state '(:session :id)))
+          (model-id (map-nested-elt agent-shell--state '(:session :model-id))))
+      ;; Match agent-shell--ensure-transcript-file's standard Markdown header.
+      ;; Let write errors propagate: appending a body must not hide a failed header.
+      (write-region
+       (format "# Agent Shell Transcript\n\n**Agent:** %s\n**Started:** %s\n**Working Directory:** %s%s%s\n\n---\n\n"
+               agent-name (format-time-string "%F %T") (agent-shell-cwd)
+               (if session-id (format "\n**Session ID:** %s" session-id) "")
+               (if model-id (format "\n**Model:** %s" model-id) ""))
+       nil agent-shell--transcript-file nil 'silent))))
+
 (with-eval-after-load 'agent-shell
+  (advice-add 'agent-shell--ensure-transcript-file :before
+              #'my/agent-shell-initialize-reserved-transcript)
   ;; 配置 agent-shell 使用上面自定义的 transcript 文件路径函数。
   (setq agent-shell-dot-subdir-function #'my/agent-shell-dot-subdir
         agent-shell-transcript-file-path-function
@@ -2646,7 +2655,11 @@ edition = \"2021\"
   :config
   ;; 在该目录下递归搜索 .agent-shell/transcripts 目录中的 markdown 文件。
   (setq agent-recall-search-paths '("~/aiwork/projects"))
-  (setq agent-recall-search-function 'consult-ripgrep))
+  (setq agent-recall-search-function 'consult-ripgrep)
+  ;;Session tracking：To automatically embed session IDs in new transcripts (enabling instant
+  ;;resume):
+  (add-hook 'agent-shell-mode-hook #'agent-recall-track-sessions)
+  )
 
 (use-package ghostel
   :vc (:url "https://github.com/dakra/ghostel"
@@ -2761,6 +2774,47 @@ Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
 ;; 重置 M-r/s 快捷键，这样 consult-line 等可用。
 (define-key eshell-hist-mode-map (kbd "M-r") nil)
 (define-key eshell-hist-mode-map (kbd "M-s") nil)
+
+(use-package consult-dir
+  :ensure t
+  :bind (("C-x C-d" . consult-dir)
+         :map vertico-map
+         ("C-x C-d" . consult-dir))
+  :config
+  (defun my/consult-dir-ssh-hosts ()
+    "从多个 SSH 配置文件收集主机，并去重。"
+    (delete-dups
+     (mapcan #'consult-dir--tramp-parse-config
+             '("~/.ssh/config"
+               "~/old/backup-pc/work/proxylist/hosts_config"))))
+
+  (defvar my/consult-dir-source-ssh
+    `(:name "SSH hosts"
+      :narrow ?s
+      :category file
+      :face consult-file
+      :history file-name-history
+      :items ,#'my/consult-dir-ssh-hosts))
+
+  (add-to-list 'consult-dir-sources
+               'my/consult-dir-source-ssh t))
+
+(with-eval-after-load 'ghostel
+  (setq
+   ;; 开启后，Ghostel 会向远端传输临时集成脚本，提供目录跟踪、提示符导航和 ghostel_cmd。
+   ghostel-tramp-shell-integration t
+   ;; auto 会随之启用所需的 terminfo 安装。
+   ;; 注意不能在 ~/.ssh/config 的 Host * 中设置 SetEnv TERM=xterm-256color。
+   ghostel-ssh-install-terminfo 'auto))
+
+(with-eval-after-load 'tramp
+  (setq tramp-default-method "ssh"
+	;;遇到问题可以临时设置为 6 来进行排查。
+        tramp-verbose 3))
+
+(with-eval-after-load 'tramp-sh
+  ;; 让 TRAMP 遵循 ~/.ssh/config 中的 Control* / Proxy*。
+  (setq tramp-use-connection-share nil))
 
 (use-package emacs
   :init
@@ -3003,8 +3057,14 @@ Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
 ;; 文件第一次保存时备份。
 (setq make-backup-files t)
 (setq backup-by-copying t)
-;; 不备份 tramp 文件，其它文件都保存到 backup-dir, https://stackoverflow.com/a/22077775
-(setq backup-directory-alist `((,tramp-file-name-regexp . nil) (".*" . ,backup-dir)))
+;; 是否备份由 predicate 决定；目录规则中的 nil 并不表示禁用备份。
+(defun my/backup-enable-predicate (name)
+  "仅备份本地文件，并保留 Emacs 对临时文件的默认排除规则。"
+  (and (not (file-remote-p name))
+       (normal-backup-enable-predicate name)))
+(setq backup-enable-predicate #'my/backup-enable-predicate)
+;; 允许备份的文件统一保存到 backup-dir。
+(setq backup-directory-alist `((".*" . ,backup-dir)))
 ;; 备份文件时使用版本号。
 (setq version-control t)
 ;; 删除过多的版本。
