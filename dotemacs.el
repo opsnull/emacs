@@ -47,7 +47,15 @@
 (use-package compile-angel
   :config
   (setq compile-angel-verbose t)
-  (add-hook 'emacs-lisp-mode-hook #'compile-angel-on-save-local-mode)
+
+  ;;只对本地 el 文件启用编译，防止远程卡住。
+  (defun my/compile-angel-local-only ()
+    "Enable save-time compilation only for local Emacs Lisp buffers."
+    (compile-angel-on-save-local-mode
+     (if (file-remote-p (or buffer-file-name default-directory)) -1 1)))
+  ;; Remove the old hook when re-evaluating this configuration.
+  (remove-hook 'emacs-lisp-mode-hook #'compile-angel-on-save-local-mode)
+  (add-hook 'emacs-lisp-mode-hook #'my/compile-angel-local-only)
 
   ;; A global mode that compiles .el files when they are loaded using `load' or `require'.
   (compile-angel-on-load-mode 1))
@@ -181,8 +189,8 @@
 ;; 开启全局自动 revert。
 (global-auto-revert-mode 1)
 (setq auto-revert-remote-files nil) 
-(setq revert-without-query (list "\\.png$" "\\.svg$")
-      auto-revert-verbose nil)
+(setq revert-without-query (list "\\.png$" "\\.svg$"))
+(setq auto-revert-verbose nil)
 ;; 自动 revert buffer（更新周期由 auto-revert-interval 配置），确保 modeline 上的分支名正确。
 (setq auto-revert-check-vc-info t)
 (setq auto-revert-interval 30) ;; 缺省：5s，对于大型项目如 zed 会引起卡顿。
@@ -417,7 +425,13 @@
 
 ;; nerd-icons-dired 为 dired 和 dired-sidebar 提供图标显示能力。
 (use-package nerd-icons-dired
-  :hook ((dired-mode . nerd-icons-dired-mode)
+  :init
+  (defun my/nerd-icons-dired-local-only ()
+    (unless (file-remote-p default-directory)
+      (nerd-icons-dired-mode 1)))
+  :hook (
+	 ;; 只对 local mode 启用 nerd-icons-dired-mode，防止查看远程目录时卡住。
+	 (dired-mode . my/nerd-icons-dired-local-only)
          ;; 子树展开/收起时执行 nerd-icons-dired 刷新，这样才为子树显示图标。
          (dired-subtree-after-insert . nerd-icons-dired--refresh)
          (dired-subtree-after-remove . nerd-icons-dired--refresh)))
@@ -437,6 +451,22 @@
   (doom-modeline-time-icon nil)
   (doom-modeline-check-simple-format t)
   :config
+
+  ;; 对于远程目录或文件不查找对应的 project，防止卡住。
+  (defun my/doom-modeline-remote-file-name (orig &rest args)
+    "Render remote file names without resolving symlinks or project roots."
+    (if (and buffer-file-name (file-remote-p buffer-file-name))
+        (propertize
+         (concat (file-remote-p buffer-file-name 'host)
+                 ":" (file-name-nondirectory buffer-file-name))
+         'face 'doom-modeline-buffer-file
+         'mouse-face 'mode-line-highlight
+         'help-echo buffer-file-name
+         'local-map mode-line-buffer-identification-keymap)
+      (apply orig args)))
+  (advice-add 'doom-modeline-buffer-file-name :around
+              #'my/doom-modeline-remote-file-name)
+  
   (display-battery-mode 0)
   (column-number-mode t)
   (display-time-mode t)
@@ -471,10 +501,22 @@
 	      ;; 在 dire-mode 中使用 subtree 显示目录。
               ("TAB" . dired-subtree-toggle)
 	      ;; 循环递归展开或收起子树目录。<backtab> 对应 Shift-TAB。
-              ("<backtab>" . dired-subtree-cycle)))
+              ("<backtab>" . dired-subtree-cycle))
   :config
   (setq dired-subtree-line-prefix " ") ;;子层级缩进前缀
   (setq dired-subtree-use-backgrounds nil)
+
+  ;; 对于 tramp 远程 dired 列表，子目录行的权限字段前有 4 个空格，而 dired-subtree 固定检查第 3 个字符是否为 d 或 l，
+  ;; 因此误判成非目录，从而导致按 TAB 的子目录展开失败。这里修复该问题。
+  (defun my/dired-subtree-directory-or-link-p ()
+    "Recognize directory and symlink lines with variable listing padding."
+    ;; TRAMP 的 listing 自带空格，子树插入后权限字段不一定在第 3 列。
+    ;; 保留首列的 Dired 标记位；只读当前行，避免额外远程文件查询。
+    (save-excursion
+      (beginning-of-line)
+      (looking-at-p "^.[ \t]+[dl]")))
+  (advice-add 'dired-subtree--dired-line-is-directory-or-link-p :override
+              #'my/dired-subtree-directory-or-link-p))
   
 (use-package dired-sidebar
   :ensure t
@@ -497,7 +539,22 @@
   ;; 可以手动调整宽度和高度。
   (setq dired-sidebar-window-fixed nil) 
   (setq dired-sidebar-resize-on-open t)
-  ;; 性能优先：关闭 follow-file 或者调大 idly-delay。
+
+  ;; 对于远程 sidebar，不 follow 文件或目录变化，防止卡住。
+  (defun my/dired-sidebar-follow-local-only (orig &rest args)
+    "Skip automatic following when either source or sidebar is remote."
+    (with-selected-window (selected-window)
+      (let ((sidebar (dired-sidebar-buffer)))
+        (unless (or (file-remote-p default-directory)
+                    (and (buffer-live-p sidebar)
+                         (with-current-buffer sidebar
+                           (file-remote-p default-directory))))
+          (apply orig args)))))
+  ;; Guard the callback itself, including already-running follow timers.
+  (advice-add 'dired-sidebar-follow-file :around
+              #'my/dired-sidebar-follow-local-only)
+  
+  ;; 本地继续自动跟随；远程由上面的 callback guard 跳过。
   (setq dired-sidebar-should-follow-file t)
   (setq dired-sidebar-follow-file-idle-delay 1.5))
 
@@ -1624,6 +1681,23 @@
   (file-remote-p (project-root project)))
 (add-to-list 'project-list-exclude #'my/project-remote-p)
 
+;; 在 project-current 入口跳过远程目录，避免向上查找 .git 等项目标记，本地项目功能保留：
+;; 自动探测时返回 nil；显式执行需要项目的命令时给出提示。file-remote-p 在这里仅判断路径，不建立远程连接。
+(with-eval-after-load 'project
+  (defun my/project-current-local-only
+      (orig &optional maybe-prompt directory)
+    "禁止在远程目录中查找项目。"
+    (if (file-remote-p
+         (or directory
+             project-current-directory-override
+             default-directory))
+        (when maybe-prompt
+          (user-error "远程目录已禁用项目定位"))
+      (funcall orig maybe-prompt directory)))
+
+  (advice-add 'project-current :around
+              #'my/project-current-local-only))
+
 (setq vc-follow-symlinks t)
 
 (use-package magit
@@ -1663,12 +1737,15 @@
 
 (use-package hideshow
   :ensure nil
-  :hook ((c-ts-mode
+  :hook (
+	 ;;为主要编程语言启用。其他支持 Hideshow 的模式可手动执行 M-x hs-minor-mode。
+	 (c-ts-mode
 	  c++-ts-mode
 	  go-ts-mode
 	  rust-ts-mode
           python-ts-mode
 	  yaml-ts-mode
+	  json-ts-mode
 	  bash-ts-mode) . hs-minor-mode)
   :bind (("C-c f f" . hs-hide-block) ;; hide 当前 block
          ("C-c f o" . hs-show-block)
@@ -2666,9 +2743,15 @@ Never rewrite a nonempty transcript or a file owned by another path provider."
 	    :lisp-dir "lisp"
 	    :rev :newest)
   :init
+  (defun my/ghostel-reject-nested-minibuffer (&rest _)
+    "Reject terminal commands while another minibuffer is still active."
+    (when (> (minibuffer-depth) 0)
+      (user-error "请先退出当前 minibuffer，再选择或创建 Ghostel 终端")))
+  
   (defun my/toggle-ghostel-panel ()
     "Toggle a ghostel terminal in a regular window along the bottom of the frame."
     (interactive)
+    (my/ghostel-reject-nested-minibuffer)
     (if-let* ((win (seq-find (lambda (w)
                                (with-current-buffer (window-buffer w)
                                  (derived-mode-p 'ghostel-mode)))
@@ -2679,7 +2762,12 @@ Never rewrite a nonempty transcript or a file owned by another path provider."
                (window-height . 0.33)
                (dedicated . t)
                (preserve-size . (nil . t)))))
-        (consult-ghostel-project))))
+	;;对于远程文件或目录不启用 project 判断，本地启用，防止卡住。
+	(if (file-remote-p default-directory)
+	    (consult-ghostel)
+	  (consult-ghostel-project))
+	)))
+  
   :bind (
 	 ("C-`" . my/toggle-ghostel-panel)
 	 ("C-x m" . ghostel)
@@ -2701,6 +2789,8 @@ Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
     (kill-ring-save (point) (line-end-position))
     (ghostel-send-key "k" "ctrl"))
 
+  (dolist (command '(ghostel ghostel-project))
+    (advice-add command :before #'my/ghostel-reject-nested-minibuffer))
   (add-to-list 'project-switch-commands '(ghostel-project "Ghostel") t)
   (add-to-list 'project-switch-commands '(ghostel-project-list-buffers "Ghostel buffers") t)
   (add-to-list 'ghostel-eval-cmds '("magit-status-setup-buffer" magit-status-setup-buffer)))
@@ -2718,6 +2808,7 @@ Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
   :ensure nil
   :hook (after-init . ghostel-comint-global-mode))
 
+;; ghostel ime 输入法集成。
 (use-package ghostel-ime
   :ensure nil
   :hook (ghostel-mode . ghostel-ime-mode))
@@ -2729,6 +2820,9 @@ Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
 	    :rev :newest)
   :after (ghostel consult)
   :demand t
+  :config
+  (dolist (command '(consult-ghostel consult-ghostel-project))
+    (advice-add command :before #'my/ghostel-reject-nested-minibuffer))
   :bind (("C-x m" . consult-ghostel)
          :map project-prefix-map
          ("m" . consult-ghostel-project)
@@ -2790,14 +2884,41 @@ Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
 
   (defvar my/consult-dir-source-ssh
     `(:name "SSH hosts"
-      :narrow ?s
-      :category file
-      :face consult-file
-      :history file-name-history
-      :items ,#'my/consult-dir-ssh-hosts))
+	    :narrow ?s
+	    :category file
+	    :face consult-file
+	    :history file-name-history
+	    :items ,#'my/consult-dir-ssh-hosts))
 
   (add-to-list 'consult-dir-sources
                'my/consult-dir-source-ssh t))
+
+;; 先用 consult-dir 选择 SSH 主机，再纯文本输入路径，避免实时目录补全，防止远程卡住。
+;; C-x C-f 仍是内置 find-file；
+(defun my/find-remote-file-plain (&optional path)
+  "使用 consult-dir 选择 SSH 主机，再纯文本输入远程路径。
+非交互调用时，若提供 PATH，则直接打开。"
+  (interactive)
+  (if path
+      (find-file path)
+    (require 'consult-dir)
+    (let ((default-directory (expand-file-name "~/"))
+          ;; 只读取你配置的 SSH 主机源。
+          (consult-dir-sources '(my/consult-dir-source-ssh))
+          (consult-preview-key nil)
+          ;; 本次选择不显示候选附加信息。
+          (marginalia-annotators
+           '((file none) (multi-category none)))
+          (consult-dir-default-command
+           (lambda ()
+             (interactive)
+             (let* ((initial (file-name-as-directory default-directory))
+                    ;; 输入期间使用本地目录，减少 hooks 触发远程查询。
+                    (default-directory (expand-file-name "~/"))
+                    (target (read-string "远程路径: " initial)))
+               (find-file target)))))
+      (consult-dir))))
+
 
 (with-eval-after-load 'ghostel
   (setq
@@ -2810,7 +2931,13 @@ Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
 (with-eval-after-load 'tramp
   (setq tramp-default-method "ssh"
 	;;遇到问题可以临时设置为 6 来进行排查。
-        tramp-verbose 3))
+        tramp-verbose 3)
+  ;; VC 忽略所有 TRAMP 远程路径，本地文件继续启用 VC，防止卡住。
+  (require 'vc-hooks)
+  (setq vc-ignore-dir-regexp
+        (concat "\\(?:" vc-ignore-dir-regexp "\\)\\|"
+                "\\(?:" tramp-file-name-regexp "\\)"))
+  )
 
 (with-eval-after-load 'tramp-sh
   ;; 让 TRAMP 遵循 ~/.ssh/config 中的 Control* / Proxy*。
