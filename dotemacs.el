@@ -2,7 +2,7 @@
 
 (require 'package)
 
-;; gnu 软件源由限速，这里替换为清华镜像源。
+;; gnu 软件源有限速，这里替换为清华镜像源。
 (setq package-archives
       '(("elpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
         ("elpa-devel" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu-devel/")
@@ -18,10 +18,10 @@
 (setq use-package-compute-statistics t)
 (setq use-package-vc-prefer-newest t)
 
-;; 允许升级 Emacs 内置的包。
+;; 允许升级 Emacs 内置软件包。
 ;;(setq package-install-upgrade-built-in t)
 
-;; The following enables compilation of packages during installation; compile-angel will handle it.
+;; 启用 native 编译。
 (setq package-native-compile t)
 
 (when (fboundp 'native-compile-async)
@@ -34,16 +34,14 @@
   ;;(setq inhibit-automatic-native-compilation t)
   (setq native-comp-async-report-warnings-errors 'silent))
 
-;; 确保 Emacs 加载较新 byte-compiled 的 .el 文件。
+;; 确保 Emacs 加载编译后的最新 .elc 文件。
 (setq-default load-prefer-newer t)
 (setq load-prefer-newer t)
 
-;; Ensure that quitting only occurs once Emacs finishes native compiling,
-;; preventing incomplete or leftover compilation files in `/tmp`.
 (setq native-comp-async-query-on-exit t)
 (setq confirm-kill-processes t)
 
-;; Speeds up Emacs by ensuring that all Elisp libraries are both byte-compiled and native-compiled
+;; 确保所有 Elisp 文件都被原生直接码编译，提升 Emacs 性能。
 (use-package compile-angel
   :config
   (setq compile-angel-verbose t)
@@ -57,12 +55,12 @@
   (remove-hook 'emacs-lisp-mode-hook #'compile-angel-on-save-local-mode)
   (add-hook 'emacs-lisp-mode-hook #'my/compile-angel-local-only)
 
-  ;; A global mode that compiles .el files when they are loaded using `load' or `require'.
+  ;;在 load 或 require .el 文件时进行编译.
   (compile-angel-on-load-mode 1))
 
 (setq process-adaptive-read-buffering nil)
 
-;; The maximum amount of data Emacs reads from a subprocess in a single operation
+;; Emacs 通过 Pipe 从子进程一次读取的最大数据量。
 ;; 对于 GNU/Linux，设置的是 /proc/sys/fs/pipe-max-size 值。
 ;; 可以提升大项目的 eglot 性能（与 LSP 通过 JSON-RPC 交换数据时，一次可以读取更多数据）。
 (setq read-process-output-max (* 1024 1024 1)) ;; default: 4kb
@@ -493,7 +491,7 @@
 (use-package diredfl :config (diredfl-global-mode))
 
 ;; dired-subtree 提供目录的原地展开能力，像文件树一样浏览，而不用进入另一个目录 buffer。
-;; 在 dired-mode，可以按 ( 来关闭 dired detail mode，从而只显示目录树。
+;; 在 dired-mode 中按 ( 来关闭 dired detail mode，从而只显示目录树。
 (use-package dired-subtree
   :ensure t
   :commands (dired-subtree-toggle dired-subtree-cycle)
@@ -643,7 +641,7 @@
   ;;(modus-themes-load-theme 'ef-summer)
   )
 
-;; 定制 modus/tf theme 显示效果。
+;; 定制 ef/modus theme 显示效果。
 (setq modus-themes-common-palette-overrides
       '(
 	;; tab-bar：浅蓝色背景。
@@ -2762,8 +2760,9 @@ Never rewrite a nonempty transcript or a file owned by another path provider."
                (window-height . 0.33)
                (dedicated . t)
                (preserve-size . (nil . t)))))
-	;;对于远程文件或目录不启用 project 判断，本地启用，防止卡住。
-	(if (file-remote-p default-directory)
+	;; 远程路径跳过项目探测，防止卡住；本地路径兼容不在 project 的情况。
+	(if (or (file-remote-p default-directory)
+		(not (project-current nil)))
 	    (consult-ghostel)
 	  (consult-ghostel-project))
 	)))
@@ -2774,8 +2773,6 @@ Never rewrite a nonempty transcript or a file owned by another path provider."
          :map ghostel-semi-char-mode-map
          ("C-s"  . consult-line)
          ("C-k"  . my/ghostel-send-C-k-and-kill)
-         ;; I'm used to go up/down the shell history with M-n/p from eshell
-         ;; Simulate this behavior in ghostel by sending C-p and C-n
          ("M-p" . (lambda () (interactive) (ghostel-send-key "p" "ctrl")))
          ("M-n" . (lambda () (interactive) (ghostel-send-key "n" "ctrl")))
          :map project-prefix-map
