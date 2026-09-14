@@ -2383,6 +2383,14 @@ edition = \"2021\"
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c C-f") #'my/format-buffer))
 
+(use-package imenu-list
+  :ensure t
+  :commands imenu-list-smart-toggle
+  :custom
+  (imenu-list-position 'right)
+  (imenu-list-size 0.25)
+  (imenu-list-focus-after-activation t))
+
 (setq my-llvm-path "/opt/homebrew/opt/llvm/bin")
 (setenv "PATH" (concat my-llvm-path ":" (getenv "PATH")))
 (setq exec-path (cons my-llvm-path  exec-path))
