@@ -189,8 +189,9 @@
 (setq auto-revert-remote-files nil) 
 (setq revert-without-query (list "\\.png$" "\\.svg$"))
 (setq auto-revert-verbose nil)
-;; 自动 revert buffer（更新周期由 auto-revert-interval 配置），确保 modeline 上的分支名正确。
-(setq auto-revert-check-vc-info t)
+;;关闭 auto-revert 时检查 vc 状态，否则可能因被高频执行（如 modeline 刷新等）而导致编辑器卡顿。
+;;文件内容仍会自动刷新；外部 Git 操作后若分支或状态显示没更新，可以手动执行 M-x vc-refresh-state。
+(setq auto-revert-check-vc-info nil) 
 (setq auto-revert-interval 30) ;; 缺省：5s，对于大型项目如 zed 会引起卡顿。
 
 ;;保存 tramp 登录 machine 等的认证信息（账号密码）。
